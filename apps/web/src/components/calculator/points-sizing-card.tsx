@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import {
   QUANT_INSTRUMENTS,
@@ -37,6 +37,35 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
 
   const microName = instrument.id === "NQ" ? "MNQ" : instrument.id === "ES" ? "MES" : null;
 
+  // 1. Point value: fixed multiplier per instrument (e.g. $20/pt for NQ)
+  const pointValue = instrument.multiplier;
+
+  // 2. Stop value defined by user: stopPoints
+  // Cost of 1 full contract for this stop
+  const costPerContract = stopPoints > 0 ? Math.round(stopPoints * pointValue) : 0;
+
+  // 3. Floating Max Dollar Risk:
+  // If margin does not cover 1 contract, the effective risk floats to the max loss of 1 contract
+  const effectiveRiskDollars =
+    costPerContract > 0 && riskDollars < costPerContract ? costPerContract : riskDollars;
+
+  const [isRiskFocused, setIsRiskFocused] = useState(false);
+  const [riskInputText, setRiskInputText] = useState("");
+
+  // Keep input text in sync when not actively focused
+  useEffect(() => {
+    if (!isRiskFocused) {
+      setRiskInputText(effectiveRiskDollars > 0 ? String(effectiveRiskDollars) : "");
+    }
+  }, [effectiveRiskDollars, isRiskFocused]);
+
+  // If margin doesn't cover 1 contract, update parent state/localStorage to match max loss
+  useEffect(() => {
+    if (costPerContract > 0 && riskDollars < costPerContract) {
+      onChange({ riskDollars: costPerContract });
+    }
+  }, [costPerContract, riskDollars, onChange]);
+
   // If user leaves target points empty or 0, fallback to a 2:1 (2R) hypothetical target
   const isDefaultTarget = !targetPoints || targetPoints <= 0;
   const effectiveTargetPoints = !isDefaultTarget
@@ -47,19 +76,20 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
 
   const sizing = useMemo(() => {
     return calculatePositionSize(
-      riskDollars,
+      effectiveRiskDollars,
       stopPoints,
       instrument.multiplier,
       effectiveTargetPoints,
     );
-  }, [riskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints]);
+  }, [effectiveRiskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints]);
 
   const handleInstrumentChange = (val: string) => {
     const nextInst = QUANT_INSTRUMENTS.find((i) => i.id === val) ?? instrument;
     if (stopPoints > 0) {
-      const minCost = Math.round(stopPoints * nextInst.multiplier);
-      if (minCost > riskDollars) {
-        onChange({ instrumentId: val, riskDollars: minCost });
+      const nextCost = Math.round(stopPoints * nextInst.multiplier);
+      // If current risk budget does not cover 1 contract of the new instrument, adjust to max loss
+      if (nextCost > riskDollars) {
+        onChange({ instrumentId: val, riskDollars: nextCost });
         return;
       }
     }
@@ -72,11 +102,10 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
       onChange({ stopPoints: nextStop });
       return;
     }
-    const minCost = Math.round(nextStop * instrument.multiplier);
-    // If 1 contract with this stop costs more than current max dollar risk,
-    // automatically increase the max dollar risk and update the input:
-    if (minCost > riskDollars) {
-      onChange({ stopPoints: nextStop, riskDollars: minCost });
+    const nextCost = Math.round(nextStop * instrument.multiplier);
+    // If current risk budget does not cover the new stop loss, adjust to max loss
+    if (nextCost > riskDollars) {
+      onChange({ stopPoints: nextStop, riskDollars: nextCost });
     } else {
       onChange({ stopPoints: nextStop });
     }
@@ -141,9 +170,36 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <Input
               type="number"
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={riskDollars || ""}
-              placeholder="500"
-              onChange={(e) => onChange({ riskDollars: Number(e.target.value) })}
+              value={isRiskFocused ? riskInputText : effectiveRiskDollars || ""}
+              placeholder={costPerContract > 0 ? String(costPerContract) : "500"}
+              onFocus={() => {
+                setIsRiskFocused(true);
+                setRiskInputText(effectiveRiskDollars > 0 ? String(effectiveRiskDollars) : "");
+              }}
+              onChange={(e) => {
+                const text = e.target.value;
+                setRiskInputText(text);
+                const val = Number(text);
+                if (val >= costPerContract) {
+                  onChange({ riskDollars: val });
+                }
+              }}
+              onBlur={() => {
+                setIsRiskFocused(false);
+                const val = Number(riskInputText);
+                if (costPerContract > 0 && val < costPerContract) {
+                  // If margin does not cover 1 contract, snap input to the exact max loss
+                  onChange({ riskDollars: costPerContract });
+                  setRiskInputText(String(costPerContract));
+                } else if (val >= costPerContract) {
+                  onChange({ riskDollars: val });
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
             />
           </div>
 
