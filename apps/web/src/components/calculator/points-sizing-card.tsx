@@ -21,14 +21,7 @@ interface PointsSizingCardProps {
 }
 
 export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
-  const {
-    instrumentId,
-    stopPoints,
-    riskDollars,
-    targetPoints,
-    contracts: storedContracts,
-  } = values;
-  const contracts = storedContracts ?? 1;
+  const { instrumentId, stopPoints, riskDollars, targetPoints } = values;
   const [copied, setCopied] = useState(false);
 
   const instrument: QuantInstrument = useMemo(() => {
@@ -58,52 +51,21 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
       stopPoints,
       instrument.multiplier,
       effectiveTargetPoints,
-      contracts,
     );
-  }, [riskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints, contracts]);
+  }, [riskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints]);
 
-  const handleInstrumentChange = (val: string) => {
-    const nextInst = QUANT_INSTRUMENTS.find((i) => i.id === val) ?? instrument;
-    const nextRisk =
-      contracts > 0 && stopPoints > 0
-        ? Math.round(contracts * stopPoints * nextInst.multiplier)
-        : riskDollars;
-    onChange({ instrumentId: val, riskDollars: nextRisk });
-  };
-
-  const handleContractsChange = (c: number) => {
-    const nextContracts = Math.max(1, c);
-    const nextRisk =
-      stopPoints > 0 ? Math.round(nextContracts * stopPoints * instrument.multiplier) : riskDollars;
-    onChange({ contracts: nextContracts, riskDollars: nextRisk });
-  };
-
-  const handleStopPointsChange = (pts: number) => {
-    const nextStop = Math.max(0, pts);
-    const nextRisk =
-      contracts > 0 ? Math.round(contracts * nextStop * instrument.multiplier) : riskDollars;
-    onChange({ stopPoints: nextStop, riskDollars: nextRisk });
-  };
-
-  const handleRiskDollarsChange = (dollars: number) => {
-    const nextRisk = Math.max(0, dollars);
-    if (stopPoints > 0 && instrument.multiplier > 0) {
-      const fitted = Math.floor(nextRisk / (stopPoints * instrument.multiplier));
-      if (fitted >= 1) {
-        onChange({ riskDollars: nextRisk, contracts: fitted });
-        return;
-      }
-    }
-    onChange({ riskDollars: nextRisk });
-  };
+  const activeAsset = sizing.requiresMicro && microName ? microName : instrument.id;
+  const activeContracts = sizing.requiresMicro
+    ? sizing.microContracts
+    : sizing.recommendedContracts;
 
   const handleCopySizing = async () => {
     const targetLabel = isDefaultTarget
       ? `TP (2:1): ${effectiveTargetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`
       : `TP: ${targetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`;
 
-    const text = `${instrument.id}: ${sizing.recommendedContracts} contract${
-      sizing.recommendedContracts > 1 ? "s" : ""
+    const text = `${activeAsset}: ${activeContracts} contract${
+      activeContracts > 1 ? "s" : ""
     } | SL: ${stopPoints} pts (-$${sizing.actualRiskDollars.toLocaleString("en-US")}) | ${targetLabel}`;
 
     try {
@@ -136,7 +98,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <div className="w-36">
               <OptionSelect
                 value={instrumentId}
-                onValueChange={handleInstrumentChange}
+                onValueChange={(val) => onChange({ instrumentId: val })}
                 className="h-9 text-xs"
               >
                 {QUANT_INSTRUMENTS.map((inst) => (
@@ -148,19 +110,17 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             </div>
           </div>
 
-          {/* 2º: CONTRACTS */}
+          {/* 2º: MAX DOLLAR RISK */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Contracts
+              Max dollar risk ($)
             </label>
             <Input
               type="number"
-              min={1}
-              step={1}
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={contracts || ""}
-              placeholder="1"
-              onChange={(e) => handleContractsChange(Number(e.target.value))}
+              value={riskDollars || ""}
+              placeholder="500"
+              onChange={(e) => onChange({ riskDollars: Number(e.target.value) })}
             />
           </div>
 
@@ -175,25 +135,11 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={stopPoints || ""}
               placeholder="20.00"
-              onChange={(e) => handleStopPointsChange(Number(e.target.value))}
+              onChange={(e) => onChange({ stopPoints: Number(e.target.value) })}
             />
           </div>
 
-          {/* 4º: MAX DOLLAR RISK */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Max dollar risk ($)
-            </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={riskDollars || ""}
-              placeholder="500"
-              onChange={(e) => handleRiskDollarsChange(Number(e.target.value))}
-            />
-          </div>
-
-          {/* 5º: TAKE PROFIT TARGET (OPTIONAL) */}
+          {/* 4º: TAKE PROFIT TARGET (OPTIONAL) */}
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col">
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -241,24 +187,28 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
           {/* SIZING HIGHLIGHT */}
           <div className="mt-1 flex items-baseline gap-2">
             <span className="text-2xl font-bold tracking-tight text-foreground font-mono tnum">
-              {sizing.recommendedContracts} {instrument.id}
+              {activeContracts} {activeAsset}
             </span>
             <span className="text-sm font-medium text-muted-foreground">
-              contract{sizing.recommendedContracts > 1 ? "s" : ""}
+              contract{activeContracts > 1 ? "s" : ""}
             </span>
-            {microName && sizing.microContracts > 0 && (
+            {!sizing.requiresMicro && microName && sizing.microContracts > 0 && (
               <span className="ml-auto text-xs text-muted-foreground font-mono">
                 or {sizing.microContracts} {microName}
               </span>
             )}
           </div>
 
-          {/* EXCEEDS BUDGET ALERT IF RELEVANT */}
-          {sizing.exceedsBudget && (
-            <div className="mt-2 rounded border border-loss/30 bg-loss/10 px-2.5 py-1 text-[11px] text-loss">
-              Notice: 1 {instrument.id} requires ${stopPoints * instrument.multiplier} min risk.
-              {microName &&
-                ` Consider ${sizing.microContracts} ${microName} to stay within budget.`}
+          {/* NOTICE IF 1 FULL CONTRACT EXCEEDS BUDGET */}
+          {sizing.requiresMicro && (
+            <div className="mt-2 rounded border border-border/80 bg-muted/50 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+              <span className="font-medium text-foreground">1 {instrument.id}</span> stop risks $
+              {(sizing.fullContractRisk ?? 0).toLocaleString("en-US")} (exceeds ${riskDollars} max
+              risk). Sized to{" "}
+              <span className="font-medium text-foreground">
+                {sizing.microContracts} {microName}
+              </span>{" "}
+              to stay within budget.
             </div>
           )}
 

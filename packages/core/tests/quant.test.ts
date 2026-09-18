@@ -86,7 +86,16 @@ describe("quant module (packages/core)", () => {
       expect(sizing.actualRiskDollars).toBe(500);
       expect(sizing.targetDollars).toBe(1400);
       expect(sizing.riskRewardRatio).toBe(2.8);
-      expect(sizing.exceedsBudget).toBe(false);
+      expect(sizing.requiresMicro).toBe(false);
+    });
+
+    it("sizes 5 NQ contracts when dollar risk allows more contracts (10 pts SL, $1000 risk)", () => {
+      // 10 pts * $20 = $200 per contract -> $1000 / $200 = 5 contracts!
+      const sizing = calculatePositionSize(1000, 10, 20, 20);
+      expect(sizing.recommendedContracts).toBe(5);
+      expect(sizing.actualRiskDollars).toBe(1000);
+      expect(sizing.targetDollars).toBe(2000);
+      expect(sizing.riskRewardRatio).toBe(2);
     });
 
     it("handles arbitrary fractional stops with micro contracts", () => {
@@ -99,23 +108,15 @@ describe("quant module (packages/core)", () => {
       expect(sizing.actualRiskDollars).toBe(330);
     });
 
-    it("calculates proportional risk directly when explicit contracts are provided", () => {
-      // 1 NQ with 100 pts stop -> $2,000 risk!
-      const sizing = calculatePositionSize(500, 100, 20, 38, 1);
-      expect(sizing.recommendedContracts).toBe(1);
-      expect(sizing.actualRiskDollars).toBe(2000);
-      expect(sizing.riskDollars).toBe(2000);
-      expect(sizing.targetDollars).toBe(760);
-      expect(sizing.riskRewardRatio).toBe(0.38);
-    });
-
     it("safely suggests micro contracts when 1 full contract exceeds risk budget", () => {
       // $500 risk with 100 pts stop on NQ: 1 NQ = $2,000 -> 0 full NQ fit, but 2 MNQ ($400) fit!
-      const sizing = calculatePositionSize(500, 100, 20);
+      const sizing = calculatePositionSize(500, 100, 20, 38);
       expect(sizing.recommendedContracts).toBe(0);
       expect(sizing.microContracts).toBe(2);
       expect(sizing.actualRiskDollars).toBe(400);
-      expect(sizing.exceedsBudget).toBe(true);
+      expect(sizing.requiresMicro).toBe(true);
+      expect(sizing.fullContractRisk).toBe(2000);
+      expect(sizing.targetDollars).toBe(152);
     });
 
     it("handles zero or invalid inputs safely", () => {

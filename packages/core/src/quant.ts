@@ -261,11 +261,12 @@ export interface PositionSizeResult {
   targetPoints?: number;
   targetDollars?: number;
   riskRewardRatio?: number;
-  exceedsBudget?: boolean;
+  requiresMicro?: boolean;
+  fullContractRisk?: number;
 }
 
 /**
- * Calculates recommended contracts and dollar risk based on risk, stop points, and optional contracts.
+ * Calculates recommended contracts and dollar loss based on maximum dollar risk and technical chart stop.
  * Derived from the JJ Simon Execution Engine (Aulas 09, 16, 20, 21, 48).
  */
 export function calculatePositionSize(
@@ -273,9 +274,8 @@ export function calculatePositionSize(
   stopPoints: number,
   multiplier: number = NQ_DOLLARS_PER_POINT,
   targetPoints?: number,
-  explicitContracts?: number,
 ): PositionSizeResult {
-  if (stopPoints <= 0 || multiplier <= 0) {
+  if (stopPoints <= 0 || multiplier <= 0 || riskDollars <= 0) {
     return {
       recommendedContracts: 0,
       exactContracts: 0,
@@ -283,80 +283,72 @@ export function calculatePositionSize(
       actualRiskDollars: 0,
       stopPoints,
       riskDollars,
-      exceedsBudget: false,
+      requiresMicro: false,
+      fullContractRisk: 0,
     };
   }
 
-  // If explicitContracts is provided and > 0, the sizing is anchored on contracts:
-  if (explicitContracts !== undefined && explicitContracts > 0) {
-    const contracts = Math.round(explicitContracts);
-    const actualRiskDollars = Math.round(contracts * stopPoints * multiplier);
-    const microContracts = Math.round(contracts * 10);
+  const fullContractRisk = Math.round(stopPoints * multiplier);
+  const exactContracts = riskDollars / fullContractRisk;
+  const fittedContracts = Math.floor(exactContracts);
+
+  // Micro calculation (e.g. MNQ is $2/pt vs NQ $20/pt)
+  const isMicroAsset = multiplier <= 5;
+  const microMultiplier = isMicroAsset ? multiplier : multiplier / 10;
+  const microCostPerContract = stopPoints * microMultiplier;
+  const fittedMicroContracts = Math.max(1, Math.floor(riskDollars / microCostPerContract));
+
+  if (fittedContracts >= 1) {
+    // Fits at least 1 full contract within the dollar risk
+    const recommendedContracts = fittedContracts;
+    const actualRiskDollars = Math.round(recommendedContracts * fullContractRisk);
+    const microContracts = Math.round(exactContracts * 10);
+
     const targetDollars =
       targetPoints && targetPoints > 0
-        ? Math.round(contracts * targetPoints * multiplier)
+        ? Math.round(recommendedContracts * targetPoints * multiplier)
         : undefined;
+
     const riskRewardRatio =
       targetPoints && stopPoints > 0 ? Number((targetPoints / stopPoints).toFixed(2)) : undefined;
 
     return {
-      recommendedContracts: contracts,
-      exactContracts: contracts,
+      recommendedContracts,
+      exactContracts: Number(exactContracts.toFixed(2)),
       microContracts,
       actualRiskDollars,
       stopPoints,
-      riskDollars: actualRiskDollars,
+      riskDollars,
       targetPoints,
       targetDollars,
       riskRewardRatio,
-      exceedsBudget: riskDollars > 0 && actualRiskDollars > riskDollars,
+      requiresMicro: false,
+      fullContractRisk,
     };
   }
 
-  if (riskDollars <= 0) {
-    return {
-      recommendedContracts: 0,
-      exactContracts: 0,
-      microContracts: 0,
-      actualRiskDollars: 0,
-      stopPoints,
-      riskDollars,
-      exceedsBudget: false,
-    };
-  }
-
-  const exactContracts = riskDollars / (stopPoints * multiplier);
-  // Fitted contracts: floor to avoid exceeding risk budget
-  const fittedContracts = Math.floor(exactContracts);
-  const microContracts = Math.max(1, Math.floor(riskDollars / (stopPoints * (multiplier / 10))));
-  const recommendedContracts = fittedContracts > 0 ? fittedContracts : 0;
-  const actualRiskDollars =
-    recommendedContracts > 0
-      ? Math.round(recommendedContracts * stopPoints * multiplier)
-      : Math.round(microContracts * stopPoints * (multiplier / 10));
-
+  // 1 full contract exceeds riskDollars (e.g. $500 risk with 100 pts stop on NQ = $2,000)
+  // Sized safely in Micro contracts to never exceed the user's max dollar risk!
+  const actualRiskDollars = Math.round(fittedMicroContracts * microCostPerContract);
   const targetDollars =
     targetPoints && targetPoints > 0
-      ? Math.round(
-          (recommendedContracts > 0 ? recommendedContracts : microContracts / 10) *
-            targetPoints *
-            multiplier,
-        )
+      ? Math.round(fittedMicroContracts * targetPoints * microMultiplier)
       : undefined;
 
   const riskRewardRatio =
     targetPoints && stopPoints > 0 ? Number((targetPoints / stopPoints).toFixed(2)) : undefined;
 
   return {
-    recommendedContracts,
+    recommendedContracts: 0,
     exactContracts: Number(exactContracts.toFixed(2)),
-    microContracts,
+    microContracts: fittedMicroContracts,
     actualRiskDollars,
     stopPoints,
     riskDollars,
     targetPoints,
     targetDollars,
     riskRewardRatio,
-    exceedsBudget: exactContracts < 1,
+    requiresMicro: true,
+    fullContractRisk,
   };
 }
