@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Download, ImageIcon } from "lucide-react";
+import { Download, ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { exportPdf, exportPng, type ReviewDocument } from "@/lib/export-review";
@@ -22,10 +22,10 @@ export function ReviewExport({
 }) {
   const privateMode = usePrivacy();
   const concealed = privateMode && containsFinancialData;
-  const [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [files, setFiles] = useState<Preview[]>([]),
-    [open, setOpen] = useState(false);
+  const [busyType, setBusyType] = useState<"pdf" | "png" | null>(null);
+  const [error, setError] = useState("");
+  const [files, setFiles] = useState<Preview[]>([]);
+  const [open, setOpen] = useState(false);
   const urls = useRef<string[]>([]);
   const [previewDocument, setPreviewDocument] = useState<ReviewDocument | null>(null);
   useEffect(
@@ -35,7 +35,7 @@ export function ReviewExport({
     [],
   );
   async function run(image: boolean) {
-    setBusy(true);
+    setBusyType(image ? "png" : "pdf");
     setError("");
     try {
       const result = await (image ? exportPng : exportPdf)(document);
@@ -52,9 +52,10 @@ export function ReviewExport({
     } catch (e) {
       setError(e instanceof Error ? e.message : "Export failed.");
     } finally {
-      setBusy(false);
+      setBusyType(null);
     }
   }
+  const isBusy = busyType !== null;
   return (
     <div className={cn("space-y-2", className)}>
       <div className="flex flex-wrap gap-2">
@@ -62,21 +63,23 @@ export function ReviewExport({
           type="button"
           size="sm"
           variant="outline"
-          disabled={busy || concealed}
+          disabled={isBusy || concealed}
           onClick={() => void run(false)}
+          title="Export review as PDF document"
         >
-          <Download />
-          Export PDF
+          {busyType === "pdf" ? <Loader2 className="animate-spin" /> : <Download />}
+          {busyType === "pdf" ? "Exporting PDF…" : "Export PDF"}
         </Button>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          disabled={busy || concealed}
+          disabled={isBusy || concealed}
           onClick={() => void run(true)}
+          title="Export review as PNG image"
         >
-          <ImageIcon />
-          Export PNG
+          {busyType === "png" ? <Loader2 className="animate-spin" /> : <ImageIcon />}
+          {busyType === "png" ? "Exporting PNG…" : "Export PNG"}
         </Button>
       </div>
       {concealed && (

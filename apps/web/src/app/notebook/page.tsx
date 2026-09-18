@@ -298,6 +298,7 @@ function NoteEditor({ note, onChanged }: { note: NoteRow; onChanged: () => void 
             variant="outline"
             size="sm"
             onClick={() => setMode(mode === "preview" ? "edit" : "preview")}
+            title={mode === "preview" ? "Switch to edit mode" : "Switch to preview mode"}
           >
             {mode === "preview" ? "Edit" : "Preview"}
           </Button>

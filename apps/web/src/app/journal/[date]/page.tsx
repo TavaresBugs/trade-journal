@@ -3,7 +3,7 @@ import { AiNotice } from "@/components/ai-notice";
 
 import Link from "next/link";
 import { Suspense, use, useEffect, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import type { IntradayPoint, TradeMetrics } from "@luxalgo/journal-core";
 import { EquityArea } from "@/components/charts/equity-area";
 import { FilterBar, useFilters } from "@/components/filter-bar";
@@ -217,6 +217,7 @@ function JournalDay({ date }: { date: string }) {
                 size="sm"
                 disabled={!data}
                 onClick={() => setNoteMode(noteMode === "preview" ? "edit" : "preview")}
+                title={noteMode === "preview" ? "Switch to edit mode" : "Switch to preview mode"}
               >
                 {noteMode === "preview" ? "Edit" : "Preview"}
               </Button>
@@ -236,8 +237,9 @@ function JournalDay({ date }: { date: string }) {
                 size="sm"
                 onClick={generateRecap}
                 disabled={aiBusy || !data}
+                title="Generate AI summary of the trading session"
               >
-                <Sparkles />
+                {aiBusy ? <Loader2 className="animate-spin" /> : <Sparkles />}
                 {aiBusy ? "Writing…" : "AI recap"}
               </Button>
             </div>

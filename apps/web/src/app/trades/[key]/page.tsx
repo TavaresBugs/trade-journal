@@ -123,11 +123,12 @@ function TradeView({ tradeKey }: { tradeKey: string }) {
   const runningPnl = (() => {
     let exits: { executionId: string; grossPnl: number; quantity: number }[] = [];
     try {
-      exits = (JSON.parse(trade.exitsJson || "[]") as {
-        executionId: string;
-        grossPnl: number;
-        quantity: number;
-      }[]) ?? [];
+      exits =
+        (JSON.parse(trade.exitsJson || "[]") as {
+          executionId: string;
+          grossPnl: number;
+          quantity: number;
+        }[]) ?? [];
     } catch {
       exits = [];
     }
@@ -476,6 +477,7 @@ function AnnotationsCard({
                 variant="outline"
                 size="sm"
                 onClick={() => setNoteMode(noteMode === "preview" ? "edit" : "preview")}
+                title={noteMode === "preview" ? "Switch to edit mode" : "Switch to preview mode"}
               >
                 {noteMode === "preview" ? "Edit" : "Preview"}
               </Button>

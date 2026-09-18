@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Paperclip, Save } from "lucide-react";
+import { useRef, useState, useCallback, useEffect } from "react";
+import { Paperclip, Save, Check, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReviewExport } from "@/components/review-export";
 import { AttachmentGrid, type AttachmentItem } from "@/components/attachments";
@@ -78,6 +78,44 @@ export function NoteFooter({
   };
 
   const isSaving = savingStatus === "Saving…";
+  const isError = Boolean(savingStatus && savingStatus.startsWith("Not saved"));
+  const [savedFeedback, setSavedFeedback] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerSavedFeedback = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setSavedFeedback(true);
+    timerRef.current = setTimeout(() => {
+      setSavedFeedback(false);
+    }, 2500);
+  }, []);
+
+  useEffect(() => {
+    if (savingStatus === "Saved") {
+      triggerSavedFeedback();
+    } else if (savingStatus === "Saving…") {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setSavedFeedback(false);
+    }
+  }, [savingStatus, triggerSavedFeedback]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const handleManualSave = async () => {
+    if (isSaving) return;
+    try {
+      await onSave();
+      triggerSavedFeedback();
+    } catch {
+      // Caught or reflected via savingStatus
+    }
+  };
+
+  const isSaved = !isSaving && savedFeedback;
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -93,26 +131,53 @@ export function NoteFooter({
           variant="outline"
           disabled={busy}
           onClick={() => input.current?.click()}
+          title="Upload attachments (images or PDF)"
         >
-          <Paperclip />
+          {busy ? <Loader2 className="animate-spin" /> : <Paperclip />}
           {busy ? "Uploading…" : "Add attachment"}
         </Button>
         <Button
           type="button"
           size="sm"
-          variant="outline"
+          variant={isError ? "destructive" : "outline"}
           disabled={saveDisabled || isSaving}
-          onClick={() => void onSave()}
+          onClick={handleManualSave}
+          title={
+            isSaved
+              ? "Note is saved to local journal"
+              : isSaving
+                ? "Saving note…"
+                : isError
+                  ? "Click to retry saving"
+                  : "Save note (auto-saves while typing)"
+          }
+          className={cn(
+            "transition-all duration-200",
+            isSaved && "border-profit/40 text-profit bg-profit/10 hover:bg-profit/15",
+            isError &&
+              "border-destructive text-destructive bg-destructive/10 hover:bg-destructive/15",
+          )}
         >
-          <Save />
-          {isSaving ? "Saving…" : "Save note"}
-        </Button>
-        {savingStatus && !isSaving && (
-          <span role="status" className="text-xs text-muted-foreground">
-            {savingStatus}
+          {isSaving ? (
+            <Loader2 className="animate-spin" />
+          ) : isSaved ? (
+            <Check className="text-profit animate-in zoom-in-50 duration-200" />
+          ) : isError ? (
+            <AlertCircle />
+          ) : (
+            <Save />
+          )}
+          <span>
+            {isSaving ? "Saving…" : isSaved ? "Saved" : isError ? "Retry save" : "Save note"}
           </span>
-        )}
+        </Button>
       </div>
+      {isError && (
+        <p role="alert" className="text-xs text-destructive flex items-center gap-1.5">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          <span>{savingStatus}</span>
+        </p>
+      )}
       <p className="text-xs text-muted-foreground">Images or PDF · up to 8 MB each</p>
       <input
         ref={input}
