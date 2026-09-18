@@ -70,16 +70,17 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
           </p>
         </CardHeader>
         <CardContent className="space-y-3.5">
+          {/* 1º: EVAL PASS RATE (%) */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Average payout ($)
+              Eval pass rate (%)
             </label>
             <Input
               type="number"
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={avgPayout || ""}
-              placeholder="2000"
-              onChange={(e) => onChange({ avgPayout: Number(e.target.value) })}
+              value={passRate || ""}
+              placeholder="40"
+              onChange={(e) => onChange({ passRate: Number(e.target.value) })}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   (e.target as HTMLInputElement).blur();
@@ -88,6 +89,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
             />
           </div>
 
+          {/* 2º: PAYOUT CHANCE (%) */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Payout chance (%)
@@ -106,6 +108,26 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
             />
           </div>
 
+          {/* 3º: AVERAGE PAYOUT ($) */}
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Average payout ($)
+            </label>
+            <Input
+              type="number"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={avgPayout || ""}
+              placeholder="2000"
+              onChange={(e) => onChange({ avgPayout: Number(e.target.value) })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
+          </div>
+
+          {/* 4º: EVAL COST ($) */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Eval cost ($)
@@ -116,24 +138,6 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
               value={cost || ""}
               placeholder="89"
               onChange={(e) => onChange({ cost: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
-
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Eval pass rate (%)
-            </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={passRate || ""}
-              placeholder="40"
-              onChange={(e) => onChange({ passRate: Number(e.target.value) })}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   (e.target as HTMLInputElement).blur();
