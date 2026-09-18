@@ -69,3 +69,22 @@ describe("attachment type checks", () => {
     expect(attachmentMime(new Uint8Array())).toBeNull();
   });
 });
+
+describe("journal calendar queries", () => {
+  it("returns dates with written notes or day attachments", async () => {
+    const { getJournaledDatesForMonth } = await import("../src/server/journal");
+    const { db, journalDays } = await import("../src/db");
+    const { eq } = await import("drizzle-orm");
+    const testDate = "2026-05-15";
+
+    db.insert(journalDays)
+      .values({ date: testDate, note: "Test journal entry", updatedAt: new Date().toISOString() })
+      .run();
+
+    const dates = getJournaledDatesForMonth(2026, 5);
+    expect(dates).toContain(testDate);
+
+    // Clean up
+    db.delete(journalDays).where(eq(journalDays.date, testDate)).run();
+  });
+});

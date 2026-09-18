@@ -19,6 +19,7 @@ import { accounts, db, playbooks } from "@/db";
 import { handler, ok } from "@/server/api";
 import { getTimeZone } from "@/server/settings";
 import { queryTrades, type TradeFilters } from "@/server/trades-query";
+import { getJournaledDatesForMonth } from "@/server/journal";
 
 /** The entire dashboard in one request. */
 export const GET = handler(async (request: Request) => {
@@ -51,6 +52,7 @@ export const GET = handler(async (request: Request) => {
     dailyCumulative: dailyCumulativeFromDays(days),
     equity,
     calendar: calendarMonthFromDays(days, calendarYear, calendarMonthNum),
+    journalDays: getJournaledDatesForMonth(calendarYear, calendarMonthNum),
     buckets: {
       symbol: bySymbol(trades).slice(0, 20),
       tag: byTag(trades),

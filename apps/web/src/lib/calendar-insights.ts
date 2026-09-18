@@ -95,6 +95,7 @@ export interface CalendarResponse {
   timeZone: string;
   currencies: string[];
   scope: AnalysisFilters & { from: string; to: string };
+  journalDays?: string[];
 }
 
 /** Date drill-downs must not reuse the opening-weekday filter for closing days. */

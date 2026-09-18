@@ -57,6 +57,7 @@ interface StatsPayload {
   days: DayStats[];
   dailyCumulative: EquityPoint[];
   calendar: CalendarMonth;
+  journalDays?: string[];
   buckets: Record<"symbol" | "weekday" | "hour" | "duration" | "direction", Bucket[]>;
   openPositions: {
     key: string;
@@ -443,7 +444,7 @@ function DashboardContent({
                   </Link>
                 </CardHeader>
                 <CardContent>
-                  <CalendarPnl calendar={data.calendar} />
+                  <CalendarPnl calendar={data.calendar} journalDays={data.journalDays} />
                 </CardContent>
               </Card>
             ),

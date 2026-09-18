@@ -705,6 +705,7 @@ body.dashboard-is-dragging .journal-hover-card {
   font-size: clamp(8px, 2.8cqi, 11px);
 }
 .journal-calendar-day-link {
+  --calendar-outline: var(--muted-foreground);
   outline: 2px solid transparent;
   outline-offset: -2px;
   transition:
@@ -721,6 +722,10 @@ body.dashboard-is-dragging .journal-hover-card {
 .journal-calendar-day-link[data-performance="neutral"] {
   --calendar-outline: var(--muted-foreground);
 }
+.journal-calendar-day-link[data-performance="journal"] {
+  --calendar-outline: var(--brand);
+}
+.journal-calendar-day-link[data-today="true"],
 .journal-calendar-day-link:hover,
 .journal-calendar-day-link:focus-visible {
   outline-color: var(--calendar-outline);
