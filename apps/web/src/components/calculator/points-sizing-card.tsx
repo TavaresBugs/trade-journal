@@ -1,13 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Copy, Shield, Sparkles, Sliders } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import {
   QUANT_INSTRUMENTS,
-  EXECUTION_PRESETS,
   calculatePositionSize,
   type QuantInstrument,
-  type ExecutionMode,
 } from "@luxalgo/journal-core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { OptionSelect } from "@/components/ui/option-select";
 import { HoverHint } from "@/components/ui/tooltip";
 import { MonetaryValue } from "@/components/privacy";
-import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
 
 interface PointsSizingCardProps {
@@ -24,7 +21,7 @@ interface PointsSizingCardProps {
 }
 
 export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
-  const { mode, instrumentId, stopPoints, riskDollars, targetPoints } = values;
+  const { instrumentId, stopPoints, riskDollars, targetPoints } = values;
   const [copied, setCopied] = useState(false);
 
   const instrument: QuantInstrument = useMemo(() => {
@@ -38,40 +35,32 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
     );
   }, [instrumentId]);
 
-  const sizing = useMemo(() => {
-    return calculatePositionSize(riskDollars, stopPoints, instrument.multiplier, targetPoints);
-  }, [riskDollars, stopPoints, instrument.multiplier, targetPoints]);
+  // If user leaves target points empty or 0, fallback to a 2:1 (2R) hypothetical target
+  const isDefaultTarget = !targetPoints || targetPoints <= 0;
+  const effectiveTargetPoints = !isDefaultTarget
+    ? targetPoints
+    : stopPoints > 0
+      ? Number((stopPoints * 2).toFixed(2))
+      : 0;
 
-  const handleSelectMode = (newMode: ExecutionMode) => {
-    if (newMode === "eval") {
-      const preset = EXECUTION_PRESETS.eval;
-      onChange({
-        mode: "eval",
-        riskDollars: preset.riskDollars,
-        stopPoints: preset.stopPoints,
-        targetPoints: preset.targetPoints,
-        instrumentId: "NQ",
-      });
-    } else if (newMode === "funded") {
-      const preset = EXECUTION_PRESETS.funded;
-      onChange({
-        mode: "funded",
-        riskDollars: preset.riskDollars,
-        stopPoints: preset.stopPoints,
-        targetPoints: preset.targetPoints,
-        instrumentId: "NQ",
-      });
-    } else {
-      onChange({ mode: "custom" });
-    }
-  };
+  const sizing = useMemo(() => {
+    return calculatePositionSize(
+      riskDollars,
+      stopPoints,
+      instrument.multiplier,
+      effectiveTargetPoints,
+    );
+  }, [riskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints]);
 
   const handleCopySizing = async () => {
+    const targetLabel = isDefaultTarget
+      ? `TP (2:1): ${effectiveTargetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`
+      : `TP: ${targetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`;
+
     const text = `${instrument.id}: ${sizing.recommendedContracts} contract${
       sizing.recommendedContracts > 1 ? "s" : ""
-    } | SL: ${stopPoints} pts (-$${sizing.actualRiskDollars.toLocaleString(
-      "en-US",
-    )}) | TP: ${targetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`;
+    } | SL: ${stopPoints} pts (-$${sizing.actualRiskDollars.toLocaleString("en-US")}) | ${targetLabel}`;
+
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -85,141 +74,16 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
     <Card className="flex flex-col justify-between">
       <div>
         <CardHeader className="pb-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
-                Position & Risk Sizing Engine
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                JJ Simon execution rules: determine exact contracts from chart stop and dollar risk.
-              </p>
-            </div>
-
-            {/* PRESET PILLS */}
-            <div className="inline-flex rounded-lg border border-border/70 bg-muted/40 p-0.5 text-xs">
-              <button
-                type="button"
-                onClick={() => handleSelectMode("eval")}
-                className={cn(
-                  "flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition-colors",
-                  mode === "eval"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Sparkles className="h-3 w-3 text-brand" />
-                Eval (50k)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectMode("funded")}
-                className={cn(
-                  "flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition-colors",
-                  mode === "funded"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Shield className="h-3 w-3 text-profit" />
-                Funded
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectMode("custom")}
-                className={cn(
-                  "flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition-colors",
-                  mode === "custom"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Sliders className="h-3 w-3" />
-                Custom
-              </button>
-            </div>
-          </div>
+          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+            Position & Risk Sizing
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Determine exact contracts from your technical chart stop and dollar risk.
+          </p>
         </CardHeader>
 
         <CardContent className="space-y-3.5">
-          {/* ROW 1: STOP LOSS (POINTS) */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Technical stop loss (pts)
-              </label>
-              <div className="mt-1 flex items-center gap-1">
-                {[10, 12.5, 25].map((pts) => (
-                  <button
-                    key={pts}
-                    type="button"
-                    onClick={() => onChange({ stopPoints: pts, mode: "custom" })}
-                    className={cn(
-                      "rounded border px-1.5 py-0.2 text-[10px] font-medium transition-colors",
-                      stopPoints === pts
-                        ? "border-brand/60 bg-brand/10 text-brand"
-                        : "border-border/60 text-muted-foreground hover:bg-accent hover:text-foreground",
-                    )}
-                  >
-                    {pts} pts
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Input
-              type="number"
-              step={instrument.tickSize}
-              className="h-9 w-36 text-right font-mono tnum"
-              value={stopPoints}
-              onChange={(e) => onChange({ stopPoints: Number(e.target.value), mode: "custom" })}
-            />
-          </div>
-
-          {/* ROW 2: TAKE PROFIT (POINTS) */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Take profit target (pts)
-              </label>
-              <div className="mt-1 flex items-center gap-1">
-                {[19, 38, 70].map((pts) => (
-                  <button
-                    key={pts}
-                    type="button"
-                    onClick={() => onChange({ targetPoints: pts, mode: "custom" })}
-                    className={cn(
-                      "rounded border px-1.5 py-0.2 text-[10px] font-medium transition-colors",
-                      targetPoints === pts
-                        ? "border-profit/60 bg-profit/10 text-profit"
-                        : "border-border/60 text-muted-foreground hover:bg-accent hover:text-foreground",
-                    )}
-                  >
-                    {pts} pts
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Input
-              type="number"
-              step={instrument.tickSize}
-              className="h-9 w-36 text-right font-mono tnum"
-              value={targetPoints}
-              onChange={(e) => onChange({ targetPoints: Number(e.target.value), mode: "custom" })}
-            />
-          </div>
-
-          {/* ROW 3: MAX DOLLAR RISK & INSTRUMENT */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Max dollar risk ($)
-            </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-right font-mono tnum"
-              value={riskDollars}
-              onChange={(e) => onChange({ riskDollars: Number(e.target.value), mode: "custom" })}
-            />
-          </div>
-
+          {/* 1º: MARKET INSTRUMENT */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Market instrument
@@ -237,6 +101,53 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
                 ))}
               </OptionSelect>
             </div>
+          </div>
+
+          {/* 2º: MAX DOLLAR RISK */}
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Max dollar risk ($)
+            </label>
+            <Input
+              type="number"
+              className="h-9 w-36 text-right font-mono tnum"
+              value={riskDollars || ""}
+              placeholder="500"
+              onChange={(e) => onChange({ riskDollars: Number(e.target.value) })}
+            />
+          </div>
+
+          {/* 3º: STOP LOSS (PTS) */}
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Stop loss (pts)
+            </label>
+            <Input
+              type="number"
+              step={instrument.tickSize}
+              className="h-9 w-36 text-right font-mono tnum"
+              value={stopPoints || ""}
+              placeholder="20.00"
+              onChange={(e) => onChange({ stopPoints: Number(e.target.value) })}
+            />
+          </div>
+
+          {/* 4º: TAKE PROFIT TARGET (OPTIONAL) */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Take profit target (pts)
+              </label>
+              <span className="text-[10px] text-muted-foreground/70">Optional · 2:1 default</span>
+            </div>
+            <Input
+              type="number"
+              step={instrument.tickSize}
+              className="h-9 w-36 text-right font-mono tnum"
+              value={targetPoints || ""}
+              placeholder={stopPoints > 0 ? (stopPoints * 2).toFixed(2) : "Optional"}
+              onChange={(e) => onChange({ targetPoints: Number(e.target.value) })}
+            />
           </div>
         </CardContent>
       </div>
@@ -290,7 +201,12 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               </span>
             </div>
             <div>
-              <span className="block text-[11px] text-muted-foreground">Target profit</span>
+              <span className="block text-[11px] text-muted-foreground">
+                Target profit{" "}
+                {isDefaultTarget && (
+                  <span className="text-[10px] text-muted-foreground">(2:1)</span>
+                )}
+              </span>
               <span className="font-mono font-semibold text-profit">
                 <MonetaryValue>
                   +${(sizing.targetDollars ?? 0).toLocaleString("en-US")}
@@ -300,7 +216,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <div>
               <span className="block text-[11px] text-muted-foreground">Risk : Reward</span>
               <span className="font-mono font-semibold text-foreground">
-                1 : {sizing.riskRewardRatio ?? 0}
+                1 : {sizing.riskRewardRatio ?? (isDefaultTarget && stopPoints > 0 ? "2.00" : "0")}
               </span>
             </div>
           </div>
