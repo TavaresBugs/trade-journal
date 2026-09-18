@@ -2,11 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { getBinomialDistribution, PROP_FIRM_PRESETS } from "@luxalgo/journal-core";
+import { getBinomialDistribution } from "@luxalgo/journal-core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { OptionSelect } from "@/components/ui/option-select";
 import { HoverHint } from "@/components/ui/tooltip";
 import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
@@ -18,14 +17,10 @@ interface BinomialOddsCardProps {
 }
 
 export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
-  const { firm, passRate, bankroll } = values;
+  const { passRate, bankroll } = values;
   const evalCost = values.evalCost ?? 89;
   const [copied, setCopied] = useState(false);
   const [distributionMode, setDistributionMode] = useState<"cumulative" | "exact">("cumulative");
-
-  const currentPreset = useMemo(() => {
-    return PROP_FIRM_PRESETS.find((p) => p.name === firm) ?? PROP_FIRM_PRESETS[0]!;
-  }, [firm]);
 
   // Cap at 30 attempts for binomial numerical stability and responsive rendering
   const affordableEvals = Math.max(1, Math.floor(bankroll / (evalCost || 1)));
@@ -36,7 +31,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
   }, [budgetEvalCount, passRate]);
 
   const handleCopyAnalysis = async () => {
-    const text = `Binomial Pass Odds (${currentPreset.name}): Bankroll: $${bankroll.toLocaleString("en-US")} | Eval Cost: $${evalCost} | Affordable Evals: ${affordableEvals} | Pass ≥1 Eval: ${binomialData.atLeastOne.toFixed(2)}% | Risk of Ruin (0 passes): ${binomialData.riskOfRuin.toFixed(2)}% | Base Pass Rate: ${passRate}%`;
+    const text = `Binomial Pass Odds: Bankroll: $${bankroll.toLocaleString("en-US")} | Eval Cost: $${evalCost} | Affordable Evals: ${affordableEvals} | Pass ≥1 Eval: ${binomialData.atLeastOne.toFixed(2)}% | Risk of Ruin (0 passes): ${binomialData.riskOfRuin.toFixed(2)}% | Base Pass Rate: ${passRate}%`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -55,9 +50,11 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
               Eval Budget & Pass Odds
             </CardTitle>
-            <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-              Binomial Model
-            </span>
+            {evalCost > 0 && (
+              <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
+                ${evalCost} eval cost
+              </span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">
             Calculate evaluation capacity from bankroll and the cumulative binomial probability of
@@ -104,50 +101,11 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             />
           </div>
 
-          {/* 2º: FIRM PRESET */}
+          {/* 2º: COST PER EVAL ($) */}
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Firm preset
-              </label>
-              <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-                ${currentPreset.cost}/eval
-              </span>
-            </div>
-            <div className="w-36">
-              <OptionSelect
-                value={firm}
-                onValueChange={(val) => {
-                  const preset = PROP_FIRM_PRESETS.find((p) => p.name === val);
-                  onChange({
-                    firm: val,
-                    evalCost: preset?.cost ?? evalCost,
-                    passRate: preset?.defaultPassRate ?? passRate,
-                  });
-                }}
-                className="relative h-9 justify-center text-xs font-mono font-semibold [&>span]:text-center [&>svg]:absolute [&>svg]:right-2.5"
-              >
-                {PROP_FIRM_PRESETS.map((p) => (
-                  <option key={p.id} value={p.name}>
-                    {p.name}
-                  </option>
-                ))}
-              </OptionSelect>
-            </div>
-          </div>
-
-          {/* 3º: COST PER EVAL ($) */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Cost per eval ($)
-              </label>
-              {currentPreset && evalCost !== currentPreset.cost && (
-                <span className="h-5 inline-flex items-center justify-center rounded border border-amber-500/40 bg-amber-500/10 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-amber-500">
-                  Custom
-                </span>
-              )}
-            </div>
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Cost per eval ($)
+            </label>
             <Input
               type="number"
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -162,7 +120,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             />
           </div>
 
-          {/* 4º: PASS RATE (%) */}
+          {/* 3º: PASS RATE (%) */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Pass rate (%)
@@ -181,7 +139,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             />
           </div>
 
-          {/* 5º: AFFORDABLE EVALS */}
+          {/* 4º: AFFORDABLE EVALS */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Affordable evals

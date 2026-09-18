@@ -4,13 +4,11 @@ import { useState } from "react";
 import { Check, Copy, Loader2, Play } from "lucide-react";
 import {
   runReturnsSimulation,
-  PROP_FIRM_PRESETS,
   type SimulationOutcome,
 } from "@luxalgo/journal-core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { OptionSelect } from "@/components/ui/option-select";
 import { HoverHint } from "@/components/ui/tooltip";
 import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
@@ -29,32 +27,47 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
   const [simResults, setSimResults] = useState<{
     avgPayout: number;
     avgNetProfit: number;
-    outcomes: SimulationOutcome[];
+    sampleOutcomes: SimulationOutcome[];
   }>(() => {
-    const res = runReturnsSimulation(bankroll, evalCost, passRate, payoutChance, avgPayout);
+    const initial = runReturnsSimulation(
+      bankroll,
+      evalCost,
+      passRate,
+      payoutChance,
+      avgPayout,
+      1000,
+    );
     return {
-      avgPayout: res.avgPayoutResult,
-      avgNetProfit: res.avgNetProfit,
-      outcomes: res.sampleOutcomes,
+      avgPayout: initial.avgPayoutResult,
+      avgNetProfit: initial.avgNetProfit,
+      sampleOutcomes: initial.sampleOutcomes,
     };
   });
 
   const handleRunSimulation = () => {
     setIsSimulating(true);
     setTimeout(() => {
-      const res = runReturnsSimulation(bankroll, evalCost, passRate, payoutChance, avgPayout);
+      const results = runReturnsSimulation(
+        bankroll,
+        evalCost,
+        passRate,
+        payoutChance,
+        avgPayout,
+        1000,
+      );
       setSimResults({
-        avgPayout: res.avgPayoutResult,
-        avgNetProfit: res.avgNetProfit,
-        outcomes: res.sampleOutcomes,
+        avgPayout: results.avgPayoutResult,
+        avgNetProfit: results.avgNetProfit,
+        sampleOutcomes: results.sampleOutcomes,
       });
       setIsSimulating(false);
-    }, 120);
+    }, 150);
   };
 
   const handleCopySimulation = async () => {
-    const roiFormatted =
-      bankroll > 0 ? `${((simResults.avgNetProfit / bankroll) * 100).toFixed(1)}%` : "0%";
+    const roi =
+      bankroll > 0 ? Math.round((simResults.avgNetProfit / bankroll) * 100) : 0;
+    const roiFormatted = roi >= 0 ? `+${roi}%` : `${roi}%`;
     const netFormatted =
       simResults.avgNetProfit >= 0
         ? `+$${simResults.avgNetProfit.toLocaleString("en-US")}`
@@ -70,7 +83,6 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
     }
   };
 
-  const currentPreset = PROP_FIRM_PRESETS.find((p) => p.cost === evalCost);
   const numAttempts = Math.max(1, Math.floor(bankroll / (evalCost || 1)));
 
   return (
@@ -81,9 +93,11 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
               Returns Simulator
             </CardTitle>
-            <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-              Monte Carlo · 1,000 Runs
-            </span>
+            {evalCost > 0 && (
+              <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
+                ${evalCost} eval cost
+              </span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">
             Simulate 1,000 evaluation cycles based on your bankroll, qualification, and payout
@@ -130,52 +144,11 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             />
           </div>
 
-          {/* 2º: FIRM PRESET */}
+          {/* 2º: COST PER EVAL ($) */}
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Firm preset
-              </label>
-              <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-                ${currentPreset ? currentPreset.cost : evalCost}/eval
-              </span>
-            </div>
-            <div className="w-36">
-              <OptionSelect
-                value={currentPreset ? String(currentPreset.cost) : "custom"}
-                onValueChange={(val) => {
-                  if (val === "custom") return;
-                  const cost = Number(val);
-                  const preset = PROP_FIRM_PRESETS.find((p) => p.cost === cost);
-                  onChange({
-                    evalCost: cost,
-                    passRate: preset?.defaultPassRate ?? passRate,
-                  });
-                }}
-                className="relative h-9 justify-center text-xs font-mono font-semibold [&>span]:text-center [&>svg]:absolute [&>svg]:right-2.5"
-              >
-                {!currentPreset && <option value="custom">Custom (${evalCost})</option>}
-                {PROP_FIRM_PRESETS.map((p) => (
-                  <option key={p.id} value={String(p.cost)}>
-                    {p.name}
-                  </option>
-                ))}
-              </OptionSelect>
-            </div>
-          </div>
-
-          {/* 3º: COST PER EVAL ($) */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Cost per eval ($)
-              </label>
-              {!currentPreset && (
-                <span className="h-5 inline-flex items-center justify-center rounded border border-amber-500/40 bg-amber-500/10 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-amber-500">
-                  Custom
-                </span>
-              )}
-            </div>
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Cost per eval ($)
+            </label>
             <Input
               type="number"
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -351,10 +324,10 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
           <div className="mt-3 border-t border-border/40 pt-2.5">
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span className="uppercase tracking-wider">Sample cycle outcomes</span>
-              <span className="font-mono">{simResults.outcomes.length} attempts</span>
+              <span className="font-mono">{simResults.sampleOutcomes.length} attempts</span>
             </div>
             <div className="mt-2 max-h-[180px] space-y-1.5 overflow-y-auto pr-1 text-xs font-mono tnum">
-              {simResults.outcomes.map((out, idx) => (
+              {simResults.sampleOutcomes.map((out, idx) => (
                 <div
                   key={idx}
                   className="flex items-center justify-between border-b border-border/25 pb-1 last:border-0 last:pb-0"
