@@ -186,7 +186,9 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             >
               {binomialData.atLeastOne.toFixed(2)}%
             </span>
-            <HoverHint content={`Cumulative probability of passing 1 or more funded accounts across your ${budgetEvalCount} attempts`}>
+            <HoverHint
+              content={`Cumulative probability of passing 1 or more funded accounts across your ${budgetEvalCount} attempts`}
+            >
               <span className="cursor-help text-sm font-medium text-muted-foreground underline decoration-muted-foreground/30 underline-offset-2">
                 chance to pass at least 1 eval
               </span>
@@ -320,9 +322,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
                         <span
                           className={cn(
                             "truncate text-xs",
-                            isRuin
-                              ? "text-muted-foreground"
-                              : "text-foreground font-medium",
+                            isRuin ? "text-muted-foreground" : "text-foreground font-medium",
                           )}
                         >
                           {label}

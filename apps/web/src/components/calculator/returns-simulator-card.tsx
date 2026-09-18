@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, Loader2, Play } from "lucide-react";
-import {
-  runReturnsSimulation,
-  type SimulationOutcome,
-} from "@luxalgo/journal-core";
+import { runReturnsSimulation, type SimulationOutcome } from "@luxalgo/journal-core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -65,8 +62,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
   };
 
   const handleCopySimulation = async () => {
-    const roi =
-      bankroll > 0 ? Math.round((simResults.avgNetProfit / bankroll) * 100) : 0;
+    const roi = bankroll > 0 ? Math.round((simResults.avgNetProfit / bankroll) * 100) : 0;
     const roiFormatted = roi >= 0 ? `+${roi}%` : `${roi}%`;
     const netFormatted =
       simResults.avgNetProfit >= 0
