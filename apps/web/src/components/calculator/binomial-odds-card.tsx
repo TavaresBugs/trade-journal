@@ -64,7 +64,45 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
         </CardHeader>
 
         <CardContent className="space-y-3.5">
-          {/* 1º: FIRM PRESET */}
+          {/* 1º: BANKROLL ($) */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Bankroll ($)
+              </label>
+              <div className="flex items-center gap-1">
+                {[500, 1000, 2000].map((b) => (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() => onChange({ bankroll: b })}
+                    className={cn(
+                      "rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
+                      bankroll === b
+                        ? "border-border bg-accent text-foreground font-semibold"
+                        : "border-border/60 text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                    )}
+                  >
+                    ${b >= 1000 ? `${b / 1000}k` : b}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Input
+              type="number"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={bankroll || ""}
+              placeholder="500"
+              onChange={(e) => onChange({ bankroll: Number(e.target.value) })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
+          </div>
+
+          {/* 2º: FIRM PRESET */}
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -95,7 +133,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             </div>
           </div>
 
-          {/* 2º: PASS RATE (%) */}
+          {/* 3º: PASS RATE (%) */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Pass rate (%)
@@ -106,44 +144,6 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
               value={passRate || ""}
               placeholder="40"
               onChange={(e) => onChange({ passRate: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
-
-          {/* 3º: BANKROLL ($) */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Bankroll ($)
-              </label>
-              <div className="flex items-center gap-1">
-                {[500, 1000, 2000].map((b) => (
-                  <button
-                    key={b}
-                    type="button"
-                    onClick={() => onChange({ bankroll: b })}
-                    className={cn(
-                      "rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
-                      bankroll === b
-                        ? "border-border bg-accent text-foreground font-semibold"
-                        : "border-border/60 text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                    )}
-                  >
-                    ${b >= 1000 ? `${b / 1000}k` : b}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={bankroll || ""}
-              placeholder="500"
-              onChange={(e) => onChange({ bankroll: Number(e.target.value) })}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   (e.target as HTMLInputElement).blur();
@@ -221,7 +221,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
               </span>
             </div>
             <div>
-              <span className="block text-[11px] text-muted-foreground">Affordable evals</span>
+              <span className="block text-[11px] text-muted-foreground">Eval attempts</span>
               <span className="font-mono font-semibold text-foreground">
                 {affordableEvals} {affordableEvals === 1 ? "eval" : "evals"}
               </span>
@@ -245,34 +245,25 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
           <div className="mt-3 border-t border-border/40 pt-2.5">
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span className="uppercase tracking-wider">Exact pass distribution</span>
-              <span className="font-mono">
-                {budgetEvalCount} {budgetEvalCount === 1 ? "attempt" : "attempts"} (P(X = k))
-              </span>
+              <span className="font-mono">{budgetEvalCount} attempts</span>
             </div>
-            <div className="mt-2 space-y-1.5 text-xs font-mono tnum max-h-52 overflow-y-auto pr-1">
+            <div className="mt-2 space-y-1.5 text-xs font-mono tnum">
               {binomialData.rows.map((row) => (
                 <div
                   key={row.passes}
-                  className="relative flex items-center justify-between overflow-hidden rounded-md border border-border/25 bg-background/50 px-2.5 py-1 text-xs"
+                  className="flex items-center justify-between border-b border-border/25 pb-1 last:border-0 last:pb-0"
                 >
-                  <div
-                    className={cn(
-                      "absolute inset-y-0 left-0 -z-10 transition-all duration-300",
-                      row.passes === 0 ? "bg-loss/20" : "bg-profit/15",
-                    )}
-                    style={{ width: `${Math.min(100, Math.max(1, row.probability))}%` }}
-                  />
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 truncate">
                     <span
                       className={cn(
                         "size-1.5 rounded-full shrink-0",
-                        row.passes === 0 ? "bg-loss" : "bg-profit",
+                        row.passes === 0 ? "bg-loss/70" : "bg-profit",
                       )}
                     />
                     <span
                       className={cn(
-                        "text-xs font-medium font-sans",
-                        row.passes === 0 ? "text-loss" : "text-foreground",
+                        "truncate text-xs",
+                        row.passes === 0 ? "text-muted-foreground" : "text-foreground font-medium",
                       )}
                     >
                       {row.passes === 0
@@ -282,7 +273,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
                   </div>
                   <span
                     className={cn(
-                      "font-mono font-semibold text-xs",
+                      "shrink-0 font-semibold ml-2 font-mono",
                       row.passes === 0 ? "text-loss" : "text-profit",
                     )}
                   >
