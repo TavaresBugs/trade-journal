@@ -44,7 +44,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={avgPayout}
               onChange={(e) => onChange({ avgPayout: Number(e.target.value) })}
             />
@@ -56,7 +56,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={payoutChance}
               onChange={(e) => onChange({ payoutChance: Number(e.target.value) })}
             />
@@ -68,7 +68,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={cost}
               onChange={(e) => onChange({ cost: Number(e.target.value) })}
             />
@@ -80,7 +80,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={passRate}
               onChange={(e) => onChange({ passRate: Number(e.target.value) })}
             />

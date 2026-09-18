@@ -110,7 +110,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={riskDollars || ""}
               placeholder="500"
               onChange={(e) => onChange({ riskDollars: Number(e.target.value) })}
@@ -125,7 +125,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <Input
               type="number"
               step={instrument.tickSize}
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={stopPoints || ""}
               placeholder="20.00"
               onChange={(e) => onChange({ stopPoints: Number(e.target.value) })}
@@ -143,7 +143,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <Input
               type="number"
               step={instrument.tickSize}
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={targetPoints || ""}
               placeholder={stopPoints > 0 ? (stopPoints * 2).toFixed(2) : "Optional"}
               onChange={(e) => onChange({ targetPoints: Number(e.target.value) })}

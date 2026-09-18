@@ -152,7 +152,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             </div>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={bankroll}
               onChange={(e) => onChange({ bankroll: Number(e.target.value) })}
             />
@@ -190,7 +190,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={passRate}
               onChange={(e) => onChange({ passRate: Number(e.target.value) })}
             />
@@ -202,7 +202,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={payoutChance}
               onChange={(e) => onChange({ payoutChance: Number(e.target.value) })}
             />
@@ -214,7 +214,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={avgPayout}
               onChange={(e) => onChange({ avgPayout: Number(e.target.value) })}
             />

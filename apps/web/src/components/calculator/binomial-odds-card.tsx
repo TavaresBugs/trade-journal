@@ -72,7 +72,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={passRate}
               onChange={(e) => onChange({ passRate: Number(e.target.value) })}
             />
@@ -84,7 +84,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={bankroll}
               onChange={(e) => onChange({ bankroll: Number(e.target.value) })}
             />
@@ -96,7 +96,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             </label>
             <Input
               type="number"
-              className="h-9 w-36 text-right font-mono tnum bg-muted/40 cursor-not-allowed opacity-75"
+              className="h-9 w-36 text-center font-mono tnum bg-muted/40 cursor-not-allowed opacity-75 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={budgetEvalCount}
               disabled
             />
