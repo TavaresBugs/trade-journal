@@ -153,6 +153,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
                 }}
                 className="relative h-9 justify-center text-xs font-mono font-semibold [&>span]:text-center [&>svg]:absolute [&>svg]:right-2.5"
               >
+                {!currentPreset && <option value={String(evalCost)}>Custom (${evalCost})</option>}
                 {PROP_FIRM_PRESETS.map((p) => (
                   <option key={p.id} value={String(p.cost)}>
                     {p.name}
