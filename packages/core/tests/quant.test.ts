@@ -86,14 +86,36 @@ describe("quant module (packages/core)", () => {
       expect(sizing.actualRiskDollars).toBe(500);
       expect(sizing.targetDollars).toBe(1400);
       expect(sizing.riskRewardRatio).toBe(2.8);
+      expect(sizing.exceedsBudget).toBe(false);
     });
 
     it("handles arbitrary fractional stops with micro contracts", () => {
-      // $500 risk with 16.5 pts stop on NQ ($20/pt): 500 / (16.5 * 20) = 500 / 330 = 1.515 NQ -> 15 MNQ
+      // $500 risk with 16.5 pts stop on NQ ($20/pt): 500 / (16.5 * 20) = 500 / 330 = 1.515 NQ
+      // Floored to 1 contract so actual risk ($330) never exceeds $500!
       const sizing = calculatePositionSize(500, 16.5, 20);
-      expect(sizing.recommendedContracts).toBe(2);
+      expect(sizing.recommendedContracts).toBe(1);
       expect(sizing.exactContracts).toBe(1.52);
       expect(sizing.microContracts).toBe(15);
+      expect(sizing.actualRiskDollars).toBe(330);
+    });
+
+    it("calculates proportional risk directly when explicit contracts are provided", () => {
+      // 1 NQ with 100 pts stop -> $2,000 risk!
+      const sizing = calculatePositionSize(500, 100, 20, 38, 1);
+      expect(sizing.recommendedContracts).toBe(1);
+      expect(sizing.actualRiskDollars).toBe(2000);
+      expect(sizing.riskDollars).toBe(2000);
+      expect(sizing.targetDollars).toBe(760);
+      expect(sizing.riskRewardRatio).toBe(0.38);
+    });
+
+    it("safely suggests micro contracts when 1 full contract exceeds risk budget", () => {
+      // $500 risk with 100 pts stop on NQ: 1 NQ = $2,000 -> 0 full NQ fit, but 2 MNQ ($400) fit!
+      const sizing = calculatePositionSize(500, 100, 20);
+      expect(sizing.recommendedContracts).toBe(0);
+      expect(sizing.microContracts).toBe(2);
+      expect(sizing.actualRiskDollars).toBe(400);
+      expect(sizing.exceedsBudget).toBe(true);
     });
 
     it("handles zero or invalid inputs safely", () => {

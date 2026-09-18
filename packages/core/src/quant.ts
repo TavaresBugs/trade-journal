@@ -261,10 +261,11 @@ export interface PositionSizeResult {
   targetPoints?: number;
   targetDollars?: number;
   riskRewardRatio?: number;
+  exceedsBudget?: boolean;
 }
 
 /**
- * Calculates recommended contracts based on maximum dollar risk and technical chart stop.
+ * Calculates recommended contracts and dollar risk based on risk, stop points, and optional contracts.
  * Derived from the JJ Simon Execution Engine (Aulas 09, 16, 20, 21, 48).
  */
 export function calculatePositionSize(
@@ -272,8 +273,9 @@ export function calculatePositionSize(
   stopPoints: number,
   multiplier: number = NQ_DOLLARS_PER_POINT,
   targetPoints?: number,
+  explicitContracts?: number,
 ): PositionSizeResult {
-  if (stopPoints <= 0 || multiplier <= 0 || riskDollars <= 0) {
+  if (stopPoints <= 0 || multiplier <= 0) {
     return {
       recommendedContracts: 0,
       exactContracts: 0,
@@ -281,17 +283,65 @@ export function calculatePositionSize(
       actualRiskDollars: 0,
       stopPoints,
       riskDollars,
+      exceedsBudget: false,
+    };
+  }
+
+  // If explicitContracts is provided and > 0, the sizing is anchored on contracts:
+  if (explicitContracts !== undefined && explicitContracts > 0) {
+    const contracts = Math.round(explicitContracts);
+    const actualRiskDollars = Math.round(contracts * stopPoints * multiplier);
+    const microContracts = Math.round(contracts * 10);
+    const targetDollars =
+      targetPoints && targetPoints > 0
+        ? Math.round(contracts * targetPoints * multiplier)
+        : undefined;
+    const riskRewardRatio =
+      targetPoints && stopPoints > 0 ? Number((targetPoints / stopPoints).toFixed(2)) : undefined;
+
+    return {
+      recommendedContracts: contracts,
+      exactContracts: contracts,
+      microContracts,
+      actualRiskDollars,
+      stopPoints,
+      riskDollars: actualRiskDollars,
+      targetPoints,
+      targetDollars,
+      riskRewardRatio,
+      exceedsBudget: riskDollars > 0 && actualRiskDollars > riskDollars,
+    };
+  }
+
+  if (riskDollars <= 0) {
+    return {
+      recommendedContracts: 0,
+      exactContracts: 0,
+      microContracts: 0,
+      actualRiskDollars: 0,
+      stopPoints,
+      riskDollars,
+      exceedsBudget: false,
     };
   }
 
   const exactContracts = riskDollars / (stopPoints * multiplier);
-  const recommendedContracts = Math.max(1, Math.round(exactContracts));
-  const microContracts = Math.max(1, Math.round(exactContracts * 10));
-  const actualRiskDollars = Math.round(recommendedContracts * stopPoints * multiplier);
+  // Fitted contracts: floor to avoid exceeding risk budget
+  const fittedContracts = Math.floor(exactContracts);
+  const microContracts = Math.max(1, Math.floor(riskDollars / (stopPoints * (multiplier / 10))));
+  const recommendedContracts = fittedContracts > 0 ? fittedContracts : 0;
+  const actualRiskDollars =
+    recommendedContracts > 0
+      ? Math.round(recommendedContracts * stopPoints * multiplier)
+      : Math.round(microContracts * stopPoints * (multiplier / 10));
 
   const targetDollars =
     targetPoints && targetPoints > 0
-      ? Math.round(recommendedContracts * targetPoints * multiplier)
+      ? Math.round(
+          (recommendedContracts > 0 ? recommendedContracts : microContracts / 10) *
+            targetPoints *
+            multiplier,
+        )
       : undefined;
 
   const riskRewardRatio =
@@ -307,5 +357,6 @@ export function calculatePositionSize(
     targetPoints,
     targetDollars,
     riskRewardRatio,
+    exceedsBudget: exactContracts < 1,
   };
 }

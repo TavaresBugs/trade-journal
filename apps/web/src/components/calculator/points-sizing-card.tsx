@@ -21,7 +21,14 @@ interface PointsSizingCardProps {
 }
 
 export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
-  const { instrumentId, stopPoints, riskDollars, targetPoints } = values;
+  const {
+    instrumentId,
+    stopPoints,
+    riskDollars,
+    targetPoints,
+    contracts: storedContracts,
+  } = values;
+  const contracts = storedContracts ?? 1;
   const [copied, setCopied] = useState(false);
 
   const instrument: QuantInstrument = useMemo(() => {
@@ -34,6 +41,8 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
       }
     );
   }, [instrumentId]);
+
+  const microName = instrument.id === "NQ" ? "MNQ" : instrument.id === "ES" ? "MES" : null;
 
   // If user leaves target points empty or 0, fallback to a 2:1 (2R) hypothetical target
   const isDefaultTarget = !targetPoints || targetPoints <= 0;
@@ -49,8 +58,44 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
       stopPoints,
       instrument.multiplier,
       effectiveTargetPoints,
+      contracts,
     );
-  }, [riskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints]);
+  }, [riskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints, contracts]);
+
+  const handleInstrumentChange = (val: string) => {
+    const nextInst = QUANT_INSTRUMENTS.find((i) => i.id === val) ?? instrument;
+    const nextRisk =
+      contracts > 0 && stopPoints > 0
+        ? Math.round(contracts * stopPoints * nextInst.multiplier)
+        : riskDollars;
+    onChange({ instrumentId: val, riskDollars: nextRisk });
+  };
+
+  const handleContractsChange = (c: number) => {
+    const nextContracts = Math.max(1, c);
+    const nextRisk =
+      stopPoints > 0 ? Math.round(nextContracts * stopPoints * instrument.multiplier) : riskDollars;
+    onChange({ contracts: nextContracts, riskDollars: nextRisk });
+  };
+
+  const handleStopPointsChange = (pts: number) => {
+    const nextStop = Math.max(0, pts);
+    const nextRisk =
+      contracts > 0 ? Math.round(contracts * nextStop * instrument.multiplier) : riskDollars;
+    onChange({ stopPoints: nextStop, riskDollars: nextRisk });
+  };
+
+  const handleRiskDollarsChange = (dollars: number) => {
+    const nextRisk = Math.max(0, dollars);
+    if (stopPoints > 0 && instrument.multiplier > 0) {
+      const fitted = Math.floor(nextRisk / (stopPoints * instrument.multiplier));
+      if (fitted >= 1) {
+        onChange({ riskDollars: nextRisk, contracts: fitted });
+        return;
+      }
+    }
+    onChange({ riskDollars: nextRisk });
+  };
 
   const handleCopySizing = async () => {
     const targetLabel = isDefaultTarget
@@ -91,7 +136,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <div className="w-36">
               <OptionSelect
                 value={instrumentId}
-                onValueChange={(val) => onChange({ instrumentId: val })}
+                onValueChange={handleInstrumentChange}
                 className="h-9 text-xs"
               >
                 {QUANT_INSTRUMENTS.map((inst) => (
@@ -103,17 +148,19 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             </div>
           </div>
 
-          {/* 2º: MAX DOLLAR RISK */}
+          {/* 2º: CONTRACTS */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Max dollar risk ($)
+              Contracts
             </label>
             <Input
               type="number"
+              min={1}
+              step={1}
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={riskDollars || ""}
-              placeholder="500"
-              onChange={(e) => onChange({ riskDollars: Number(e.target.value) })}
+              value={contracts || ""}
+              placeholder="1"
+              onChange={(e) => handleContractsChange(Number(e.target.value))}
             />
           </div>
 
@@ -128,11 +175,25 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={stopPoints || ""}
               placeholder="20.00"
-              onChange={(e) => onChange({ stopPoints: Number(e.target.value) })}
+              onChange={(e) => handleStopPointsChange(Number(e.target.value))}
             />
           </div>
 
-          {/* 4º: TAKE PROFIT TARGET (OPTIONAL) */}
+          {/* 4º: MAX DOLLAR RISK */}
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Max dollar risk ($)
+            </label>
+            <Input
+              type="number"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={riskDollars || ""}
+              placeholder="500"
+              onChange={(e) => handleRiskDollarsChange(Number(e.target.value))}
+            />
+          </div>
+
+          {/* 5º: TAKE PROFIT TARGET (OPTIONAL) */}
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col">
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -185,12 +246,21 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <span className="text-sm font-medium text-muted-foreground">
               contract{sizing.recommendedContracts > 1 ? "s" : ""}
             </span>
-            {instrument.id === "NQ" && sizing.microContracts > 0 && (
+            {microName && sizing.microContracts > 0 && (
               <span className="ml-auto text-xs text-muted-foreground font-mono">
-                or {sizing.microContracts} MNQ
+                or {sizing.microContracts} {microName}
               </span>
             )}
           </div>
+
+          {/* EXCEEDS BUDGET ALERT IF RELEVANT */}
+          {sizing.exceedsBudget && (
+            <div className="mt-2 rounded border border-loss/30 bg-loss/10 px-2.5 py-1 text-[11px] text-loss">
+              Notice: 1 {instrument.id} requires ${stopPoints * instrument.multiplier} min risk.
+              {microName &&
+                ` Consider ${sizing.microContracts} ${microName} to stay within budget.`}
+            </div>
+          )}
 
           {/* RISK & TARGET SUMMARY */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
