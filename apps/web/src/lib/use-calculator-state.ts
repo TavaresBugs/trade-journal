@@ -29,6 +29,7 @@ export interface CalculatorState {
   };
   budget: {
     firm: string;
+    evalCost: number;
     passRate: number;
     bankroll: number;
   };
@@ -58,6 +59,7 @@ export const DEFAULT_CALCULATOR_STATE: CalculatorState = {
   },
   budget: {
     firm: "Topstep 50K",
+    evalCost: 89,
     passRate: 40,
     bankroll: 500,
   },
@@ -85,11 +87,22 @@ export function parseCalculatorState(stored: string | null): CalculatorState {
       contracts: rawSizing?.contracts ?? DEFAULT_CALCULATOR_STATE.sizing.contracts,
     };
 
+    const rawBudget = parsed.budget;
+    const budget: CalculatorState["budget"] = {
+      firm: rawBudget?.firm ?? DEFAULT_CALCULATOR_STATE.budget.firm,
+      evalCost:
+        typeof rawBudget?.evalCost === "number" && rawBudget.evalCost > 0
+          ? rawBudget.evalCost
+          : DEFAULT_CALCULATOR_STATE.budget.evalCost,
+      passRate: rawBudget?.passRate ?? DEFAULT_CALCULATOR_STATE.budget.passRate,
+      bankroll: rawBudget?.bankroll ?? DEFAULT_CALCULATOR_STATE.budget.bankroll,
+    };
+
     return {
       ev: { ...DEFAULT_CALCULATOR_STATE.ev, ...parsed.ev },
       sizing,
       simulator: { ...DEFAULT_CALCULATOR_STATE.simulator, ...parsed.simulator },
-      budget: { ...DEFAULT_CALCULATOR_STATE.budget, ...parsed.budget },
+      budget,
     };
   } catch {
     return DEFAULT_CALCULATOR_STATE;

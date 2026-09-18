@@ -54,6 +54,14 @@ describe("quant module (packages/core)", () => {
       expect(dist.rows).toHaveLength(6);
       expect(dist.riskOfRuin).toBeCloseTo(7.78, 1);
       expect(dist.atLeastOne).toBeCloseTo(92.22, 1);
+
+      // Verify cumulative probabilities P(X >= k)
+      expect(dist.rows[0]!.cumulativeProbability).toBeCloseTo(100, 1);
+      expect(dist.rows[1]!.cumulativeProbability).toBeCloseTo(92.22, 1);
+      expect(dist.rows[2]!.cumulativeProbability).toBeCloseTo(66.3, 1);
+      expect(dist.rows[3]!.cumulativeProbability).toBeCloseTo(31.74, 1);
+      expect(dist.rows[4]!.cumulativeProbability).toBeCloseTo(8.7, 1);
+      expect(dist.rows[5]!.cumulativeProbability).toBeCloseTo(1.02, 1);
     });
   });
 

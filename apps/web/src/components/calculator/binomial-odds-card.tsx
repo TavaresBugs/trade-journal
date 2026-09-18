@@ -19,14 +19,16 @@ interface BinomialOddsCardProps {
 
 export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
   const { firm, passRate, bankroll } = values;
+  const evalCost = values.evalCost ?? 89;
   const [copied, setCopied] = useState(false);
+  const [distributionMode, setDistributionMode] = useState<"cumulative" | "exact">("cumulative");
 
   const currentPreset = useMemo(() => {
     return PROP_FIRM_PRESETS.find((p) => p.name === firm) ?? PROP_FIRM_PRESETS[0]!;
   }, [firm]);
 
   // Cap at 30 attempts for binomial numerical stability and responsive rendering
-  const affordableEvals = Math.max(1, Math.floor(bankroll / (currentPreset.cost || 1)));
+  const affordableEvals = Math.max(1, Math.floor(bankroll / (evalCost || 1)));
   const budgetEvalCount = Math.min(30, affordableEvals);
 
   const binomialData = useMemo(() => {
@@ -34,7 +36,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
   }, [budgetEvalCount, passRate]);
 
   const handleCopyAnalysis = async () => {
-    const text = `Binomial Pass Odds (${currentPreset.name}): Bankroll: $${bankroll.toLocaleString("en-US")} | Affordable Evals: ${affordableEvals} | Pass ≥1 Eval: ${binomialData.atLeastOne.toFixed(2)}% | Risk of Ruin (0 passes): ${binomialData.riskOfRuin.toFixed(2)}% | Base Pass Rate: ${passRate}%`;
+    const text = `Binomial Pass Odds (${currentPreset.name}): Bankroll: $${bankroll.toLocaleString("en-US")} | Eval Cost: $${evalCost} | Affordable Evals: ${affordableEvals} | Pass ≥1 Eval: ${binomialData.atLeastOne.toFixed(2)}% | Risk of Ruin (0 passes): ${binomialData.riskOfRuin.toFixed(2)}% | Base Pass Rate: ${passRate}%`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -119,6 +121,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
                   const preset = PROP_FIRM_PRESETS.find((p) => p.name === val);
                   onChange({
                     firm: val,
+                    evalCost: preset?.cost ?? evalCost,
                     passRate: preset?.defaultPassRate ?? passRate,
                   });
                 }}
@@ -133,7 +136,33 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             </div>
           </div>
 
-          {/* 3º: PASS RATE (%) */}
+          {/* 3º: COST PER EVAL ($) */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Cost per eval ($)
+              </label>
+              {currentPreset && evalCost !== currentPreset.cost && (
+                <span className="h-5 inline-flex items-center justify-center rounded border border-amber-500/40 bg-amber-500/10 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-amber-500">
+                  Custom
+                </span>
+              )}
+            </div>
+            <Input
+              type="number"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={evalCost || ""}
+              placeholder="89"
+              onChange={(e) => onChange({ evalCost: Number(e.target.value) })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
+          </div>
+
+          {/* 4º: PASS RATE (%) */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Pass rate (%)
@@ -152,7 +181,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             />
           </div>
 
-          {/* 4º: AFFORDABLE EVALS */}
+          {/* 5º: AFFORDABLE EVALS */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Affordable evals
@@ -199,9 +228,11 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             >
               {binomialData.atLeastOne.toFixed(2)}%
             </span>
-            <span className="text-sm font-medium text-muted-foreground">
-              chance to pass ≥1 eval
-            </span>
+            <HoverHint content={`Cumulative probability of passing 1 or more funded accounts across your ${budgetEvalCount} attempts`}>
+              <span className="cursor-help text-sm font-medium text-muted-foreground underline decoration-muted-foreground/30 underline-offset-2">
+                chance to pass at least 1 eval
+              </span>
+            </HoverHint>
             <span
               className={cn(
                 "ml-auto text-xs font-mono font-medium",
@@ -241,46 +272,115 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             </div>
           </div>
 
-          {/* EXACT PASS DISTRIBUTION */}
+          {/* PASS DISTRIBUTION WITH CUMULATIVE / EXACT TOGGLE */}
           <div className="mt-3 border-t border-border/40 pt-2.5">
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="uppercase tracking-wider">Exact pass distribution</span>
-              <span className="font-mono">{budgetEvalCount} attempts</span>
-            </div>
-            <div className="mt-2 space-y-1.5 text-xs font-mono tnum">
-              {binomialData.rows.map((row) => (
-                <div
-                  key={row.passes}
-                  className="flex items-center justify-between border-b border-border/25 pb-1 last:border-0 last:pb-0"
+              <div className="flex items-center gap-1.5">
+                <span className="uppercase tracking-wider">Pass distribution</span>
+                <span className="font-mono text-[10px] text-muted-foreground/80">
+                  ({budgetEvalCount} attempts)
+                </span>
+              </div>
+              <div className="flex items-center rounded border border-border/70 bg-muted/60 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setDistributionMode("cumulative")}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
+                    distributionMode === "cumulative"
+                      ? "bg-accent font-semibold text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span
-                      className={cn(
-                        "size-1.5 rounded-full shrink-0",
-                        row.passes === 0 ? "bg-loss/70" : "bg-profit",
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "truncate text-xs",
-                        row.passes === 0 ? "text-muted-foreground" : "text-foreground font-medium",
-                      )}
-                    >
-                      {row.passes === 0
+                  At least (≥)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDistributionMode("exact")}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
+                    distributionMode === "exact"
+                      ? "bg-accent font-semibold text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Exact (=)
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-2 max-h-[180px] space-y-1 overflow-y-auto pr-1 text-xs font-mono tnum">
+              {binomialData.rows
+                .filter((row) =>
+                  distributionMode === "cumulative"
+                    ? row.cumulativeProbability > 0 || row.passes === 0
+                    : row.probability > 0 || row.passes === 0,
+                )
+                .map((row) => {
+                  const isRuin = row.passes === 0;
+                  const probValue =
+                    distributionMode === "cumulative"
+                      ? isRuin
+                        ? binomialData.riskOfRuin
+                        : row.cumulativeProbability
+                      : row.probability;
+
+                  const label =
+                    distributionMode === "cumulative"
+                      ? isRuin
                         ? "0 passes (risk of ruin)"
-                        : `Exactly ${row.passes} ${row.passes === 1 ? "pass" : "passes"}`}
-                    </span>
-                  </div>
-                  <span
-                    className={cn(
-                      "shrink-0 font-semibold ml-2 font-mono",
-                      row.passes === 0 ? "text-loss" : "text-profit",
-                    )}
-                  >
-                    {row.probability.toFixed(2)}%
-                  </span>
-                </div>
-              ))}
+                        : row.passes === budgetEvalCount
+                          ? `Pass all ${budgetEvalCount} evals`
+                          : `Pass ≥ ${row.passes} ${row.passes === 1 ? "eval" : "evals"}`
+                      : isRuin
+                        ? "0 passes (risk of ruin)"
+                        : `Exactly ${row.passes} ${row.passes === 1 ? "pass" : "passes"}`;
+
+                  const barPercent = Math.min(100, Math.max(0, probValue));
+
+                  return (
+                    <div
+                      key={row.passes}
+                      className="group relative flex items-center justify-between rounded px-2 py-1 overflow-hidden transition-colors hover:bg-muted/40"
+                    >
+                      {/* Translucent Data Bar */}
+                      <div
+                        className={cn(
+                          "absolute inset-y-0 left-0 transition-all duration-300 pointer-events-none rounded",
+                          isRuin ? "bg-loss/12" : "bg-profit/12",
+                        )}
+                        style={{ width: `${barPercent}%` }}
+                      />
+
+                      <div className="relative z-10 flex items-center gap-1.5 truncate">
+                        <span
+                          className={cn(
+                            "size-1.5 rounded-full shrink-0",
+                            isRuin ? "bg-loss/70" : "bg-profit",
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            "truncate text-xs",
+                            isRuin
+                              ? "text-muted-foreground"
+                              : "text-foreground font-medium",
+                          )}
+                        >
+                          {label}
+                        </span>
+                      </div>
+                      <span
+                        className={cn(
+                          "relative z-10 shrink-0 font-semibold ml-2 font-mono",
+                          isRuin ? "text-loss" : "text-profit",
+                        )}
+                      >
+                        {probValue.toFixed(2)}%
+                      </span>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>

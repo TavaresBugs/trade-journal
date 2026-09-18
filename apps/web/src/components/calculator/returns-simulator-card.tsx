@@ -137,13 +137,14 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
                 Firm preset
               </label>
               <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-                ${evalCost}/eval
+                ${currentPreset ? currentPreset.cost : evalCost}/eval
               </span>
             </div>
             <div className="w-36">
               <OptionSelect
-                value={String(evalCost)}
+                value={currentPreset ? String(currentPreset.cost) : "custom"}
                 onValueChange={(val) => {
+                  if (val === "custom") return;
                   const cost = Number(val);
                   const preset = PROP_FIRM_PRESETS.find((p) => p.cost === cost);
                   onChange({
@@ -153,7 +154,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
                 }}
                 className="relative h-9 justify-center text-xs font-mono font-semibold [&>span]:text-center [&>svg]:absolute [&>svg]:right-2.5"
               >
-                {!currentPreset && <option value={String(evalCost)}>Custom (${evalCost})</option>}
+                {!currentPreset && <option value="custom">Custom (${evalCost})</option>}
                 {PROP_FIRM_PRESETS.map((p) => (
                   <option key={p.id} value={String(p.cost)}>
                     {p.name}
@@ -161,6 +162,32 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
                 ))}
               </OptionSelect>
             </div>
+          </div>
+
+          {/* 3º: COST PER EVAL ($) */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Cost per eval ($)
+              </label>
+              {!currentPreset && (
+                <span className="h-5 inline-flex items-center justify-center rounded border border-amber-500/40 bg-amber-500/10 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-amber-500">
+                  Custom
+                </span>
+              )}
+            </div>
+            <Input
+              type="number"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={evalCost || ""}
+              placeholder="89"
+              onChange={(e) => onChange({ evalCost: Number(e.target.value) })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
           </div>
 
           {/* 3º: PASS RATE (%) */}
@@ -326,7 +353,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
               <span className="uppercase tracking-wider">Sample cycle outcomes</span>
               <span className="font-mono">{simResults.outcomes.length} attempts</span>
             </div>
-            <div className="mt-2 space-y-1.5 text-xs font-mono tnum">
+            <div className="mt-2 max-h-[180px] space-y-1.5 overflow-y-auto pr-1 text-xs font-mono tnum">
               {simResults.outcomes.map((out, idx) => (
                 <div
                   key={idx}

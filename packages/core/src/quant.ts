@@ -48,6 +48,7 @@ export interface SimulationResults {
 export interface BinomialRow {
   passes: number;
   probability: number;
+  cumulativeProbability: number;
 }
 
 export interface BinomialDistributionResult {
@@ -102,7 +103,17 @@ export function getBinomialDistribution(
     rows.push({
       passes: k,
       probability: Number((prob * 100).toFixed(2)),
+      cumulativeProbability: 0,
     });
+  }
+
+  // Calculate cumulative probability P(X >= k) for each row
+  for (let k = 0; k <= n; k++) {
+    let sum = 0;
+    for (let i = k; i <= n; i++) {
+      sum += rows[i]!.probability;
+    }
+    rows[k]!.cumulativeProbability = Number(Math.min(100, sum).toFixed(2));
   }
 
   const riskOfRuin = rows[0]?.probability ?? 0;
