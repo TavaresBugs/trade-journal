@@ -67,7 +67,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
               EV Calculator
             </CardTitle>
             {cost > 0 && (
-              <span className="rounded border border-border/70 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
                 ${cost} eval cost
               </span>
             )}

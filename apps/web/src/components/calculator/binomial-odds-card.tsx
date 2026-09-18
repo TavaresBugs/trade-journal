@@ -53,7 +53,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
               Eval Budget & Pass Odds
             </CardTitle>
-            <span className="rounded border border-border/70 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+            <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
               Binomial Model
             </span>
           </div>
@@ -77,7 +77,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
                     type="button"
                     onClick={() => onChange({ bankroll: b })}
                     className={cn(
-                      "rounded border px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
+                      "h-5 inline-flex items-center justify-center rounded border px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none transition-colors",
                       bankroll === b
                         ? "border-border bg-accent text-foreground font-semibold"
                         : "border-border/60 text-muted-foreground hover:bg-accent/50 hover:text-foreground",
@@ -108,7 +108,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Firm preset
               </label>
-              <span className="rounded border border-border/70 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
                 ${currentPreset.cost}/eval
               </span>
             </div>

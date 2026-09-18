@@ -133,9 +133,14 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
     <Card className="flex flex-col justify-between">
       <div>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
-            Position & Risk Sizing
-          </CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+              Position & Risk Sizing
+            </CardTitle>
+            <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
+              Futures · Quant Sizing
+            </span>
+          </div>
           <p className="text-xs text-muted-foreground">
             Determine exact contracts from your technical chart stop and dollar risk.
           </p>
@@ -148,7 +153,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Market instrument
               </label>
-              <span className="rounded border border-border/70 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
                 ${instrument.multiplier}/pt
               </span>
             </div>
