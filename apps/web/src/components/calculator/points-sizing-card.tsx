@@ -54,18 +54,41 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
     );
   }, [riskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints]);
 
-  const activeAsset = sizing.requiresMicro && microName ? microName : instrument.id;
-  const activeContracts = sizing.requiresMicro
-    ? sizing.microContracts
-    : sizing.recommendedContracts;
+  const handleInstrumentChange = (val: string) => {
+    const nextInst = QUANT_INSTRUMENTS.find((i) => i.id === val) ?? instrument;
+    if (stopPoints > 0) {
+      const minCost = Math.round(stopPoints * nextInst.multiplier);
+      if (minCost > riskDollars) {
+        onChange({ instrumentId: val, riskDollars: minCost });
+        return;
+      }
+    }
+    onChange({ instrumentId: val });
+  };
+
+  const handleStopPointsChange = (pts: number) => {
+    const nextStop = Math.max(0, pts);
+    if (nextStop <= 0) {
+      onChange({ stopPoints: nextStop });
+      return;
+    }
+    const minCost = Math.round(nextStop * instrument.multiplier);
+    // If 1 contract with this stop costs more than current max dollar risk,
+    // automatically increase the max dollar risk and update the input:
+    if (minCost > riskDollars) {
+      onChange({ stopPoints: nextStop, riskDollars: minCost });
+    } else {
+      onChange({ stopPoints: nextStop });
+    }
+  };
 
   const handleCopySizing = async () => {
     const targetLabel = isDefaultTarget
       ? `TP (2:1): ${effectiveTargetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`
       : `TP: ${targetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`;
 
-    const text = `${activeAsset}: ${activeContracts} contract${
-      activeContracts > 1 ? "s" : ""
+    const text = `${instrument.id}: ${sizing.recommendedContracts} contract${
+      sizing.recommendedContracts > 1 ? "s" : ""
     } | SL: ${stopPoints} pts (-$${sizing.actualRiskDollars.toLocaleString("en-US")}) | ${targetLabel}`;
 
     try {
@@ -98,7 +121,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <div className="w-36">
               <OptionSelect
                 value={instrumentId}
-                onValueChange={(val) => onChange({ instrumentId: val })}
+                onValueChange={handleInstrumentChange}
                 className="h-9 text-xs"
               >
                 {QUANT_INSTRUMENTS.map((inst) => (
@@ -135,7 +158,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={stopPoints || ""}
               placeholder="20.00"
-              onChange={(e) => onChange({ stopPoints: Number(e.target.value) })}
+              onChange={(e) => handleStopPointsChange(Number(e.target.value))}
             />
           </div>
 
@@ -187,30 +210,17 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
           {/* SIZING HIGHLIGHT */}
           <div className="mt-1 flex items-baseline gap-2">
             <span className="text-2xl font-bold tracking-tight text-foreground font-mono tnum">
-              {activeContracts} {activeAsset}
+              {sizing.recommendedContracts} {instrument.id}
             </span>
             <span className="text-sm font-medium text-muted-foreground">
-              contract{activeContracts > 1 ? "s" : ""}
+              contract{sizing.recommendedContracts > 1 ? "s" : ""}
             </span>
-            {!sizing.requiresMicro && microName && sizing.microContracts > 0 && (
+            {microName && sizing.microContracts > 0 && (
               <span className="ml-auto text-xs text-muted-foreground font-mono">
                 or {sizing.microContracts} {microName}
               </span>
             )}
           </div>
-
-          {/* NOTICE IF 1 FULL CONTRACT EXCEEDS BUDGET */}
-          {sizing.requiresMicro && (
-            <div className="mt-2 rounded border border-border/80 bg-muted/50 px-2.5 py-1.5 text-[11px] text-muted-foreground">
-              <span className="font-medium text-foreground">1 {instrument.id}</span> stop risks $
-              {(sizing.fullContractRisk ?? 0).toLocaleString("en-US")} (exceeds ${riskDollars} max
-              risk). Sized to{" "}
-              <span className="font-medium text-foreground">
-                {sizing.microContracts} {microName}
-              </span>{" "}
-              to stay within budget.
-            </div>
-          )}
 
           {/* RISK & TARGET SUMMARY */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
