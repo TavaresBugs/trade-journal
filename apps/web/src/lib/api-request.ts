@@ -14,8 +14,16 @@ export function acquireJson<T>(url: string): { promise: Promise<T>; release: () 
     const next: PendingRequest = { controller, users: 0, promise: Promise.resolve() };
     next.promise = fetch(url, { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.error ?? `Request failed (${response.status})`);
+        let body: unknown;
+        try {
+          body = await response.json();
+        } catch {
+          throw new Error(`Request failed (${response.status})`);
+        }
+        if (!response.ok) {
+          const err = body as { error?: string } | null;
+          throw new Error(err?.error ?? `Request failed (${response.status})`);
+        }
         return body;
       })
       .finally(() => {

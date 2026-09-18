@@ -21,6 +21,11 @@ const createDb = () => {
   if (!executionColumns.some((column) => column.name === "import_metadata_json")) {
     sqlite.exec("ALTER TABLE executions ADD COLUMN import_metadata_json TEXT");
   }
+  // Additive upgrade: attachments table gains optional slot column for structured screenshots.
+  const attachmentColumns = sqlite.pragma("table_info(attachments)") as { name: string }[];
+  if (!attachmentColumns.some((column) => column.name === "slot")) {
+    sqlite.exec("ALTER TABLE attachments ADD COLUMN slot TEXT");
+  }
   // Materialize CSV bounds once so connection and range lookups never scan candle JSON.
   const csvColumns = sqlite.pragma("table_info(market_csv_datasets)") as { name: string }[];
   sqlite.transaction(() => {

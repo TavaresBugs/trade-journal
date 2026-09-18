@@ -2,16 +2,16 @@
 import { OptionSelect } from "@/components/ui/option-select";
 
 import { Suspense, useRef, useState } from "react";
-import { ArrowLeft, FolderPlus, Plus, Search } from "lucide-react";
+import { ArrowLeft, FolderPlus, Plus, Search, Trash2 } from "lucide-react";
 import { FilterBar } from "@/components/filter-bar";
+import { HoverHint } from "@/components/ui/tooltip";
 import { VoiceNote } from "@/components/voice-note";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { RichEditor, type RichEditorHandle } from "@/components/rich-editor";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Attachments } from "@/components/attachments";
-import { ReviewExport } from "@/components/review-export";
+import { NoteFooter } from "@/components/note-footer";
 import { useAutosave } from "@/lib/use-autosave";
 import { postJson, useApi } from "@/lib/use-api";
 import { cn } from "@/lib/utils";
@@ -309,19 +309,23 @@ function NoteEditor({ note, onChanged }: { note: NoteRow; onChanged: () => void 
               save(title, next);
             }}
           />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive"
-            onClick={async () => {
-              if (confirm("Delete this note?")) {
-                await postJson(`/api/notes/${note.id}`, undefined, "DELETE");
-                onChanged();
-              }
-            }}
-          >
-            Delete
-          </Button>
+          <HoverHint content="Delete note">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              aria-label="Delete note"
+              onClick={async () => {
+                if (confirm("Delete this note?")) {
+                  await postJson(`/api/notes/${note.id}`, undefined, "DELETE");
+                  onChanged();
+                }
+              }}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </HoverHint>
         </div>
         <RichEditor
           editorRef={editor}
@@ -334,14 +338,13 @@ function NoteEditor({ note, onChanged }: { note: NoteRow; onChanged: () => void 
             save(title, value);
           }}
         />
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span role="status">{status}</span>
-          <Button variant="ghost" size="sm" onClick={() => void flush()}>
-            Save now
-          </Button>
-        </div>
-        <ReviewExport document={{ title: title || "Journal note", lines: [content] }} />
-        <Attachments type="note" id={note.id} />
+        <NoteFooter
+          type="note"
+          id={note.id}
+          document={{ title: title || "Journal note", lines: [content] }}
+          onSave={() => void flush()}
+          savingStatus={status}
+        />
       </CardContent>
     </Card>
   );

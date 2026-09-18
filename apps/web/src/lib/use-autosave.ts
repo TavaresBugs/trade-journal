@@ -23,8 +23,13 @@ export function useAutosave(url: string, method: "PATCH" | "PUT" = "PATCH", onSa
             body: JSON.stringify(body),
             keepalive: JSON.stringify(body).length < 50000,
           });
-          const result = await response.json();
-          if (!response.ok) throw new Error(result.error ?? "Save failed");
+          let result: { error?: string } | undefined;
+          try {
+            result = await response.json();
+          } catch {
+            if (!response.ok) throw new Error(`Save failed (${response.status})`);
+          }
+          if (!response.ok) throw new Error(result?.error ?? "Save failed");
           if (mounted.current) {
             setStatus(Object.keys(pending.current).length ? "Saving…" : "Saved");
             callback.current?.();

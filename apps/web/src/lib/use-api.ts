@@ -76,7 +76,12 @@ export const postJson = async <T = unknown>(
     headers: { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  const data = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw new Error(data.error ?? `Request failed (${response.status})`);
-  return data;
+  let data: (T & { error?: string }) | undefined;
+  try {
+    data = (await response.json()) as T & { error?: string };
+  } catch {
+    if (!response.ok) throw new Error(`Request failed (${response.status})`);
+  }
+  if (!response.ok) throw new Error(data?.error ?? `Request failed (${response.status})`);
+  return data as T;
 };

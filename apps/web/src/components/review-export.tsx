@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { exportPdf, exportPng, type ReviewDocument } from "@/lib/export-review";
 import { usePrivacy } from "./privacy";
+import { cn } from "@/lib/utils";
 interface Preview {
   url: string;
   filename: string;
@@ -13,9 +14,11 @@ interface Preview {
 export function ReviewExport({
   document,
   containsFinancialData = false,
+  className,
 }: {
   document: ReviewDocument;
   containsFinancialData?: boolean;
+  className?: string;
 }) {
   const privateMode = usePrivacy();
   const concealed = privateMode && containsFinancialData;
@@ -53,7 +56,7 @@ export function ReviewExport({
     }
   }
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-2", className)}>
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"

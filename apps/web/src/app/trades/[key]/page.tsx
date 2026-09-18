@@ -31,8 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RichEditor, type RichEditorHandle } from "@/components/rich-editor";
-import { Attachments } from "@/components/attachments";
-import { ReviewExport } from "@/components/review-export";
+import { NoteFooter } from "@/components/note-footer";
 import { RuleChecklist } from "@/components/rule-checklist";
 import { useAutosave } from "@/lib/use-autosave";
 import { postJson, useApi } from "@/lib/use-api";
@@ -122,11 +121,16 @@ function TradeView({ tradeKey }: { tradeKey: string }) {
   };
 
   const runningPnl = (() => {
-    const exits = JSON.parse(trade.exitsJson) as {
-      executionId: string;
-      grossPnl: number;
-      quantity: number;
-    }[];
+    let exits: { executionId: string; grossPnl: number; quantity: number }[] = [];
+    try {
+      exits = (JSON.parse(trade.exitsJson || "[]") as {
+        executionId: string;
+        grossPnl: number;
+        quantity: number;
+      }[]) ?? [];
+    } catch {
+      exits = [];
+    }
     const times = new Map(executions.map((e) => [e.id, e.executedAt]));
     const totalExitQty = exits.reduce((total, exit) => total + exit.quantity, 0);
     let cum = 0;
@@ -329,10 +333,16 @@ function AnnotationsCard({
 }) {
   const [notes, setNotes] = useState(trade.notes ?? "");
   const noteEditor = useRef<RichEditorHandle>(null);
-  const [tags, setTags] = useState((JSON.parse(trade.tagsJson ?? "[]") as string[]).join(", "));
-  const [mistakes, setMistakes] = useState(
-    (JSON.parse(trade.mistakesJson ?? "[]") as string[]).join(", "),
-  );
+  const [noteMode, setNoteMode] = useState<"edit" | "preview">("edit");
+  const safeParseArray = (raw: string | null | undefined): string[] => {
+    try {
+      return (JSON.parse(raw || "[]") as string[]) ?? [];
+    } catch {
+      return [];
+    }
+  };
+  const [tags, setTags] = useState(safeParseArray(trade.tagsJson).join(", "));
+  const [mistakes, setMistakes] = useState(safeParseArray(trade.mistakesJson).join(", "));
   const [stopLoss, setStopLoss] = useState(trade.stopLoss?.toString() ?? "");
   const [profitTarget, setProfitTarget] = useState(trade.profitTarget?.toString() ?? "");
   const { data: playbookData } = useApi<{ playbooks: { id: string; name: string }[] }>(
@@ -457,17 +467,30 @@ function AnnotationsCard({
           />
         </div>
 
-        <div>
-          <div className="mb-1 flex items-center justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
             <label className="text-xs text-muted-foreground">Notes</label>
-            <VoiceNote
-              onPrepare={() => noteEditor.current?.focus()}
-              onText={(text) => {
-                const next = notes ? `${notes} ${text}` : text;
-                setNotes(next);
-                debounced({ notes: next });
-              }}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setNoteMode(noteMode === "preview" ? "edit" : "preview")}
+              >
+                {noteMode === "preview" ? "Edit" : "Preview"}
+              </Button>
+              <VoiceNote
+                onPrepare={() => {
+                  setNoteMode("edit");
+                  noteEditor.current?.focus();
+                }}
+                onText={(text) => {
+                  const next = notes ? `${notes} ${text}` : text;
+                  setNotes(next);
+                  debounced({ notes: next });
+                }}
+              />
+            </div>
           </div>
           <RichEditor
             editorRef={noteEditor}
@@ -476,14 +499,13 @@ function AnnotationsCard({
               setNotes(value);
               debounced({ notes: value });
             }}
+            mode={noteMode}
+            onModeChange={setNoteMode}
+            showModeToggle={false}
           />
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span role="status">{saveStatus}</span>
-            <Button variant="ghost" size="sm" onClick={() => void flush()}>
-              Save now
-            </Button>
-          </div>
-          <ReviewExport
+          <NoteFooter
+            type="trade"
+            id={trade.key}
             containsFinancialData
             document={{
               title: `${trade.symbol} · ${trade.direction} review`,
@@ -498,8 +520,9 @@ function AnnotationsCard({
                 notes,
               ],
             }}
+            onSave={() => void flush()}
+            savingStatus={saveStatus}
           />
-          <Attachments type="trade" id={trade.key} />
         </div>
       </CardContent>
     </Card>

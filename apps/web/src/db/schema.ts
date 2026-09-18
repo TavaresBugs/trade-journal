@@ -151,6 +151,7 @@ export const attachments = sqliteTable("attachments", {
   id: text("id").primaryKey(),
   ownerType: text("owner_type").notNull(),
   ownerId: text("owner_id").notNull(),
+  slot: text("slot"),
   name: text("name").notNull(),
   mime: text("mime").notNull(),
   size: integer("size").notNull(),

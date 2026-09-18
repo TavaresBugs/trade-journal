@@ -15,8 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RichEditor, type RichEditorHandle } from "@/components/rich-editor";
-import { Attachments } from "@/components/attachments";
-import { ReviewExport } from "@/components/review-export";
+import { NoteFooter } from "@/components/note-footer";
+import { TimeframeScreenshotGrid } from "@/components/screenshots/timeframe-screenshot-grid";
 import { useAutosave } from "@/lib/use-autosave";
 import { postJson, useApi } from "@/lib/use-api";
 import { fmtMoney, fmtNumber, fmtPercent } from "@/lib/utils";
@@ -54,11 +54,23 @@ function JournalDay({ date }: { date: string }) {
   const { query } = useFilters();
   const { data, error } = useApi<DayPayload>(`/api/journal/${date}?${query}`);
   const [note, setNote] = useState<string | null>(null);
+  const [noteMode, setNoteMode] = useState<"preview" | "edit">("preview");
+  const [modeInitialized, setModeInitialized] = useState(false);
   const noteEditor = useRef<RichEditorHandle>(null);
   const { save, status: saving, flush } = useAutosave(`/api/journal/${date}`, "PUT");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const noteValue = note ?? data?.note ?? "";
+
+  useEffect(() => {
+    if (data && !modeInitialized) {
+      if (!data.note?.trim()) {
+        setNoteMode("edit");
+      }
+      setModeInitialized(true);
+    }
+  }, [data, modeInitialized]);
+
   const scheduleSave = (value: string) => {
     setNote(value);
     save({ note: value });
@@ -145,6 +157,8 @@ function JournalDay({ date }: { date: string }) {
             </Card>
           )}
 
+          <TimeframeScreenshotGrid date={date} />
+
           {data && data.trades.length > 0 && (
             <Card>
               <CardHeader>
@@ -197,8 +211,20 @@ function JournalDay({ date }: { date: string }) {
           <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle>Day note</CardTitle>
             <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!data}
+                onClick={() => setNoteMode(noteMode === "preview" ? "edit" : "preview")}
+              >
+                {noteMode === "preview" ? "Edit" : "Preview"}
+              </Button>
               <VoiceNote
-                onPrepare={() => noteEditor.current?.focus()}
+                onPrepare={() => {
+                  setNoteMode("edit");
+                  noteEditor.current?.focus();
+                }}
                 onText={(text) =>
                   scheduleSave(
                     noteValue ? `${noteValue}${noteValue.endsWith(" ") ? "" : " "}${text}` : text,
@@ -216,7 +242,7 @@ function JournalDay({ date }: { date: string }) {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             {aiError && (
               <div className="mb-4">
                 <AiNotice
@@ -227,7 +253,14 @@ function JournalDay({ date }: { date: string }) {
               </div>
             )}
             {data ? (
-              <RichEditor editorRef={noteEditor} value={noteValue} onChange={scheduleSave} />
+              <RichEditor
+                editorRef={noteEditor}
+                value={noteValue}
+                onChange={scheduleSave}
+                mode={noteMode}
+                onModeChange={setNoteMode}
+                showModeToggle={false}
+              />
             ) : error ? (
               <p role="alert" className="text-sm text-destructive">
                 {error}
@@ -235,13 +268,9 @@ function JournalDay({ date }: { date: string }) {
             ) : (
               <Skeleton className="h-48" />
             )}
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span role="status">{saving}</span>
-              <Button variant="ghost" size="sm" onClick={() => void flush()}>
-                Save now
-              </Button>
-            </div>
-            <ReviewExport
+            <NoteFooter
+              type="day"
+              id={date}
               containsFinancialData
               document={{
                 title: `Daily review · ${date}`,
@@ -252,8 +281,9 @@ function JournalDay({ date }: { date: string }) {
                   noteValue,
                 ],
               }}
+              onSave={() => void flush()}
+              savingStatus={saving}
             />
-            <Attachments type="day" id={date} />
           </CardContent>
         </Card>
       </div>

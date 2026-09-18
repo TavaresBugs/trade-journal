@@ -1,70 +1,35 @@
 "use client";
-import { HoverHint } from "./ui/tooltip";
+
 import { useRef, useState } from "react";
-import { Paperclip, Trash2 } from "lucide-react";
+import { Paperclip, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ReviewExport } from "@/components/review-export";
+import { AttachmentGrid, type AttachmentItem } from "@/components/attachments";
 import { postJson, useApi } from "@/lib/use-api";
 import { cn } from "@/lib/utils";
+import type { ReviewDocument } from "@/lib/export-review";
 
-export interface AttachmentItem {
+interface NoteFooterProps {
+  type: "day" | "trade" | "note";
   id: string;
-  name: string;
-  mime: string;
-  size: number;
-  slot?: string | null;
+  document: ReviewDocument;
+  onSave: () => void | Promise<void>;
+  savingStatus?: string | null;
+  saveDisabled?: boolean;
+  containsFinancialData?: boolean;
+  className?: string;
 }
 
-export function AttachmentGrid({
-  items,
-  onRemove,
-}: {
-  items: AttachmentItem[];
-  onRemove: (id: string, name: string) => void | Promise<void>;
-}) {
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {items.map((a) => (
-        <div key={a.id} className="min-w-0 rounded-md border p-2">
-          <HoverHint content={a.name}>
-            <a href={`/api/attachments/${a.id}`} target="_blank" rel="noreferrer" className="block">
-              {a.mime.startsWith("image/") && (
-                <img
-                  src={`/api/attachments/${a.id}`}
-                  alt={a.name}
-                  className="mb-2 h-28 w-full rounded object-contain"
-                />
-              )}
-              <span className="block truncate text-xs underline">{a.name}</span>
-            </a>
-          </HoverHint>
-          <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-            <span>{Math.round(a.size / 1024)} KB</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              aria-label={`Remove ${a.name}`}
-              onClick={() => void onRemove(a.id, a.name)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function Attachments({
+export function NoteFooter({
   type,
   id,
+  document,
+  onSave,
+  savingStatus,
+  saveDisabled = false,
+  containsFinancialData = false,
   className,
-}: {
-  type: "trade" | "day" | "note" | "missed" | "prop-account" | "prop-entry";
-  id: string;
-  className?: string;
-}) {
+}: NoteFooterProps) {
   const { data, error, refresh } = useApi<{
     attachments: AttachmentItem[];
   }>(`/api/attachments?type=${type}&id=${encodeURIComponent(id)}`);
@@ -85,8 +50,13 @@ export function Attachments({
         body.append("id", id);
         body.append("file", file);
         const r = await fetch("/api/attachments", { method: "POST", body });
-        const result = await r.json();
-        if (!r.ok) throw new Error(result.error);
+        let result: { error?: string } | undefined;
+        try {
+          result = await r.json();
+        } catch {
+          if (!r.ok) throw new Error(`Upload failed (${r.status})`);
+        }
+        if (!r.ok) throw new Error(result?.error ?? `Upload failed (${r.status})`);
       }
     } catch (err) {
       setFailure(err instanceof Error ? err.message : "Upload failed.");
@@ -107,9 +77,16 @@ export function Attachments({
     }
   };
 
+  const isSaving = savingStatus === "Saving…";
+
   return (
-    <div className={cn("space-y-3 border-t pt-3", className)}>
+    <div className={cn("space-y-3", className)}>
       <div className="flex flex-wrap items-center gap-2">
+        <ReviewExport
+          className="space-y-0"
+          containsFinancialData={containsFinancialData}
+          document={document}
+        />
         <Button
           type="button"
           size="sm"
@@ -120,8 +97,23 @@ export function Attachments({
           <Paperclip />
           {busy ? "Uploading…" : "Add attachment"}
         </Button>
-        <span className="text-xs text-muted-foreground">Images or PDF · up to 8 MB each</span>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={saveDisabled || isSaving}
+          onClick={() => void onSave()}
+        >
+          <Save />
+          {isSaving ? "Saving…" : "Save note"}
+        </Button>
+        {savingStatus && !isSaving && (
+          <span role="status" className="text-xs text-muted-foreground">
+            {savingStatus}
+          </span>
+        )}
       </div>
+      <p className="text-xs text-muted-foreground">Images or PDF · up to 8 MB each</p>
       <input
         ref={input}
         aria-label="Upload attachment"

@@ -45,6 +45,7 @@ export const GET = handler((request: Request) => {
         name: attachments.name,
         mime: attachments.mime,
         size: attachments.size,
+        slot: attachments.slot,
       })
       .from(attachments)
       .where(and(eq(attachments.ownerType, type), eq(attachments.ownerId, id)))
@@ -59,6 +60,8 @@ export const POST = handler(async (request: Request) => {
   const form = await request.formData();
   const type = String(form.get("type") ?? ""),
     ownerId = String(form.get("id") ?? ""),
+    rawSlot = form.get("slot"),
+    slot = typeof rawSlot === "string" && rawSlot.trim().length > 0 ? rawSlot.trim().slice(0, 50) : null,
     file = form.get("file");
   requireValue(owner(type, ownerId), "Attachment owner not found.");
   requireValue(
@@ -74,6 +77,7 @@ export const POST = handler(async (request: Request) => {
       id,
       ownerType: type,
       ownerId,
+      slot,
       name: file.name.slice(0, 200),
       mime,
       size: bytes.length,

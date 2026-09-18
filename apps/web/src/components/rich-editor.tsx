@@ -4,12 +4,13 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, FileText } from "lucide-react";
+import { ChevronDown, FileText, Save } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { fieldClass } from "@/components/filter-fields";
 import { postJson, useApi } from "@/lib/use-api";
@@ -138,113 +139,119 @@ export function RichEditor({
   }
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-1">
-        {showModeToggle && (
-          <Button type="button" variant="outline" size="sm" onClick={() => setPreview(!preview)}>
-            {preview ? "Edit" : "Preview"}
-          </Button>
-        )}
-        {!preview && (
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => formatInline("**")}
-              aria-label="Bold"
-            >
-              B
+      {(!preview || showModeToggle) && (
+        <div className="flex flex-wrap items-center gap-1">
+          {showModeToggle && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setPreview(!preview)}>
+              {preview ? "Edit" : "Preview"}
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => formatInline("*")}
-              aria-label="Italic"
-            >
-              <i>I</i>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => insert("\n## ")}
-              aria-label="Heading"
-            >
-              H2
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => insert("\n- ")}
-              aria-label="Bullet list"
-            >
-              List
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => insert("\n- [ ] ")}
-              aria-label="Checklist"
-            >
-              Checklist
-            </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setLinkOpen(!linkOpen)}>
-              Link trade
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  aria-label="Insert note template"
-                  className="gap-2 rounded-lg"
-                >
-                  Insert template…
-                  <ChevronDown className="size-3.5 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" aria-label="Note templates">
-                {[...BUILT_INS, ...(data?.templates ?? [])].map((template) => (
-                  <DropdownMenuItem
-                    key={template.id}
-                    onSelect={() => onChange(value + (value ? "\n\n" : "") + template.content)}
+          )}
+          {!preview && (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => formatInline("**")}
+                aria-label="Bold"
+              >
+                B
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => formatInline("*")}
+                aria-label="Italic"
+              >
+                <i>I</i>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insert("\n## ")}
+                aria-label="Heading"
+              >
+                H2
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insert("\n- ")}
+                aria-label="Bullet list"
+              >
+                List
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => insert("\n- [ ] ")}
+                aria-label="Checklist"
+              >
+                Checklist
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setLinkOpen(!linkOpen)}
+              >
+                Link trade
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    aria-label="Note templates"
+                    className="gap-2 rounded-lg"
                   >
-                    <FileText
-                      aria-hidden="true"
-                      className="size-3.5 shrink-0 text-muted-foreground"
-                    />
-                    {template.name}
+                    Template
+                    <ChevronDown className="size-3.5 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" aria-label="Note templates">
+                  <DropdownMenuItem
+                    disabled={!value}
+                    onSelect={async () => {
+                      const name = prompt("Name this note template");
+                      if (!name) return;
+                      try {
+                        await postJson("/api/workspace/templates", { name, content: value });
+                        refresh();
+                      } catch (e) {
+                        setError(String(e));
+                      }
+                    }}
+                  >
+                    <Save aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
+                    Save template…
                   </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              disabled={!value}
-              onClick={async () => {
-                const name = prompt("Name this note template");
-                if (!name) return;
-                try {
-                  await postJson("/api/workspace/templates", { name, content: value });
-                  refresh();
-                } catch (e) {
-                  setError(String(e));
-                }
-              }}
-            >
-              Save template
-            </Button>
-          </>
-        )}
-      </div>
+                  <DropdownMenuSeparator />
+                  {[...BUILT_INS, ...(data?.templates ?? [])].map((template) => (
+                    <DropdownMenuItem
+                      key={template.id}
+                      onSelect={() => onChange(value + (value ? "\n\n" : "") + template.content)}
+                    >
+                      <FileText
+                        aria-hidden="true"
+                        className="size-3.5 shrink-0 text-muted-foreground"
+                      />
+                      {template.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
+        </div>
+      )}
       {linkOpen && !preview && (
         <div className="space-y-2 rounded-md border p-2">
           <input
@@ -300,7 +307,7 @@ export function RichEditor({
         <textarea
           ref={ref}
           aria-label="Review notes"
-          className={`${fieldClass} min-h-48 resize-y font-mono text-[13px]`}
+          className="w-full min-w-0 rounded-md border border-input bg-background p-3 min-h-48 resize-y font-mono text-[13px] shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
