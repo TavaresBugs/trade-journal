@@ -152,7 +152,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             </div>
             <Input
               type="number"
-              className="w-32 text-right font-mono tnum"
+              className="h-9 w-36 text-right font-mono tnum"
               value={bankroll}
               onChange={(e) => onChange({ bankroll: Number(e.target.value) })}
             />
@@ -162,7 +162,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Firm (eval cost)
             </label>
-            <div className="w-52">
+            <div className="w-56">
               <OptionSelect
                 value={String(evalCost)}
                 onValueChange={(val) => {
@@ -173,7 +173,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
                     passRate: preset?.defaultPassRate ?? passRate,
                   });
                 }}
-                className="h-8 text-xs"
+                className="h-9 text-xs"
               >
                 {PROP_FIRM_PRESETS.map((p) => (
                   <option key={p.id} value={String(p.cost)}>
@@ -190,7 +190,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             </label>
             <Input
               type="number"
-              className="w-32 text-right font-mono tnum"
+              className="h-9 w-36 text-right font-mono tnum"
               value={passRate}
               onChange={(e) => onChange({ passRate: Number(e.target.value) })}
             />
@@ -202,7 +202,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             </label>
             <Input
               type="number"
-              className="w-32 text-right font-mono tnum"
+              className="h-9 w-36 text-right font-mono tnum"
               value={payoutChance}
               onChange={(e) => onChange({ payoutChance: Number(e.target.value) })}
             />
@@ -214,7 +214,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             </label>
             <Input
               type="number"
-              className="w-32 text-right font-mono tnum"
+              className="h-9 w-36 text-right font-mono tnum"
               value={avgPayout}
               onChange={(e) => onChange({ avgPayout: Number(e.target.value) })}
             />
@@ -224,7 +224,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             <Button
               type="button"
               disabled={isSimulating}
-              className="w-full bg-brand font-medium text-white shadow-sm hover:opacity-95"
+              className="h-9 w-full bg-brand font-medium text-white shadow-sm hover:opacity-95"
               onClick={handleRunSimulation}
             >
               {isSimulating ? (

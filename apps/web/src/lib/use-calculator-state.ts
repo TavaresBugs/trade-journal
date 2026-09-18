@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ExecutionMode } from "@luxalgo/journal-core";
 
 export const CALCULATOR_STORAGE_KEY = "journal-calculator-v1";
 
@@ -12,10 +13,12 @@ export interface CalculatorState {
     passRate: number;
   };
   sizing: {
+    mode: ExecutionMode;
     instrumentId: string;
-    points: number;
+    stopPoints: number;
+    riskDollars: number;
+    targetPoints: number;
     contracts: number;
-    dollars: number;
   };
   simulator: {
     bankroll: number;
@@ -39,10 +42,12 @@ export const DEFAULT_CALCULATOR_STATE: CalculatorState = {
     passRate: 40,
   },
   sizing: {
+    mode: "eval",
     instrumentId: "NQ",
-    points: 8,
-    contracts: 10,
-    dollars: 1600,
+    stopPoints: 25,
+    riskDollars: 1000,
+    targetPoints: 38,
+    contracts: 2,
   },
   simulator: {
     bankroll: 500,
@@ -60,16 +65,29 @@ export const DEFAULT_CALCULATOR_STATE: CalculatorState = {
 
 /**
  * Safely parses raw serialized JSON into a fully-hydrated CalculatorState,
- * filling in defaults for any missing or corrupted keys.
+ * filling in defaults for any missing or legacy keys.
  */
 export function parseCalculatorState(stored: string | null): CalculatorState {
   if (!stored) return DEFAULT_CALCULATOR_STATE;
   try {
     const parsed = JSON.parse(stored);
     if (!parsed || typeof parsed !== "object") return DEFAULT_CALCULATOR_STATE;
+
+    const rawSizing = parsed.sizing;
+    const sizing: CalculatorState["sizing"] = {
+      mode: rawSizing?.mode ?? "eval",
+      instrumentId: rawSizing?.instrumentId ?? DEFAULT_CALCULATOR_STATE.sizing.instrumentId,
+      stopPoints:
+        rawSizing?.stopPoints ?? rawSizing?.points ?? DEFAULT_CALCULATOR_STATE.sizing.stopPoints,
+      riskDollars:
+        rawSizing?.riskDollars ?? rawSizing?.dollars ?? DEFAULT_CALCULATOR_STATE.sizing.riskDollars,
+      targetPoints: rawSizing?.targetPoints ?? DEFAULT_CALCULATOR_STATE.sizing.targetPoints,
+      contracts: rawSizing?.contracts ?? DEFAULT_CALCULATOR_STATE.sizing.contracts,
+    };
+
     return {
       ev: { ...DEFAULT_CALCULATOR_STATE.ev, ...parsed.ev },
-      sizing: { ...DEFAULT_CALCULATOR_STATE.sizing, ...parsed.sizing },
+      sizing,
       simulator: { ...DEFAULT_CALCULATOR_STATE.simulator, ...parsed.simulator },
       budget: { ...DEFAULT_CALCULATOR_STATE.budget, ...parsed.budget },
     };
@@ -84,7 +102,8 @@ export function useCalculatorState() {
 
   useEffect(() => {
     try {
-      const stored = typeof window !== "undefined" ? localStorage.getItem(CALCULATOR_STORAGE_KEY) : null;
+      const stored =
+        typeof window !== "undefined" ? localStorage.getItem(CALCULATOR_STORAGE_KEY) : null;
       setState(parseCalculatorState(stored));
     } catch {
       // Fallback to default state

@@ -6,6 +6,8 @@ import {
   runReturnsSimulation,
   calculatePointValue,
   calculatePointsFromDollars,
+  calculatePositionSize,
+  EXECUTION_PRESETS,
   NQ_DOLLARS_PER_POINT,
   QUANT_INSTRUMENTS,
   PROP_FIRM_PRESETS,
@@ -62,6 +64,41 @@ describe("quant module (packages/core)", () => {
       expect(typeof res.avgPayoutResult).toBe("number");
       expect(typeof res.avgNetProfit).toBe("number");
       expect(res.sampleOutcomes.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("calculatePositionSize (JJ Simon execution rules)", () => {
+    it("sizes 2 NQ contracts for standard 50k eval (25 pts SL, $1000 risk)", () => {
+      const sizing = calculatePositionSize(1000, 25, 20, 38);
+      expect(sizing.recommendedContracts).toBe(2);
+      expect(sizing.exactContracts).toBe(2);
+      expect(sizing.microContracts).toBe(20);
+      expect(sizing.actualRiskDollars).toBe(1000);
+      expect(sizing.targetDollars).toBe(1520);
+      expect(sizing.riskRewardRatio).toBe(1.52);
+    });
+
+    it("sizes 1 NQ contract for funded consistency (25 pts SL, $500 risk)", () => {
+      const sizing = calculatePositionSize(500, 25, 20, 70);
+      expect(sizing.recommendedContracts).toBe(1);
+      expect(sizing.exactContracts).toBe(1);
+      expect(sizing.microContracts).toBe(10);
+      expect(sizing.actualRiskDollars).toBe(500);
+      expect(sizing.targetDollars).toBe(1400);
+      expect(sizing.riskRewardRatio).toBe(2.8);
+    });
+
+    it("handles arbitrary fractional stops with micro contracts", () => {
+      // $500 risk with 16.5 pts stop on NQ ($20/pt): 500 / (16.5 * 20) = 500 / 330 = 1.515 NQ -> 15 MNQ
+      const sizing = calculatePositionSize(500, 16.5, 20);
+      expect(sizing.recommendedContracts).toBe(2);
+      expect(sizing.exactContracts).toBe(1.52);
+      expect(sizing.microContracts).toBe(15);
+    });
+
+    it("handles zero or invalid inputs safely", () => {
+      expect(calculatePositionSize(0, 25, 20).recommendedContracts).toBe(0);
+      expect(calculatePositionSize(500, 0, 20).recommendedContracts).toBe(0);
     });
   });
 });

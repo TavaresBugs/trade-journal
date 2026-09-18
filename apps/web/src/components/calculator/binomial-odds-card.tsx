@@ -55,7 +55,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
                     passRate: preset?.defaultPassRate ?? passRate,
                   });
                 }}
-                className="h-8 text-xs"
+                className="h-9 text-xs"
               >
                 {PROP_FIRM_PRESETS.map((p) => (
                   <option key={p.id} value={p.name}>
@@ -72,7 +72,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             </label>
             <Input
               type="number"
-              className="w-32 text-right font-mono tnum"
+              className="h-9 w-36 text-right font-mono tnum"
               value={passRate}
               onChange={(e) => onChange({ passRate: Number(e.target.value) })}
             />
@@ -84,7 +84,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             </label>
             <Input
               type="number"
-              className="w-32 text-right font-mono tnum"
+              className="h-9 w-36 text-right font-mono tnum"
               value={bankroll}
               onChange={(e) => onChange({ bankroll: Number(e.target.value) })}
             />
@@ -96,7 +96,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             </label>
             <Input
               type="number"
-              className="w-32 text-right font-mono tnum bg-muted/40 cursor-not-allowed opacity-75"
+              className="h-9 w-36 text-right font-mono tnum bg-muted/40 cursor-not-allowed opacity-75"
               value={budgetEvalCount}
               disabled
             />
