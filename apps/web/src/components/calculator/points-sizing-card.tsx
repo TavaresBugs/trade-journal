@@ -156,7 +156,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               <OptionSelect
                 value={instrumentId}
                 onValueChange={handleInstrumentChange}
-                className="h-9 text-xs font-mono font-semibold"
+                className="relative h-9 justify-center text-xs font-mono font-semibold [&>span]:text-center [&>svg]:absolute [&>svg]:right-2.5"
               >
                 {QUANT_INSTRUMENTS.map((inst) => (
                   <option key={inst.id} value={inst.id}>
