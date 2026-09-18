@@ -19,18 +19,18 @@ export function QuantCalculator() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <EvCalculatorCard values={state.ev} onChange={(patch) => updateState("ev", patch)} />
         <PointsSizingCard
           values={state.sizing}
           onChange={(patch) => updateState("sizing", patch)}
         />
-        <ReturnsSimulatorCard
-          values={state.simulator}
-          onChange={(patch) => updateState("simulator", patch)}
-        />
+        <EvCalculatorCard values={state.ev} onChange={(patch) => updateState("ev", patch)} />
         <BinomialOddsCard
           values={state.budget}
           onChange={(patch) => updateState("budget", patch)}
+        />
+        <ReturnsSimulatorCard
+          values={state.simulator}
+          onChange={(patch) => updateState("simulator", patch)}
         />
       </div>
     </div>
