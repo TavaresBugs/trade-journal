@@ -144,18 +144,23 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
         <CardContent className="space-y-3.5">
           {/* 1º: MARKET INSTRUMENT */}
           <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Market instrument
-            </label>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Market instrument
+              </label>
+              <span className="rounded border border-border/70 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+                ${instrument.multiplier}/pt
+              </span>
+            </div>
             <div className="w-36">
               <OptionSelect
                 value={instrumentId}
                 onValueChange={handleInstrumentChange}
-                className="h-9 text-xs"
+                className="h-9 text-xs font-mono font-semibold"
               >
                 {QUANT_INSTRUMENTS.map((inst) => (
                   <option key={inst.id} value={inst.id}>
-                    {inst.name}
+                    {inst.id}
                   </option>
                 ))}
               </OptionSelect>
