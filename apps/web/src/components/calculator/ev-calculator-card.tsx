@@ -62,11 +62,21 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
     <Card className="flex flex-col justify-between">
       <div>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
-            EV Calculator
-          </CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+              EV Calculator
+            </CardTitle>
+            {cost > 0 && (
+              <span className="rounded border border-border/70 bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+                ${cost} eval cost
+              </span>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">
-            Expected value per eval: (pass rate × payout chance × avg payout) - eval cost.
+            Expected Value per Eval:{" "}
+            <span className="font-mono text-[11px] font-medium text-foreground/80">
+              (Pass Rate × Payout Chance × Avg Payout) − Eval Cost
+            </span>
           </p>
         </CardHeader>
         <CardContent className="space-y-3.5">
