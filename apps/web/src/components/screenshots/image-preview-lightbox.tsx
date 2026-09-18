@@ -187,7 +187,7 @@ export function ImagePreviewLightbox({
         <button
           type="button"
           aria-label="Delete"
-          title="Delete Screenshot (Delete)"
+          title="Delete screenshot (Del)"
           className="absolute top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-red-400 border border-white/10 backdrop-blur-sm transition-colors hover:bg-red-500/20 hover:text-red-300"
           onClick={handleDelete}
         >
@@ -395,7 +395,7 @@ export function ImagePreviewLightbox({
         type="button"
         disabled={images.length <= 1}
         aria-label="Previous"
-        title={images.length <= 1 ? "Only 1 image in carousel" : "Previous (Left Arrow)"}
+        title={images.length <= 1 ? "Only 1 image in carousel" : "Previous (left arrow)"}
         className={`absolute top-1/2 left-4 z-50 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-gray-200 border border-white/10 backdrop-blur-sm transition-all ${
           images.length <= 1
             ? "opacity-30 cursor-not-allowed"
@@ -412,7 +412,7 @@ export function ImagePreviewLightbox({
         type="button"
         disabled={images.length <= 1}
         aria-label="Next"
-        title={images.length <= 1 ? "Only 1 image in carousel" : "Next (Right Arrow)"}
+        title={images.length <= 1 ? "Only 1 image in carousel" : "Next (right arrow)"}
         className={`absolute top-1/2 right-4 z-50 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-gray-200 border border-white/10 backdrop-blur-sm transition-all ${
           images.length <= 1
             ? "opacity-30 cursor-not-allowed"

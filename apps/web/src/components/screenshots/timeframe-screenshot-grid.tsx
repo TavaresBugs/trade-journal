@@ -73,7 +73,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
     const categories: ("pre" | "post")[] = ["pre", "post"];
 
     for (const cat of categories) {
-      const catLabel = cat === "pre" ? "Pre-Market" : "Post-Market";
+      const catLabel = cat === "pre" ? "Pre-market" : "Post-market";
       const map = cat === "pre" ? preAttachmentsByTf : postAttachmentsByTf;
       for (const tf of TIMEFRAME_CONFIG) {
         const slotAtts = map.get(tf.key) ?? [];
@@ -195,7 +195,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
             </div>
             <div>
               <CardTitle className="text-sm font-semibold tracking-tight">
-                Visual Context & Screenshots
+                Visual context & screenshots
               </CardTitle>
               <p className="text-xs text-muted-foreground">
                 {activeCategory === "pre"
@@ -205,7 +205,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
             </div>
           </div>
 
-          {/* Category Tabs: Pre-Market vs Post-Market (Executions) */}
+          {/* Category Tabs: Pre-market vs Post-market (executions) */}
           <div className="flex items-center rounded-lg bg-muted/60 p-1 text-xs border border-border/40">
             <button
               type="button"
@@ -217,7 +217,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
               }`}
             >
               <Clock className="h-3.5 w-3.5" />
-              <span>Pre-Market</span>
+              <span>Pre-market</span>
               {preTotalCount > 0 && (
                 <span className="rounded-full bg-primary/15 px-1.5 py-0.2 text-[10px] font-semibold text-primary">
                   {preTotalCount}
@@ -235,7 +235,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
               }`}
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>Post-Market (Executions)</span>
+              <span>Post-market (executions)</span>
               {postTotalCount > 0 && (
                 <span className="rounded-full bg-primary/15 px-1.5 py-0.2 text-[10px] font-semibold text-primary">
                   {postTotalCount}

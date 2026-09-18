@@ -176,7 +176,7 @@ export function ImageUploadZone({
                 onDelete(currentAttachment.id);
               }
             }}
-            title="Remove Screenshot"
+            title="Remove screenshot"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -191,7 +191,7 @@ export function ImageUploadZone({
               e.stopPropagation();
               onZoom(attachments, safeIndex);
             }}
-            title="Open Fullscreen Zoom"
+            title="Open fullscreen zoom"
           >
             <Maximize2 className="h-3.5 w-3.5" />
           </Button>

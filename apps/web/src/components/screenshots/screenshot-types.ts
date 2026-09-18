@@ -14,17 +14,17 @@ export interface TimeframeConfig {
 
 /**
  * 8 standard multi-timeframe analysis slots (Monthly down to M3/M1).
- * Both Pre-Market and Post-Market (Executions) modes share the identical 4x2 slot grid.
+ * Both Pre-market and Post-market (executions) modes share the identical 4x2 slot grid.
  */
 export const TIMEFRAME_CONFIG = [
-  { key: "tfM", label: "Monthly", description: "Macro Context & Secular Trend" },
-  { key: "tfW", label: "Weekly", description: "Weekly Structure & Major Zones" },
-  { key: "tfD", label: "Daily", description: "Daily Bias & Directional Trend" },
-  { key: "tfH4", label: "4H", description: "4H Structure & Liquidity Pools" },
-  { key: "tfH1", label: "1H", description: "1H Intraday Structure" },
-  { key: "tfM15", label: "15M", description: "Points of Interest & 15M Structure" },
-  { key: "tfM5", label: "5M", description: "Operational Structure & Trigger" },
-  { key: "tfM3", label: "M3/M1", description: "Refined Execution / Entry & Stop" },
+  { key: "tfM", label: "Monthly", description: "Macro context & secular trend" },
+  { key: "tfW", label: "Weekly", description: "Weekly structure & major zones" },
+  { key: "tfD", label: "Daily", description: "Daily bias & directional trend" },
+  { key: "tfH4", label: "4H", description: "4H structure & liquidity pools" },
+  { key: "tfH1", label: "1H", description: "1H intraday structure" },
+  { key: "tfM15", label: "15M", description: "Points of interest & 15M structure" },
+  { key: "tfM5", label: "5M", description: "Operational structure & trigger" },
+  { key: "tfM3", label: "M3/M1", description: "Refined execution / entry & stop" },
 ] as const;
 
 export type TimeframeKey = (typeof TIMEFRAME_CONFIG)[number]["key"];
