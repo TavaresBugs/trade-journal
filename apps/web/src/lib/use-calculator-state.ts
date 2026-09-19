@@ -226,7 +226,10 @@ export function useCalculatorState() {
     setState((prev) => {
       const prevVal = prev[section];
       const nextVal =
-        typeof prevVal === "object" && prevVal !== null && typeof patch === "object" && patch !== null
+        typeof prevVal === "object" &&
+        prevVal !== null &&
+        typeof patch === "object" &&
+        patch !== null
           ? { ...prevVal, ...patch }
           : patch;
       const next = {
@@ -283,4 +286,3 @@ export function useCalculatorState() {
     resetSection,
   };
 }
-

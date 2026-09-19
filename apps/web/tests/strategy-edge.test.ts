@@ -131,7 +131,7 @@ describe("Strategy & Edge — Quantitative Engine & Calculator Rules", () => {
       const churnCell = allCells.find((c) => c.winRate === 45 && c.riskReward === 1.0);
       expect(churnCell?.isSweetSpot).toBe(false);
       expect(churnCell?.isProfitable).toBe(false);
-      expect(churnCell?.rMultiple).toBe(-0.10);
+      expect(churnCell?.rMultiple).toBe(-0.1);
 
       // High-risk lottery zone: 20% win rate with 5.0R
       const lotteryCell = allCells.find((c) => c.winRate === 20 && c.riskReward === 5.0);
