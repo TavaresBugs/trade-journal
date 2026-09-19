@@ -165,67 +165,74 @@ export function SweetSpotMatrixCard({
                 }}
               />
             </div>
-
-            {/* 3º: LOSS RATE (%) - DERIVED */}
-            <div className="flex items-center justify-between gap-4">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Loss rate (%)
-              </label>
-              <div className="h-9 w-36 flex items-center justify-center rounded-md border border-border/60 bg-muted/40 font-mono text-sm font-semibold text-muted-foreground tnum">
-                {lossRate}%
-              </div>
-            </div>
           </div>
 
-          {/* MATRIX HEATMAP (ORIGINAL SIZE PRESERVED) */}
+          {/* MATRIX HEATMAP MOSAIC (CONTIGUOUS TILES) */}
           <div className="overflow-x-auto pb-1 pt-2 border-t border-border/40">
-            <div className="min-w-[480px]">
+            <div className="min-w-[500px]">
               {/* HEADER ROW: RR RATIOS */}
-              <div className="flex items-center text-center text-[10px] font-mono text-muted-foreground pb-1 border-b border-border/60">
-                <div className="w-14 text-left font-semibold uppercase tracking-wider">Win %</div>
+              <div className="grid grid-cols-[52px_repeat(9,1fr)] gap-[1px] mb-[1px] text-center text-[10px] font-mono text-muted-foreground">
+                <div className="flex items-center justify-start pl-1.5 font-semibold uppercase tracking-wider">
+                  Win %
+                </div>
                 {MATRIX_RR_RATIOS.map((rr) => (
-                  <div key={rr} className="flex-1 font-semibold">
+                  <div key={rr} className="py-1 font-semibold">
                     1:{rr}R
                   </div>
                 ))}
               </div>
 
-              {/* ROWS: WIN RATES */}
-              <div className="space-y-1 pt-1">
+              {/* CONTIGUOUS HEATMAP GRID */}
+              <div className="grid grid-cols-[52px_repeat(9,1fr)] gap-[1px] bg-border/40 p-[1px] rounded-lg overflow-hidden">
                 {matrix.map((row) => {
                   const wr = row[0]!.winRate;
                   return (
-                    <div key={wr} className="flex items-center text-center">
-                      <div className="w-14 text-left font-mono text-[11px] font-medium text-foreground">
+                    <Fragment key={wr}>
+                      {/* ROW HEADER: WIN % */}
+                      <div className="flex items-center justify-start pl-1.5 font-mono text-[11px] font-medium text-foreground bg-muted/30">
                         {wr}%
                       </div>
+
+                      {/* TILES */}
                       {row.map((cell) => {
                         const isExactSelected = selectedWr === cell.winRate && selectedRr === cell.riskReward;
                         const isClosestMatch = cell.winRate === closestWr && cell.riskReward === closestRr;
                         const r = cell.rMultiple;
 
-                        // Clean, borderless color styles for unselected cells
+                        // Continuous Heatmap Gradient
                         let cellStyle = "bg-loss/10 text-loss/80 hover:bg-loss/20";
                         if (cell.isSweetSpot) {
-                          cellStyle = "bg-primary/15 text-primary font-semibold hover:bg-primary/25";
-                        } else if (r > 0.6) {
-                          cellStyle = "bg-profit/20 text-profit font-semibold hover:bg-profit/30";
+                          if (r > 0.8) {
+                            cellStyle = "bg-primary/30 text-primary font-bold hover:bg-primary/40";
+                          } else if (r > 0.4) {
+                            cellStyle = "bg-primary/22 text-primary font-semibold hover:bg-primary/30";
+                          } else {
+                            cellStyle = "bg-primary/15 text-primary font-medium hover:bg-primary/25";
+                          }
+                        } else if (r > 1.5) {
+                          cellStyle = "bg-profit/35 text-profit font-bold hover:bg-profit/45";
+                        } else if (r > 0.8) {
+                          cellStyle = "bg-profit/25 text-profit font-semibold hover:bg-profit/35";
+                        } else if (r > 0.4) {
+                          cellStyle = "bg-profit/18 text-profit font-medium hover:bg-profit/28";
                         } else if (r > 0) {
-                          cellStyle = "bg-profit/10 text-profit hover:bg-profit/20";
+                          cellStyle = "bg-profit/10 text-profit/90 hover:bg-profit/20";
                         } else if (cell.isBreakeven) {
                           cellStyle = "bg-muted/40 text-muted-foreground hover:bg-muted/70";
+                        } else if (r < -0.3) {
+                          cellStyle = "bg-loss/20 text-loss font-medium hover:bg-loss/30";
                         }
 
                         // Saturated styling ONLY for the selected cell, in the same hue as its internal text
                         if (isExactSelected) {
                           if (cell.isSweetSpot) {
-                            cellStyle = "bg-primary text-primary-foreground font-bold shadow-sm z-10";
+                            cellStyle = "bg-primary text-primary-foreground font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
                           } else if (r > 0) {
-                            cellStyle = "bg-profit text-white font-bold shadow-sm z-10";
+                            cellStyle = "bg-profit text-white font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
                           } else if (r < 0) {
-                            cellStyle = "bg-loss text-white font-bold shadow-sm z-10";
+                            cellStyle = "bg-loss text-white font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
                           } else {
-                            cellStyle = "bg-muted-foreground text-background font-bold shadow-sm z-10";
+                            cellStyle = "bg-muted-foreground text-background font-bold shadow-md z-10 scale-[1.04]";
                           }
                         } else if (isClosestMatch && (selectedWr !== closestWr || selectedRr !== closestRr)) {
                           cellStyle = cn(cellStyle, "ring-2 ring-primary/80 font-bold z-10");
@@ -238,7 +245,7 @@ export function SweetSpotMatrixCard({
                             onClick={() => handleCellClick(cell.winRate, cell.riskReward)}
                             title={`Win Rate: ${cell.winRate}%, RR: ${cell.riskReward}R -> Expectancy: ${r >= 0 ? "+" : ""}${r}R per trade`}
                             className={cn(
-                              "flex-1 h-6 mx-0.5 rounded flex items-center justify-center font-mono text-[10px] transition-all active:scale-[0.98] relative tnum",
+                              "h-8 sm:h-8.5 flex items-center justify-center font-mono text-[10px] sm:text-[11px] transition-all relative tnum select-none",
                               cellStyle,
                             )}
                           >
@@ -246,7 +253,7 @@ export function SweetSpotMatrixCard({
                           </button>
                         );
                       })}
-                    </div>
+                    </Fragment>
                   );
                 })}
               </div>
@@ -280,7 +287,7 @@ export function SweetSpotMatrixCard({
           category={hudCategory}
           copyText={copyText}
           theoryNumerator="(Win% × RR) − Loss%"
-          theoryDenominator="Breakeven = 1 / (1 + RR)"
+          theoryDenominator="100%"
           valueNumerator={
             <>
               <span className="font-semibold text-foreground tnum">{safeWr}%</span>
@@ -291,19 +298,7 @@ export function SweetSpotMatrixCard({
             </>
           }
           valueDenominator={
-            <>
-              <span className="text-muted-foreground/70">BE: </span>
-              <span className="font-semibold text-foreground tnum">{beRate}%</span>
-              <span
-                className={cn(
-                  "text-[10px] ml-1 font-semibold tnum",
-                  safeWr >= beRate ? "text-profit" : "text-loss",
-                )}
-              >
-                ({safeWr >= beRate ? "+" : ""}
-                {(safeWr - beRate).toFixed(1)}% buffer)
-              </span>
-            </>
+            <span className="font-semibold text-muted-foreground tnum">100%</span>
           }
           resultValue={
             <span
@@ -330,11 +325,11 @@ export function SweetSpotMatrixCard({
           {/* 3-COLUMN METRICS BREAKDOWN */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
             <div>
-              <span className="block text-[11px] text-muted-foreground">Breakeven rate</span>
+              <span className="block text-[11px] text-muted-foreground">Breakeven rate (1/(1+RR))</span>
               <span className="font-mono font-semibold text-foreground tnum">{beRate}%</span>
             </div>
             <div>
-              <span className="block text-[11px] text-muted-foreground">Edge buffer</span>
+              <span className="block text-[11px] text-muted-foreground">Edge buffer (Win% − BE)</span>
               <span
                 className={cn(
                   "font-mono font-semibold tnum",
