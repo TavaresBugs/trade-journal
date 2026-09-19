@@ -122,14 +122,9 @@ export function RealExpectancyCard({
     <Card className="flex flex-col justify-between">
       <div>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
-              Breakeven & Real Expectancy
-            </CardTitle>
-            <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-              Paper vs Real
-            </span>
-          </div>
+          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+            Breakeven & Real Expectancy
+          </CardTitle>
           <p className="text-xs text-muted-foreground">
             Compare theoretical Paper EV with Real EV after deducting commissions, exchange fees, and execution slippage.
           </p>

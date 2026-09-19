@@ -110,14 +110,9 @@ export function SweetSpotMatrixCard({
     <Card className="flex flex-col justify-between">
       <div>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
-              System Design & Sweet Spot Matrix
-            </CardTitle>
-            <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-              Video Charts 1 & 4
-            </span>
-          </div>
+          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+            System Design & Sweet Spot Matrix
+          </CardTitle>
           <p className="text-xs text-muted-foreground">
             Risk:Reward vs Win Rate matrix. Highlighted cells represent the realistic sweet spot (2R–5R with 35%–50% win rate).
           </p>
