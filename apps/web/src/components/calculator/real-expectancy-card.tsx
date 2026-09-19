@@ -96,7 +96,7 @@ export function RealExpectancyCard({
         border: "border-profit/40",
         bg: "bg-profit/10",
         heading: "Sustainable Real Edge",
-        advice: `Your net return of +$${result.realEv.toLocaleString()} (${result.netRMultiple >= 0 ? "+" : ""}${result.netRMultiple}R/trade) survives execution friction with a ${result.breakevenWinRate}% breakeven requirement.`,
+        advice: `Your net return of +$${result.realEv.toLocaleString()} (${result.netRMultiple >= 0 ? "+" : ""}${result.netRMultiple}R/trade) remains positive after deducting broker fees and slippage friction.`,
       }
     : isPaperPositiveOnly
       ? {
@@ -116,17 +116,17 @@ export function RealExpectancyCard({
           advice: `Both theoretical paper expectancy (-$${Math.abs(result.paperEv).toLocaleString()}) and real net expectancy (-$${Math.abs(result.realEv).toLocaleString()}) are negative. The system loses capital on every trade.`,
         };
 
-  const copyText = `Real Expectancy Analysis: Win Rate: ${safeWr}% | RR: 1:${safeRr} | Risk: $${safeRisk} | Paper EV: $${result.paperEv} | Friction: -$${result.totalFriction} | Real Net EV: $${result.realEv} (${result.netRMultiple >= 0 ? "+" : ""}${result.netRMultiple}R/trade) | Breakeven Win Rate: ${result.breakevenWinRate}% | Status: ${expectancyCategory.label}`;
+  const copyText = `Real Expectancy Analysis: Win Rate: ${safeWr}% | RR: 1:${safeRr} | Risk: $${safeRisk} | Paper EV: $${result.paperEv} | Friction: -$${result.totalFriction} | Real Net EV: $${result.realEv} (${result.netRMultiple >= 0 ? "+" : ""}${result.netRMultiple}R/trade) | Status: ${expectancyCategory.label}`;
 
   return (
     <Card className="flex flex-col justify-between">
       <div>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
-            Breakeven & Real Expectancy
+            Real Expectancy & Friction
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Compare theoretical Paper EV with Real EV after deducting commissions, exchange fees, and execution slippage.
+            Compare theoretical Paper EV with Real Net EV after deducting broker commissions, exchange fees, and execution slippage.
           </p>
         </CardHeader>
 
@@ -195,46 +195,50 @@ export function RealExpectancyCard({
             />
           </div>
 
-          {/* 4º: FRICTION (FEES & SLIPPAGE) */}
-          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40">
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground block mb-1">
-                Fee / trade ($)
-              </label>
-              <Input
-                type="number"
-                className="h-8 text-center font-mono text-xs tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={localFee || ""}
-                placeholder="5"
-                onFocus={() => setIsFeeFocused(true)}
-                onBlur={() => setIsFeeFocused(false)}
-                onChange={(e) => handleUpdate({ feePerTrade: Number(e.target.value) })}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    (e.target as HTMLInputElement).blur();
-                  }
-                }}
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground block mb-1">
-                Slippage / trade ($)
-              </label>
-              <Input
-                type="number"
-                className="h-8 text-center font-mono text-xs tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={localSlip || ""}
-                placeholder="10"
-                onFocus={() => setIsSlipFocused(true)}
-                onBlur={() => setIsSlipFocused(false)}
-                onChange={(e) => handleUpdate({ slippageDollars: Number(e.target.value) })}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    (e.target as HTMLInputElement).blur();
-                  }
-                }}
-              />
-            </div>
+          {/* 4º: FEE PER TRADE ($) */}
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Fee per trade ($)
+            </label>
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={localFee !== undefined ? localFee : ""}
+              placeholder="5"
+              onFocus={() => setIsFeeFocused(true)}
+              onBlur={() => setIsFeeFocused(false)}
+              onChange={(e) => handleUpdate({ feePerTrade: Number(e.target.value) })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
+          </div>
+
+          {/* 5º: SLIPPAGE PER TRADE ($) */}
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Slippage per trade ($)
+            </label>
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={localSlip !== undefined ? localSlip : ""}
+              placeholder="10"
+              onFocus={() => setIsSlipFocused(true)}
+              onBlur={() => setIsSlipFocused(false)}
+              onChange={(e) => handleUpdate({ slippageDollars: Number(e.target.value) })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
           </div>
         </CardContent>
       </div>
@@ -294,9 +298,6 @@ export function RealExpectancyCard({
               >
                 <MonetaryValue>${safeSlip}</MonetaryValue>
               </span>
-              <span className="text-muted-foreground/70 text-[10px] ml-1 font-sans">
-                (= -<MonetaryValue>${result.totalFriction}</MonetaryValue>)
-              </span>
             </>
           }
           resultValue={
@@ -344,9 +345,14 @@ export function RealExpectancyCard({
               </span>
             </div>
             <div>
-              <span className="block text-[11px] text-muted-foreground">Breakeven win rate</span>
-              <span className="font-mono font-semibold text-foreground tnum">
-                {result.breakevenWinRate}%
+              <span className="block text-[11px] text-muted-foreground">Net edge in R</span>
+              <span
+                className={cn(
+                  "font-mono font-semibold tnum",
+                  result.netRMultiple >= 0 ? "text-profit" : "text-loss",
+                )}
+              >
+                {result.netRMultiple >= 0 ? `+${result.netRMultiple} R` : `${result.netRMultiple} R`}
               </span>
             </div>
           </div>
