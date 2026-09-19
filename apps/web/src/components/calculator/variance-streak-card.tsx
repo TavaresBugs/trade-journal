@@ -166,81 +166,33 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
           copyText={copyText}
           theoryNumerator={
             distributionMode === "cumulative"
-              ? "1 − (1 − qᵏ)ᴺ"
-              : "(1 − qᵏ)ᴺ − (1 − qᵏ⁺¹)ᴺ"
+              ? "P(Losses ≥ k in N)"
+              : "P(Max losses = k in N)"
           }
-          theoryDenominator="q = 100% − p"
+          theoryDenominator="Trade Independence (p)"
           valueNumerator={
             <div className="text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap font-mono tnum">
-              {distributionMode === "cumulative" ? (
-                <>
-                  <span className="text-muted-foreground">1 − (1 − </span>
-                  <span
-                    className={cn(
-                      "font-semibold text-foreground px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
-                      isWrFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
-                    )}
-                  >
-                    {100 - safeWr}%
-                  </span>
-                  <sup className="text-[10px] font-semibold text-foreground">
-                    {selectedStreak}
-                  </sup>
-                  <span className="text-muted-foreground">)</span>
-                  <sup
-                    className={cn(
-                      "text-[10px] font-semibold px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 text-foreground",
-                      isSampleFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
-                    )}
-                  >
-                    {safeSample}
-                  </sup>
-                </>
-              ) : (
-                <>
-                  <span className="text-muted-foreground">(1 − </span>
-                  <span
-                    className={cn(
-                      "font-semibold text-foreground px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
-                      isWrFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
-                    )}
-                  >
-                    {100 - safeWr}%
-                  </span>
-                  <sup className="text-[10px] font-semibold text-foreground">
-                    {selectedStreak}
-                  </sup>
-                  <span className="text-muted-foreground">)</span>
-                  <sup
-                    className={cn(
-                      "text-[10px] font-semibold px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 text-foreground",
-                      isSampleFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
-                    )}
-                  >
-                    {safeSample}
-                  </sup>
-                  <span className="text-muted-foreground/60 px-0.5">−</span>
-                  <span className="text-muted-foreground">(1 − </span>
-                  <span className="font-semibold text-foreground">
-                    {100 - safeWr}%
-                  </span>
-                  <sup className="text-[10px] font-semibold text-foreground">
-                    {selectedStreak + 1}
-                  </sup>
-                  <span className="text-muted-foreground">)</span>
-                  <sup className="text-[10px] font-semibold text-foreground">
-                    {safeSample}
-                  </sup>
-                </>
-              )}
+              <span className="text-muted-foreground">
+                k {distributionMode === "cumulative" ? "≥" : "="}{" "}
+              </span>
+              <span className="font-semibold text-foreground">
+                {selectedStreak}
+              </span>
+              <span className="text-muted-foreground/60 px-1 font-sans">·</span>
+              <span className="text-muted-foreground">N = </span>
+              <span
+                className={cn(
+                  "font-semibold text-foreground px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
+                  isSampleFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
+                )}
+              >
+                {safeSample}
+              </span>
             </div>
           }
           valueDenominator={
             <div className="text-[10px] sm:text-xs px-1 pt-0.5 whitespace-nowrap font-mono tnum">
-              <span className="text-foreground font-semibold">{100 - safeWr}%</span>
-              <span className="text-muted-foreground/60 px-1">=</span>
-              <span className="text-muted-foreground">100%</span>
-              <span className="text-muted-foreground/60 px-0.5">−</span>
+              <span className="text-muted-foreground">p = </span>
               <span
                 className={cn(
                   "font-semibold text-foreground px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
