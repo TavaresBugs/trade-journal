@@ -25,8 +25,7 @@ export function SweetSpotMatrixCard({
 }: SweetSpotMatrixCardProps) {
   const [selectedWr, setSelectedWr] = useState(winRate);
   const [selectedRr, setSelectedRr] = useState(riskReward);
-  const [beInputStr, setBeInputStr] = useState("");
-  const [isBeFocused, setIsBeFocused] = useState(false);
+  const [moveToBeR, setMoveToBeR] = useState<number | undefined>(1.0);
 
   useEffect(() => {
     if (winRate !== undefined) {
@@ -68,18 +67,6 @@ export function SweetSpotMatrixCard({
   const handleRrInput = (val: number) => {
     setSelectedRr(val);
     onSelect?.(selectedWr, val);
-  };
-
-  const handleBeInput = (valStr: string) => {
-    setBeInputStr(valStr);
-    const num = parseFloat(valStr);
-    if (!isNaN(num) && num > 0 && num < 100) {
-      // RR = (100 - BE) / BE
-      const derivedRr = Number(((100 - num) / num).toFixed(2));
-      const clampedRr = Math.max(0.1, Math.min(20, derivedRr));
-      setSelectedRr(clampedRr);
-      onSelect?.(selectedWr, clampedRr);
-    }
   };
 
   const handleCellClick = (wr: number, rr: number) => {
@@ -180,31 +167,28 @@ export function SweetSpotMatrixCard({
               />
             </div>
 
-            {/* 3º: BREAKEVEN RATE (%) */}
+            {/* 3º: MOVE TO BREAKEVEN (OPTIONAL · 1:1 DEFAULT) */}
             <div className="flex items-center justify-between gap-4">
               <div className="flex flex-col">
                 <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Breakeven rate (%)
+                  Move to Breakeven (1:X R)
                 </label>
-                <span className="text-[10px] text-muted-foreground/70">1 / (1 + RR) · Linked to RR</span>
+                <span className="text-[10px] text-muted-foreground/70">
+                  Optional · 1:1 default {moveToBeR !== undefined && safeRr > 0 ? `(${Math.round((moveToBeR / safeRr) * 100)}% of target)` : ""}
+                </span>
               </div>
               <Input
                 type="number"
-                min="1"
-                max="95"
-                step="0.5"
+                min="0.1"
+                max="20"
+                step="0.1"
                 className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={isBeFocused ? beInputStr : beRate || ""}
-                placeholder="28.6"
-                onFocus={() => {
-                  setIsBeFocused(true);
-                  setBeInputStr(String(beRate));
+                value={moveToBeR !== undefined ? moveToBeR : ""}
+                placeholder="1.0"
+                onChange={(e) => {
+                  const val = e.target.value === "" ? undefined : Number(e.target.value);
+                  setMoveToBeR(val);
                 }}
-                onBlur={() => {
-                  setIsBeFocused(false);
-                  setBeInputStr("");
-                }}
-                onChange={(e) => handleBeInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                 }}
@@ -372,6 +356,7 @@ export function SweetSpotMatrixCard({
             <div>
               <span className="block text-[11px] text-muted-foreground">Breakeven threshold</span>
               <span className="font-mono font-semibold text-foreground tnum">{beRate}%</span>
+              <span className="block text-[10px] text-muted-foreground/70">1 / (1 + RR)</span>
             </div>
             <div>
               <span className="block text-[11px] text-muted-foreground">Edge buffer (Win% − BE)</span>
@@ -384,11 +369,17 @@ export function SweetSpotMatrixCard({
                 {safeWr >= beRate ? "+" : ""}
                 {(safeWr - beRate).toFixed(1)}%
               </span>
+              <span className="block text-[10px] text-muted-foreground/70">
+                {safeWr >= beRate ? "Margem positiva" : "Déficit estatístico"}
+              </span>
             </div>
             <div>
-              <span className="block text-[11px] text-muted-foreground">Realistic status</span>
+              <span className="block text-[11px] text-muted-foreground">Trade management</span>
               <span className="font-mono font-semibold text-foreground">
-                {isSweetSpot ? "Sweet Spot" : safeRr >= 6.0 ? "Hard to execute" : isProfitable ? "Valid edge" : "Negative edge"}
+                {moveToBeR !== undefined ? `BE em +${moveToBeR}R` : "Sem BE trail"}
+              </span>
+              <span className="block text-[10px] text-muted-foreground/70">
+                {isSweetSpot ? "Realistic sweet spot" : isProfitable ? "Positive expectancy" : "Negative edge"}
               </span>
             </div>
           </div>
