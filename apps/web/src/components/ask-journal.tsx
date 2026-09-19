@@ -65,17 +65,20 @@ export function AskJournal() {
         </form>
         <div className="flex flex-wrap gap-1.5">
           {SUGGESTIONS.map((suggestion) => (
-            <button
+            <Button
               key={suggestion}
+              type="button"
+              variant="outline"
+              size="sm"
               disabled={busy}
-              className="rounded-full border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent disabled:cursor-wait disabled:opacity-50"
+              className="h-7 rounded-md px-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
               onClick={() => {
                 setQuestion(suggestion);
                 void ask(suggestion);
               }}
             >
               {suggestion}
-            </button>
+            </Button>
           ))}
         </div>
         {error && (
