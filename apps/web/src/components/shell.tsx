@@ -13,7 +13,6 @@ import {
   Import,
   LayoutDashboard,
   ListOrdered,
-  NotebookPen,
   Settings,
   ListChecks,
   BookmarkPlus,
@@ -36,8 +35,7 @@ import { HoverHint } from "./ui/tooltip";
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/journal", label: "Daily journal", icon: NotebookPen },
-  { href: "/trades", label: "Trades", icon: ListOrdered },
+  { href: "/trades", label: "Histórico", icon: ListOrdered },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/prop-firms", label: "Prop firms", icon: Landmark },
   { href: "/calculator", label: "Calculator", icon: Calculator },
