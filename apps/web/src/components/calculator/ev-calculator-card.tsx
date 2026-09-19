@@ -1,15 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Copy } from "lucide-react";
 import { calculateExpectedValue } from "@luxalgo/journal-core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { HoverHint } from "@/components/ui/tooltip";
 import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
+import { FormulaHud } from "./shared";
 
 interface EvCalculatorCardProps {
   values: CalculatorState["ev"];
@@ -18,7 +16,6 @@ interface EvCalculatorCardProps {
 
 export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
   const { avgPayout, payoutChance, cost, passRate } = values;
-  const [copied, setCopied] = useState(false);
   const [isPassFocused, setIsPassFocused] = useState(false);
   const [isPayoutChanceFocused, setIsPayoutChanceFocused] = useState(false);
   const [isAvgPayoutFocused, setIsAvgPayoutFocused] = useState(false);
@@ -47,20 +44,10 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
     return Number((passRate - breakevenPassRate).toFixed(1));
   }, [passRate, breakevenPassRate]);
 
-  const handleCopyEv = async () => {
-    const evFormatted =
-      evResult >= 0 ? `+$${evResult.toFixed(2)}` : `-$${Math.abs(evResult).toFixed(2)}`;
-    const roiFormatted = roiPercent >= 0 ? `+${roiPercent}%` : `${roiPercent}%`;
-    const text = `EV: ${evFormatted}/eval (${roiFormatted} ROI) | Payout: $${avgPayout.toLocaleString("en-US")} (${payoutChance}%) | Cost: $${cost} | Pass: ${passRate}% (Breakeven: ${breakevenPassRate}%)`;
-
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Ignore clipboard error
-    }
-  };
+  const evFormatted =
+    evResult >= 0 ? `+$${evResult.toFixed(2)}` : `-$${Math.abs(evResult).toFixed(2)}`;
+  const roiFormatted = roiPercent >= 0 ? `+${roiPercent}%` : `${roiPercent}%`;
+  const copyText = `EV: ${evFormatted}/eval (${roiFormatted} ROI) | Payout: $${avgPayout.toLocaleString("en-US")} (${payoutChance}%) | Cost: $${cost} | Pass: ${passRate}% (Breakeven: ${breakevenPassRate}%)`;
 
   return (
     <Card className="flex flex-col justify-between">
@@ -172,134 +159,94 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
-        {/* UNIFIED HUD: EV HERO + LIVE MATHEMATICAL RESOLUTION */}
-        <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5 space-y-3">
-          {/* HEADER ROW */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                Expected value outcome
-              </span>
-              <span className="h-4 inline-flex items-center rounded border border-border/60 bg-background/60 px-1 font-mono text-[9px] text-muted-foreground">
-                Gross Return − Cost
-              </span>
-            </div>
-            <HoverHint content="Copy EV breakdown to clipboard">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
-                onClick={handleCopyEv}
-              >
-                {copied ? (
-                  <Check className="h-3.5 w-3.5 text-profit" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
+        <FormulaHud
+          title="Expected value outcome"
+          category={{
+            label: "Expected Value",
+            color: evResult >= 0 ? "text-profit" : "text-loss",
+            border: evResult >= 0 ? "border-profit/50" : "border-loss/50",
+            bg: evResult >= 0 ? "bg-profit/20" : "bg-loss/20",
+            heading: "EV per Evaluation",
+            advice:
+              "Quantifies the mathematical average return per evaluation attempt after taking into account qualification rates and payout probabilities.",
+          }}
+          copyText={copyText}
+          theoryNumerator="Pass% × Payout% × Avg"
+          theoryDenominator="− Eval Cost ($)"
+          valueNumerator={
+            <>
+              <span
+                className={cn(
+                  "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                  isPassFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-foreground",
                 )}
-                {copied ? "Copied" : "Copy analysis"}
-              </Button>
-            </HoverHint>
-          </div>
-
-          {/* MAIN ROW: THE THREE-STEP PROGRESSION (THEORY -> LIVE COMPLEX DATA -> DIRECT RESULT) */}
-          <div className="flex items-center justify-between gap-1 sm:gap-2 py-1">
-            {/* STEP 1 (LEFT): CONCEPTUAL / THEORETICAL FORMULA */}
-            <div className="inline-flex flex-col items-center text-center shrink-0">
-              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pb-0.5 tracking-wide whitespace-nowrap">
-                Pass% × Payout% × Avg
+              >
+                {passRate}%
               </span>
-              <span className="w-full border-b border-foreground/30 my-0.5" />
-              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pt-0.5 tracking-wide whitespace-nowrap">
-                − Eval Cost ($)
+              <span className="text-muted-foreground/60 px-0.5">×</span>
+              <span
+                className={cn(
+                  "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                  isPayoutChanceFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-foreground",
+                )}
+              >
+                {payoutChance}%
               </span>
-            </div>
-
-            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
-
-            {/* STEP 2 (CENTER): LIVE COMPLEX DATA IN FORMULA (RAW INPUTS, NOT RESUMIDO) */}
-            <div className="inline-flex flex-col items-center text-center font-mono shrink-0">
-              <div className="flex items-center text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap">
-                <span
-                  className={cn(
-                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
-                    isPassFocused
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
-                      : "text-foreground",
-                  )}
-                >
-                  {passRate}%
-                </span>
-                <span className="text-muted-foreground/60 px-0.5">×</span>
-                <span
-                  className={cn(
-                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
-                    isPayoutChanceFocused
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
-                      : "text-foreground",
-                  )}
-                >
-                  {payoutChance}%
-                </span>
-                <span className="text-muted-foreground/60 px-0.5">×</span>
-                <span
-                  className={cn(
-                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
-                    isAvgPayoutFocused
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
-                      : "text-foreground",
-                  )}
-                >
-                  ${avgPayout.toLocaleString("en-US")}
-                </span>
-              </div>
-              <span className="w-full border-b border-foreground/30 my-0.5" />
-              <div className="text-[10px] sm:text-xs px-1 pt-0.5 whitespace-nowrap">
-                <span
-                  className={cn(
-                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
-                    isCostFocused
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  − ${cost.toLocaleString("en-US")}
-                </span>
-              </div>
-            </div>
-
-            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
-
-            {/* STEP 3 (RIGHT): FINAL ACTIONABLE EV RESULT (DIRECT ANSWER) */}
-            <div className="flex flex-col justify-center text-right shrink-0">
-              <div className="flex items-baseline justify-end gap-1">
-                <span
-                  className={cn(
-                    "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
-                    evResult >= 0 ? "text-profit" : "text-loss",
-                  )}
-                >
-                  <MonetaryValue>
-                    {evResult >= 0
-                      ? `+$${evResult.toFixed(2)}`
-                      : `-$${Math.abs(evResult).toFixed(2)}`}
-                  </MonetaryValue>
-                </span>
-                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">/eval</span>
-              </div>
-              {cost > 0 && (
-                <span
-                  className={cn(
-                    "text-[10px] sm:text-xs font-mono font-medium tnum",
-                    roiPercent >= 0 ? "text-profit" : "text-loss",
-                  )}
-                >
-                  {roiPercent >= 0 ? `+${roiPercent}% ROI` : `${roiPercent}% ROI`}
-                </span>
+              <span className="text-muted-foreground/60 px-0.5">×</span>
+              <span
+                className={cn(
+                  "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                  isAvgPayoutFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-foreground",
+                )}
+              >
+                ${avgPayout.toLocaleString("en-US")}
+              </span>
+            </>
+          }
+          valueDenominator={
+            <span
+              className={cn(
+                "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                isCostFocused
+                  ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                  : "text-muted-foreground",
               )}
-            </div>
-          </div>
-
+            >
+              − ${cost.toLocaleString("en-US")}
+            </span>
+          }
+          resultValue={
+            <span
+              className={cn(
+                "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
+                evResult >= 0 ? "text-profit" : "text-loss",
+              )}
+            >
+              <MonetaryValue>
+                {evResult >= 0 ? `+$${evResult.toFixed(2)}` : `-$${Math.abs(evResult).toFixed(2)}`}
+              </MonetaryValue>
+            </span>
+          }
+          resultLabel="/eval"
+          resultSecondary={
+            cost > 0 ? (
+              <span
+                className={cn(
+                  "text-[10px] sm:text-xs font-mono font-medium tnum",
+                  roiPercent >= 0 ? "text-profit" : "text-loss",
+                )}
+              >
+                {roiPercent >= 0 ? `+${roiPercent}% ROI` : `${roiPercent}% ROI`}
+              </span>
+            ) : undefined
+          }
+        >
           {/* 3-COLUMN METRICS BREAKDOWN */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
             <div>
@@ -330,7 +277,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
               </span>
             </div>
           </div>
-        </div>
+        </FormulaHud>
       </CardContent>
     </Card>
   );
