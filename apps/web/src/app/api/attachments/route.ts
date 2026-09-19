@@ -61,7 +61,8 @@ export const POST = handler(async (request: Request) => {
   const type = String(form.get("type") ?? ""),
     ownerId = String(form.get("id") ?? ""),
     rawSlot = form.get("slot"),
-    slot = typeof rawSlot === "string" && rawSlot.trim().length > 0 ? rawSlot.trim().slice(0, 50) : null,
+    slot =
+      typeof rawSlot === "string" && rawSlot.trim().length > 0 ? rawSlot.trim().slice(0, 50) : null,
     file = form.get("file");
   requireValue(owner(type, ownerId), "Attachment owner not found.");
   requireValue(

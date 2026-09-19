@@ -88,6 +88,7 @@ describe("AI provider settings", () => {
       aiProvider: "openai",
       openaiKey: "fixture-private-openai",
       anthropicKey: "fixture-private-anthropic",
+      googleKey: "fixture-private-google",
     });
     const rows = JSON.stringify(db.select().from(settings).all());
     expect(rows).not.toContain("fixture-private");
@@ -96,6 +97,7 @@ describe("AI provider settings", () => {
       expect(body).not.toContain("fixture-private");
       expect(body).not.toContain(getSetting("openaiKeyEnc")!);
       expect(body).not.toContain(getSetting("anthropicKeyEnc")!);
+      expect(body).not.toContain(getSetting("googleKeyEnc")!);
     }
   });
 
@@ -104,13 +106,20 @@ describe("AI provider settings", () => {
       aiProvider: "openai",
       openaiKey: "fixture-openai",
       anthropicKey: "fixture-anthropic",
+      googleKey: "fixture-google",
     });
     await save({ openaiKey: null });
     expect(getAiKey("anthropic")).toBe("fixture-anthropic");
+    expect(getAiKey("google")).toBe("fixture-google");
     expect(getAiKey("openai")).toBeNull();
     expect(aiConfigured()).toBe(false);
     await expect(runAi("Fixture")).rejects.toThrow("OpenAI API key");
     expect(fetch).not.toHaveBeenCalled();
+    await save({ aiProvider: "google" });
+    expect(aiConfigured()).toBe(true);
+    await save({ googleKey: null });
+    expect(getAiKey("google")).toBeNull();
+    expect(aiConfigured()).toBe(false);
   });
 
   it("selects an OpenAI-only environment and preserves Anthropic when both keys exist", async () => {
@@ -124,6 +133,26 @@ describe("AI provider settings", () => {
     expect(getAiProvider()).toBe("anthropic");
     await save({ aiProvider: "openai", aiModel: "gpt-4.1" });
     expect(getAiProvider()).toBe("openai");
+  });
+
+  it("selects a Google-only setup when only Google key is configured", async () => {
+    await save({ googleKey: "fixture-google" });
+    expect(getAiProvider()).toBe("google");
+    expect(await state()).toMatchObject({
+      aiProvider: "google",
+      aiModel: "gemini-3.8-flash",
+      aiConnections: { google: { configured: true, source: "saved" } },
+    });
+  });
+
+  it("selects a Google-only environment when only GEMINI_API_KEY is set", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "fixture-env-gemini");
+    expect(getAiProvider()).toBe("google");
+    expect(await state()).toMatchObject({
+      aiProvider: "google",
+      aiModel: "gemini-3.8-flash",
+      aiConnections: { google: { configured: true, source: "environment" } },
+    });
   });
 
   it.each(["openai", "anthropic", "google"] as const)(
@@ -154,6 +183,7 @@ describe("AI provider settings", () => {
       ...["", " ", 42, {}, "key\nvalue", "a".repeat(4097)].flatMap((key) => [
         { openaiKey: key },
         { anthropicKey: key },
+        { googleKey: key },
       ]),
     ]) {
       expect((await save({ timeZone: "America/Jamaica", ...invalid })).status).toBe(400);
@@ -311,17 +341,64 @@ describe("AI provider requests through the real SDK adapters", () => {
     expect(fetcher).toHaveBeenCalled();
   });
 
-  it("sanitizes Google API errors", async () => {
+  it.each([
+    ["403 PERMISSION_DENIED: fixture-private", "authentication_error"],
+    ["401 API_KEY_INVALID: fixture-private", "authentication_error"],
+    ["429 RESOURCE_EXHAUSTED: fixture-private", "AI billing"],
+    ["429 rate limit exceeded: fixture-private", "AI rate limit"],
+    ["404 models/gemini-not-found is not found: fixture-private", "AI model unavailable"],
+    ["500 Internal error: fixture-private", "AI request failed"],
+  ])("sanitizes Google API errors (%s)", async (errorMessage, expected) => {
     await save({ aiProvider: "google", googleKey: "fixture-google" });
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => {
-        throw new Error("403 PERMISSION_DENIED: fixture-private");
+        throw new Error(errorMessage);
       }),
     );
     const error = await runAi("Fixture").catch((error) => error as Error);
     expect(error).toBeInstanceOf(Error);
-    expect((error as Error).message).toContain("authentication_error");
+    expect((error as Error).message).toContain(expected);
     expect((error as Error).message).not.toContain("fixture-private");
+  });
+
+  it("falls back to generateContent when interactions.create fails", async () => {
+    await save({
+      aiProvider: "google",
+      googleKey: "fixture-google",
+      aiModel: "gemini-3.8-flash",
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : "url" in input ? input.url : String(input);
+        if (url.includes("interactions")) {
+          return new Response(
+            JSON.stringify({ error: { message: "interactions not supported" } }),
+            {
+              status: 404,
+              headers: { "content-type": "application/json" },
+            },
+          );
+        }
+        return Response.json({
+          candidates: [
+            {
+              content: {
+                parts: [{ text: "Fallback generated content" }],
+                role: "model",
+              },
+            },
+          ],
+        });
+      }),
+    );
+    expect(await runAi("Fixture journal question", 700)).toBe("Fallback generated content");
+  });
+
+  it("honors GOOGLE_GENERATIVE_AI_API_KEY environment variable when GEMINI_API_KEY is unset", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "fixture-google-secondary");
+    expect(getAiKey("google")).toBe("fixture-google-secondary");
   });
 });
