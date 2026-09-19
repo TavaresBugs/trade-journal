@@ -160,21 +160,18 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
                 Market instrument
               </label>
               <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-                tick: {instrument.tickSize} pt
+                ${instrument.multiplier}/pt
               </span>
             </div>
-            <div className="w-48 sm:w-56">
+            <div className="w-36">
               <Select value={instrumentId} onValueChange={handleInstrumentChange}>
                 <SelectTrigger className="h-9 w-full justify-between gap-2 px-2.5 text-xs font-mono font-semibold transition-all hover:bg-accent/40 active:scale-[0.98]">
                   <div className="flex items-center gap-2 truncate">
                     <AssetIcon symbol={instrument.id} size="xs" />
                     <span className="font-bold text-foreground">{instrument.id}</span>
-                    <span className="text-[10px] font-mono text-muted-foreground bg-muted/70 px-1 py-0.5 rounded border border-border/50">
-                      ${instrument.multiplier}/pt
-                    </span>
                   </div>
                 </SelectTrigger>
-                <SelectContent className="max-h-80 w-72 p-1">
+                <SelectContent align="end" className="max-h-80 w-72 p-1">
                   {/* US Indices */}
                   <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                     US Equity Indices
