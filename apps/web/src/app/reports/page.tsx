@@ -39,7 +39,6 @@ import {
   Hash,
   Scale,
   SlidersHorizontal,
-  Target,
   Trophy,
   Zap,
 } from "lucide-react";
@@ -85,129 +84,6 @@ const number = (n: number | null) =>
   n === null ? "-" : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 const percent = (n: number | null) => (n === null ? "-" : `${(n * 100).toFixed(1)}%`);
 const money = (n: number, currency: string) => `${number(n)} ${currency}`;
-function Summary({ data }: { data: Analysis }) {
-  const s = data.summary;
-  const currency = data.currencies[0] ?? "USD";
-  const items = [
-    {
-      label: "Closed Trades",
-      value: String(s.trades),
-      icon: Hash,
-      iconColor: "text-muted-foreground",
-    },
-    {
-      label: "Net P&L",
-      value: money(s.netPnl, currency),
-      isPnl: true,
-      rawPnl: s.netPnl,
-      icon: DollarSign,
-      iconColor:
-        s.netPnl > 0
-          ? "text-profit"
-          : s.netPnl < 0
-            ? "text-loss"
-            : "text-muted-foreground",
-    },
-    {
-      label: "Win Rate",
-      value: percent(s.winRate),
-      winRate: s.winRate,
-      icon: Trophy,
-      iconColor: "text-amber-500",
-    },
-    {
-      label: "Profit Factor",
-      value: s.noLosses ? "∞" : number(s.profitFactor),
-      isProfitFactor: true,
-      rawPf: s.profitFactor,
-      icon: Scale,
-      iconColor: "text-primary",
-    },
-    {
-      label: "Entry Volume",
-      value: number(s.volume),
-      icon: BarChart2,
-      iconColor: "text-purple-400",
-    },
-    {
-      label: "Avg Holding Time",
-      value: fmtDuration(s.avgDurationMs),
-      icon: Clock,
-      iconColor: "text-teal-400",
-    },
-    {
-      label: "Avg Planned R",
-      value: s.avgPlannedR !== null ? `${number(s.avgPlannedR)}R` : "–",
-      icon: Target,
-      iconColor: "text-amber-500",
-    },
-    {
-      label: "Avg Realized R",
-      value:
-        s.avgRealizedR !== null
-          ? `${s.avgRealizedR > 0 ? "+" : ""}${number(s.avgRealizedR)}R`
-          : "–",
-      isR: true,
-      rawR: s.avgRealizedR,
-      icon: Zap,
-      iconColor: "text-blue-500",
-    },
-  ];
-
-  return (
-    <div className="report-summary">
-      <div className="report-summary-grid grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {items.map((item) => (
-          <div
-            key={item.label}
-            className="rounded-xl border bg-card/60 p-3.5 shadow-xs transition-all hover:border-border/80"
-          >
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <item.icon className={cn("h-3.5 w-3.5 shrink-0", item.iconColor)} />
-              <span className="font-medium">{item.label}</span>
-            </div>
-            <p
-              className={cn(
-                "mt-1.5 font-mono text-base font-bold tabular-nums tracking-tight sm:text-lg",
-                item.isPnl &&
-                  (item.rawPnl > 0
-                    ? "text-profit"
-                    : item.rawPnl < 0
-                      ? "text-loss"
-                      : "text-foreground"),
-                item.isR &&
-                  (item.rawR !== null && item.rawR > 0
-                    ? "text-profit"
-                    : item.rawR !== null && item.rawR < 0
-                      ? "text-loss"
-                      : "text-foreground"),
-                item.isProfitFactor &&
-                  (item.rawPf !== null && item.rawPf >= 1.5
-                    ? "text-profit"
-                    : item.rawPf !== null && item.rawPf < 1
-                      ? "text-loss"
-                      : "text-foreground"),
-              )}
-            >
-              {item.isPnl ? <MonetaryValue>{item.value}</MonetaryValue> : item.value}
-            </p>
-            {item.winRate !== undefined && item.winRate !== null && (
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-300",
-                    item.winRate >= 0.5 ? "bg-profit" : "bg-loss/80",
-                  )}
-                  style={{ width: `${Math.min(100, Math.max(0, item.winRate * 100))}%` }}
-                />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 function DimensionSelect({
   label,
   value,
@@ -581,93 +457,100 @@ function Reports() {
                 </div>
               </div>
 
-              {/* Controls & Summary Card */}
+              {/* Table Card with Integrated Dimension Controls & Export */}
               <Card className="overflow-hidden rounded-xl border">
-                <CardHeader className="border-b bg-muted/10 pb-3">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <DimensionSelect label="Group by" value={primary} onChange={setPrimary} />
-                      {mode === "cross" && (
-                        <DimensionSelect
-                          label="Then by"
-                          value={secondary}
-                          onChange={setSecondary}
-                        />
-                      )}
-                    </div>
-                    {data && !multi && (
-                      <ReviewExport
-                        containsFinancialData
-                        document={{
-                          title:
-                            mode === "cross"
-                              ? `${DIMENSIONS[primary]} by ${DIMENSIONS[secondary]}`
-                              : `${DIMENSIONS[primary]} Performance`,
-                          subtitle: `${data.timeZone} · ${data.currencies[0] ?? "Account currency"}`,
-                          lines: [
-                            `Filters: ${describeFilters(values, data.accounts, data.playbooks)}`,
-                            `Closed trades: ${data.summary.trades} | Net P&L: ${number(data.summary.netPnl)} | Win rate: ${percent(data.summary.winRate)}`,
-                            "",
-                            ...data.groups.map(
-                              (g) =>
-                                `${labels(data, g.row, primary)}${g.column ? ` / ${labels(data, g.column, secondary)}` : ""}: ${g.trades} trades | P&L ${number(g.netPnl)} | Win ${percent(g.winRate)} | Planned ${number(g.avgPlannedR)}R | Realized ${number(g.avgRealizedR)}R | Volume ${number(g.volume)} | Holding time ${fmtDuration(g.avgDurationMs)}`,
-                            ),
-                          ],
-                        }}
-                      />
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  {error ? (
-                    <div
-                      role="alert"
-                      className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
-                    >
-                      {error}
-                    </div>
-                  ) : loading ? (
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <Skeleton key={i} className="h-20 rounded-xl" />
-                      ))}
-                    </div>
-                  ) : multi ? (
-                    <p className="rounded-xl border bg-muted/30 p-4 text-xs leading-relaxed text-muted-foreground">
-                      These accounts use different currencies ({data?.currencies.join(", ")}).
-                      Select accounts with the same currency in Filters to compare monetary results.
-                    </p>
-                  ) : data ? (
-                    <Summary data={data} />
-                  ) : null}
-                </CardContent>
-              </Card>
-
-              {/* Table Card */}
-              {data && !multi && !loading && (
-                <Card className="overflow-hidden rounded-xl border">
-                  <CardHeader className="border-b bg-muted/10 pb-3">
-                    <div className="flex items-center justify-between">
+                <CardHeader className="border-b bg-muted/10 pb-3.5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-wrap items-center gap-2.5">
                       <CardTitle className="text-base font-semibold">
                         {mode === "cross"
                           ? `${DIMENSIONS[primary]} × ${DIMENSIONS[secondary]}`
                           : `Performance by ${DIMENSIONS[primary]}`}
                       </CardTitle>
-                      <span className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
-                        {data.groups.length} {data.groups.length === 1 ? "group" : "groups"}
-                      </span>
+                      {data && !multi && !loading && (
+                        <span className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
+                          {data.groups.length} {data.groups.length === 1 ? "group" : "groups"}
+                        </span>
+                      )}
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="w-36 sm:w-44">
+                        <DimensionSelect label="Group by" value={primary} onChange={setPrimary} />
+                      </div>
+                      {mode === "cross" && (
+                        <div className="w-36 sm:w-44">
+                          <DimensionSelect
+                            label="Then by"
+                            value={secondary}
+                            onChange={setSecondary}
+                          />
+                        </div>
+                      )}
+                      {data && !multi && !loading && (
+                        <div className="pb-0.5">
+                          <ReviewExport
+                            containsFinancialData
+                            document={{
+                              title:
+                                mode === "cross"
+                                  ? `${DIMENSIONS[primary]} by ${DIMENSIONS[secondary]}`
+                                  : `${DIMENSIONS[primary]} Performance`,
+                              subtitle: `${data.timeZone} · ${data.currencies[0] ?? "Account currency"}`,
+                              lines: [
+                                `Filters: ${describeFilters(values, data.accounts, data.playbooks)}`,
+                                `Closed trades: ${data.summary.trades} | Net P&L: ${number(data.summary.netPnl)} | Win rate: ${percent(data.summary.winRate)}`,
+                                "",
+                                ...data.groups.map(
+                                  (g) =>
+                                    `${labels(data, g.row, primary)}${g.column ? ` / ${labels(data, g.column, secondary)}` : ""}: ${g.trades} trades | P&L ${number(g.netPnl)} | Win ${percent(g.winRate)} | Planned ${number(g.avgPlannedR)}R | Realized ${number(g.avgRealizedR)}R | Volume ${number(g.volume)} | Holding time ${fmtDuration(g.avgDurationMs)}`,
+                                ),
+                              ],
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {error ? (
+                    <div className="p-6">
+                      <div
+                        role="alert"
+                        className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
+                      >
+                        {error}
+                      </div>
+                    </div>
+                  ) : loading ? (
+                    <div className="space-y-3 p-6">
+                      <div className="flex items-center justify-between pb-2">
+                        <Skeleton className="h-5 w-48" />
+                        <Skeleton className="h-5 w-24" />
+                      </div>
+                      <Skeleton className="h-10 w-full rounded-lg" />
+                      <Skeleton className="h-12 w-full rounded-lg" />
+                      <Skeleton className="h-12 w-full rounded-lg" />
+                      <Skeleton className="h-12 w-full rounded-lg" />
+                      <Skeleton className="h-12 w-full rounded-lg" />
+                    </div>
+                  ) : multi ? (
+                    <div className="p-6">
+                      <p className="rounded-xl border bg-muted/30 p-4 text-xs leading-relaxed text-muted-foreground">
+                        These accounts use different currencies ({data?.currencies.join(", ")}).
+                        Select accounts with the same currency in Filters to compare monetary results.
+                      </p>
+                    </div>
+                  ) : data ? (
                     <Breakdown
                       data={data}
                       cross={mode === "cross"}
                       primary={primary}
                       secondary={secondary}
                     />
-                  </CardContent>
-                </Card>
-              )}
+                  ) : null}
+                </CardContent>
+              </Card>
               <p className="text-xs leading-relaxed text-muted-foreground">
                 Closed trades only. Dates use the closing day; weekday and entry time use the
                 opening time in {data?.timeZone ?? "your journal timezone"}. Volume is total entry
