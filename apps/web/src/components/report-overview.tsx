@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import type { AnalysisFilters, BucketStats } from "@luxalgo/journal-core";
 import {
   ArrowUpDown,
@@ -281,10 +280,7 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
         the same currency in Filters to compare monetary results.
       </p>
     );
-  const totalTrades = useMemo(
-    () => (data ? data.buckets.direction.reduce((sum, b) => sum + b.trades, 0) : 0),
-    [data?.buckets?.direction],
-  );
+  const totalTrades = data.buckets.direction.reduce((sum, b) => sum + b.trades, 0);
   const currency = data.currencies[0] ?? "USD";
   const label = (dimension: string, key: string) =>
     dimension === "playbook"
