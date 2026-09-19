@@ -766,10 +766,19 @@ function CohortSummary({ data }: { data: Analysis }) {
         {/* Primary Edge Spotlight (Net P&L, Profit Factor, Realized R) */}
         <div className="grid grid-cols-1 gap-2.5 sm:col-span-7">
           {/* Net P&L Card */}
-          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-card/60 p-3.5 shadow-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
-                <DollarSign className="h-4 w-4 text-emerald-500" />
+          <div className="flex items-center rounded-xl border border-border/50 bg-card/60 p-3.5 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div
+                className={cn(
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                  s.netPnl > 0
+                    ? "bg-profit/10 text-profit"
+                    : s.netPnl < 0
+                      ? "bg-loss/10 text-loss"
+                      : "bg-muted/40 text-muted-foreground",
+                )}
+              >
+                <DollarSign className="h-4 w-4" />
               </div>
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Net P&L</p>
@@ -787,19 +796,6 @@ function CohortSummary({ data }: { data: Analysis }) {
                 </p>
               </div>
             </div>
-            <Badge
-              variant="outline"
-              className={cn(
-                "font-mono text-xs font-medium",
-                s.netPnl > 0
-                  ? "border-profit/30 bg-profit/10 text-profit"
-                  : s.netPnl < 0
-                    ? "border-loss/30 bg-loss/10 text-loss"
-                    : "text-muted-foreground",
-              )}
-            >
-              {s.netPnl > 0 ? "Profitable" : s.netPnl < 0 ? "Drawdown" : "Neutral"}
-            </Badge>
           </div>
 
           {/* Profit Factor & Realized R Twin Cards */}
@@ -930,7 +926,7 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
           pnlAdvantage: diffPnl,
           winRateAdvantage: diffWin,
           color: "text-purple-400",
-          badgeBg: "border-purple-500/25 bg-purple-500/10 text-purple-400",
+          badgeBg: "bg-purple-500/15 text-purple-400",
         }
       : diffPnl < 0
         ? {
@@ -939,7 +935,7 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             pnlAdvantage: Math.abs(diffPnl),
             winRateAdvantage: -diffWin,
             color: "text-primary",
-            badgeBg: "border-primary/25 bg-primary/10 text-primary",
+            badgeBg: "bg-primary/15 text-primary",
           }
         : null
     : null;
@@ -961,8 +957,8 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
           {
             metric: "Net P&L",
             icon: DollarSign,
-            iconColor: "text-emerald-500",
-            iconBg: "border-emerald-500/20 bg-emerald-500/10",
+            iconColor: "text-profit",
+            iconBg: "bg-profit/10",
             valA: (
               <span
                 className={
@@ -992,18 +988,14 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             deltaNode: (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold",
-                  diffPnl > 0
-                    ? "border border-profit/30 bg-profit/10 text-profit"
-                    : diffPnl < 0
-                      ? "border border-loss/30 bg-loss/10 text-loss"
-                      : "border border-border/40 bg-muted/40 text-muted-foreground",
+                  "inline-flex items-center justify-center gap-1 font-mono text-xs font-semibold tabular-nums",
+                  diffPnl > 0 ? "text-profit" : diffPnl < 0 ? "text-loss" : "text-muted-foreground",
                 )}
               >
                 {diffPnl > 0 ? (
-                  <ArrowUpRight className="h-3 w-3" />
+                  <ArrowUpRight className="h-3.5 w-3.5" />
                 ) : diffPnl < 0 ? (
-                  <ArrowDownRight className="h-3 w-3" />
+                  <ArrowDownRight className="h-3.5 w-3.5" />
                 ) : null}
                 <MonetaryValue>
                   {diffPnl > 0 ? "+" : ""}
@@ -1016,24 +1008,20 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             metric: "Win Rate",
             icon: Trophy,
             iconColor: "text-amber-500",
-            iconBg: "border-amber-500/20 bg-amber-500/10",
+            iconBg: "bg-amber-500/10",
             valA: percent(sumA.winRate),
             valB: percent(sumB.winRate),
             deltaNode: (
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold",
-                  diffWin > 0
-                    ? "border border-profit/30 bg-profit/10 text-profit"
-                    : diffWin < 0
-                      ? "border border-loss/30 bg-loss/10 text-loss"
-                      : "border border-border/40 bg-muted/40 text-muted-foreground",
+                  "inline-flex items-center justify-center gap-1 font-mono text-xs font-semibold tabular-nums",
+                  diffWin > 0 ? "text-profit" : diffWin < 0 ? "text-loss" : "text-muted-foreground",
                 )}
               >
                 {diffWin > 0 ? (
-                  <ArrowUpRight className="h-3 w-3" />
+                  <ArrowUpRight className="h-3.5 w-3.5" />
                 ) : diffWin < 0 ? (
-                  <ArrowDownRight className="h-3 w-3" />
+                  <ArrowDownRight className="h-3.5 w-3.5" />
                 ) : null}
                 {diffWin > 0 ? "+" : ""}
                 {(diffWin * 100).toFixed(1)}%
@@ -1044,25 +1032,21 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             metric: "Profit Factor",
             icon: Scale,
             iconColor: "text-primary",
-            iconBg: "border-primary/20 bg-primary/10",
+            iconBg: "bg-primary/10",
             valA: sumA.noLosses ? "∞" : number(sumA.profitFactor),
             valB: sumB.noLosses ? "∞" : number(sumB.profitFactor),
             deltaNode:
               diffPf !== null ? (
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold",
-                    diffPf > 0
-                      ? "border border-profit/30 bg-profit/10 text-profit"
-                      : diffPf < 0
-                        ? "border border-loss/30 bg-loss/10 text-loss"
-                        : "border border-border/40 bg-muted/40 text-muted-foreground",
+                    "inline-flex items-center justify-center gap-1 font-mono text-xs font-semibold tabular-nums",
+                    diffPf > 0 ? "text-profit" : diffPf < 0 ? "text-loss" : "text-muted-foreground",
                   )}
                 >
                   {diffPf > 0 ? (
-                    <ArrowUpRight className="h-3 w-3" />
+                    <ArrowUpRight className="h-3.5 w-3.5" />
                   ) : diffPf < 0 ? (
-                    <ArrowDownRight className="h-3 w-3" />
+                    <ArrowDownRight className="h-3.5 w-3.5" />
                   ) : null}
                   {diffPf > 0 ? "+" : ""}
                   {number(diffPf)}
@@ -1075,7 +1059,7 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             metric: "Avg Realized R",
             icon: Zap,
             iconColor: "text-blue-500",
-            iconBg: "border-blue-500/20 bg-blue-500/10",
+            iconBg: "bg-blue-500/10",
             valA:
               sumA.avgRealizedR !== null
                 ? `${sumA.avgRealizedR > 0 ? "+" : ""}${number(sumA.avgRealizedR)}R`
@@ -1088,18 +1072,14 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
               diffR !== null ? (
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold",
-                    diffR > 0
-                      ? "border border-profit/30 bg-profit/10 text-profit"
-                      : diffR < 0
-                        ? "border border-loss/30 bg-loss/10 text-loss"
-                        : "border border-border/40 bg-muted/40 text-muted-foreground",
+                    "inline-flex items-center justify-center gap-1 font-mono text-xs font-semibold tabular-nums",
+                    diffR > 0 ? "text-profit" : diffR < 0 ? "text-loss" : "text-muted-foreground",
                   )}
                 >
                   {diffR > 0 ? (
-                    <ArrowUpRight className="h-3 w-3" />
+                    <ArrowUpRight className="h-3.5 w-3.5" />
                   ) : diffR < 0 ? (
-                    <ArrowDownRight className="h-3 w-3" />
+                    <ArrowDownRight className="h-3.5 w-3.5" />
                   ) : null}
                   {diffR > 0 ? "+" : ""}
                   {number(diffR)}R
@@ -1112,11 +1092,11 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             metric: "Closed Trades",
             icon: Hash,
             iconColor: "text-muted-foreground",
-            iconBg: "border-border/40 bg-muted/40",
+            iconBg: "bg-muted/40",
             valA: String(sumA.trades),
             valB: String(sumB.trades),
             deltaNode: (
-              <span className="inline-flex items-center rounded-md border border-border/40 bg-muted/40 px-2 py-0.5 font-mono text-xs font-semibold text-muted-foreground">
+              <span className="font-mono text-xs font-semibold tabular-nums text-muted-foreground">
                 {diffTrades > 0 ? "+" : ""}
                 {diffTrades}
               </span>
@@ -1126,11 +1106,11 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             metric: "Entry Volume",
             icon: BarChart2,
             iconColor: "text-purple-400",
-            iconBg: "border-purple-500/20 bg-purple-500/10",
+            iconBg: "bg-purple-500/10",
             valA: number(sumA.volume),
             valB: number(sumB.volume),
             deltaNode: (
-              <span className="inline-flex items-center rounded-md border border-border/40 bg-muted/40 px-2 py-0.5 font-mono text-xs font-semibold text-muted-foreground">
+              <span className="font-mono text-xs font-semibold tabular-nums text-muted-foreground">
                 {diffVol > 0 ? "+" : ""}
                 {number(diffVol)}
               </span>
@@ -1140,12 +1120,12 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             metric: "Avg Holding Time",
             icon: Clock,
             iconColor: "text-teal-400",
-            iconBg: "border-teal-500/20 bg-teal-500/10",
+            iconBg: "bg-teal-500/10",
             valA: fmtDuration(sumA.avgDurationMs),
             valB: fmtDuration(sumB.avgDurationMs),
             deltaNode:
               sumB.avgDurationMs !== null && sumA.avgDurationMs !== null ? (
-                <span className="inline-flex items-center rounded-md border border-border/40 bg-muted/40 px-2 py-0.5 font-mono text-xs font-semibold text-muted-foreground">
+                <span className="font-mono text-xs font-semibold tabular-nums text-muted-foreground">
                   {sumB.avgDurationMs >= sumA.avgDurationMs ? "+" : "-"}
                   {fmtDuration(Math.abs(sumB.avgDurationMs - sumA.avgDurationMs))}
                 </span>
@@ -1334,12 +1314,14 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
                     .
                   </p>
                 </div>
-                <Badge
-                  variant="outline"
-                  className={cn("text-[10px] font-bold uppercase tracking-wider", outperformingGroup.badgeBg)}
+                <span
+                  className={cn(
+                    "rounded-md px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider",
+                    outperformingGroup.badgeBg,
+                  )}
                 >
                   Group {outperformingGroup.key.toUpperCase()} Edge
-                </Badge>
+                </span>
               </div>
             )}
           </CardHeader>
@@ -1347,20 +1329,20 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="py-2.5">Metric</TableHead>
-                  <TableHead className="py-2.5 text-right font-mono">
-                    <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
+                  <TableHead className="w-[28%] py-3 pl-4">Metric</TableHead>
+                  <TableHead className="w-[24%] py-3 text-center font-mono">
+                    <span className="inline-flex items-center justify-center gap-1.5 font-semibold text-primary">
                       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                       {nameA}
                     </span>
                   </TableHead>
-                  <TableHead className="py-2.5 text-right font-mono">
-                    <span className="inline-flex items-center gap-1.5 font-semibold text-purple-400">
+                  <TableHead className="w-[24%] py-3 text-center font-mono">
+                    <span className="inline-flex items-center justify-center gap-1.5 font-semibold text-purple-400">
                       <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
                       {nameB}
                     </span>
                   </TableHead>
-                  <TableHead className="px-4 text-right font-mono font-semibold">
+                  <TableHead className="w-[24%] py-3 pr-4 text-center font-mono font-semibold">
                     Delta ({nameB} − {nameA})
                   </TableHead>
                 </TableRow>
@@ -1368,11 +1350,11 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
               <TableBody>
                 {comparisonRows.map((row) => (
                   <TableRow key={row.metric} className="transition-colors hover:bg-muted/40">
-                    <TableCell className="py-2.5 font-medium">
+                    <TableCell className="py-3 pl-4 font-medium">
                       <div className="flex items-center gap-2.5">
                         <div
                           className={cn(
-                            "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border",
+                            "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
                             row.iconBg,
                           )}
                         >
@@ -1383,13 +1365,13 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="py-2.5 text-right font-mono text-xs tabular-nums text-foreground">
+                    <TableCell className="py-3 text-center font-mono text-xs tabular-nums text-foreground">
                       {row.valA}
                     </TableCell>
-                    <TableCell className="py-2.5 text-right font-mono text-xs tabular-nums text-foreground">
+                    <TableCell className="py-3 text-center font-mono text-xs tabular-nums text-foreground">
                       {row.valB}
                     </TableCell>
-                    <TableCell className="px-4 text-right font-mono text-xs tabular-nums">
+                    <TableCell className="py-3 pr-4 text-center font-mono text-xs tabular-nums">
                       {row.deltaNode}
                     </TableCell>
                   </TableRow>
