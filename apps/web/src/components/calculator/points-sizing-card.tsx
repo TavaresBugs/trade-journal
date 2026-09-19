@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy } from "lucide-react";
 import {
   QUANT_INSTRUMENTS,
   calculatePositionSize,
@@ -9,12 +8,11 @@ import {
 } from "@luxalgo/journal-core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { OptionSelect } from "@/components/ui/option-select";
-import { HoverHint } from "@/components/ui/tooltip";
 import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
+import { FormulaHud } from "./shared";
 
 interface PointsSizingCardProps {
   values: CalculatorState["sizing"];
@@ -23,7 +21,6 @@ interface PointsSizingCardProps {
 
 export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
   const { instrumentId, stopPoints, riskDollars, targetPoints } = values;
-  const [copied, setCopied] = useState(false);
 
   const instrument: QuantInstrument = useMemo(() => {
     return (
@@ -113,23 +110,24 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
     }
   };
 
-  const handleCopySizing = async () => {
+  const copyText = useMemo(() => {
     const targetLabel = isDefaultTarget
       ? `TP (2:1): ${effectiveTargetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`
       : `TP: ${targetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`;
 
-    const text = `${instrument.id}: ${sizing.recommendedContracts} contract${
+    return `${instrument.id}: ${sizing.recommendedContracts} contract${
       sizing.recommendedContracts > 1 ? "s" : ""
     } | SL: ${stopPoints} pts (-$${sizing.actualRiskDollars.toLocaleString("en-US")}) | ${targetLabel}`;
-
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Ignore clipboard error
-    }
-  };
+  }, [
+    instrument.id,
+    sizing.recommendedContracts,
+    sizing.actualRiskDollars,
+    sizing.targetDollars,
+    stopPoints,
+    isDefaultTarget,
+    effectiveTargetPoints,
+    targetPoints,
+  ]);
 
   return (
     <Card className="flex flex-col justify-between">
@@ -254,96 +252,55 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
-        {/* UNIFIED HUD: SIZING HERO + LIVE MATHEMATICAL RESOLUTION */}
-        <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5 space-y-3">
-          {/* HEADER ROW */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                Recommended entry size
-              </span>
-              <span className="h-4 inline-flex items-center rounded border border-border/60 bg-background/60 px-1 font-mono text-[9px] text-muted-foreground">
-                Risk ÷ Unit Cost
-              </span>
-            </div>
-            <HoverHint content="Copy sizing breakdown to clipboard">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
-                onClick={handleCopySizing}
-              >
-                {copied ? (
-                  <Check className="h-3.5 w-3.5 text-profit" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
-                {copied ? "Copied" : "Copy sizing"}
-              </Button>
-            </HoverHint>
-          </div>
-
-          {/* MAIN ROW: THE THREE-STEP PROGRESSION (THEORY -> LIVE DATA -> FINAL RESULT) */}
-          <div className="flex items-center justify-between gap-1 sm:gap-2 py-1">
-            {/* STEP 1 (LEFT): CONCEPTUAL / THEORETICAL FORMULA */}
-            <div className="inline-flex flex-col items-center text-center shrink-0">
-              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pb-0.5 tracking-wide whitespace-nowrap">
-                Max Risk ($)
-              </span>
-              <span className="w-full border-b border-foreground/30 my-0.5" />
-              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pt-0.5 tracking-wide whitespace-nowrap">
-                Stop × Point Value
-              </span>
-            </div>
-
-            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
-
-            {/* 2º ENTRADA (CENTRO): DADOS AO VIVO NO CÁLCULO (1ª imagem) */}
-            <div className="inline-flex flex-col items-center text-center font-mono shrink-0">
-              <span
-                className={cn(
-                  "text-xs sm:text-sm font-semibold px-1 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
-                  isRiskFocused
-                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
-                    : "text-foreground"
-                )}
-              >
-                ${effectiveRiskDollars > 0 ? effectiveRiskDollars.toLocaleString("en-US") : "0"}
-              </span>
-              <span className="w-full border-b border-foreground/30 my-0.5" />
-              <span
-                className={cn(
-                  "text-[10px] sm:text-xs px-1 py-0.5 rounded transition-[background-color,color] duration-150 tnum whitespace-nowrap",
-                  isStopFocused
-                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
-                    : "text-muted-foreground"
-                )}
-              >
-                {stopPoints > 0 ? stopPoints : "0"} pts × ${pointValue}
-              </span>
-            </div>
-
-            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
-
-            {/* 3º ENTRADA (DIREITA): RESULTADO FINAL (2ª imagem) */}
-            <div className="flex flex-col justify-center text-right shrink-0">
-              <div className="flex items-baseline justify-end gap-1">
-                <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono tnum">
-                  {sizing.recommendedContracts} {instrument.id}
-                </span>
-                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                  contract{sizing.recommendedContracts > 1 ? "s" : ""}
-                </span>
-              </div>
-              {microName && sizing.microContracts > 0 && (
-                <span className="text-[10px] sm:text-xs text-muted-foreground font-mono whitespace-nowrap">
-                  or {sizing.microContracts} {microName} micros
-                </span>
+        <FormulaHud
+          title="Recommended entry size"
+          category={{
+            label: "Futures · Quant Sizing",
+            color: "text-primary",
+            border: "border-primary/50",
+            bg: "bg-primary/20",
+            heading: "Position & Risk Sizing",
+            advice: "Derived from technical chart stop and maximum allowable dollar risk.",
+          }}
+          copyText={copyText}
+          theoryNumerator="Max Risk ($)"
+          theoryDenominator="Stop × Point Value"
+          valueNumerator={
+            <span
+              className={cn(
+                "font-semibold text-foreground tnum px-1 py-0.5 rounded transition-[background-color,color] duration-150",
+                isRiskFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
               )}
-            </div>
-          </div>
-
+            >
+              ${effectiveRiskDollars > 0 ? effectiveRiskDollars.toLocaleString("en-US") : "0"}
+            </span>
+          }
+          valueDenominator={
+            <span
+              className={cn(
+                "px-1 py-0.5 rounded transition-[background-color,color] duration-150 tnum whitespace-nowrap",
+                isStopFocused
+                  ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                  : "text-muted-foreground",
+              )}
+            >
+              {stopPoints > 0 ? stopPoints : "0"} pts × ${pointValue}
+            </span>
+          }
+          resultValue={
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono tnum">
+              {sizing.recommendedContracts} {instrument.id}
+            </span>
+          }
+          resultLabel={`contract${sizing.recommendedContracts > 1 ? "s" : ""}`}
+          resultSecondary={
+            microName && sizing.microContracts > 0 ? (
+              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono whitespace-nowrap">
+                or {sizing.microContracts} {microName} micros
+              </span>
+            ) : undefined
+          }
+        >
           {/* RISK & TARGET SUMMARY */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
             <div>
@@ -372,7 +329,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               </span>
             </div>
           </div>
-        </div>
+        </FormulaHud>
       </CardContent>
     </Card>
   );
