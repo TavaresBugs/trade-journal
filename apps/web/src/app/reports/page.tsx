@@ -39,6 +39,7 @@ import {
   Hash,
   Scale,
   SlidersHorizontal,
+  Target,
   Trophy,
   Zap,
 } from "lucide-react";
@@ -91,35 +92,54 @@ function Summary({ data }: { data: Analysis }) {
     {
       label: "Closed Trades",
       value: String(s.trades),
+      icon: Hash,
+      iconColor: "text-muted-foreground",
     },
     {
       label: "Net P&L",
       value: money(s.netPnl, currency),
       isPnl: true,
       rawPnl: s.netPnl,
+      icon: DollarSign,
+      iconColor:
+        s.netPnl > 0
+          ? "text-profit"
+          : s.netPnl < 0
+            ? "text-loss"
+            : "text-muted-foreground",
     },
     {
       label: "Win Rate",
       value: percent(s.winRate),
       winRate: s.winRate,
+      icon: Trophy,
+      iconColor: "text-amber-500",
     },
     {
       label: "Profit Factor",
       value: s.noLosses ? "∞" : number(s.profitFactor),
       isProfitFactor: true,
       rawPf: s.profitFactor,
+      icon: Scale,
+      iconColor: "text-primary",
     },
     {
       label: "Entry Volume",
       value: number(s.volume),
+      icon: BarChart2,
+      iconColor: "text-purple-400",
     },
     {
       label: "Avg Holding Time",
       value: fmtDuration(s.avgDurationMs),
+      icon: Clock,
+      iconColor: "text-teal-400",
     },
     {
       label: "Avg Planned R",
       value: s.avgPlannedR !== null ? `${number(s.avgPlannedR)}R` : "–",
+      icon: Target,
+      iconColor: "text-amber-500",
     },
     {
       label: "Avg Realized R",
@@ -129,6 +149,8 @@ function Summary({ data }: { data: Analysis }) {
           : "–",
       isR: true,
       rawR: s.avgRealizedR,
+      icon: Zap,
+      iconColor: "text-blue-500",
     },
   ];
 
@@ -140,7 +162,10 @@ function Summary({ data }: { data: Analysis }) {
             key={item.label}
             className="rounded-xl border bg-card/60 p-3.5 shadow-xs transition-all hover:border-border/80"
           >
-            <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <item.icon className={cn("h-3.5 w-3.5 shrink-0", item.iconColor)} />
+              <span className="font-medium">{item.label}</span>
+            </div>
             <p
               className={cn(
                 "mt-1.5 font-mono text-base font-bold tabular-nums tracking-tight sm:text-lg",
