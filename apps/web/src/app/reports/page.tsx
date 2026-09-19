@@ -18,10 +18,22 @@ import { ReportOverview } from "@/components/report-overview";
 import { MonetaryValue, usePrivacy } from "@/components/privacy";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DirectionBadge } from "@/components/ui/direction-badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useApi } from "@/lib/use-api";
 import { describeFilters } from "@/lib/filter-description";
-import { fmtDuration } from "@/lib/utils";
+import { cn, fmtDuration } from "@/lib/utils";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { normalizeSymbol } from "@/lib/assets/asset-icons";
 const TradeExplorer = dynamic(
@@ -62,24 +74,97 @@ const percent = (n: number | null) => (n === null ? "-" : `${(n * 100).toFixed(1
 const money = (n: number, currency: string) => `${number(n)} ${currency}`;
 function Summary({ data }: { data: Analysis }) {
   const s = data.summary;
+  const currency = data.currencies[0] ?? "USD";
+  const items = [
+    {
+      label: "Closed Trades",
+      value: String(s.trades),
+    },
+    {
+      label: "Net P&L",
+      value: money(s.netPnl, currency),
+      isPnl: true,
+      rawPnl: s.netPnl,
+    },
+    {
+      label: "Win Rate",
+      value: percent(s.winRate),
+      winRate: s.winRate,
+    },
+    {
+      label: "Profit Factor",
+      value: s.noLosses ? "∞" : number(s.profitFactor),
+      isProfitFactor: true,
+      rawPf: s.profitFactor,
+    },
+    {
+      label: "Entry Volume",
+      value: number(s.volume),
+    },
+    {
+      label: "Avg Holding Time",
+      value: fmtDuration(s.avgDurationMs),
+    },
+    {
+      label: "Avg Planned R",
+      value: s.avgPlannedR !== null ? `${number(s.avgPlannedR)}R` : "–",
+    },
+    {
+      label: "Avg Realized R",
+      value:
+        s.avgRealizedR !== null
+          ? `${s.avgRealizedR > 0 ? "+" : ""}${number(s.avgRealizedR)}R`
+          : "–",
+      isR: true,
+      rawR: s.avgRealizedR,
+    },
+  ];
+
   return (
     <div className="report-summary">
-      <div className="report-summary-grid grid grid-cols-2 gap-4">
-        {[
-          ["Closed trades", String(s.trades)],
-          ["Net P&L", money(s.netPnl, data.currencies[0] ?? "USD")],
-          ["Win rate", percent(s.winRate)],
-          ["Profit factor", s.noLosses ? "∞" : number(s.profitFactor)],
-          ["Entry volume", number(s.volume)],
-          ["Avg holding time", fmtDuration(s.avgDurationMs)],
-          ["Avg planned R", number(s.avgPlannedR)],
-          ["Avg realized R", number(s.avgRealizedR)],
-        ].map(([label, value]) => (
-          <div key={label}>
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="mt-1 break-words text-base font-semibold tabular-nums sm:text-lg">
-              {label === "Net P&L" ? <MonetaryValue>{value}</MonetaryValue> : value}
+      <div className="report-summary-grid grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="rounded-xl border bg-card/60 p-3.5 shadow-xs transition-all hover:border-border/80"
+          >
+            <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+            <p
+              className={cn(
+                "mt-1.5 font-mono text-base font-bold tabular-nums tracking-tight sm:text-lg",
+                item.isPnl &&
+                  (item.rawPnl > 0
+                    ? "text-profit"
+                    : item.rawPnl < 0
+                      ? "text-loss"
+                      : "text-foreground"),
+                item.isR &&
+                  (item.rawR !== null && item.rawR > 0
+                    ? "text-profit"
+                    : item.rawR !== null && item.rawR < 0
+                      ? "text-loss"
+                      : "text-foreground"),
+                item.isProfitFactor &&
+                  (item.rawPf !== null && item.rawPf >= 1.5
+                    ? "text-profit"
+                    : item.rawPf !== null && item.rawPf < 1
+                      ? "text-loss"
+                      : "text-foreground"),
+              )}
+            >
+              {item.isPnl ? <MonetaryValue>{item.value}</MonetaryValue> : item.value}
             </p>
+            {item.winRate !== undefined && item.winRate !== null && (
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-300",
+                    item.winRate >= 0.5 ? "bg-profit" : "bg-loss/80",
+                  )}
+                  style={{ width: `${Math.min(100, Math.max(0, item.winRate * 100))}%` }}
+                />
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -119,12 +204,27 @@ function GroupLabel({ dimension, children }: { dimension: Dimension; children: s
     const canonical = normalizeSymbol(children);
     return (
       <span
-        className="inline-flex items-center gap-1.5"
-        title={children !== canonical ? children : undefined}
+        className="inline-flex items-center gap-2 font-medium"
+        title={children !== canonical ? `Contract: ${children}` : undefined}
       >
         <AssetIcon symbol={children} size="xs" />
-        <span className="font-mono">{canonical || children}</span>
+        <span className="font-semibold text-foreground">{canonical || children}</span>
       </span>
+    );
+  }
+  if (dimension === "direction") {
+    return <DirectionBadge direction={children} size="xs" />;
+  }
+  if (dimension === "outcome") {
+    const isWin = children.toLowerCase() === "win";
+    const isLoss = children.toLowerCase() === "loss";
+    return (
+      <Badge
+        variant={isWin ? "profit" : isLoss ? "loss" : "outline"}
+        className="text-[11px] font-semibold uppercase tracking-wider"
+      >
+        {children}
+      </Badge>
     );
   }
   return dimension === "entryPrice" || dimension === "exitPrice" ? (
@@ -166,117 +266,187 @@ function Breakdown({
   if (primary === "weekday") rows.sort((a, b) => weekdays.indexOf(a) - weekdays.indexOf(b));
   const max = data.groups.reduce((max, g) => Math.max(max, Math.abs(g.netPnl)), 1);
   const cells = new Map(data.groups.map((g) => [JSON.stringify([g.row, g.column]), g]));
+  const currency = data.currencies[0] ?? "USD";
+
   return (
     <div className="space-y-4">
       {cross && rows.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr>
-                <th className="p-3 text-left">
-                  {DIMENSIONS[primary]} / {DIMENSIONS[secondary]}
-                </th>
-                {columns.map((c) => (
-                  <th key={c} className="min-w-24 p-2">
-                    <GroupLabel dimension={secondary}>{colLabel(c)}</GroupLabel>
+        <div className="border-b p-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr>
+                  <th className="p-3 text-left font-semibold text-foreground">
+                    {DIMENSIONS[primary]} / {DIMENSIONS[secondary]}
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r}>
-                  <th className="p-3 text-left font-medium">
-                    <GroupLabel dimension={primary}>{rowLabel(r)}</GroupLabel>
-                  </th>
-                  {columns.map((c) => {
-                    const g = cells.get(JSON.stringify([r, c]));
-                    return (
-                      <HoverHint
-                        key={c}
-                        content={
-                          g ? `${g.trades} trades · Win rate ${percent(g.winRate)}` : "No trades"
-                        }
-                      >
-                        <td
-                          key={c}
-                          className="border border-background p-2 text-center tabular-nums"
-                          style={{
-                            background: g
-                              ? `color-mix(in srgb, ${g.netPnl >= 0 ? "var(--profit-fill)" : "var(--loss)"} ${8 + (Math.abs(g.netPnl) / max) * 35}%, transparent)`
-                              : undefined,
-                          }}
-                          tabIndex={0}
-                        >
-                          {g ? <MonetaryValue>{number(g.netPnl)}</MonetaryValue> : "-"}
-                        </td>
-                      </HoverHint>
-                    );
-                  })}
+                  {columns.map((c) => (
+                    <th
+                      key={c}
+                      className="min-w-24 p-2 text-center font-medium text-muted-foreground"
+                    >
+                      <GroupLabel dimension={secondary}>{colLabel(c)}</GroupLabel>
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Cell values are net P&L in {data.currencies[0] ?? "account currency"}.
-          </p>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r} className="border-t border-border/40">
+                    <th className="p-3 text-left font-medium text-foreground">
+                      <GroupLabel dimension={primary}>{rowLabel(r)}</GroupLabel>
+                    </th>
+                    {columns.map((c) => {
+                      const g = cells.get(JSON.stringify([r, c]));
+                      return (
+                        <HoverHint
+                          key={c}
+                          content={
+                            g
+                              ? `${g.trades} trades · Win rate ${percent(g.winRate)}`
+                              : "No trades"
+                          }
+                        >
+                          <td
+                            className="border border-background/60 p-2.5 text-center font-mono text-xs tabular-nums transition-colors hover:ring-1 hover:ring-primary/50"
+                            style={{
+                              background: g
+                                ? `color-mix(in srgb, ${g.netPnl >= 0 ? "var(--profit-fill)" : "var(--loss)"} ${8 + (Math.abs(g.netPnl) / max) * 35}%, transparent)`
+                                : undefined,
+                            }}
+                            tabIndex={0}
+                          >
+                            {g ? <MonetaryValue>{number(g.netPnl)}</MonetaryValue> : "–"}
+                          </td>
+                        </HoverHint>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Cell values are net P&L in {currency}.
+            </p>
+          </div>
         </div>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="text-xs text-muted-foreground">
-            <tr>
-              {[
-                DIMENSIONS[primary],
-                ...(cross ? [DIMENSIONS[secondary]] : []),
-                "Trades",
-                "Win %",
-                "Net P&L",
-                "Entry volume",
-                "Avg planned R",
-                "Avg realized R",
-                "Avg duration",
-              ].map((h) => (
-                <th key={h} className="whitespace-nowrap border-b px-3 py-3 text-left font-medium">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.groups.map((g) => (
-              <tr
-                key={JSON.stringify([g.row, g.column])}
-                className="border-b border-border/50 hover:bg-accent/30"
-              >
-                <td className="px-3 py-3 font-medium">
-                  <GroupLabel dimension={primary}>{rowLabel(g.row)}</GroupLabel>
-                </td>
-                {cross && (
-                  <td className="px-3 py-3">
-                    <GroupLabel dimension={secondary}>{colLabel(g.column)}</GroupLabel>
-                  </td>
-                )}
-                <td className="px-3">{g.trades}</td>
-                <td className="px-3">{percent(g.winRate)}</td>
-                <td
-                  className={`whitespace-nowrap px-3 tabular-nums ${g.netPnl >= 0 ? "text-profit" : "text-loss"}`}
+      {data.groups.length > 0 ? (
+        <div className="p-4">
+          <Table className="w-full">
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="py-2.5">{DIMENSIONS[primary]}</TableHead>
+                {cross && <TableHead className="py-2.5">{DIMENSIONS[secondary]}</TableHead>}
+                <TableHead className="py-2.5 text-center">Trades</TableHead>
+                <TableHead className="py-2.5 text-center">Win Rate</TableHead>
+                <TableHead className="px-3 text-right">Net P&L</TableHead>
+                <TableHead className="px-3 text-right">Volume</TableHead>
+                <TableHead className="px-3 text-right">Avg Planned R</TableHead>
+                <TableHead className="px-3 text-right">Avg Realized R</TableHead>
+                <TableHead className="px-3 text-right">Avg Duration</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.groups.map((g) => (
+                <TableRow
+                  key={JSON.stringify([g.row, g.column])}
+                  className="transition-colors hover:bg-muted/40"
                 >
-                  <MonetaryValue>{money(g.netPnl, data.currencies[0] ?? "USD")}</MonetaryValue>
-                </td>
-                <td className="px-3">{number(g.volume)}</td>
-                <td className="px-3">{number(g.avgPlannedR)}</td>
-                <td className="px-3">{number(g.avgRealizedR)}</td>
-                <td className="whitespace-nowrap px-3">{fmtDuration(g.avgDurationMs)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {!data.groups.length && (
-        <p className="py-12 text-center text-sm text-muted-foreground">
-          No closed trades match these filters.
-        </p>
+                  <TableCell className="py-2.5 font-medium">
+                    <GroupLabel dimension={primary}>{rowLabel(g.row)}</GroupLabel>
+                  </TableCell>
+                  {cross && (
+                    <TableCell className="py-2.5">
+                      <GroupLabel dimension={secondary}>{colLabel(g.column)}</GroupLabel>
+                    </TableCell>
+                  )}
+                  <TableCell className="py-2.5 text-center font-mono text-xs tabular-nums text-muted-foreground">
+                    {g.trades}
+                  </TableCell>
+                  <TableCell className="py-2.5 text-center">
+                    <div className="inline-flex items-center justify-center gap-2">
+                      {g.winRate !== null ? (
+                        <div
+                          className="hidden h-1.5 w-10 overflow-hidden rounded-full bg-muted/60 sm:block"
+                          title={`Win rate: ${percent(g.winRate)}`}
+                        >
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all duration-300",
+                              g.winRate >= 0.5 ? "bg-profit" : "bg-loss/80",
+                            )}
+                            style={{
+                              width: `${Math.min(100, Math.max(0, g.winRate * 100))}%`,
+                            }}
+                          />
+                        </div>
+                      ) : null}
+                      <span
+                        className={cn(
+                          "font-mono text-xs font-medium tabular-nums",
+                          g.winRate !== null && g.winRate >= 0.5
+                            ? "text-foreground"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {percent(g.winRate)}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-3 text-right font-mono text-xs tabular-nums font-semibold">
+                    <span
+                      className={
+                        g.netPnl > 0
+                          ? "text-profit"
+                          : g.netPnl < 0
+                            ? "text-loss"
+                            : "text-muted-foreground"
+                      }
+                    >
+                      <MonetaryValue>{money(g.netPnl, currency)}</MonetaryValue>
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-3 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                    {number(g.volume)}
+                  </TableCell>
+                  <TableCell className="px-3 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                    {g.avgPlannedR !== null ? `${number(g.avgPlannedR)}R` : "–"}
+                  </TableCell>
+                  <TableCell className="px-3 text-right font-mono text-xs tabular-nums font-medium">
+                    {g.avgRealizedR !== null ? (
+                      <span
+                        className={
+                          g.avgRealizedR > 0
+                            ? "text-profit"
+                            : g.avgRealizedR < 0
+                              ? "text-loss"
+                              : "text-muted-foreground"
+                        }
+                      >
+                        {g.avgRealizedR > 0 ? "+" : ""}
+                        {number(g.avgRealizedR)}R
+                      </span>
+                    ) : (
+                      "–"
+                    )}
+                  </TableCell>
+                  <TableCell className="px-3 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                    {fmtDuration(g.avgDurationMs)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="py-12 text-center">
+          <p className="text-sm font-medium text-foreground">
+            No closed trades match these filters.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Adjust your filters or date range to see breakdown statistics.
+          </p>
+        </div>
       )}
     </div>
   );
@@ -339,10 +509,46 @@ function Reports() {
             <Comparison key={query} initial={values} />
           ) : (
             <>
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div className="flex flex-wrap gap-3">
+              {/* Header Section */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold tracking-tight">
+                      {mode === "cross" ? "Cross-Analysis Matrix" : "Performance Breakdowns"}
+                    </h2>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {mode === "cross"
+                      ? "Two-dimensional matrix cross-referencing performance distributions across primary and secondary attributes."
+                      : "Multi-dimensional performance segmentation and statistical breakdown based on active account and filters."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {data?.summary && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {data.summary.trades}{" "}
+                      {data.summary.trades === 1 ? "Closed Trade" : "Closed Trades"}
+                    </Badge>
+                  )}
+                  {data?.timeZone && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {data.timeZone}
+                    </Badge>
+                  )}
+                  {data?.currencies[0] && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {data.currencies[0]}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Controls & Summary Card */}
+              <Card className="overflow-hidden rounded-xl border">
+                <CardHeader className="border-b bg-muted/10 pb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
                       <DimensionSelect label="Group by" value={primary} onChange={setPrimary} />
                       {mode === "cross" && (
                         <DimensionSelect
@@ -359,7 +565,7 @@ function Reports() {
                           title:
                             mode === "cross"
                               ? `${DIMENSIONS[primary]} by ${DIMENSIONS[secondary]}`
-                              : `${DIMENSIONS[primary]} performance`,
+                              : `${DIMENSIONS[primary]} Performance`,
                           subtitle: `${data.timeZone} · ${data.currencies[0] ?? "Account currency"}`,
                           lines: [
                             `Filters: ${describeFilters(values, data.accounts, data.playbooks)}`,
@@ -375,15 +581,22 @@ function Reports() {
                     )}
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   {error ? (
-                    <p role="alert" className="text-destructive">
+                    <div
+                      role="alert"
+                      className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
+                    >
                       {error}
-                    </p>
+                    </div>
                   ) : loading ? (
-                    <p className="text-sm text-muted-foreground">Loading report…</p>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <Skeleton key={i} className="h-20 rounded-xl" />
+                      ))}
+                    </div>
                   ) : multi ? (
-                    <p className="text-sm">
+                    <p className="rounded-xl border bg-muted/30 p-4 text-xs leading-relaxed text-muted-foreground">
                       These accounts use different currencies ({data?.currencies.join(", ")}).
                       Select accounts with the same currency in Filters to compare monetary results.
                     </p>
@@ -392,16 +605,23 @@ function Reports() {
                   ) : null}
                 </CardContent>
               </Card>
+
+              {/* Table Card */}
               {data && !multi && !loading && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      {mode === "cross"
-                        ? `${DIMENSIONS[primary]} × ${DIMENSIONS[secondary]}`
-                        : `Performance by ${DIMENSIONS[primary].toLowerCase()}`}
-                    </CardTitle>
+                <Card className="overflow-hidden rounded-xl border">
+                  <CardHeader className="border-b bg-muted/10 pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-semibold">
+                        {mode === "cross"
+                          ? `${DIMENSIONS[primary]} × ${DIMENSIONS[secondary]}`
+                          : `Performance by ${DIMENSIONS[primary]}`}
+                      </CardTitle>
+                      <span className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
+                        {data.groups.length} {data.groups.length === 1 ? "group" : "groups"}
+                      </span>
+                    </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0">
                     <Breakdown
                       data={data}
                       cross={mode === "cross"}
