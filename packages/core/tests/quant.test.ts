@@ -142,6 +142,29 @@ describe("quant module (packages/core)", () => {
       expect(sizing.riskRewardRatio).toBe(0.38);
     });
 
+    it("sizes Gold (GC $100/pt) accurately for commodity stops", () => {
+      // 10 pts stop on GC ($100/pt) = $1,000 cost per contract. With $1,000 risk -> 1 GC (or 10 MGC)
+      const sizing = calculatePositionSize(1000, 10, 100, 20);
+      expect(sizing.recommendedContracts).toBe(1);
+      expect(sizing.microContracts).toBe(10);
+      expect(sizing.actualRiskDollars).toBe(1000);
+      expect(sizing.targetDollars).toBe(2000);
+    });
+
+    it("sizes Russell 2000 (RTY $50/pt) and Crude Oil (CL $1,000/pt)", () => {
+      // RTY: 10 pts stop ($50/pt) = $500 per contract. With $1,500 risk -> 3 contracts
+      const rtySizing = calculatePositionSize(1500, 10, 50);
+      expect(rtySizing.recommendedContracts).toBe(3);
+      expect(rtySizing.microContracts).toBe(30);
+      expect(rtySizing.actualRiskDollars).toBe(1500);
+
+      // CL: 0.50 pts stop ($1,000/pt) = $500 per contract. With $1,000 risk -> 2 contracts
+      const clSizing = calculatePositionSize(1000, 0.5, 1000);
+      expect(clSizing.recommendedContracts).toBe(2);
+      expect(clSizing.microContracts).toBe(20);
+      expect(clSizing.actualRiskDollars).toBe(1000);
+    });
+
     it("handles zero or invalid inputs safely", () => {
       expect(calculatePositionSize(0, 25, 20).recommendedContracts).toBe(0);
       expect(calculatePositionSize(500, 0, 20).recommendedContracts).toBe(0);
@@ -152,7 +175,6 @@ describe("quant module (packages/core)", () => {
       expect(Number.isFinite(tight.exactContracts)).toBe(true);
     });
   });
-
 
   describe("breakeven win rate", () => {
     it("computes 50% for 1R system", () => {
@@ -264,5 +286,3 @@ describe("quant module (packages/core)", () => {
     });
   });
 });
-
-

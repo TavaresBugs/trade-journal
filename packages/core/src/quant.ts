@@ -5,13 +5,138 @@ export interface QuantInstrument {
   name: string;
   multiplier: number;
   tickSize: number;
+  category?: "indices" | "micros" | "commodities" | "crypto";
+  microId?: string;
+  assetTitle?: string;
 }
 
 export const QUANT_INSTRUMENTS: readonly QuantInstrument[] = [
-  { id: "NQ", name: "NQ ($20/pt)", multiplier: 20, tickSize: 0.25 },
-  { id: "MNQ", name: "MNQ ($2/pt)", multiplier: 2, tickSize: 0.25 },
-  { id: "ES", name: "ES ($50/pt)", multiplier: 50, tickSize: 0.25 },
-  { id: "MES", name: "MES ($5/pt)", multiplier: 5, tickSize: 0.25 },
+  // --- US Equity Indices ---
+  {
+    id: "NQ",
+    name: "NQ ($20/pt)",
+    multiplier: 20,
+    tickSize: 0.25,
+    category: "indices",
+    microId: "MNQ",
+    assetTitle: "Nasdaq-100",
+  },
+  {
+    id: "ES",
+    name: "ES ($50/pt)",
+    multiplier: 50,
+    tickSize: 0.25,
+    category: "indices",
+    microId: "MES",
+    assetTitle: "S&P 500",
+  },
+  {
+    id: "RTY",
+    name: "RTY ($50/pt)",
+    multiplier: 50,
+    tickSize: 0.1,
+    category: "indices",
+    microId: "M2K",
+    assetTitle: "Russell 2000",
+  },
+  {
+    id: "YM",
+    name: "YM ($5/pt)",
+    multiplier: 5,
+    tickSize: 1.0,
+    category: "indices",
+    microId: "MYM",
+    assetTitle: "Dow Jones 30",
+  },
+
+  // --- Micro Equity Indices ---
+  {
+    id: "MNQ",
+    name: "MNQ ($2/pt)",
+    multiplier: 2,
+    tickSize: 0.25,
+    category: "micros",
+    assetTitle: "Micro Nasdaq",
+  },
+  {
+    id: "MES",
+    name: "MES ($5/pt)",
+    multiplier: 5,
+    tickSize: 0.25,
+    category: "micros",
+    assetTitle: "Micro S&P 500",
+  },
+  {
+    id: "M2K",
+    name: "M2K ($5/pt)",
+    multiplier: 5,
+    tickSize: 0.1,
+    category: "micros",
+    assetTitle: "Micro Russell",
+  },
+  {
+    id: "MYM",
+    name: "MYM ($0.50/pt)",
+    multiplier: 0.5,
+    tickSize: 1.0,
+    category: "micros",
+    assetTitle: "Micro Dow Jones",
+  },
+
+  // --- Commodities ---
+  {
+    id: "GC",
+    name: "GC ($100/pt)",
+    multiplier: 100,
+    tickSize: 0.1,
+    category: "commodities",
+    microId: "MGC",
+    assetTitle: "Gold (Ouro)",
+  },
+  {
+    id: "MGC",
+    name: "MGC ($10/pt)",
+    multiplier: 10,
+    tickSize: 0.1,
+    category: "commodities",
+    assetTitle: "Micro Gold",
+  },
+  {
+    id: "CL",
+    name: "CL ($1,000/pt)",
+    multiplier: 1000,
+    tickSize: 0.01,
+    category: "commodities",
+    microId: "MCL",
+    assetTitle: "Crude Oil (Petróleo)",
+  },
+  {
+    id: "MCL",
+    name: "MCL ($100/pt)",
+    multiplier: 100,
+    tickSize: 0.01,
+    category: "commodities",
+    assetTitle: "Micro Crude Oil",
+  },
+
+  // --- Crypto Futures ---
+  {
+    id: "BTC",
+    name: "BTC ($5/pt)",
+    multiplier: 5,
+    tickSize: 5.0,
+    category: "crypto",
+    microId: "MBT",
+    assetTitle: "Bitcoin Futures",
+  },
+  {
+    id: "MBT",
+    name: "MBT ($0.10/pt)",
+    multiplier: 0.1,
+    tickSize: 5.0,
+    category: "crypto",
+    assetTitle: "Micro Bitcoin",
+  },
 ] as const;
 
 export interface PropFirmPreset {
@@ -284,6 +409,7 @@ export function calculatePositionSize(
   stopPoints: number,
   multiplier: number = NQ_DOLLARS_PER_POINT,
   targetPoints?: number,
+  microRatio: number = 10,
 ): PositionSizeResult {
   if (stopPoints <= 0 || multiplier <= 0 || riskDollars <= 0) {
     return {
@@ -311,7 +437,7 @@ export function calculatePositionSize(
   // Fit contracts, minimum 1 contract:
   const recommendedContracts = Math.max(1, Math.floor(exactContracts));
   const actualRiskDollars = Math.round(recommendedContracts * costPerContract);
-  const microContracts = Math.round(recommendedContracts * 10);
+  const microContracts = Math.round(recommendedContracts * microRatio);
 
   const targetDollars =
     targetPoints && targetPoints > 0
@@ -680,5 +806,3 @@ export function calculateFundedSurvival(
     category,
   };
 }
-
-
