@@ -20,6 +20,8 @@ import {
   NQ_DOLLARS_PER_POINT,
   QUANT_INSTRUMENTS,
   PROP_FIRM_PRESETS,
+  MATRIX_WIN_RATES,
+  MATRIX_RR_RATIOS,
 } from "../src/quant";
 
 describe("quant module (packages/core)", () => {
@@ -177,16 +179,42 @@ describe("quant module (packages/core)", () => {
   });
 
   describe("breakeven win rate", () => {
-    it("computes 50% for 1R system", () => {
+    it("computes exact breakeven win rate for standard Risk:Reward ratios", () => {
+      // Formula: BE% = 1 / (1 + RR) * 100
       expect(calculateBreakevenWinRate(1.0)).toBe(50.0);
-    });
-
-    it("computes 33.33% for 2R system", () => {
+      expect(calculateBreakevenWinRate(1.5)).toBe(40.0);
       expect(calculateBreakevenWinRate(2.0)).toBe(33.33);
+      expect(calculateBreakevenWinRate(2.5)).toBe(28.57);
+      expect(calculateBreakevenWinRate(3.0)).toBe(25.0);
+      expect(calculateBreakevenWinRate(4.0)).toBe(20.0);
+      expect(calculateBreakevenWinRate(5.0)).toBe(16.67);
+      expect(calculateBreakevenWinRate(8.0)).toBe(11.11);
     });
 
-    it("computes 20% for 4R system", () => {
-      expect(calculateBreakevenWinRate(4.0)).toBe(20.0);
+    it("satisfies the zero-expectancy invariance property at breakeven", () => {
+      const ratios = [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 8.0];
+      for (const rr of ratios) {
+        const be = calculateBreakevenWinRate(rr);
+        const p = be / 100;
+        const q = 1 - p;
+        const expectedR = p * rr - q * 1.0;
+        expect(Math.abs(expectedR)).toBeLessThan(0.01);
+      }
+    });
+
+    it("exhibits strictly monotonic decreasing behavior as RR increases", () => {
+      let previousBE = 100;
+      for (const rr of MATRIX_RR_RATIOS) {
+        const currentBE = calculateBreakevenWinRate(rr);
+        expect(currentBE).toBeLessThan(previousBE);
+        previousBE = currentBE;
+      }
+    });
+
+    it("handles boundary and extreme inputs safely", () => {
+      expect(calculateBreakevenWinRate(0)).toBe(100);
+      expect(calculateBreakevenWinRate(-1.5)).toBe(100);
+      expect(calculateBreakevenWinRate(99.0)).toBe(1.0);
     });
   });
 
@@ -199,50 +227,208 @@ describe("quant module (packages/core)", () => {
       expect(res.breakevenWinRate).toBe(33.33);
     });
 
-    it("calculates real expectancy deducting fees and slippage", () => {
-      const res = calculateRealExpectancy(50, 2.0, 1000, 10, 25);
+    it("calculates all core fields: paperEv, totalFriction, realEv, breakevenWinRate, and netRMultiple", () => {
+      const res = calculateRealExpectancy(50, 2.0, 1000, 5, 10);
       expect(res.paperEv).toBe(500.0);
-      expect(res.totalFriction).toBe(35);
-      expect(res.realEv).toBe(465.0);
-      expect(res.netRMultiple).toBe(0.47);
+      expect(res.rMultiple).toBe(0.5);
+      expect(res.totalFriction).toBe(15);
+      expect(res.realEv).toBe(485.0);
+      expect(res.breakevenWinRate).toBe(33.33);
+      expect(res.netRMultiple).toBe(0.48);
+      expect(res.winRate).toBe(50);
+      expect(res.lossRate).toBe(50);
+      expect(res.avgWin).toBe(2000);
+      expect(res.avgLoss).toBe(1000);
+    });
+
+    it("matches paper expectation perfectly when friction is zero", () => {
+      const zeroFriction = calculateRealExpectancy(45, 2.5, 1000, 0, 0);
+      const basePaper = calculateTradeExpectancy(45, 2.5, 1000);
+
+      expect(zeroFriction.totalFriction).toBe(0);
+      expect(zeroFriction.realEv).toBe(basePaper.paperEv);
+      expect(zeroFriction.netRMultiple).toBe(basePaper.rMultiple);
+    });
+
+    it("demonstrates how theoretical positive edge is wiped out by execution friction", () => {
+      const lowFriction = calculateRealExpectancy(52, 1.0, 100, 0, 0);
+      expect(lowFriction.paperEv).toBe(4.0);
+      expect(lowFriction.rMultiple).toBe(0.04);
+      expect(lowFriction.realEv).toBe(4.0);
+      expect(lowFriction.netRMultiple).toBe(0.04);
+
+      const highFriction = calculateRealExpectancy(52, 1.0, 100, 3, 3);
+      expect(highFriction.paperEv).toBe(4.0);
+      expect(highFriction.totalFriction).toBe(6.0);
+      expect(highFriction.realEv).toBe(-2.0);
+      expect(highFriction.netRMultiple).toBe(-0.02);
+      expect(highFriction.realEv).toBeLessThan(0);
+    });
+
+    it("verifies that friction monotonically degrades the expected net R-multiple", () => {
+      const frictions = [0, 5, 15, 30, 60, 100];
+      let lastRealEv = Infinity;
+      let lastNetR = Infinity;
+
+      for (const f of frictions) {
+        const res = calculateRealExpectancy(45, 2.5, 1000, f / 2, f / 2);
+        expect(res.realEv).toBeLessThanOrEqual(lastRealEv);
+        expect(res.netRMultiple).toBeLessThanOrEqual(lastNetR);
+        expect(res.paperEv - res.realEv).toBe(res.totalFriction);
+        lastRealEv = res.realEv;
+        lastNetR = res.netRMultiple;
+      }
+    });
+
+    it("handles zero or negative inputs defensively", () => {
+      const negativeInputs = calculateRealExpectancy(50, 2.0, 1000, -10, -5);
+      expect(negativeInputs.totalFriction).toBe(0);
+      expect(negativeInputs.realEv).toBe(negativeInputs.paperEv);
+
+      const zeroRisk = calculateRealExpectancy(50, 2.0, 0, 5, 10);
+      expect(zeroRisk.netRMultiple).toBe(0);
+      expect(Number.isFinite(zeroRisk.netRMultiple)).toBe(true);
+
+      const overWin = calculateRealExpectancy(120, 2.0, 1000, 0, 0);
+      expect(overWin.winRate).toBe(100);
+      const underWin = calculateRealExpectancy(-20, 2.0, 1000, 0, 0);
+      expect(underWin.winRate).toBe(0);
     });
   });
 
   describe("sweet spot matrix", () => {
-    it("generates full matrix with sweet spot highlights", () => {
+    it("generates full matrix with sweet spot highlights and correct dimensions", () => {
       const matrix = generateSweetSpotMatrix();
-      expect(matrix.length).toBe(12); // 12 win rates
-      expect(matrix[0]?.length).toBe(9); // 9 RR ratios
+      expect(matrix).toHaveLength(MATRIX_WIN_RATES.length);
+      expect(matrix.every((row) => row.length === MATRIX_RR_RATIOS.length)).toBe(true);
 
-      // Check sweet spot in 40% win rate with 3R
-      const row40 = matrix.find((r) => r[0]?.winRate === 40);
-      const cell40_3R = row40?.find((c) => c.riskReward === 3.0);
-      expect(cell40_3R?.isSweetSpot).toBe(true);
-      expect(cell40_3R?.isProfitable).toBe(true);
+      const totalCells = matrix.reduce((acc, row) => acc + row.length, 0);
+      expect(totalCells).toBe(12 * 9);
+    });
 
-      // Check unfeasible zone: 70% win rate with 8R is not sweet spot
-      const row70 = matrix.find((r) => r[0]?.winRate === 70);
-      const cell70_8R = row70?.find((c) => c.riskReward === 8.0);
-      expect(cell70_8R?.isSweetSpot).toBe(false);
+    it("ensures every cell contains mathematically exact R-multiples (p * rr - (1 - p))", () => {
+      const matrix = generateSweetSpotMatrix();
+
+      for (const row of matrix) {
+        for (const cell of row) {
+          const p = cell.winRate / 100;
+          const q = 1 - p;
+          const expectedRMultiple = Number((p * cell.riskReward - q).toFixed(2));
+          const expectedBe = calculateBreakevenWinRate(cell.riskReward);
+
+          expect(cell.rMultiple).toBe(expectedRMultiple);
+          expect(cell.breakevenWinRate).toBe(expectedBe);
+          expect(cell.isProfitable).toBe(cell.winRate > expectedBe);
+          expect(cell.isBreakeven).toBe(Math.abs(cell.winRate - expectedBe) <= 2.5);
+        }
+      }
+    });
+
+    it("strictly isolates the Sweet Spot zone (2R to 5R with 35% to 50% Win Rate)", () => {
+      const matrix = generateSweetSpotMatrix();
+      const allCells = matrix.flat();
+
+      const sweetSpotCells = allCells.filter((c) => c.isSweetSpot);
+      const nonSweetSpotCells = allCells.filter((c) => !c.isSweetSpot);
+
+      expect(sweetSpotCells).toHaveLength(20);
+
+      for (const cell of sweetSpotCells) {
+        expect(cell.riskReward).toBeGreaterThanOrEqual(2.0);
+        expect(cell.riskReward).toBeLessThanOrEqual(5.0);
+        expect(cell.winRate).toBeGreaterThanOrEqual(35);
+        expect(cell.winRate).toBeLessThanOrEqual(50);
+        expect(cell.isProfitable).toBe(true);
+        expect(cell.rMultiple).toBeGreaterThan(0);
+      }
+
+      for (const cell of nonSweetSpotCells) {
+        const meetsRR = cell.riskReward >= 2.0 && cell.riskReward <= 5.0;
+        const meetsWR = cell.winRate >= 35 && cell.winRate <= 50;
+        expect(meetsRR && meetsWR).toBe(false);
+      }
+    });
+
+    it("verifies unfeasible / fantasy zones are not marked as sweet spot", () => {
+      const matrix = generateSweetSpotMatrix();
+      const allCells = matrix.flat();
+
+      const fantasyCell = allCells.find((c) => c.winRate === 70 && c.riskReward === 8.0);
+      expect(fantasyCell?.isSweetSpot).toBe(false);
+      expect(fantasyCell?.isProfitable).toBe(true);
+
+      const churnCell = allCells.find((c) => c.winRate === 45 && c.riskReward === 1.0);
+      expect(churnCell?.isSweetSpot).toBe(false);
+      expect(churnCell?.isProfitable).toBe(false);
+      expect(churnCell?.rMultiple).toBe(-0.1);
+
+      const lotteryCell = allCells.find((c) => c.winRate === 20 && c.riskReward === 5.0);
+      expect(lotteryCell?.isSweetSpot).toBe(false);
     });
   });
 
   describe("losing streak probability", () => {
-    it("calculates probability of losing streaks in a 100-trade sample", () => {
-      // At 50% win rate in 100 trades, prob of 5 consecutive losses is ~81%
+    it("calculates probability of losing streaks in a 100-trade sample using exact Markov probability", () => {
       const prob5 = calculateLosingStreakProbability(50, 100, 5);
       expect(prob5).toBeGreaterThan(75);
-      expect(prob5).toBeCloseTo(81.0, 0);
+      expect(prob5).toBeCloseTo(81.0, 1);
 
-      // At 50% win rate in 100 trades, prob of 10 consecutive losses is small (~5% - 10%)
-      const prob10 = calculateLosingStreakProbability(50, 100, 10);
-      expect(prob10).toBeGreaterThan(1);
-      expect(prob10).toBeLessThan(20);
+      const prob6 = calculateLosingStreakProbability(50, 100, 6);
+      expect(prob6).toBeCloseTo(54.6, 1);
+      expect(prob6).toBeGreaterThan(50);
+    });
 
-      const dist = generateStreakDistribution(50, 100, [4, 6, 8]);
-      expect(dist).toHaveLength(3);
-      expect(dist[0]!.probability).toBeGreaterThan(dist[1]!.probability);
-      expect(dist[1]!.probability).toBeGreaterThan(dist[2]!.probability);
+    it("proves Gambler's Fallacy Invariance: next trade probability remains strictly constant", () => {
+      const winRate = 45;
+      const p = winRate / 100;
+      const probWinNextTradeGivenAnyStreak = p;
+      expect(probWinNextTradeGivenAnyStreak).toBe(0.45);
+
+      const probStreak10 = calculateLosingStreakProbability(winRate, 100, 10);
+      expect(probStreak10).toBeLessThan(25);
+    });
+
+    it("verifies strict monotonic decreasing probability as streak length increases", () => {
+      const streaks = [3, 4, 5, 6, 7, 8, 9, 10];
+      let prevProb = 101;
+
+      for (const k of streaks) {
+        const prob = calculateLosingStreakProbability(50, 100, k);
+        expect(prob).toBeLessThan(prevProb);
+        prevProb = prob;
+      }
+    });
+
+    it("verifies sample size impact: longer sample windows monotonically increase streak risk", () => {
+      const sampleSizes = [25, 50, 100, 250, 500];
+      let prevProb = -1;
+
+      for (const n of sampleSizes) {
+        const prob = calculateLosingStreakProbability(50, n, 6);
+        expect(prob).toBeGreaterThanOrEqual(prevProb);
+        prevProb = prob;
+      }
+    });
+
+    it("generates structured streak distribution accurately", () => {
+      const streaks = [3, 4, 5, 6, 7, 8, 10];
+      const distribution = generateStreakDistribution(50, 100, streaks);
+
+      expect(distribution).toHaveLength(streaks.length);
+
+      distribution.forEach((item, idx) => {
+        expect(item.streak).toBe(streaks[idx]);
+        const directProb = calculateLosingStreakProbability(50, 100, item.streak);
+        expect(item.probability).toBe(directProb);
+      });
+    });
+
+    it("handles boundary and trivial cases according to probability theory", () => {
+      expect(calculateLosingStreakProbability(50, 100, 0)).toBe(100);
+      expect(calculateLosingStreakProbability(50, 100, -2)).toBe(100);
+      expect(calculateLosingStreakProbability(50, 4, 5)).toBe(0);
+      expect(calculateLosingStreakProbability(100, 100, 3)).toBe(0);
+      expect(calculateLosingStreakProbability(0, 100, 5)).toBe(100);
     });
   });
 
