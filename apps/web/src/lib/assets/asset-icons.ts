@@ -145,6 +145,11 @@ export function normalizeSymbol(raw: string): string {
     s = parts[parts.length - 1] ?? s;
   }
 
+  // 1.5 Strip common broker account suffixes (.pro, .cash, .raw, .std, .ecn, _sb, etc.)
+  if (s !== "CASH") {
+    s = s.replace(/[\._]?(CASH|PRO|RAW|STD|ECN|MINI|MICRO|SB)$/i, "");
+  }
+
   // 2. Continuous futures contract patterns (e.g. NQM24, ESU24, MESZ24, GCQ24)
   const futuresMatch = s.match(
     /^(NQ|MNQ|ES|MES|YM|MYM|RTY|M2K|CL|MCL|GC|MGC|SI|MSI|NG|HG)[FGHJKMNQUVXZ]?\d{1,4}!*$/,

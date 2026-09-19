@@ -13,6 +13,7 @@ import { DirectionBadge } from "./ui/direction-badge";
 import { useApi } from "@/lib/use-api";
 import { cn, fmtMoney, fmtPercent, pnlClass } from "@/lib/utils";
 import { describeFilters } from "@/lib/filter-description";
+import { normalizeSymbol } from "@/lib/assets/asset-icons";
 
 interface OverviewData {
   buckets: Record<
@@ -93,11 +94,15 @@ function DimensionCell({
   label: string;
 }) {
   if (sectionKey === "symbol") {
+    const canonical = normalizeSymbol(rawKey);
     return (
       <div className="flex items-center gap-2">
         <AssetIcon symbol={rawKey} size="xs" />
-        <span className="font-mono text-xs font-semibold tracking-tight text-foreground">
-          {rawKey}
+        <span
+          className="font-mono text-xs font-semibold tracking-tight text-foreground"
+          title={rawKey !== canonical ? rawKey : undefined}
+        >
+          {canonical || rawKey}
         </span>
       </div>
     );
@@ -267,7 +272,11 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
     );
   const currency = data.currencies[0] ?? "USD";
   const label = (dimension: string, key: string) =>
-    dimension === "playbook" ? (data.playbooks.find((book) => book.id === key)?.name ?? key) : key;
+    dimension === "playbook"
+      ? (data.playbooks.find((book) => book.id === key)?.name ?? key)
+      : dimension === "symbol"
+        ? normalizeSymbol(key)
+        : key;
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">

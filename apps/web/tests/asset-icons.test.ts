@@ -35,6 +35,11 @@ describe("asset-icons normalization and dynamic resolver", () => {
       expect(normalizeSymbol("GER40.cash")).toBe("GER40");
       expect(normalizeSymbol("EURUSD.pro")).toBe("EURUSD");
       expect(normalizeSymbol("XAUUSD.raw")).toBe("XAUUSD");
+      expect(normalizeSymbol("AAPL.pro")).toBe("AAPL");
+      expect(normalizeSymbol("NVDA.cash")).toBe("NVDA");
+      expect(normalizeSymbol("TSLA.raw")).toBe("TSLA");
+      expect(normalizeSymbol("GBPUSD.ecn")).toBe("GBPUSD");
+      expect(normalizeSymbol("USDJPY_sb")).toBe("USDJPY");
       expect(normalizeSymbol("CASH")).toBe("CASH");
     });
   });

@@ -22,6 +22,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useApi } from "@/lib/use-api";
 import { describeFilters } from "@/lib/filter-description";
 import { fmtDuration } from "@/lib/utils";
+import { AssetIcon } from "@/components/ui/asset-icon";
+import { normalizeSymbol } from "@/lib/assets/asset-icons";
 const TradeExplorer = dynamic(
   () => import("@/components/trade-explorer").then((module) => module.TradeExplorer),
   {
@@ -109,9 +111,22 @@ function DimensionSelect({
     </Field>
   );
 }
-const labels = (data: Analysis, key: string) =>
-  data.playbooks.find((p) => p.id === key)?.name ?? key;
+const labels = (data: Analysis, key: string, dimension?: Dimension) =>
+  data.playbooks.find((p) => p.id === key)?.name ??
+  (dimension === "symbol" ? normalizeSymbol(key) : key);
 function GroupLabel({ dimension, children }: { dimension: Dimension; children: string }) {
+  if (dimension === "symbol") {
+    const canonical = normalizeSymbol(children);
+    return (
+      <span
+        className="inline-flex items-center gap-1.5"
+        title={children !== canonical ? children : undefined}
+      >
+        <AssetIcon symbol={children} size="xs" />
+        <span className="font-mono">{canonical || children}</span>
+      </span>
+    );
+  }
   return dimension === "entryPrice" || dimension === "exitPrice" ? (
     <MonetaryValue>{children}</MonetaryValue>
   ) : (
@@ -129,8 +144,18 @@ function Breakdown({
   primary: Dimension;
   secondary: Dimension;
 }) {
-  const rowLabel = (k: string) => (primary === "playbook" ? labels(data, k) : k),
-    colLabel = (k: string) => (secondary === "playbook" ? labels(data, k) : k);
+  const rowLabel = (k: string) =>
+      primary === "playbook"
+        ? labels(data, k, primary)
+        : primary === "symbol"
+          ? normalizeSymbol(k)
+          : k,
+    colLabel = (k: string) =>
+      secondary === "playbook"
+        ? labels(data, k, secondary)
+        : secondary === "symbol"
+          ? normalizeSymbol(k)
+          : k;
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const rows = [...new Set(data.groups.map((g) => g.row))],
     columns = [...new Set(data.groups.map((g) => g.column))].sort((a, b) =>
@@ -342,7 +367,7 @@ function Reports() {
                             "",
                             ...data.groups.map(
                               (g) =>
-                                `${labels(data, g.row)}${g.column ? ` / ${labels(data, g.column)}` : ""}: ${g.trades} trades | P&L ${number(g.netPnl)} | Win ${percent(g.winRate)} | Planned ${number(g.avgPlannedR)}R | Realized ${number(g.avgRealizedR)}R | Volume ${number(g.volume)} | Holding time ${fmtDuration(g.avgDurationMs)}`,
+                                `${labels(data, g.row, primary)}${g.column ? ` / ${labels(data, g.column, secondary)}` : ""}: ${g.trades} trades | P&L ${number(g.netPnl)} | Win ${percent(g.winRate)} | Planned ${number(g.avgPlannedR)}R | Realized ${number(g.avgRealizedR)}R | Volume ${number(g.volume)} | Holding time ${fmtDuration(g.avgDurationMs)}`,
                             ),
                           ],
                         }}
