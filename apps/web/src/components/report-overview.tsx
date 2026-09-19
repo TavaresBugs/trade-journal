@@ -1,11 +1,22 @@
 "use client";
 
+import { useMemo } from "react";
 import type { AnalysisFilters, BucketStats } from "@luxalgo/journal-core";
-import { ArrowUpDown, BookOpen, CalendarDays, Clock, Coins, ShieldAlert, Tag } from "lucide-react";
+import {
+  ArrowUpDown,
+  BookOpen,
+  CalendarDays,
+  Clock,
+  Coins,
+  LayoutDashboard,
+  ShieldAlert,
+  Tag,
+} from "lucide-react";
 import { TimeHeatmap } from "./charts/time-heatmap";
 import { ReviewExport } from "./review-export";
 import { MonetaryValue } from "./privacy";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
 import { Skeleton } from "./ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { AssetIcon } from "./ui/asset-icon";
@@ -270,6 +281,10 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
         the same currency in Filters to compare monetary results.
       </p>
     );
+  const totalTrades = useMemo(
+    () => (data ? data.buckets.direction.reduce((sum, b) => sum + b.trades, 0) : 0),
+    [data?.buckets?.direction],
+  );
   const currency = data.currencies[0] ?? "USD";
   const label = (dimension: string, key: string) =>
     dimension === "playbook"
@@ -278,34 +293,59 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
         ? normalizeSymbol(key)
         : key;
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">
-          Trading overview · {data.timeZone} · {currency}
-        </p>
-        <ReviewExport
-          containsFinancialData
-          document={{
-            title: "Trading overview",
-            subtitle: `${data.timeZone} · ${currency}`,
-            lines: [
-              `Filters: ${describeFilters(filters, data.accounts, data.playbooks)}`,
-              "",
-              "Trade time performance (opening hour)",
-              ...data.buckets.hour.map(
-                (b) => `${b.key}:00: ${b.trades} trades | Net P&L ${fmtMoney(b.netPnl, currency)}`,
-              ),
-              ...SECTIONS.flatMap((section) => [
+    <div className="space-y-4" aria-labelledby="trading-overview-title">
+      {/* Header Section */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <LayoutDashboard className="h-5 w-5 text-primary" />
+            <h2 id="trading-overview-title" className="text-lg font-semibold tracking-tight">
+              Trading Overview
+            </h2>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Multi-dimensional performance breakdown and time distribution based on active account
+            and filters.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="text-xs font-normal">
+            {totalTrades} {totalTrades === 1 ? "Closed Trade" : "Closed Trades"}
+          </Badge>
+          <Badge variant="outline" className="text-xs font-normal">
+            {data.timeZone}
+          </Badge>
+          {currency && (
+            <Badge variant="outline" className="text-xs font-normal">
+              {currency}
+            </Badge>
+          )}
+          <ReviewExport
+            containsFinancialData
+            document={{
+              title: "Trading overview",
+              subtitle: `${data.timeZone} · ${currency}`,
+              lines: [
+                `Filters: ${describeFilters(filters, data.accounts, data.playbooks)}`,
                 "",
-                section.title,
-                ...data.buckets[section.key].map(
+                "Trade time performance (opening hour)",
+                ...data.buckets.hour.map(
                   (b) =>
-                    `${label(section.key, b.key)}: ${b.trades} trades | Win ${fmtPercent(b.winRate, 0)} | Net P&L ${fmtMoney(b.netPnl, currency)}`,
+                    `${b.key}:00: ${b.trades} trades | Net P&L ${fmtMoney(b.netPnl, currency)}`,
                 ),
-              ]),
-            ],
-          }}
-        />
+                ...SECTIONS.flatMap((section) => [
+                  "",
+                  section.title,
+                  ...data.buckets[section.key].map(
+                    (b) =>
+                      `${label(section.key, b.key)}: ${b.trades} trades | Win ${fmtPercent(b.winRate, 0)} | Net P&L ${fmtMoney(b.netPnl, currency)}`,
+                  ),
+                ]),
+              ],
+            }}
+          />
+        </div>
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
         <Card className="lg:col-span-2">
