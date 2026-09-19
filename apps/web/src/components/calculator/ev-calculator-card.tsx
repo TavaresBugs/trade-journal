@@ -70,7 +70,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
             </span>
           </p>
         </CardHeader>
-        <CardContent className="space-y-3.5">
+        <CardContent className="grid grid-cols-1 gap-x-8 gap-y-3.5 sm:grid-cols-2">
           {/* 1º: EVAL PASS RATE (%) */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">

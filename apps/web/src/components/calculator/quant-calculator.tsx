@@ -127,17 +127,17 @@ export function QuantCalculator() {
         {/* TAB 3: PORTFOLIO & CAPITAL */}
         <TabsContent value="portfolio" className="space-y-6 mt-0">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <EvCalculatorCard values={state.ev} onChange={(patch) => updateState("ev", patch)} />
+            <div className="lg:col-span-2">
+              <EvCalculatorCard values={state.ev} onChange={(patch) => updateState("ev", patch)} />
+            </div>
             <BinomialOddsCard
               values={state.budget}
               onChange={(patch) => updateState("budget", patch)}
             />
-            <div className="lg:col-span-2">
-              <ReturnsSimulatorCard
-                values={state.simulator}
-                onChange={(patch) => updateState("simulator", patch)}
-              />
-            </div>
+            <ReturnsSimulatorCard
+              values={state.simulator}
+              onChange={(patch) => updateState("simulator", patch)}
+            />
           </div>
         </TabsContent>
       </Tabs>
