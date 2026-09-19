@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Scale, SlidersHorizontal } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useApi } from "@/lib/use-api";
 import { describeFilters } from "@/lib/filter-description";
@@ -658,22 +658,228 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
     bb = useApi<Analysis>(`/api/analysis?${new URLSearchParams(b).toString()}`);
   const currencies = new Set([...(aa.data?.currencies ?? []), ...(bb.data?.currencies ?? [])]),
     multi = currencies.size > 1;
+  const sharedCurrency = [...currencies][0] ?? "USD";
+  const sharedTimeZone = aa.data?.timeZone ?? bb.data?.timeZone ?? "UTC";
+
   const metricLines = (name: string, d: Analysis) => [
     name,
     `Trades: ${d.summary.trades} | P&L: ${number(d.summary.netPnl)} ${d.currencies[0] ?? ""}`,
     `Win rate: ${percent(d.summary.winRate)} | Planned R: ${number(d.summary.avgPlannedR)} | Realized R: ${number(d.summary.avgRealizedR)}`,
   ];
+
+  // Head-to-head comparison rows
+  const sumA = aa.data?.summary;
+  const sumB = bb.data?.summary;
+  const hasBothData = sumA && sumB && !aa.loading && !bb.loading && !multi;
+
+  const comparisonRows = hasBothData
+    ? (() => {
+        const diffPnl = sumB.netPnl - sumA.netPnl;
+        const diffWin = (sumB.winRate ?? 0) - (sumA.winRate ?? 0);
+        const diffPf =
+          sumB.profitFactor !== null && sumA.profitFactor !== null
+            ? sumB.profitFactor - sumA.profitFactor
+            : null;
+        const diffR =
+          sumB.avgRealizedR !== null && sumA.avgRealizedR !== null
+            ? sumB.avgRealizedR - sumA.avgRealizedR
+            : null;
+        const diffTrades = sumB.trades - sumA.trades;
+        const diffVol = sumB.volume - sumA.volume;
+
+        return [
+          {
+            metric: "Net P&L",
+            valA: (
+              <span
+                className={
+                  sumA.netPnl > 0
+                    ? "text-profit"
+                    : sumA.netPnl < 0
+                      ? "text-loss"
+                      : "text-muted-foreground"
+                }
+              >
+                <MonetaryValue>{money(sumA.netPnl, sharedCurrency)}</MonetaryValue>
+              </span>
+            ),
+            valB: (
+              <span
+                className={
+                  sumB.netPnl > 0
+                    ? "text-profit"
+                    : sumB.netPnl < 0
+                      ? "text-loss"
+                      : "text-muted-foreground"
+                }
+              >
+                <MonetaryValue>{money(sumB.netPnl, sharedCurrency)}</MonetaryValue>
+              </span>
+            ),
+            deltaNode: (
+              <span
+                className={cn(
+                  "font-bold",
+                  diffPnl > 0
+                    ? "text-profit"
+                    : diffPnl < 0
+                      ? "text-loss"
+                      : "text-muted-foreground",
+                )}
+              >
+                <MonetaryValue>
+                  {diffPnl > 0 ? "+" : ""}
+                  {money(diffPnl, sharedCurrency)}
+                </MonetaryValue>
+              </span>
+            ),
+          },
+          {
+            metric: "Win Rate",
+            valA: percent(sumA.winRate),
+            valB: percent(sumB.winRate),
+            deltaNode: (
+              <span
+                className={cn(
+                  "font-semibold",
+                  diffWin > 0
+                    ? "text-profit"
+                    : diffWin < 0
+                      ? "text-loss"
+                      : "text-muted-foreground",
+                )}
+              >
+                {diffWin > 0 ? "+" : ""}
+                {(diffWin * 100).toFixed(1)}%
+              </span>
+            ),
+          },
+          {
+            metric: "Profit Factor",
+            valA: sumA.noLosses ? "∞" : number(sumA.profitFactor),
+            valB: sumB.noLosses ? "∞" : number(sumB.profitFactor),
+            deltaNode:
+              diffPf !== null ? (
+                <span
+                  className={cn(
+                    "font-semibold",
+                    diffPf > 0
+                      ? "text-profit"
+                      : diffPf < 0
+                        ? "text-loss"
+                        : "text-muted-foreground",
+                  )}
+                >
+                  {diffPf > 0 ? "+" : ""}
+                  {number(diffPf)}
+                </span>
+              ) : (
+                "–"
+              ),
+          },
+          {
+            metric: "Avg Realized R",
+            valA:
+              sumA.avgRealizedR !== null
+                ? `${sumA.avgRealizedR > 0 ? "+" : ""}${number(sumA.avgRealizedR)}R`
+                : "–",
+            valB:
+              sumB.avgRealizedR !== null
+                ? `${sumB.avgRealizedR > 0 ? "+" : ""}${number(sumB.avgRealizedR)}R`
+                : "–",
+            deltaNode:
+              diffR !== null ? (
+                <span
+                  className={cn(
+                    "font-semibold",
+                    diffR > 0
+                      ? "text-profit"
+                      : diffR < 0
+                        ? "text-loss"
+                        : "text-muted-foreground",
+                  )}
+                >
+                  {diffR > 0 ? "+" : ""}
+                  {number(diffR)}R
+                </span>
+              ) : (
+                "–"
+              ),
+          },
+          {
+            metric: "Closed Trades",
+            valA: String(sumA.trades),
+            valB: String(sumB.trades),
+            deltaNode: (
+              <span>
+                {diffTrades > 0 ? "+" : ""}
+                {diffTrades}
+              </span>
+            ),
+          },
+          {
+            metric: "Entry Volume",
+            valA: number(sumA.volume),
+            valB: number(sumB.volume),
+            deltaNode: (
+              <span>
+                {diffVol > 0 ? "+" : ""}
+                {number(diffVol)}
+              </span>
+            ),
+          },
+          {
+            metric: "Avg Holding Time",
+            valA: fmtDuration(sumA.avgDurationMs),
+            valB: fmtDuration(sumB.avgDurationMs),
+            deltaNode:
+              sumB.avgDurationMs !== null && sumA.avgDurationMs !== null
+                ? fmtDuration(Math.abs(sumB.avgDurationMs - sumA.avgDurationMs))
+                : "–",
+          },
+        ];
+      })()
+    : [];
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Each group has its own filters. Compare strategies, accounts, periods, or trade
-        characteristics. Groups may overlap.
-      </p>
+      {/* Header Section */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <Scale className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold tracking-tight">Compare Groups</h2>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Side-by-side performance contrast between custom filter sets, trading cohorts, or
+            operational regimes.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!multi && sharedCurrency && (
+            <Badge variant="outline" className="text-xs font-normal">
+              {sharedCurrency}
+            </Badge>
+          )}
+          {sharedTimeZone && (
+            <Badge variant="outline" className="text-xs font-normal">
+              {sharedTimeZone}
+            </Badge>
+          )}
+        </div>
+      </div>
+
       {multi && (
-        <p role="alert" className="rounded-md border p-3 text-sm">
-          Select accounts with the same currency in both groups. Currency conversion is not applied.
-        </p>
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-xs leading-relaxed text-destructive"
+        >
+          Select accounts with the same currency in both groups. Currency conversion is not applied
+          across differing currencies ({[...currencies].join(", ")}).
+        </div>
       )}
+
+      {/* Cohorts Grid */}
       <div className="grid gap-4 lg:grid-cols-2">
         {(
           [
@@ -681,27 +887,42 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             { key: "b", name: nameB, setName: setNameB, filters: b, result: bb },
           ] as const
         ).map((group) => (
-          <Card key={group.key}>
-            <CardHeader>
-              <div className="flex flex-wrap items-center gap-3">
-                <input
-                  aria-label={`Group ${group.key.toUpperCase()} name`}
-                  className={`${fieldClass} min-w-32 flex-1 font-semibold`}
-                  value={group.name}
-                  onChange={(e) => group.setName(e.target.value)}
-                />
+          <Card key={group.key} className="overflow-hidden rounded-xl border">
+            <CardHeader className="border-b bg-muted/10 pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "rounded-md px-2 py-0.5 font-mono text-xs font-bold",
+                      group.key === "a"
+                        ? "border border-primary/20 bg-primary/15 text-primary"
+                        : "border border-purple-500/20 bg-purple-500/15 text-purple-400",
+                    )}
+                  >
+                    Group {group.key.toUpperCase()}
+                  </span>
+                  <input
+                    aria-label={`Group ${group.key.toUpperCase()} name`}
+                    className="h-8 min-w-32 rounded-lg border bg-background px-2.5 text-sm font-semibold transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    value={group.name}
+                    onChange={(e) => group.setName(e.target.value)}
+                  />
+                </div>
                 <Button
                   size="sm"
                   variant="outline"
+                  className="h-8 gap-1.5 text-xs font-medium"
                   onClick={() => {
                     setDraft({ ...group.filters });
                     setEditing(group.key);
                   }}
                 >
-                  Edit filters
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>Edit Filters</span>
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground break-words">
+              <p className="mt-2 rounded-lg border border-border/40 bg-muted/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground break-words">
+                <span className="font-semibold text-foreground/80">Active filters: </span>
                 {describeFilters(
                   group.filters,
                   group.result.data?.accounts,
@@ -710,13 +931,20 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
                 )}
               </p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               {group.result.error ? (
-                <p role="alert" className="text-destructive">
+                <div
+                  role="alert"
+                  className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
+                >
                   {group.result.error}
-                </p>
+                </div>
               ) : group.result.loading ? (
-                <p>Loading…</p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <Skeleton key={i} className="h-20 rounded-xl" />
+                  ))}
+                </div>
               ) : group.result.data && !multi ? (
                 <Summary data={group.result.data} />
               ) : null}
@@ -724,62 +952,106 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
           </Card>
         ))}
       </div>
-      {aa.data && bb.data && !aa.loading && !bb.loading && !multi && (
-        <Card>
-          <CardContent className="space-y-4 pt-5">
-            <p className="text-sm">
-              {nameB} minus {nameA}:{" "}
-              <strong>
-                <MonetaryValue>
-                  {money(
-                    bb.data.summary.netPnl - aa.data.summary.netPnl,
-                    [...currencies][0] ?? "USD",
-                  )}
-                </MonetaryValue>
-              </strong>{" "}
-              net P&L · {number(bb.data.summary.trades - aa.data.summary.trades)} trades
-            </p>
-            <ReviewExport
-              containsFinancialData
-              document={{
-                title: `${nameA} vs ${nameB}`,
-                lines: [
-                  `Group A: ${describeFilters(a, aa.data.accounts, aa.data.playbooks)}`,
-                  `Group B: ${describeFilters(b, bb.data.accounts, bb.data.playbooks)}`,
-                  "",
-                  ...metricLines(nameA, aa.data),
-                  "",
-                  ...metricLines(nameB, bb.data),
-                ],
-              }}
-            />
+
+      {/* Head-to-Head Comparative Delta Panel */}
+      {hasBothData && (
+        <Card className="overflow-hidden rounded-xl border">
+          <CardHeader className="border-b bg-muted/10 pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-semibold">
+                  Head-to-Head Delta ({nameB} vs {nameA})
+                </CardTitle>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Statistical differential: positive values indicate {nameB} outperforms {nameA}.
+                </p>
+              </div>
+              <ReviewExport
+                containsFinancialData
+                document={{
+                  title: `${nameA} vs ${nameB}`,
+                  subtitle: `${sharedTimeZone} · ${sharedCurrency}`,
+                  lines: [
+                    `Group A (${nameA}): ${describeFilters(a, aa.data!.accounts, aa.data!.playbooks)}`,
+                    `Group B (${nameB}): ${describeFilters(b, bb.data!.accounts, bb.data!.playbooks)}`,
+                    "",
+                    ...metricLines(nameA, aa.data!),
+                    "",
+                    ...metricLines(nameB, bb.data!),
+                  ],
+                }}
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="py-2.5">Metric</TableHead>
+                  <TableHead className="py-2.5 text-right font-mono">{nameA}</TableHead>
+                  <TableHead className="py-2.5 text-right font-mono">{nameB}</TableHead>
+                  <TableHead className="px-4 text-right font-mono font-semibold">
+                    Delta ({nameB} − {nameA})
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {comparisonRows.map((row) => (
+                  <TableRow key={row.metric} className="transition-colors hover:bg-muted/40">
+                    <TableCell className="py-2.5 font-medium">{row.metric}</TableCell>
+                    <TableCell className="py-2.5 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                      {row.valA}
+                    </TableCell>
+                    <TableCell className="py-2.5 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                      {row.valB}
+                    </TableCell>
+                    <TableCell className="px-4 text-right font-mono text-xs tabular-nums">
+                      {row.deltaNode}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}
+
+      {/* Filter Configuration Dialog */}
       <Dialog
         open={editing !== null}
         onOpenChange={(v) => {
           if (!v) setEditing(null);
         }}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-xl sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Group {editing?.toUpperCase()} filters</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-primary" />
+              <span>Configure Group {editing?.toUpperCase()} Filters</span>
+            </DialogTitle>
           </DialogHeader>
-          <FilterFields value={draft} onChange={setDraft} />
-          <div className="flex justify-between">
-            <Button variant="ghost" onClick={() => setDraft({})}>
-              Clear
+          <div className="py-2">
+            <FilterFields value={draft} onChange={setDraft} />
+          </div>
+          <div className="flex items-center justify-between border-t pt-4">
+            <Button variant="ghost" size="sm" onClick={() => setDraft({})}>
+              Clear all
             </Button>
-            <Button
-              onClick={() => {
-                if (editing === "a") setA(draft);
-                else setB(draft);
-                setEditing(null);
-              }}
-            >
-              Apply to group
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (editing === "a") setA(draft);
+                  else setB(draft);
+                  setEditing(null);
+                }}
+              >
+                Apply to group
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
