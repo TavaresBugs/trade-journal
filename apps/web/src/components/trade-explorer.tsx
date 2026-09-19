@@ -4,6 +4,18 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
+  ArrowRight,
+  ArrowUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Compass,
+  ExternalLink,
+  History,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
+import {
   clockLabel,
   plotTradePoints,
   type PlottedTrade,
@@ -14,12 +26,17 @@ import {
 import { useApi } from "@/lib/use-api";
 import { ReportMarketEstimates } from "./report-market-estimates";
 import { MonetaryValue } from "./privacy";
-import { fmtMoney } from "@/lib/utils";
+import { cn, fmtMoney } from "@/lib/utils";
+import { normalizeSymbol } from "@/lib/assets/asset-icons";
 import { Pnl } from "./pnl";
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { OptionSelect } from "./ui/option-select";
 import { Skeleton } from "./ui/skeleton";
+import { AssetIcon } from "./ui/asset-icon";
+import { DirectionBadge } from "./ui/direction-badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
 const TradeScatter = dynamic(
   () => import("./charts/trade-scatter").then((module) => module.TradeScatter),
@@ -31,6 +48,7 @@ const TradeScatter = dynamic(
     ),
   },
 );
+
 const PAGE_SIZE = 25;
 const detailHref = (key: string) => `/trades/${encodeURIComponent(key)}`;
 
@@ -53,47 +71,58 @@ export function TradeExplorer({ query }: { query: string }) {
       }),
     [data?.timeZone],
   );
-  if (loading && !data)
+
+  if (loading && !data) {
     return (
       <div role="status" aria-label="Loading trade explorer">
-        <Skeleton className="h-96" />
+        <Skeleton className="h-96 rounded-xl" />
       </div>
     );
-  if (error || !data)
+  }
+
+  if (error || !data) {
     return (
-      <div role="alert" className="rounded-xl border p-5">
-        <p className="text-sm text-destructive">{error ?? "Unable to load trade explorer."}</p>
+      <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
+        <p className="text-sm font-medium text-destructive">
+          {error ?? "Unable to load trade explorer."}
+        </p>
         <Button onClick={refresh} variant="outline" size="sm" className="mt-3">
           Try again
         </Button>
       </div>
     );
+  }
+
   const currency = data.currencies[0] ?? "USD";
   const excursion = x === "mae" || x === "mfe" || y === "mae" || y === "mfe";
   const blocked = (y !== "realizedR" || excursion) && data.currencies.length > 1;
+
   const xTitle =
     x === "durationMinutes"
       ? "Duration (minutes)"
       : x === "entryMinute"
         ? `Entry time (${data.timeZone})`
         : `Estimated ${x.toUpperCase()} (${currency})`;
+
   const yTitle =
     y === "netPnl"
       ? `Net P&L (${currency})`
       : y === "realizedR"
         ? "Realized R"
         : `Estimated ${y.toUpperCase()} (${currency})`;
+
   const value = (point: PlottedTrade) =>
     y === "mae" || y === "mfe" ? (
       <MonetaryValue>{fmtMoney(point.y, currency)}</MonetaryValue>
     ) : y === "netPnl" ? (
       <Pnl value={point.y} currency={currency} />
     ) : (
-      <span className="tabular-nums">
+      <span className="font-mono tabular-nums">
         {point.y > 0 ? "+" : ""}
         {point.y.toFixed(2)}R
       </span>
     );
+
   const xValue = (point: PlottedTrade) =>
     x === "mae" || x === "mfe" ? (
       <MonetaryValue>{fmtMoney(point.x, currency)}</MonetaryValue>
@@ -102,127 +131,178 @@ export function TradeExplorer({ query }: { query: string }) {
     ) : (
       `${point.x.toLocaleString(undefined, { maximumFractionDigits: 2 })} min`
     );
+
   const pages = Math.ceil(points.length / PAGE_SIZE);
   const shownPage = Math.min(page, Math.max(0, pages - 1));
+
   const table = (
-    <div className="space-y-3 px-4 pb-4">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <caption className="pb-3 text-left text-muted-foreground">
-            All {points.length} comparable trades, newest close first. Each link opens the original
-            trade.
-          </caption>
-          <thead>
-            <tr className="border-b">
-              <th scope="col" className="py-2 pr-3">
-                Trade / closed
-              </th>
-              <th scope="col" className="px-2 text-right">
-                {xTitle}
-              </th>
-              <th scope="col" className="pl-2 text-right">
-                {yTitle}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+    <div className="space-y-3 px-4 pb-4 pt-1">
+      <p className="text-xs text-muted-foreground">
+        All {points.length} comparable trades, newest close first. Dates use {data.timeZone}.
+      </p>
+      <div className="max-h-96 overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="py-2.5">Trade / Closed</TableHead>
+              <TableHead className="px-2 text-right">{xTitle}</TableHead>
+              <TableHead className="pl-2 text-right">{yTitle}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {points.slice(shownPage * PAGE_SIZE, (shownPage + 1) * PAGE_SIZE).map((point) => (
-              <tr key={point.key} className="border-b last:border-0">
-                <th scope="row" className="py-3 pr-3 font-normal">
-                  <Link
-                    href={detailHref(point.key)}
-                    className="rounded underline underline-offset-4"
-                  >
-                    <span className="break-all font-medium">
-                      {point.symbol} · {point.direction}
-                    </span>
-                    <span className="mt-1 block text-muted-foreground">
-                      {date.format(new Date(point.closedAt))}
-                    </span>
-                  </Link>
-                </th>
-                <td className="px-2 text-right tabular-nums">{xValue(point)}</td>
-                <td className="pl-2 text-right">{value(point)}</td>
-              </tr>
+              <TableRow key={point.key} className="hover:bg-muted/50">
+                <TableCell className="py-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <AssetIcon symbol={point.symbol} size="xs" />
+                      <span
+                        className="truncate text-xs font-semibold text-foreground"
+                        title={
+                          point.symbol !== normalizeSymbol(point.symbol) ? point.symbol : undefined
+                        }
+                      >
+                        {normalizeSymbol(point.symbol)}
+                      </span>
+                      <DirectionBadge direction={point.direction} size="xs" />
+                      <span className="font-mono text-[11px] text-muted-foreground">
+                        {date.format(new Date(point.closedAt))}
+                      </span>
+                    </div>
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                    >
+                      <Link href={detailHref(point.key)} title="Open trade details">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                  </div>
+                </TableCell>
+                <TableCell className="px-2 text-right font-mono text-xs tabular-nums">
+                  {xValue(point)}
+                </TableCell>
+                <TableCell className="pl-2 text-right font-mono text-xs tabular-nums">
+                  {value(point)}
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
       {pages > 1 && (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 border-t pt-3">
           <Button
             size="sm"
             variant="outline"
+            className="h-8 gap-1 text-xs"
             disabled={shownPage === 0}
             onClick={() => setPage(shownPage - 1)}
           >
-            Previous
+            <ChevronLeft className="h-3.5 w-3.5" />
+            <span>Previous</span>
           </Button>
-          <p aria-live="polite" className="text-xs text-muted-foreground">
+          <p aria-live="polite" className="font-mono text-xs text-muted-foreground">
             Page {shownPage + 1} of {pages}
           </p>
           <Button
             size="sm"
             variant="outline"
+            className="h-8 gap-1 text-xs"
             disabled={shownPage === pages - 1}
             onClick={() => setPage(shownPage + 1)}
           >
-            Next
+            <span>Next</span>
+            <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         </div>
       )}
     </div>
   );
+
   return (
     <section className="space-y-4" aria-labelledby="trade-explorer-title" data-trade-explorer>
-      <div>
-        <h2 id="trade-explorer-title" className="text-lg font-semibold">
-          Trade explorer
-        </h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Compare individual trades, not group averages · Active account and filters ·{" "}
-          {data.timeZone}
-        </p>
+      {/* Header Section */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <Compass className="h-5 w-5 text-primary" />
+            <h2 id="trade-explorer-title" className="text-lg font-semibold tracking-tight">
+              Trade Explorer
+            </h2>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Cross-sectional distribution and trade outcome analysis based on active account and
+            filters.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="text-xs font-normal">
+            {data.points.length} {data.points.length === 1 ? "Closed Trade" : "Closed Trades"}
+          </Badge>
+          <Badge variant="outline" className="text-xs font-normal">
+            {data.timeZone}
+          </Badge>
+          {currency && (
+            <Badge variant="outline" className="text-xs font-normal">
+              {currency}
+            </Badge>
+          )}
+        </div>
       </div>
+
       <ReportMarketEstimates
         points={data.points}
         currencies={data.currencies}
         onComplete={refresh}
       />
-      <div className="flex flex-wrap gap-2" aria-label="Scatter plot presets">
+
+      {/* Presets Toolbar */}
+      <div className="flex flex-wrap items-center gap-2" aria-label="Scatter plot presets">
+        <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          <span>Presets:</span>
+        </span>
         {(
           [
-            ["durationMinutes", "netPnl", "Holding time"],
-            ["mae", "netPnl", "MAE vs net P&L"],
-            ["mfe", "netPnl", "MFE vs net P&L"],
+            ["durationMinutes", "netPnl", "Holding Time vs Net P&L"],
+            ["mae", "netPnl", "MAE vs Net P&L"],
+            ["mfe", "netPnl", "MFE vs Net P&L"],
             ["mae", "mfe", "MAE vs MFE"],
           ] as const
-        ).map(([nextX, nextY, label]) => (
-          <Button
-            key={label}
-            size="sm"
-            variant={x === nextX && y === nextY ? "secondary" : "outline"}
-            onClick={() => {
-              setX(nextX);
-              setY(nextY);
-              setSelected(null);
-              setPage(0);
-            }}
-          >
-            {label}
-          </Button>
-        ))}
+        ).map(([nextX, nextY, label]) => {
+          const isActive = x === nextX && y === nextY;
+          return (
+            <Button
+              key={label}
+              size="sm"
+              variant={isActive ? "default" : "outline"}
+              className="h-7 text-xs font-medium"
+              onClick={() => {
+                setX(nextX);
+                setY(nextY);
+                setSelected(null);
+                setPage(0);
+              }}
+            >
+              {label}
+            </Button>
+          );
+        })}
       </div>
-      <Card className="min-w-0 overflow-hidden">
-        <CardHeader>
+
+      <Card className="min-w-0 overflow-hidden rounded-xl">
+        <CardHeader className="pb-3">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <CardTitle>
+              <CardTitle className="text-base font-semibold">
                 {excursion
                   ? `${xTitle} vs ${yTitle}`
-                  : `Trade outcomes by ${x === "durationMinutes" ? "holding time" : "entry time"}`}
+                  : `Trade Outcomes by ${x === "durationMinutes" ? "Holding Time" : "Entry Time"}`}
               </CardTitle>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {blocked
                   ? `${data.points.length} closed trades`
                   : `${points.length} of ${data.points.length} closed trades comparable`}{" "}
@@ -234,9 +314,10 @@ export function TradeExplorer({ query }: { query: string }) {
               <div className="min-w-0 flex-1 sm:w-44">
                 <label
                   htmlFor="trade-x-axis"
-                  className="mb-1.5 block text-xs text-muted-foreground"
+                  className="mb-1.5 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"
                 >
-                  X axis
+                  <ArrowRight className="h-3 w-3" />
+                  <span>X Axis</span>
                 </label>
                 <OptionSelect
                   id="trade-x-axis"
@@ -256,9 +337,10 @@ export function TradeExplorer({ query }: { query: string }) {
               <div className="min-w-0 flex-1 sm:w-44">
                 <label
                   htmlFor="trade-y-axis"
-                  className="mb-1.5 block text-xs text-muted-foreground"
+                  className="mb-1.5 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"
                 >
-                  Y axis
+                  <ArrowUp className="h-3 w-3" />
+                  <span>Y Axis</span>
                 </label>
                 <OptionSelect
                   id="trade-y-axis"
@@ -280,15 +362,18 @@ export function TradeExplorer({ query }: { query: string }) {
         </CardHeader>
         <CardContent className="space-y-4">
           {data.points.length === 0 ? (
-            <div className="py-10 text-center">
-              <h3 className="font-medium">No closed trades in this selection</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
+            <div className="py-12 text-center">
+              <h3 className="font-medium text-foreground">No closed trades in this selection</h3>
+              <p className="mt-1.5 text-xs text-muted-foreground">
                 Change the date range or filters to explore your history. Open positions are
                 excluded.
               </p>
             </div>
           ) : blocked ? (
-            <p role="note" className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
+            <p
+              role="note"
+              className="rounded-xl border bg-muted/30 p-4 text-xs leading-relaxed text-muted-foreground"
+            >
               These trades use different currencies ({data.currencies.join(", ")}). Select accounts
               with one currency for monetary axes, or use Duration and Realized R to compare
               risk-normalized outcomes. No currency conversion is applied.
@@ -314,22 +399,22 @@ export function TradeExplorer({ query }: { query: string }) {
               {points.length >= (excursion ? 1 : 8) ? (
                 <>
                   <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-                    <span>{yTitle}</span>
-                    <span className="flex flex-wrap gap-x-4 gap-y-1">
-                      <span>
-                        <span aria-hidden="true" className="text-[var(--profit)]">
-                          ●
-                        </span>{" "}
-                        Positive net P&L
+                    <span className="font-medium text-foreground">{yTitle}</span>
+                    <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-profit" />
+                        <span>Positive Net P&L</span>
                       </span>
-                      <span>
-                        <span aria-hidden="true" className="text-[var(--loss)]">
-                          ●
-                        </span>{" "}
-                        Negative net P&L
+                      <span className="inline-flex items-center gap-1.5">
+                        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-loss" />
+                        <span>Negative Net P&L</span>
                       </span>
-                      <span>
-                        <span aria-hidden="true">●</span> Zero net P&L
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          aria-hidden="true"
+                          className="h-2 w-2 rounded-full bg-muted-foreground/60"
+                        />
+                        <span>Zero Net P&L</span>
                       </span>
                     </span>
                   </div>
@@ -348,24 +433,58 @@ export function TradeExplorer({ query }: { query: string }) {
                   </p>
                   <div aria-live="polite">
                     {selected && (
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-4">
-                        <div>
-                          <p className="text-sm font-medium break-all">
-                            {selected.symbol} · {selected.direction} · {value(selected)}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
+                      <div
+                        className={cn(
+                          "flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4 transition-all shadow-sm",
+                          (selected.netPnl ?? 0) > 0
+                            ? "border-profit/30 bg-profit/5"
+                            : (selected.netPnl ?? 0) < 0
+                              ? "border-loss/30 bg-loss/5"
+                              : "border-muted bg-muted/20",
+                        )}
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <AssetIcon symbol={selected.symbol} size="sm" />
+                            <span
+                              className="truncate text-sm font-semibold text-foreground"
+                              title={
+                                selected.symbol !== normalizeSymbol(selected.symbol)
+                                  ? selected.symbol
+                                  : undefined
+                              }
+                            >
+                              {normalizeSymbol(selected.symbol)}
+                            </span>
+                            <DirectionBadge direction={selected.direction} size="xs" />
+                            <div className="ml-1 text-sm font-bold tracking-tight">
+                              {value(selected)}
+                            </div>
+                          </div>
+                          <p className="font-mono text-xs text-muted-foreground">
                             {xValue(selected)} · Closed {date.format(new Date(selected.closedAt))}
                           </p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Link
-                            href={detailHref(selected.key)}
-                            className="rounded text-sm underline underline-offset-4"
+                        <div className="flex items-center gap-2">
+                          <Button
+                            asChild
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1.5 text-xs font-medium"
                           >
-                            Open trade ↗
-                          </Link>
-                          <Button size="sm" variant="ghost" onClick={() => setSelected(null)}>
-                            Dismiss
+                            <Link href={detailHref(selected.key)}>
+                              <span>Open Trade</span>
+                              <ExternalLink className="h-3 w-3" />
+                            </Link>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => setSelected(null)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            <span>Dismiss</span>
                           </Button>
                         </div>
                       </div>
@@ -373,7 +492,7 @@ export function TradeExplorer({ query }: { query: string }) {
                   </div>
                 </>
               ) : (
-                <p className="rounded-lg bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
+                <p className="rounded-xl border border-dashed bg-muted/20 px-4 py-8 text-center text-xs leading-relaxed text-muted-foreground">
                   {points.length === 0
                     ? "No trades have the data required for these axes. Try another axis or adjust your filters."
                     : "Fewer than 8 comparable trades. Review the exact values below, or widen your filters to reveal a useful scatter plot."}
@@ -391,22 +510,36 @@ export function TradeExplorer({ query }: { query: string }) {
       {!blocked &&
         points.length > 0 &&
         (points.length < 8 ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Comparable trades</CardTitle>
+          <Card className="min-w-0 overflow-hidden rounded-xl">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">Comparable Trades</CardTitle>
             </CardHeader>
             {table}
           </Card>
         ) : (
-          <details
-            className="rounded-xl border bg-card"
-            onToggle={(event) => setTableOpen(event.currentTarget.open)}
-          >
-            <summary className="cursor-pointer rounded-xl px-4 py-3 text-sm font-medium">
-              Explore all {points.length} trades
-            </summary>
-            {tableOpen && table}
-          </details>
+          <div className="overflow-hidden rounded-xl border bg-card">
+            <button
+              type="button"
+              onClick={() => setTableOpen((prev) => !prev)}
+              className="flex w-full items-center justify-between px-4 py-3.5 text-left text-sm font-medium transition-colors hover:bg-muted/40"
+              aria-expanded={tableOpen}
+            >
+              <div className="flex items-center gap-2.5">
+                <History className="h-4 w-4 text-muted-foreground" />
+                <span>Explore All Comparable Trades</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                  {points.length} {points.length === 1 ? "trade" : "trades"}
+                </span>
+              </div>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                  tableOpen && "rotate-180",
+                )}
+              />
+            </button>
+            {tableOpen && <div className="border-t">{table}</div>}
+          </div>
         ))}
       <p className="text-xs leading-relaxed text-muted-foreground">
         Duration is elapsed time from first entry to final exit, including overnight hours. Entry
