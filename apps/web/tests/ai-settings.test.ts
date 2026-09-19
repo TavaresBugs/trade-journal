@@ -27,6 +27,8 @@ beforeEach(() => {
   db.delete(settings).run();
   vi.stubEnv("ANTHROPIC_API_KEY", "");
   vi.stubEnv("OPENAI_API_KEY", "");
+  vi.stubEnv("GEMINI_API_KEY", "");
+  vi.stubEnv("GOOGLE_GENERATIVE_AI_API_KEY", "");
   vi.stubEnv("JOURNAL_PASSWORD", "");
   vi.stubGlobal(
     "fetch",
@@ -124,11 +126,17 @@ describe("AI provider settings", () => {
     expect(getAiProvider()).toBe("openai");
   });
 
-  it.each(["openai", "anthropic"] as const)(
+  it.each(["openai", "anthropic", "google"] as const)(
     "honors %s environment precedence and blocks misleading key edits",
     async (provider) => {
       await save({ [`${provider}Key`]: "fixture-saved" });
-      vi.stubEnv(provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY", "fixture-env");
+      const envVar =
+        provider === "openai"
+          ? "OPENAI_API_KEY"
+          : provider === "google"
+            ? "GEMINI_API_KEY"
+            : "ANTHROPIC_API_KEY";
+      vi.stubEnv(envVar, "fixture-env");
       expect(getAiKey(provider)).toBe("fixture-env");
       for (const key of [null, "fixture-replacement"])
         expect((await save({ [`${provider}Key`]: key })).status).toBe(400);
@@ -279,5 +287,41 @@ describe("AI provider requests through the real SDK adapters", () => {
     const result = runAi("Fixture").catch((error) => error as Error);
     await vi.runAllTimersAsync();
     expect(((await result) as Error).message).toContain("AI rate limit");
+  });
+
+  it("sends requests to Google Gemini using gemini-3.8-flash", async () => {
+    await save({
+      aiProvider: "google",
+      googleKey: "fixture-google",
+      aiModel: "gemini-3.8-flash",
+    });
+    const fetcher = vi.fn(async () =>
+      Response.json({
+        id: "interact_fixture",
+        steps: [
+          {
+            type: "model_output",
+            content: [{ type: "text", text: "Google Gemini reflection" }],
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    expect(await runAi("Fixture journal question", 700)).toBe("Google Gemini reflection");
+    expect(fetcher).toHaveBeenCalled();
+  });
+
+  it("sanitizes Google API errors", async () => {
+    await save({ aiProvider: "google", googleKey: "fixture-google" });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("403 PERMISSION_DENIED: fixture-private");
+      }),
+    );
+    const error = await runAi("Fixture").catch((error) => error as Error);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain("authentication_error");
+    expect((error as Error).message).not.toContain("fixture-private");
   });
 });

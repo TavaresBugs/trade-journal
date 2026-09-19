@@ -70,8 +70,9 @@ export function AiSettings() {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Use Anthropic or OpenAI for recaps, trade critiques, and “ask your journal”. Your key is
-          encrypted at rest. AI requests go from your server directly to the provider you select.
+          Use Anthropic, OpenAI, or Google Gemini for recaps, trade critiques, and “ask your
+          journal”. Your key is encrypted at rest. AI requests go from your server directly to the
+          provider you select.
         </p>
         {data && (
           <p className="text-xs text-muted-foreground">
@@ -136,14 +137,16 @@ export function AiSettings() {
                 ? "Key configured"
                 : provider === "anthropic"
                   ? "sk-ant-…"
-                  : "sk-…"
+                  : provider === "google"
+                    ? "AIzaSy…"
+                    : "sk-…"
             }
             autoComplete="off"
             spellCheck={false}
           />
           <p className="text-xs text-muted-foreground">
             {environment
-              ? `Using ${provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY"} from the server environment. Change or remove that variable on the server to update the key.`
+              ? `Using ${provider === "openai" ? "OPENAI_API_KEY" : provider === "google" ? "GEMINI_API_KEY" : "ANTHROPIC_API_KEY"} from the server environment. Change or remove that variable on the server to update the key.`
               : connection?.configured
                 ? "Leave blank to keep your saved key, or enter a replacement."
                 : "Add your API key, then save to use this provider."}

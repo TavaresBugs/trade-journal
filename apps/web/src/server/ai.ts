@@ -1,3 +1,4 @@
+import { GoogleGenAI } from "@google/genai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { APICallError, RetryError, generateText } from "ai";
@@ -27,6 +28,55 @@ export const runAi = async (prompt: string, maxOutputTokens = 1200): Promise<str
     );
   }
   const model = getAiModel(provider);
+
+  if (provider === "google") {
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      try {
+        const interaction = await ai.interactions.create({
+          model,
+          input: `${SYSTEM}\n\n${prompt}`,
+        });
+        const text = (interaction as { output_text?: string }).output_text;
+        if (text && text.trim()) return text.trim();
+      } catch {
+        const response = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            systemInstruction: SYSTEM,
+            maxOutputTokens,
+          },
+        });
+        if (response.text && response.text.trim()) return response.text.trim();
+      }
+      throw new Error("AI returned no text. Check the model or try again.");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (/401|403|API_KEY_INVALID|PERMISSION_DENIED|authentication/i.test(msg)) {
+        throw new Error(
+          "AI authentication_error: check your provider key and permissions in Settings.",
+        );
+      }
+      if (
+        /credit balance|billing|insufficient_quota|exceeded your current quota|RESOURCE_EXHAUSTED/i.test(
+          msg,
+        )
+      ) {
+        throw new Error("AI billing: check your provider account's credits and quota.");
+      }
+      if (/429|529|rate limit|exhausted/i.test(msg)) {
+        throw new Error("AI rate limit: please try again shortly.");
+      }
+      if (/404|model.*(?:not found|does not exist|access)/i.test(msg)) {
+        throw new Error(
+          "AI model unavailable: check the model ID and your provider access in Settings.",
+        );
+      }
+      throw new Error("AI request failed. Check your provider settings or try again shortly.");
+    }
+  }
+
   try {
     const result = await generateText({
       model:
