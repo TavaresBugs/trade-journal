@@ -5,10 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/shared/formula-hud";
 import { cn } from "@/lib/utils";
-import {
-  calculateLosingStreakProbability,
-  generateStreakDistribution,
-} from "@luxalgo/journal-core";
+import { calculateLosingStreakProbability } from "@luxalgo/journal-core";
 
 interface VarianceStreakCardProps {
   winRate?: number;
@@ -23,6 +20,7 @@ export function VarianceStreakCard({
 }: VarianceStreakCardProps) {
   const [localWr, setLocalWr] = useState(winRate);
   const [localSample, setLocalSample] = useState(sampleTrades);
+  const [distributionMode, setDistributionMode] = useState<"cumulative" | "exact">("cumulative");
   const [selectedStreak, setSelectedStreak] = useState(6);
   const [isWrFocused, setIsWrFocused] = useState(false);
   const [isSampleFocused, setIsSampleFocused] = useState(false);
@@ -43,7 +41,24 @@ export function VarianceStreakCard({
   const safeSample = Math.max(10, Math.min(1000, localSample || 100));
 
   const streakProb = calculateLosingStreakProbability(safeWr, safeSample, selectedStreak);
-  const streakDistribution = generateStreakDistribution(safeWr, safeSample, [3, 4, 5, 6, 7, 8, 10]);
+
+  const streaksToEvaluate = [3, 4, 5, 6, 7, 8, 10];
+  const streakRows = streaksToEvaluate.map((k) => {
+    const probAtLeast = calculateLosingStreakProbability(safeWr, safeSample, k);
+    const probAtLeastNext = calculateLosingStreakProbability(safeWr, safeSample, k + 1);
+    const exactProb = Number(Math.max(0, probAtLeast - probAtLeastNext).toFixed(1));
+    const prob = distributionMode === "cumulative" ? probAtLeast : exactProb;
+
+    return {
+      streak: k,
+      cumulativeProb: probAtLeast,
+      exactProb,
+      prob,
+    };
+  });
+
+  const selectedRow = streakRows.find((r) => r.streak === selectedStreak);
+  const displayProb = selectedRow ? selectedRow.prob : streakProb;
 
   const handleWrChange = (val: number) => {
     setLocalWr(val);
@@ -61,10 +76,16 @@ export function VarianceStreakCard({
     border: "border-primary/50",
     bg: "bg-primary/20",
     heading: "Markov Chain Streak Distribution",
-    advice: `Calculated via finite Markov chain state transitions over ${safeSample} independent trades. With a ${safeWr}% win rate, experiencing ≥${selectedStreak} consecutive losses has an exact probability of ${streakProb}%.`,
+    advice: `Calculated via finite Markov chain state transitions over ${safeSample} independent trades. With a ${safeWr}% win rate, ${
+      distributionMode === "cumulative"
+        ? `experiencing ≥${selectedStreak} consecutive losses has an exact probability of ${displayProb}%`
+        : `having a maximum losing streak of exactly ${selectedStreak} has a probability of ${displayProb}%`
+    }.`,
   };
 
-  const copyText = `Variance & Streak Analysis: Win Rate: ${safeWr}% | Sample: ${safeSample} trades | Chance of ≥${selectedStreak} consecutive losses: ${streakProb}% | Fallacy Alert: Each trade is independent (${safeWr}% win prob).`;
+  const copyText = `Variance & Streak Analysis: Win Rate: ${safeWr}% | Sample: ${safeSample} trades | Chance of ${
+    distributionMode === "cumulative" ? `≥${selectedStreak} consecutive losses` : `max streak of exactly ${selectedStreak} losses`
+  }: ${displayProb}% | Fallacy Alert: Each trade is independent (${safeWr}% win prob).`;
 
   return (
     <Card className="flex flex-col justify-between">
@@ -86,6 +107,9 @@ export function VarianceStreakCard({
             </label>
             <Input
               type="number"
+              min="1"
+              max="99"
+              step="0.5"
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={localWr || ""}
               placeholder="45"
@@ -108,6 +132,8 @@ export function VarianceStreakCard({
             <div className="flex items-center gap-1.5">
               <Input
                 type="number"
+                min="10"
+                max="1000"
                 step="25"
                 className="h-9 w-24 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={localSample || ""}
@@ -152,11 +178,17 @@ export function VarianceStreakCard({
           title="Streak probability"
           category={streakCategory}
           copyText={copyText}
-          theoryNumerator="P(Losses ≥ k in N)"
+          theoryNumerator={
+            distributionMode === "cumulative"
+              ? "P(Losses ≥ k in N)"
+              : "P(Max losses = k in N)"
+          }
           theoryDenominator="Trade Independence (p)"
           valueNumerator={
             <div className="text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap">
-              <span className="text-muted-foreground/70">P(streak ≥ </span>
+              <span className="text-muted-foreground/70">
+                {distributionMode === "cumulative" ? "P(streak ≥ " : "P(max = "}
+              </span>
               <span className="font-semibold text-loss tnum">{selectedStreak}</span>
               <span className="text-muted-foreground/70"> in </span>
               <span
@@ -188,66 +220,135 @@ export function VarianceStreakCard({
             <span
               className={cn(
                 "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
-                streakProb > 60 ? "text-loss" : streakProb > 30 ? "text-amber-500" : "text-profit",
+                displayProb > 60 ? "text-loss" : displayProb > 25 ? "text-amber-500" : "text-profit",
               )}
             >
-              {streakProb}%
+              {displayProb}%
             </span>
           }
           resultLabel="chance"
           resultSecondary={
             <span className="text-[10px] sm:text-xs font-mono font-medium text-muted-foreground tnum">
-              {streakProb > 50 ? "Statistically normal" : "Uncommon streak"}
+              {displayProb > 50 ? "Statistically normal" : "Uncommon streak"}
             </span>
           }
         >
-          {/* STREAK DISTRIBUTION BARS */}
-          <div className="mt-3 border-t border-border/40 pt-2.5 space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
-              <span>Consecutive loss probability (in {safeSample} trades):</span>
-              <span className="text-[10px]">Click to inspect</span>
+          {/* STREAK DISTRIBUTION BARS (MATCHING EVAL BUDGET & PASS ODDS PATTERN) */}
+          <div className="mt-3 border-t border-border/40 pt-2.5">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <span className="uppercase tracking-wider">Streak distribution</span>
+                <span className="font-mono text-[10px] text-muted-foreground/80">
+                  ({safeSample} trades)
+                </span>
+              </div>
+              <div className="flex items-center rounded border border-border/70 bg-muted/60 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setDistributionMode("cumulative")}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
+                    distributionMode === "cumulative"
+                      ? "bg-accent font-semibold text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  At least (≥)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDistributionMode("exact")}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
+                    distributionMode === "exact"
+                      ? "bg-accent font-semibold text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Exact (=)
+                </button>
+              </div>
             </div>
-            <div className="space-y-1">
-              {streakDistribution.map((item) => {
-                const isSelected = selectedStreak === item.streak;
-                const barWidth = Math.max(4, Math.min(100, item.probability));
+
+            <div className="mt-2 space-y-1 text-xs font-mono tnum">
+              {streakRows.map((row) => {
+                const isSelected = selectedStreak === row.streak;
+                const isDanger = row.prob > 60;
+                const isWarning = row.prob > 25;
+                const barPercent = Math.min(100, Math.max(0, row.prob));
+
+                const label =
+                  distributionMode === "cumulative"
+                    ? `≥ ${row.streak} consecutive losses`
+                    : `Max streak of exactly ${row.streak} losses`;
 
                 return (
                   <button
-                    key={item.streak}
+                    key={row.streak}
                     type="button"
-                    onClick={() => setSelectedStreak(item.streak)}
+                    onClick={() => setSelectedStreak(row.streak)}
                     className={cn(
-                      "w-full flex items-center justify-between gap-2 rounded px-2 py-1 text-xs font-mono transition-all text-left active:scale-[0.98]",
+                      "group relative w-full flex items-center justify-between rounded px-2.5 py-1.5 overflow-hidden transition-all text-left active:scale-[0.98]",
                       isSelected
-                        ? "bg-primary/10 ring-1 ring-primary/40 font-semibold"
-                        : "hover:bg-muted/50 text-muted-foreground",
+                        ? "bg-accent/70 ring-1 ring-primary/40 shadow-xs"
+                        : "hover:bg-muted/40",
                     )}
                   >
-                    <span className="w-20 text-foreground shrink-0">≥ {item.streak} losses</span>
-                    <div className="flex-1 h-2 rounded-full bg-muted/60 overflow-hidden mx-2">
-                      <div
+                    {/* Translucent Data Bar */}
+                    <div
+                      className={cn(
+                        "absolute inset-y-0 left-0 transition-all duration-300 pointer-events-none rounded",
+                        isDanger
+                          ? "bg-loss/15"
+                          : isWarning
+                            ? "bg-amber-500/15"
+                            : "bg-muted-foreground/15",
+                      )}
+                      style={{ width: `${barPercent}%` }}
+                    />
+
+                    {/* Left label with dot */}
+                    <div className="relative z-10 flex items-center gap-2 truncate">
+                      <span
                         className={cn(
-                          "h-full rounded-full transition-all duration-300",
-                          item.probability > 60
+                          "size-1.5 rounded-full shrink-0",
+                          isDanger
                             ? "bg-loss"
-                            : item.probability > 25
+                            : isWarning
                               ? "bg-amber-500"
-                              : "bg-muted-foreground/50",
+                              : "bg-muted-foreground/60",
                         )}
-                        style={{ width: `${barWidth}%` }}
                       />
+                      <span
+                        className={cn(
+                          "truncate text-xs",
+                          isSelected ? "text-foreground font-semibold" : "text-foreground font-medium",
+                        )}
+                      >
+                        {label}
+                      </span>
                     </div>
-                    <div className="w-16 text-right shrink-0">
-                      <span className="tnum font-bold text-foreground">{item.probability}%</span>
-                    </div>
+
+                    {/* Right probability */}
+                    <span
+                      className={cn(
+                        "relative z-10 shrink-0 font-semibold ml-2 font-mono tnum",
+                        isDanger
+                          ? "text-loss"
+                          : isWarning
+                            ? "text-amber-500"
+                            : "text-muted-foreground",
+                      )}
+                    >
+                      {row.prob.toFixed(1)}%
+                    </span>
                   </button>
                 );
               })}
             </div>
 
             {/* GAMBLER'S FALLACY NOTICE */}
-            <div className="mt-2 rounded bg-muted/50 p-2 text-[11px] text-muted-foreground border border-border/50">
+            <div className="mt-2.5 rounded-md border border-border/60 bg-muted/30 p-2.5 text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">Gambler&apos;s Fallacy Inoculation: </span>
               Even after a run of losses, each future trade remains completely independent with exactly {safeWr}% win probability. Never increase position size to recover losses.
             </div>
