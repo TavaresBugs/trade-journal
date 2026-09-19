@@ -128,6 +128,19 @@ describe("quant module (packages/core)", () => {
     it("handles zero or invalid inputs safely", () => {
       expect(calculatePositionSize(0, 25, 20).recommendedContracts).toBe(0);
       expect(calculatePositionSize(500, 0, 20).recommendedContracts).toBe(0);
+      // Tight stop points where costPerContract rounds to 0
+      const tight = calculatePositionSize(500, 0.001, 10);
+      expect(tight.recommendedContracts).toBe(0);
+      expect(tight.exactContracts).toBe(0);
+      expect(Number.isFinite(tight.exactContracts)).toBe(true);
+    });
+  });
+
+  describe("runReturnsSimulation safety", () => {
+    it("handles zero simulations without NaN", () => {
+      const result = runReturnsSimulation(1, 0.4, 89, 2000, 0);
+      expect(Number.isNaN(result.avgPayoutResult)).toBe(false);
+      expect(Number.isNaN(result.avgNetProfit)).toBe(false);
     });
   });
 });

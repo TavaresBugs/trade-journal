@@ -199,4 +199,16 @@ AAPL,Sell,Cancelled,0/10,0/0,`;
     expect(result.executions[0]!.quantity).toBe(5); // filled, not total
     expect(result.executions[0]!.price).toBe(185.5); // avg fill price
   });
+
+  it("parses European slashed dates with auto-detection when day > 12", () => {
+    // 25/01/2026: 25 cannot be a month, auto-detects day=25, month=1
+    expect(parseTimestamp("25/01/2026 14:30:00")).toBe("2026-01-25T14:30:00.000Z");
+  });
+
+  it("parses European slashed dates with explicit dateOrder dmy", () => {
+    // 04/05/2026 with dmy order: day=4, month=5 (May 4th)
+    expect(parseTimestamp("04/05/2026 14:30:00", "UTC", "dmy")).toBe("2026-05-04T14:30:00.000Z");
+    // Standard US with mdy order: month=4, day=5 (April 5th)
+    expect(parseTimestamp("04/05/2026 14:30:00", "UTC", "mdy")).toBe("2026-04-05T14:30:00.000Z");
+  });
 });

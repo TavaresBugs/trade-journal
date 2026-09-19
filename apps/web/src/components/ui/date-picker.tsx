@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import dynamic from "next/dynamic";
 import * as Popover from "@radix-ui/react-popover";
 import { CalendarDays } from "lucide-react";
@@ -30,12 +30,15 @@ export function DatePicker({
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
+  const [prevValue, setPrevValue] = useState(value);
   const [invalid, setInvalid] = useState(false);
   const errorId = useId();
-  useEffect(() => {
+
+  if (value !== prevValue) {
+    setPrevValue(value);
     setDraft(value);
     setInvalid(false);
-  }, [value]);
+  }
   const allowed = (date: string) => (!min || date >= min) && (!max || date <= max);
   const select = (date: string) => {
     setDraft(date);

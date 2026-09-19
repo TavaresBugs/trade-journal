@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import {
   createSortedRowModel,
   rowSelectionFeature,
@@ -94,8 +94,12 @@ function Trades() {
   const [tagInput, setTagInput] = useState("");
   const [showColumns, setShowColumns] = useState(false);
   const [page, setPage] = useState(0);
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setPage(0);
+  }
   const pageSize = 50;
-  useEffect(() => setPage(0), [query]);
 
   const columns = useMemo<ColumnDef<typeof features, TradeRow>[]>(
     () => [

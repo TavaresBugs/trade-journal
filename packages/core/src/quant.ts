@@ -190,8 +190,9 @@ export function runReturnsSimulation(
     aggregatePayouts += simPayouts;
   }
 
-  const avgPayoutResult = Math.round(aggregatePayouts / totalSimulations);
-  const avgNetProfit = Math.round(aggregateNetPnl / totalSimulations);
+  const safeSims = Math.max(1, totalSimulations);
+  const avgPayoutResult = Math.round(aggregatePayouts / safeSims);
+  const avgNetProfit = Math.round(aggregateNetPnl / safeSims);
 
   return {
     numAttempts,
@@ -296,6 +297,16 @@ export function calculatePositionSize(
   }
 
   const costPerContract = Math.round(stopPoints * multiplier);
+  if (costPerContract <= 0) {
+    return {
+      recommendedContracts: 0,
+      exactContracts: 0,
+      microContracts: 0,
+      actualRiskDollars: 0,
+      stopPoints,
+      riskDollars,
+    };
+  }
   const exactContracts = riskDollars / costPerContract;
   // Fit contracts, minimum 1 contract:
   const recommendedContracts = Math.max(1, Math.floor(exactContracts));

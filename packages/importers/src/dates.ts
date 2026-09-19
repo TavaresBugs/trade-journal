@@ -62,7 +62,7 @@ interface NaiveParts {
   second: number;
 }
 
-const toNaive = (value: string): NaiveParts | null => {
+const toNaive = (value: string, dateOrder?: "mdy" | "dmy"): NaiveParts | null => {
   const text = value.trim();
 
   // IBKR Flex Query: "20260105;093100"
@@ -93,7 +93,7 @@ const toNaive = (value: string): NaiveParts | null => {
     };
   }
 
-  // US: 01/05/2026 2:30:00 PM  (also 1/5/26)
+  // US / European: 01/05/2026 2:30:00 PM  (also 1/5/26)
   match = text.match(
     /^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})(?:[, ]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?)?/,
   );
@@ -103,10 +103,13 @@ const toNaive = (value: string): NaiveParts | null => {
     if (meridiem === "PM" && hour < 12) hour += 12;
     if (meridiem === "AM" && hour === 12) hour = 0;
     const year = Number(match[3]!.length === 2 ? `20${match[3]}` : match[3]);
+    const p1 = Number(match[1]);
+    const p2 = Number(match[2]);
+    const isDmy = dateOrder === "dmy" || (p1 > 12 && p2 <= 12);
     return {
       year,
-      month: Number(match[1]),
-      day: Number(match[2]),
+      month: isDmy ? p2 : p1,
+      day: isDmy ? p1 : p2,
       hour,
       minute: Number(match[5] ?? 0),
       second: Number(match[6] ?? 0),
@@ -142,7 +145,11 @@ const toNaive = (value: string): NaiveParts | null => {
  * A trailing offset/Z is honored; otherwise the timestamp is interpreted in `timeZone`.
  * Returns null when the value cannot be parsed.
  */
-export const parseTimestamp = (value: string | undefined, timeZone = "UTC"): string | null => {
+export const parseTimestamp = (
+  value: string | undefined,
+  timeZone = "UTC",
+  dateOrder?: "mdy" | "dmy",
+): string | null => {
   if (!value) return null;
   // Some journal exports (TradeZella) append a timezone abbreviation to time
   // fields ("09:31:00 EST"). Abbreviations are ambiguous, so we strip them and
@@ -155,7 +162,7 @@ export const parseTimestamp = (value: string | undefined, timeZone = "UTC"): str
     return Number.isNaN(ms) ? null : new Date(ms).toISOString();
   }
 
-  const naive = toNaive(text);
+  const naive = toNaive(text, dateOrder);
   if (!naive) return null;
   const naiveUtcMs = Date.UTC(
     naive.year,
@@ -175,4 +182,5 @@ export const parseDateAndTime = (
   date: string | undefined,
   time: string | undefined,
   timeZone = "UTC",
-): string | null => parseTimestamp([date, time].filter(Boolean).join(" "), timeZone);
+  dateOrder?: "mdy" | "dmy",
+): string | null => parseTimestamp([date, time].filter(Boolean).join(" "), timeZone, dateOrder);

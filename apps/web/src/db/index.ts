@@ -14,6 +14,7 @@ const createDb = () => {
   mkdirSync(dir, { recursive: true });
   const sqlite = new Database(join(dir, "journal.db"));
   sqlite.pragma("journal_mode = WAL");
+  sqlite.pragma("busy_timeout = 5000");
   sqlite.pragma("foreign_keys = ON");
   sqlite.exec(BOOTSTRAP_SQL);
   // Additive upgrade: existing executions retain their fields and dedup hashes.
