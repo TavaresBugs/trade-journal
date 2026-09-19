@@ -7,7 +7,7 @@ import { HoverHint } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export interface FormulaHudCategory {
-  label: string;
+  label: React.ReactNode;
   color: string;
   border: string;
   bg: string;

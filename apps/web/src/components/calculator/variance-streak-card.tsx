@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/shared/formula-hud";
 import { cn } from "@/lib/utils";
+import { CircleHelp } from "lucide-react";
 import { calculateLosingStreakProbability } from "@luxalgo/journal-core";
 
 interface VarianceStreakCardProps {
@@ -71,16 +72,23 @@ export function VarianceStreakCard({
   };
 
   const streakCategory: FormulaHudCategory = {
-    label: "Markov Exact",
+    label: (
+      <span className="inline-flex items-center gap-1">
+        Markov Exact
+        <CircleHelp className="h-2.5 w-2.5 opacity-70" />
+      </span>
+    ),
     color: "text-primary",
     border: "border-primary/50",
     bg: "bg-primary/20",
-    heading: "Markov Chain Streak Distribution",
+    heading: "Markov Distribution & Gambler's Fallacy",
     advice: `Calculated via finite Markov chain state transitions over ${safeSample} independent trades. With a ${safeWr}% win rate, ${
       distributionMode === "cumulative"
         ? `experiencing ≥${selectedStreak} consecutive losses has an exact probability of ${displayProb}%`
         : `having a maximum losing streak of exactly ${selectedStreak} has a probability of ${displayProb}%`
-    }.`,
+    }.
+
+Gambler's Fallacy Inoculation: Even after a run of losses, each future trade remains completely independent with exactly ${safeWr}% win probability. Never increase position size to recover losses.`,
   };
 
   const copyText = `Variance & Streak Analysis: Win Rate: ${safeWr}% | Sample: ${safeSample} trades | Chance of ${
@@ -158,40 +166,89 @@ export function VarianceStreakCard({
           copyText={copyText}
           theoryNumerator={
             distributionMode === "cumulative"
-              ? "P(Losses ≥ k in N)"
-              : "P(Max losses = k in N)"
+              ? "1 − (1 − qᵏ)ᴺ"
+              : "(1 − qᵏ)ᴺ − (1 − qᵏ⁺¹)ᴺ"
           }
-          theoryDenominator="Trade Independence (p)"
+          theoryDenominator="q = 100% − p"
           valueNumerator={
-            <div className="text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap">
-              <span className="text-muted-foreground/70">
-                {distributionMode === "cumulative" ? "P(streak ≥ " : "P(max = "}
-              </span>
-              <span className="font-semibold text-loss tnum">{selectedStreak}</span>
-              <span className="text-muted-foreground/70"> in </span>
-              <span
-                className={cn(
-                  "font-semibold text-foreground tnum px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
-                  isSampleFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
-                )}
-              >
-                {safeSample}
-              </span>
-              <span className="text-muted-foreground/70">)</span>
+            <div className="text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap font-mono tnum">
+              {distributionMode === "cumulative" ? (
+                <>
+                  <span className="text-muted-foreground">1 − (1 − </span>
+                  <span
+                    className={cn(
+                      "font-semibold text-foreground px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
+                      isWrFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
+                    )}
+                  >
+                    {100 - safeWr}%
+                  </span>
+                  <sup className="text-[10px] font-semibold text-foreground">
+                    {selectedStreak}
+                  </sup>
+                  <span className="text-muted-foreground">)</span>
+                  <sup
+                    className={cn(
+                      "text-[10px] font-semibold px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 text-foreground",
+                      isSampleFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
+                    )}
+                  >
+                    {safeSample}
+                  </sup>
+                </>
+              ) : (
+                <>
+                  <span className="text-muted-foreground">(1 − </span>
+                  <span
+                    className={cn(
+                      "font-semibold text-foreground px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
+                      isWrFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
+                    )}
+                  >
+                    {100 - safeWr}%
+                  </span>
+                  <sup className="text-[10px] font-semibold text-foreground">
+                    {selectedStreak}
+                  </sup>
+                  <span className="text-muted-foreground">)</span>
+                  <sup
+                    className={cn(
+                      "text-[10px] font-semibold px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 text-foreground",
+                      isSampleFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
+                    )}
+                  >
+                    {safeSample}
+                  </sup>
+                  <span className="text-muted-foreground/60 px-0.5">−</span>
+                  <span className="text-muted-foreground">(1 − </span>
+                  <span className="font-semibold text-foreground">
+                    {100 - safeWr}%
+                  </span>
+                  <sup className="text-[10px] font-semibold text-foreground">
+                    {selectedStreak + 1}
+                  </sup>
+                  <span className="text-muted-foreground">)</span>
+                  <sup className="text-[10px] font-semibold text-foreground">
+                    {safeSample}
+                  </sup>
+                </>
+              )}
             </div>
           }
           valueDenominator={
-            <div className="text-[10px] sm:text-xs px-1 pt-0.5 whitespace-nowrap">
-              <span className="text-muted-foreground/70">Next trade: </span>
+            <div className="text-[10px] sm:text-xs px-1 pt-0.5 whitespace-nowrap font-mono tnum">
+              <span className="text-foreground font-semibold">{100 - safeWr}%</span>
+              <span className="text-muted-foreground/60 px-1">=</span>
+              <span className="text-muted-foreground">100%</span>
+              <span className="text-muted-foreground/60 px-0.5">−</span>
               <span
                 className={cn(
-                  "font-semibold text-foreground tnum px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
+                  "font-semibold text-foreground px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
                   isWrFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
                 )}
               >
-                {safeWr}% win
+                {safeWr}%
               </span>
-              <span className="text-muted-foreground/70 text-[10px] ml-1 font-sans">(Coin flip)</span>
             </div>
           }
           resultValue={
@@ -323,12 +380,6 @@ export function VarianceStreakCard({
                   </button>
                 );
               })}
-            </div>
-
-            {/* GAMBLER'S FALLACY NOTICE */}
-            <div className="mt-2.5 rounded-md border border-border/60 bg-muted/30 p-2.5 text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">Gambler&apos;s Fallacy Inoculation: </span>
-              Even after a run of losses, each future trade remains completely independent with exactly {safeWr}% win probability. Never increase position size to recover losses.
             </div>
           </div>
         </FormulaHud>
