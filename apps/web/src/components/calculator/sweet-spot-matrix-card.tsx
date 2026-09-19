@@ -25,7 +25,6 @@ export function SweetSpotMatrixCard({
 }: SweetSpotMatrixCardProps) {
   const [selectedWr, setSelectedWr] = useState(winRate);
   const [selectedRr, setSelectedRr] = useState(riskReward);
-  const [moveToBeR, setMoveToBeR] = useState<number | undefined>(1.0);
 
   useEffect(() => {
     if (winRate !== undefined) {
@@ -166,34 +165,6 @@ export function SweetSpotMatrixCard({
                 }}
               />
             </div>
-
-            {/* 3º: MOVE TO BREAKEVEN (OPTIONAL · 1:1 DEFAULT) */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex flex-col">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Move to Breakeven (1:X R)
-                </label>
-                <span className="text-[10px] text-muted-foreground/70">
-                  Optional · 1:1 default {moveToBeR !== undefined && safeRr > 0 ? `(${Math.round((moveToBeR / safeRr) * 100)}% of target)` : ""}
-                </span>
-              </div>
-              <Input
-                type="number"
-                min="0.1"
-                max="20"
-                step="0.1"
-                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={moveToBeR !== undefined ? moveToBeR : ""}
-                placeholder="1.0"
-                onChange={(e) => {
-                  const val = e.target.value === "" ? undefined : Number(e.target.value);
-                  setMoveToBeR(val);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                }}
-              />
-            </div>
           </div>
 
           {/* MATRIX HEATMAP MOSAIC (CONTIGUOUS TILES) */}
@@ -316,7 +287,7 @@ export function SweetSpotMatrixCard({
           category={hudCategory}
           copyText={copyText}
           theoryNumerator="(Win% × RR) − Loss%"
-          theoryDenominator="100%"
+          theoryDenominator="1 / (1 + RR)"
           valueNumerator={
             <>
               <span className="font-semibold text-foreground tnum">{safeWr}%</span>
@@ -327,7 +298,9 @@ export function SweetSpotMatrixCard({
             </>
           }
           valueDenominator={
-            <span className="font-semibold text-muted-foreground tnum">100%</span>
+            <span className="font-semibold text-foreground tnum">
+              1 / (1 + {safeRr}) = {beRate}%
+            </span>
           }
           resultValue={
             <span
@@ -374,9 +347,9 @@ export function SweetSpotMatrixCard({
               </span>
             </div>
             <div>
-              <span className="block text-[11px] text-muted-foreground">Trade management</span>
+              <span className="block text-[11px] text-muted-foreground">Realistic status</span>
               <span className="font-mono font-semibold text-foreground">
-                {moveToBeR !== undefined ? `BE em +${moveToBeR}R` : "Sem BE trail"}
+                {isSweetSpot ? "Sweet Spot" : safeRr >= 6.0 ? "Hard to execute" : isProfitable ? "Valid edge" : "Negative edge"}
               </span>
               <span className="block text-[10px] text-muted-foreground/70">
                 {isSweetSpot ? "Realistic sweet spot" : isProfitable ? "Positive expectancy" : "Negative edge"}
