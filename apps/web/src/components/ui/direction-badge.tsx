@@ -29,8 +29,8 @@ export function DirectionBadge({
         size === "sm" && "px-2 py-0.5 text-[11px]",
         size === "md" && "px-2.5 py-1 text-xs",
         isLong
-          ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-500 dark:border-emerald-500/30 dark:bg-emerald-950/50 dark:text-emerald-400"
-          : "border-rose-500/25 bg-rose-500/10 text-rose-500 dark:border-rose-500/30 dark:bg-rose-950/50 dark:text-rose-400",
+          ? "border-profit/30 bg-profit/5 text-profit dark:border-profit/35 dark:bg-profit/10"
+          : "border-loss/30 bg-loss/5 text-loss dark:border-loss/35 dark:bg-loss/10",
         className,
       )}
       {...props}

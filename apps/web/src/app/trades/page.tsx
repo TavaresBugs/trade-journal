@@ -20,6 +20,7 @@ import { Pnl } from "@/components/pnl";
 import { MonetaryValue } from "@/components/privacy";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { DirectionBadge } from "@/components/ui/direction-badge";
+import { normalizeSymbol } from "@/lib/assets/asset-icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -126,12 +127,21 @@ function Trades() {
         id: "symbol",
         accessorKey: "symbol",
         header: "Symbol",
-        cell: ({ getValue }) => (
-          <span className="flex items-center gap-2.5 font-medium">
-            <AssetIcon symbol={getValue<string>()} size="sm" />
-            <span className="font-semibold">{getValue<string>()}</span>
-          </span>
-        ),
+        cell: ({ getValue }) => {
+          const raw = getValue<string>();
+          const canonical = normalizeSymbol(raw);
+          return (
+            <span className="flex items-center gap-2.5 font-medium">
+              <AssetIcon symbol={raw} size="sm" />
+              <span
+                className="font-semibold"
+                title={raw !== canonical ? `Contract: ${raw}` : undefined}
+              >
+                {canonical}
+              </span>
+            </span>
+          );
+        },
       },
       {
         id: "direction",

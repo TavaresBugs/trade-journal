@@ -24,9 +24,34 @@ describe("asset-icons normalization and dynamic resolver", () => {
       expect(normalizeSymbol("CLH25")).toBe("CL");
       expect(normalizeSymbol("GCZ24")).toBe("GC");
     });
+
+    it("normalizes CFD broker symbols by pattern recognition without destructive deletion", () => {
+      expect(normalizeSymbol("us100.cash")).toBe("US100");
+      expect(normalizeSymbol("US100_cash")).toBe("US100");
+      expect(normalizeSymbol("US100CASH")).toBe("US100");
+      expect(normalizeSymbol("us500.cash")).toBe("US500");
+      expect(normalizeSymbol("SPX500.pro")).toBe("US500");
+      expect(normalizeSymbol("US30.cash")).toBe("US30");
+      expect(normalizeSymbol("GER40.cash")).toBe("GER40");
+      expect(normalizeSymbol("EURUSD.pro")).toBe("EURUSD");
+      expect(normalizeSymbol("XAUUSD.raw")).toBe("XAUUSD");
+      expect(normalizeSymbol("CASH")).toBe("CASH");
+    });
   });
 
   describe("getAssetIconConfig", () => {
+    it("resolves CFD broker tickers to their canonical asset icons", () => {
+      expect(getAssetIconConfig("us100.cash").icons[0]).toContain("nasdaq-100.svg");
+      expect(getAssetIconConfig("US500.cash").icons[0]).toContain("sp500.svg");
+      expect(getAssetIconConfig("US30_cash").icons[0]).toContain("dow-jones.svg");
+      expect(getAssetIconConfig("GER40.cash").icons[0]).toContain("EU--big.svg");
+      expect(getAssetIconConfig("XAUUSD.raw").icons[0]).toContain("gold.svg");
+
+      const eurusdPro = getAssetIconConfig("EURUSD.pro");
+      expect(eurusdPro.type).toBe("pair");
+      expect(eurusdPro.icons[0]).toContain("flags/eur.svg");
+      expect(eurusdPro.icons[1]).toContain("flags/usd.svg");
+    });
     it("resolves US indices to branded vector SVGs", () => {
       for (const sym of ["NQ", "MNQ", "US100", "NAS100", "USTEC"]) {
         const config = getAssetIconConfig(sym);
