@@ -23,13 +23,26 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Loading from "@/app/loading";
 import { useApi } from "@/lib/use-api";
-import { cn, fmtNumber, fmtPercent } from "@/lib/utils";
+import { AssetIcon } from "@/components/ui/asset-icon";
+import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { cn, fmtMoney, fmtNumber, fmtPercent } from "@/lib/utils";
 
 interface JournalDay {
   date: string;
   stats: DayStats | null;
+  symbols?: string[];
   hasNote: boolean;
   notePreview: string;
+}
+
+function cleanExcerpt(raw: string): string {
+  if (!raw) return "";
+  return raw
+    .replace(/#+\s+/g, "")
+    .replace(/[*_`~>]/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/\n+/g, " ")
+    .trim();
 }
 
 const PAGE_SIZE = 50;
@@ -226,6 +239,18 @@ function CalendarListView({ query }: { query: string }) {
 
   return (
     <div className="space-y-2.5">
+      {/* Subtle Desktop Column Header Bar */}
+      {data && data.days.length > 0 && (
+        <div className="hidden md:grid grid-cols-12 items-center gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground border-b border-border/60 select-none">
+          <div className="col-span-2">Date</div>
+          <div className="col-span-3">Traded Assets</div>
+          <div className="col-span-2 text-center">Outcome</div>
+          <div className="col-span-2 text-center">Activity</div>
+          <div className="col-span-2 text-right">Net P&L</div>
+          <div className="col-span-1 text-right">Journal</div>
+        </div>
+      )}
+
       {error ? (
         <div role="alert" className="space-y-2 text-sm text-destructive">
           <p>{error}</p>
@@ -247,65 +272,155 @@ function CalendarListView({ query }: { query: string }) {
         </p>
       )}
 
-      {data?.days.slice(0, limit).map((day) => (
-        <Link
-          key={day.date}
-          href={`/journal/${day.date}?${query}`}
-          className="group block rounded-lg transition-[box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          <Card className="rounded-lg border border-border/60 bg-card transition-[border-color,background-color,box-shadow] duration-150 ease-out hover:border-border/90 hover:bg-muted/20 hover:shadow-xs">
-            <CardContent className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 p-3.5">
-              {/* Date & Weekday */}
-              <div className="w-full shrink-0 sm:w-32">
-                <div className="text-sm font-semibold text-foreground tracking-tight tnum">
-                  {day.date}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {weekdayFormatter.format(new Date(`${day.date}T00:00:00Z`))}
-                </div>
-              </div>
+      {data?.days.slice(0, limit).map((day) => {
+        const noteSnippet = cleanExcerpt(day.notePreview);
+        const symbols = day.symbols ?? [];
 
-              {/* Day Quantitative Stats */}
-              {day.stats ? (
-                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                  <Pnl value={day.stats.netPnl} className="font-semibold text-base tnum" />
-                  <span className="text-xs text-muted-foreground tnum font-medium">
-                    {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"}
-                  </span>
-                  <Badge
-                    variant={
-                      day.stats.netPnl > 0 ? "profit" : day.stats.netPnl < 0 ? "loss" : "secondary"
-                    }
-                    className="text-[11px] tnum font-medium"
-                  >
-                    {fmtPercent(day.stats.trades > 0 ? day.stats.wins / day.stats.trades : null, 0)}{" "}
-                    win ({day.stats.wins}W / {day.stats.losses}L)
-                  </Badge>
-                  <span className="text-xs text-muted-foreground tnum">
-                    {fmtNumber(day.stats.volume, 2)} vol
-                  </span>
-                </div>
-              ) : (
-                <div className="flex-1 text-xs text-muted-foreground italic">No closed trades</div>
-              )}
+        return (
+          <Link
+            key={day.date}
+            href={`/journal/${day.date}?${query}`}
+            className="group block rounded-lg transition-[box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.995]"
+          >
+            <Card className="rounded-lg border border-border/60 bg-card transition-[border-color,background-color,box-shadow,transform] duration-150 ease-out hover:border-border/90 hover:bg-muted/20 hover:shadow-xs">
+              <CardContent className="p-3.5 sm:p-4">
+                {/* Main Row: 12-column grid on desktop, clean responsive layout on mobile */}
+                <div className="grid grid-cols-12 items-center gap-3 sm:gap-4">
+                  {/* Column 1: Date & Weekday */}
+                  <div className="col-span-12 sm:col-span-3 md:col-span-2">
+                    <div className="text-sm font-semibold text-foreground tracking-tight tnum">
+                      {day.date}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">
+                      {weekdayFormatter.format(new Date(`${day.date}T00:00:00Z`))}
+                    </div>
+                  </div>
 
-              {/* Day Note & Action Indicator */}
-              <div className="flex items-center gap-3 ml-auto">
-                {day.hasNote && (
-                  <Badge
-                    variant="secondary"
-                    className="gap-1 px-2 py-0.5 text-xs font-medium text-foreground"
-                  >
-                    <NotebookPen className="h-3.5 w-3.5 text-brand shrink-0" />
-                    <span>Note</span>
-                  </Badge>
+                  {/* Column 2: Traded Assets */}
+                  <div className="col-span-12 sm:col-span-4 md:col-span-3">
+                    {symbols.length > 0 ? (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {symbols.slice(0, 3).map((sym) => {
+                          const canonical = normalizeSymbol(sym);
+                          return (
+                            <span
+                              key={sym}
+                              className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/70 select-none"
+                              title={sym !== canonical ? `Contract: ${sym}` : undefined}
+                            >
+                              <AssetIcon symbol={sym} size="xs" />
+                              <span className="font-semibold tracking-tight text-[11px]">
+                                {canonical}
+                              </span>
+                            </span>
+                          );
+                        })}
+                        {symbols.length > 3 && (
+                          <span
+                            className="inline-flex items-center rounded-md border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground"
+                            title={symbols.slice(3).join(", ")}
+                          >
+                            +{symbols.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/70 italic">
+                        No closed trades
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Column 3: Outcome / Winrate */}
+                  <div className="col-span-6 sm:col-span-2 md:col-span-2 flex items-center sm:justify-center">
+                    {day.stats ? (
+                      <Badge
+                        variant={
+                          day.stats.netPnl > 0
+                            ? "profit"
+                            : day.stats.netPnl < 0
+                              ? "loss"
+                              : "secondary"
+                        }
+                        className="tracking-wide text-[11px] tnum font-semibold"
+                      >
+                        {day.stats.trades > 0
+                          ? `${fmtPercent(day.stats.wins / day.stats.trades, 0)} WIN`
+                          : "0% WIN"}
+                        <span className="ml-1 opacity-70 font-normal">
+                          ({day.stats.wins}W/{day.stats.losses}L)
+                        </span>
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">–</span>
+                    )}
+                  </div>
+
+                  {/* Column 4: Activity (Volume & Trades) */}
+                  <div className="col-span-6 sm:col-span-3 md:col-span-2 flex flex-col items-end sm:items-center">
+                    {day.stats ? (
+                      <>
+                        <span className="text-xs font-semibold text-foreground tnum">
+                          {day.stats.trades} trade{day.stats.trades === 1 ? "" : "s"}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground tnum">
+                          {fmtNumber(day.stats.volume, 2)} vol
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">–</span>
+                    )}
+                  </div>
+
+                  {/* Column 5: Net P&L */}
+                  <div className="col-span-6 sm:col-span-6 md:col-span-2 flex flex-col items-start md:items-end">
+                    {day.stats ? (
+                      <>
+                        <Pnl
+                          value={day.stats.netPnl}
+                          className="font-semibold text-sm sm:text-base tnum"
+                        />
+                        {day.stats.fees > 0 && (
+                          <span className="text-[10px] text-muted-foreground tnum">
+                            fees: {fmtMoney(day.stats.fees)}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Journal only</span>
+                    )}
+                  </div>
+
+                  {/* Column 6: Note Indicator & Action Arrow */}
+                  <div className="col-span-6 sm:col-span-6 md:col-span-1 flex items-center justify-end gap-2.5 ml-auto">
+                    {day.hasNote && (
+                      <Badge
+                        variant="secondary"
+                        className="gap-1 px-2 py-0.5 text-xs font-medium text-foreground shrink-0"
+                        title={noteSnippet ? noteSnippet : undefined}
+                      >
+                        <NotebookPen className="h-3 w-3 text-brand shrink-0" />
+                        <span className="hidden xl:inline">Note</span>
+                      </Badge>
+                    )}
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-40 transition-[opacity,transform,color] duration-150 group-hover:opacity-100 group-hover:text-foreground group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" />
+                  </div>
+                </div>
+
+                {/* Optional Note Excerpt */}
+                {day.hasNote && noteSnippet && (
+                  <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center gap-2 text-xs text-muted-foreground/85">
+                    <NotebookPen className="h-3.5 w-3.5 text-brand shrink-0 opacity-80" />
+                    <span className="truncate italic font-normal tracking-tight">
+                      "{noteSnippet.slice(0, 140)}"
+                    </span>
+                  </div>
                 )}
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-50 transition-[opacity,transform,color] group-hover:opacity-100 group-hover:text-foreground group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+              </CardContent>
+            </Card>
+          </Link>
+        );
+      })}
 
       {data && data.days.length > PAGE_SIZE && (
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-muted-foreground">

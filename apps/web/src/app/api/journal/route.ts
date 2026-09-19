@@ -1,6 +1,5 @@
-import { readFilters } from "@luxalgo/journal-core";
+import { dailyStats, dayKeyOf, readFilters } from "@luxalgo/journal-core";
 import { desc } from "drizzle-orm";
-import { dailyStats } from "@luxalgo/journal-core";
 import { db, journalDays } from "@/db";
 import { handler, ok } from "@/server/api";
 import { getTimeZone } from "@/server/settings";
@@ -19,6 +18,22 @@ export const GET = handler(async (request: Request) => {
   const noteRows = db.select().from(journalDays).orderBy(desc(journalDays.date)).all();
   const noteDays = new Map(noteRows.map((row) => [row.date, row]));
 
+  // Index unique symbols traded on each calendar day
+  const daySymbolsMap = new Map<string, string[]>();
+  for (const trade of trades) {
+    if (trade.status !== "open" && trade.closedAt) {
+      const date = dayKeyOf(trade.closedAt, timeZone);
+      let list = daySymbolsMap.get(date);
+      if (!list) {
+        list = [];
+        daySymbolsMap.set(date, list);
+      }
+      if (trade.symbol && !list.includes(trade.symbol)) {
+        list.push(trade.symbol);
+      }
+    }
+  }
+
   const filters = readFilters(url.searchParams);
   const allDates = [...new Set([...tradeDays.keys(), ...noteDays.keys()])]
     .filter(
@@ -30,6 +45,7 @@ export const GET = handler(async (request: Request) => {
     days: allDates.map((date) => ({
       date,
       stats: tradeDays.get(date) ?? null,
+      symbols: daySymbolsMap.get(date) ?? [],
       hasNote: (noteDays.get(date)?.note ?? "") !== "",
       notePreview: (noteDays.get(date)?.note ?? "").slice(0, 200),
     })),
