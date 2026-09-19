@@ -18,6 +18,8 @@ import { dayKeyOf, type TradeMetrics } from "@luxalgo/journal-core";
 import { FilterBar, useFilters } from "@/components/filter-bar";
 import { Pnl } from "@/components/pnl";
 import { MonetaryValue } from "@/components/privacy";
+import { AssetIcon } from "@/components/ui/asset-icon";
+import { DirectionBadge } from "@/components/ui/direction-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,12 +126,18 @@ function Trades() {
         id: "symbol",
         accessorKey: "symbol",
         header: "Symbol",
-        cell: ({ row, getValue }) => (
-          <span className="flex items-center gap-2 font-medium">
-            {getValue<string>()}
-            <span className="text-xs text-muted-foreground">{row.original.direction}</span>
+        cell: ({ getValue }) => (
+          <span className="flex items-center gap-2.5 font-medium">
+            <AssetIcon symbol={getValue<string>()} size="sm" />
+            <span className="font-semibold">{getValue<string>()}</span>
           </span>
         ),
+      },
+      {
+        id: "direction",
+        accessorKey: "direction",
+        header: "Type",
+        cell: ({ getValue }) => <DirectionBadge direction={getValue<string>()} size="sm" />,
       },
       {
         id: "status",

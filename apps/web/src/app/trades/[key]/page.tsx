@@ -10,6 +10,8 @@ import { MonetaryValue, MonetaryField } from "@/components/privacy";
 import { TradeMarketData } from "@/components/trade-market-data";
 import { EquityArea } from "@/components/charts/equity-area";
 import { VoiceNote } from "@/components/voice-note";
+import { AssetIcon } from "@/components/ui/asset-icon";
+import { DirectionBadge } from "@/components/ui/direction-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -164,11 +166,29 @@ function TradeView({ tradeKey }: { tradeKey: string }) {
 
   return (
     <div>
-      <FilterBar title={`${trade.symbol} · ${trade.direction.toUpperCase()}`} />
+      <FilterBar
+        title={
+          <span className="flex items-center gap-2.5">
+            <AssetIcon symbol={trade.symbol} size="sm" />
+            <span className="font-semibold">{trade.symbol}</span>
+            <DirectionBadge direction={trade.direction} size="xs" />
+          </span>
+        }
+      />
       <div className="grid gap-3 p-4 xl:grid-cols-3">
         <div className="min-w-0 space-y-3 xl:col-span-2">
           <Card>
             <CardContent className="flex flex-wrap items-center gap-x-8 gap-y-3 py-4">
+              <div className="flex items-center gap-3">
+                <AssetIcon symbol={trade.symbol} size="md" />
+                <div>
+                  <div className="text-xs text-muted-foreground">Instrument</div>
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <span>{trade.symbol}</span>
+                    <DirectionBadge direction={trade.direction} size="xs" />
+                  </div>
+                </div>
+              </div>
               <div>
                 <div className="text-xs text-muted-foreground">Net P&L</div>
                 <Pnl value={trade.netPnl} className="text-2xl font-semibold" />

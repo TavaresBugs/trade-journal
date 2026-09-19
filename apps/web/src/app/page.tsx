@@ -34,6 +34,8 @@ import { AddTradeDialog } from "@/components/add-trade-dialog";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { MonetaryValue } from "@/components/privacy";
 import { Pnl } from "@/components/pnl";
+import { AssetIcon } from "@/components/ui/asset-icon";
+import { DirectionBadge } from "@/components/ui/direction-badge";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,7 +69,14 @@ interface StatsPayload {
     quantity: number;
     avgEntry: number;
   }[];
-  recentTrades: { key: string; symbol: string; closedAt: string; netPnl: number; status: string }[];
+  recentTrades: {
+    key: string;
+    symbol: string;
+    direction: string;
+    closedAt: string;
+    netPnl: number;
+    status: string;
+  }[];
 }
 
 export default function DashboardPage() {
@@ -477,7 +486,7 @@ function DashboardContent({
                           href={`/trades/${encodeURIComponent(trade.key)}?${query}`}
                           className="dashboard-activity-row flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-accent/60"
                         >
-                          <span className="flex items-center gap-2">
+                          <span className="flex items-center gap-2.5">
                             <Badge
                               variant={
                                 trade.status === "win"
@@ -489,7 +498,9 @@ function DashboardContent({
                             >
                               {trade.status.toUpperCase()}
                             </Badge>
-                            {trade.symbol}
+                            <AssetIcon symbol={trade.symbol} size="xs" />
+                            <span className="font-semibold">{trade.symbol}</span>
+                            <DirectionBadge direction={trade.direction} size="xs" />
                           </span>
                           <span className="dashboard-activity-detail flex items-center">
                             <span className="text-xs text-muted-foreground">
@@ -509,9 +520,10 @@ function DashboardContent({
                           key={position.key}
                           className="dashboard-activity-row flex items-center justify-between rounded-md px-2 py-1.5 text-sm"
                         >
-                          <span className="flex items-center gap-2">
-                            <Badge variant="secondary">{position.direction.toUpperCase()}</Badge>
-                            {position.symbol}
+                          <span className="flex items-center gap-2.5">
+                            <AssetIcon symbol={position.symbol} size="xs" />
+                            <span className="font-semibold">{position.symbol}</span>
+                            <DirectionBadge direction={position.direction} size="xs" />
                           </span>
                           <span className="tnum text-xs text-muted-foreground">
                             {fmtNumber(position.quantity, 4)} @{" "}

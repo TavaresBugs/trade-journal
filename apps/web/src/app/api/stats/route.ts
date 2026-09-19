@@ -80,6 +80,7 @@ export const GET = handler(async (request: Request) => {
       .map((t) => ({
         key: t.key,
         symbol: t.symbol,
+        direction: t.direction,
         closedAt: t.closedAt,
         netPnl: t.netPnl,
         status: t.status,

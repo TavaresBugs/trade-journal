@@ -17,6 +17,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RichEditor, type RichEditorHandle } from "@/components/rich-editor";
 import { NoteFooter } from "@/components/note-footer";
 import { TimeframeScreenshotGrid } from "@/components/screenshots/timeframe-screenshot-grid";
+import { AssetIcon } from "@/components/ui/asset-icon";
+import { DirectionBadge } from "@/components/ui/direction-badge";
+import { JournalHeaderAssetBadges } from "@/components/journal-header-asset-badges";
 import { useAutosave } from "@/lib/use-autosave";
 import { postJson, useApi } from "@/lib/use-api";
 import { fmtMoney, fmtNumber, fmtPercent } from "@/lib/utils";
@@ -161,8 +164,11 @@ function JournalDay({ date }: { date: string }) {
 
           {data && data.trades.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle>Trades</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="flex items-center gap-2.5">
+                  <span>Trades</span>
+                  <JournalHeaderAssetBadges trades={data.trades} />
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1">
                 {data.trades.map((trade) => (
@@ -171,7 +177,7 @@ function JournalDay({ date }: { date: string }) {
                     href={`/trades/${encodeURIComponent(trade.key)}?${query}`}
                     className="flex flex-wrap items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/60"
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-2.5">
                       <Badge
                         variant={
                           trade.status === "win"
@@ -183,8 +189,9 @@ function JournalDay({ date }: { date: string }) {
                       >
                         {trade.status.toUpperCase()}
                       </Badge>
-                      <span className="font-medium">{trade.symbol}</span>
-                      <span className="text-xs text-muted-foreground">{trade.direction}</span>
+                      <AssetIcon symbol={trade.symbol} size="sm" />
+                      <span className="font-semibold">{trade.symbol}</span>
+                      <DirectionBadge direction={trade.direction} size="xs" />
                     </span>
                     <span className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
                       <span className="tnum text-xs text-muted-foreground">
