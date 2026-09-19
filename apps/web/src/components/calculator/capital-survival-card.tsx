@@ -530,6 +530,11 @@ export function CapitalSurvivalCard({
                     onFocus={() => setIsFundedRiskFocused(true)}
                     onBlur={() => setIsFundedRiskFocused(false)}
                     onChange={(e) => handleFundedRiskInputChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -658,6 +663,11 @@ export function CapitalSurvivalCard({
                     onFocus={() => setIsLiveRiskFocused(true)}
                     onBlur={() => setIsLiveRiskFocused(false)}
                     onChange={(e) => handleLiveRiskInputChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
                   />
                 </div>
               </div>

@@ -126,7 +126,8 @@ export function RealExpectancyCard({
             Real Expectancy & Friction
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Compare theoretical Paper EV with Real Net EV after deducting broker commissions, exchange fees, and execution slippage.
+            Compare theoretical Paper EV with Real Net EV after deducting broker commissions,
+            exchange fees, and execution slippage.
           </p>
         </CardHeader>
 
@@ -322,7 +323,8 @@ export function RealExpectancyCard({
                 result.netRMultiple >= 0 ? "text-profit" : "text-loss",
               )}
             >
-              {result.netRMultiple >= 0 ? `+${result.netRMultiple}R` : `${result.netRMultiple}R`} net edge
+              {result.netRMultiple >= 0 ? `+${result.netRMultiple}R` : `${result.netRMultiple}R`}{" "}
+              net edge
             </span>
           }
         >
@@ -352,7 +354,9 @@ export function RealExpectancyCard({
                   result.netRMultiple >= 0 ? "text-profit" : "text-loss",
                 )}
               >
-                {result.netRMultiple >= 0 ? `+${result.netRMultiple} R` : `${result.netRMultiple} R`}
+                {result.netRMultiple >= 0
+                  ? `+${result.netRMultiple} R`
+                  : `${result.netRMultiple} R`}
               </span>
             </div>
           </div>

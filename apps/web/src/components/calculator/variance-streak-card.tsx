@@ -92,7 +92,9 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
   };
 
   const copyText = `Variance & Streak Analysis: Win Rate: ${safeWr}% | Sample: ${safeSample} trades | Chance of ${
-    distributionMode === "cumulative" ? `≥${selectedStreak} consecutive losses` : `max streak of exactly ${selectedStreak} losses`
+    distributionMode === "cumulative"
+      ? `≥${selectedStreak} consecutive losses`
+      : `max streak of exactly ${selectedStreak} losses`
   }: ${displayProb}% | Fallacy Alert: Each trade is independent (${safeWr}% win prob).`;
 
   return (
@@ -103,7 +105,8 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
             Variance & Streak Predictor
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Calculate the exact statistical probability of consecutive losing streaks and inoculate against the Gambler&apos;s Fallacy.
+            Calculate the exact statistical probability of consecutive losing streaks and inoculate
+            against the Gambler&apos;s Fallacy.
           </p>
         </CardHeader>
 
@@ -165,9 +168,7 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
           category={streakCategory}
           copyText={copyText}
           theoryNumerator={
-            distributionMode === "cumulative"
-              ? "P(Losses ≥ k in N)"
-              : "P(Max losses = k in N)"
+            distributionMode === "cumulative" ? "P(Losses ≥ k in N)" : "P(Max losses = k in N)"
           }
           theoryDenominator="Trade Independence (p)"
           valueNumerator={
@@ -175,9 +176,7 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
               <span className="text-muted-foreground">
                 k {distributionMode === "cumulative" ? "≥" : "="}{" "}
               </span>
-              <span className="font-semibold text-foreground">
-                {selectedStreak}
-              </span>
+              <span className="font-semibold text-foreground">{selectedStreak}</span>
               <span className="text-muted-foreground/60 px-1 font-sans">·</span>
               <span className="text-muted-foreground">N = </span>
               <span
@@ -207,7 +206,11 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
             <span
               className={cn(
                 "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
-                displayProb > 60 ? "text-loss" : displayProb > 25 ? "text-amber-500" : "text-profit",
+                displayProb > 60
+                  ? "text-loss"
+                  : displayProb > 25
+                    ? "text-amber-500"
+                    : "text-profit",
               )}
             >
               {displayProb}%
@@ -309,7 +312,9 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
                       <span
                         className={cn(
                           "truncate text-xs",
-                          isSelected ? "text-foreground font-semibold" : "text-foreground font-medium",
+                          isSelected
+                            ? "text-foreground font-semibold"
+                            : "text-foreground font-medium",
                         )}
                       >
                         {label}

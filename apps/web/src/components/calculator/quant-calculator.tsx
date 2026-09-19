@@ -35,16 +35,15 @@ export function QuantCalculator() {
   return (
     <div className="space-y-6">
       {/* HEADER & TABS NAVIGATION */}
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="w-full space-y-6"
-      >
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/60 pb-4">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">Quantitative Calculators</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              Quantitative Calculators
+            </h2>
             <p className="text-xs text-muted-foreground">
-              From daily position sizing and capital survival to system sweet spots and prop evaluations.
+              From daily position sizing and capital survival to system sweet spots and prop
+              evaluations.
             </p>
           </div>
 
@@ -128,10 +127,7 @@ export function QuantCalculator() {
         {/* TAB 3: PORTFOLIO & CAPITAL */}
         <TabsContent value="portfolio" className="space-y-6 mt-0">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <EvCalculatorCard
-              values={state.ev}
-              onChange={(patch) => updateState("ev", patch)}
-            />
+            <EvCalculatorCard values={state.ev} onChange={(patch) => updateState("ev", patch)} />
             <BinomialOddsCard
               values={state.budget}
               onChange={(patch) => updateState("budget", patch)}

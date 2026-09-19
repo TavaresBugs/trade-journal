@@ -227,6 +227,11 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               onFocus={() => setIsStopFocused(true)}
               onBlur={() => setIsStopFocused(false)}
               onChange={(e) => handleStopPointsChange(Number(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
             />
           </div>
 
@@ -245,6 +250,11 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               value={targetPoints || ""}
               placeholder={stopPoints > 0 ? (stopPoints * 2).toFixed(2) : "Optional"}
               onChange={(e) => onChange({ targetPoints: Number(e.target.value) })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
             />
           </div>
         </CardContent>

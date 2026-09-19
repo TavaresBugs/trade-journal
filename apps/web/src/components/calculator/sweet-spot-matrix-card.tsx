@@ -114,7 +114,8 @@ export function SweetSpotMatrixCard({
             System Design & Sweet Spot Matrix
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Risk:Reward vs Win Rate matrix. Highlighted cells represent the realistic sweet spot (2R–5R with 35%–50% win rate).
+            Risk:Reward vs Win Rate matrix. Highlighted cells represent the realistic sweet spot
+            (2R–5R with 35%–50% win rate).
           </p>
         </CardHeader>
 
@@ -190,8 +191,10 @@ export function SweetSpotMatrixCard({
 
                       {/* TILES */}
                       {row.map((cell) => {
-                        const isExactSelected = selectedWr === cell.winRate && selectedRr === cell.riskReward;
-                        const isClosestMatch = cell.winRate === closestWr && cell.riskReward === closestRr;
+                        const isExactSelected =
+                          selectedWr === cell.winRate && selectedRr === cell.riskReward;
+                        const isClosestMatch =
+                          cell.winRate === closestWr && cell.riskReward === closestRr;
                         const r = cell.rMultiple;
 
                         // Continuous Heatmap Gradient
@@ -200,9 +203,11 @@ export function SweetSpotMatrixCard({
                           if (r > 0.8) {
                             cellStyle = "bg-primary/30 text-primary font-bold hover:bg-primary/40";
                           } else if (r > 0.4) {
-                            cellStyle = "bg-primary/22 text-primary font-semibold hover:bg-primary/30";
+                            cellStyle =
+                              "bg-primary/22 text-primary font-semibold hover:bg-primary/30";
                           } else {
-                            cellStyle = "bg-primary/15 text-primary font-medium hover:bg-primary/25";
+                            cellStyle =
+                              "bg-primary/15 text-primary font-medium hover:bg-primary/25";
                           }
                         } else if (r > 1.5) {
                           cellStyle = "bg-profit/35 text-profit font-bold hover:bg-profit/45";
@@ -221,15 +226,22 @@ export function SweetSpotMatrixCard({
                         // Saturated styling ONLY for the selected cell, in the same hue as its internal text
                         if (isExactSelected) {
                           if (cell.isSweetSpot) {
-                            cellStyle = "bg-primary text-primary-foreground font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
+                            cellStyle =
+                              "bg-primary text-primary-foreground font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
                           } else if (r > 0) {
-                            cellStyle = "bg-profit text-white font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
+                            cellStyle =
+                              "bg-profit text-white font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
                           } else if (r < 0) {
-                            cellStyle = "bg-loss text-white font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
+                            cellStyle =
+                              "bg-loss text-white font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
                           } else {
-                            cellStyle = "bg-muted-foreground text-background font-bold shadow-md z-10 scale-[1.04]";
+                            cellStyle =
+                              "bg-muted-foreground text-background font-bold shadow-md z-10 scale-[1.04]";
                           }
-                        } else if (isClosestMatch && (selectedWr !== closestWr || selectedRr !== closestRr)) {
+                        } else if (
+                          isClosestMatch &&
+                          (selectedWr !== closestWr || selectedRr !== closestRr)
+                        ) {
                           cellStyle = cn(cellStyle, "ring-2 ring-primary/80 font-bold z-10");
                         }
 
@@ -312,7 +324,11 @@ export function SweetSpotMatrixCard({
             <span
               className={cn(
                 "text-[10px] sm:text-xs font-mono font-medium tnum",
-                isSweetSpot ? "text-primary font-semibold" : isProfitable ? "text-profit" : "text-loss",
+                isSweetSpot
+                  ? "text-primary font-semibold"
+                  : isProfitable
+                    ? "text-profit"
+                    : "text-loss",
               )}
             >
               {isSweetSpot ? "Sweet Spot" : isProfitable ? "Positive Edge" : "Negative Edge"}
@@ -327,7 +343,9 @@ export function SweetSpotMatrixCard({
               <span className="block text-[10px] text-muted-foreground/70">1 / (1 + RR)</span>
             </div>
             <div>
-              <span className="block text-[11px] text-muted-foreground">Edge buffer (Win% − BE)</span>
+              <span className="block text-[11px] text-muted-foreground">
+                Edge buffer (Win% − BE)
+              </span>
               <span
                 className={cn(
                   "font-mono font-semibold tnum",
@@ -344,10 +362,20 @@ export function SweetSpotMatrixCard({
             <div>
               <span className="block text-[11px] text-muted-foreground">Realistic status</span>
               <span className="font-mono font-semibold text-foreground">
-                {isSweetSpot ? "Sweet Spot" : safeRr >= 6.0 ? "Hard to execute" : isProfitable ? "Valid edge" : "Negative edge"}
+                {isSweetSpot
+                  ? "Sweet Spot"
+                  : safeRr >= 6.0
+                    ? "Hard to execute"
+                    : isProfitable
+                      ? "Valid edge"
+                      : "Negative edge"}
               </span>
               <span className="block text-[10px] text-muted-foreground/70">
-                {isSweetSpot ? "Realistic sweet spot" : isProfitable ? "Positive expectancy" : "Negative edge"}
+                {isSweetSpot
+                  ? "Realistic sweet spot"
+                  : isProfitable
+                    ? "Positive expectancy"
+                    : "Negative edge"}
               </span>
             </div>
           </div>
