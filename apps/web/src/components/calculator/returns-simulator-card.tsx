@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Loader2, Play } from "lucide-react";
+import { Loader2, Play } from "lucide-react";
 import { runReturnsSimulation, type SimulationOutcome } from "@luxalgo/journal-core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { HoverHint } from "@/components/ui/tooltip";
 import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
+import { FormulaHud } from "./shared";
 
 interface ReturnsSimulatorCardProps {
   values: CalculatorState["simulator"];
@@ -19,7 +19,6 @@ interface ReturnsSimulatorCardProps {
 export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardProps) {
   const { bankroll, evalCost, passRate, payoutChance, avgPayout } = values;
   const [isSimulating, setIsSimulating] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [isBankrollFocused, setIsBankrollFocused] = useState(false);
   const [isCostFocused, setIsCostFocused] = useState(false);
   const [isPassFocused, setIsPassFocused] = useState(false);
@@ -66,25 +65,15 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
     }, 150);
   };
 
-  const handleCopySimulation = async () => {
-    const roi = bankroll > 0 ? Math.round((simResults.avgNetProfit / bankroll) * 100) : 0;
-    const roiFormatted = roi >= 0 ? `+${roi}%` : `${roi}%`;
-    const netFormatted =
-      simResults.avgNetProfit >= 0
-        ? `+$${simResults.avgNetProfit.toLocaleString("en-US")}`
-        : `-$${Math.abs(simResults.avgNetProfit).toLocaleString("en-US")}`;
-    const text = `Simulation (1,000 runs): Bankroll: $${bankroll.toLocaleString("en-US")} | Net Profit: ${netFormatted} (${roiFormatted} ROI) | Avg Payout: $${simResults.avgPayout.toLocaleString("en-US")} | Eval Cost: $${evalCost} | Pass: ${passRate}% | Payout Chance: ${payoutChance}%`;
-
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Ignore clipboard error
-    }
-  };
-
   const numAttempts = Math.max(1, Math.floor(bankroll / (evalCost || 1)));
+
+  const roi = bankroll > 0 ? Math.round((simResults.avgNetProfit / bankroll) * 100) : 0;
+  const roiFormatted = roi >= 0 ? `+${roi}%` : `${roi}%`;
+  const netFormatted =
+    simResults.avgNetProfit >= 0
+      ? `+$${simResults.avgNetProfit.toLocaleString("en-US")}`
+      : `-$${Math.abs(simResults.avgNetProfit).toLocaleString("en-US")}`;
+  const copyText = `Simulation (1,000 runs): Bankroll: $${bankroll.toLocaleString("en-US")} | Net Profit: ${netFormatted} (${roiFormatted} ROI) | Avg Payout: $${simResults.avgPayout.toLocaleString("en-US")} | Eval Cost: $${evalCost} | Pass: ${passRate}% | Payout Chance: ${payoutChance}%`;
 
   return (
     <Card className="flex flex-col justify-between">
@@ -239,162 +228,127 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
-        <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5">
-          {/* HEADER ROW */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                Simulation results (1,000 runs)
-              </span>
-              <span className="h-4 inline-flex items-center rounded border border-border/60 bg-background/60 px-1 font-mono text-[9px] text-muted-foreground">
-                Monte Carlo
-              </span>
-            </div>
-            <HoverHint content="Copy simulation results to clipboard">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
-                onClick={handleCopySimulation}
-              >
-                {copied ? (
-                  <Check className="h-3.5 w-3.5 text-profit" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
+        <FormulaHud
+          title="Simulation results (1,000 runs)"
+          category={{
+            label: "Monte Carlo",
+            color: simResults.avgNetProfit >= 0 ? "text-profit" : "text-loss",
+            border: simResults.avgNetProfit >= 0 ? "border-profit/50" : "border-loss/50",
+            bg: simResults.avgNetProfit >= 0 ? "bg-profit/20" : "bg-loss/20",
+            heading: "Monte Carlo Portfolio Simulation",
+            advice:
+              "Simulates 1,000 randomized cycles of evaluation attempts, qualification odds, and payout distributions to project expected net equity.",
+          }}
+          copyText={copyText}
+          theoryNumerator="n × Pass% × Payout% × Avg"
+          theoryDenominator="− n × Eval Cost ($)"
+          valueNumerator={
+            <>
+              <span
+                className={cn(
+                  "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                  isBankrollFocused || isCostFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-foreground",
                 )}
-                {copied ? "Copied" : "Copy simulation"}
-              </Button>
-            </HoverHint>
-          </div>
-
-          {/* MAIN ROW: THE THREE-STEP PROGRESSION (THEORY -> LIVE COMPLEX DATA -> DIRECT RESULT) */}
-          <div className="flex items-center justify-between gap-1 sm:gap-2 py-1">
-            {/* STEP 1 (LEFT): CONCEPTUAL / THEORETICAL FORMULA */}
-            <div className="inline-flex flex-col items-center text-center shrink-0">
-              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pb-0.5 tracking-wide whitespace-nowrap">
-                n × Pass% × Payout% × Avg
+              >
+                {numAttempts}
               </span>
-              <span className="w-full border-b border-foreground/30 my-0.5" />
-              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pt-0.5 tracking-wide whitespace-nowrap">
-                − n × Eval Cost ($)
+              <span className="text-muted-foreground/60 px-0.5">×</span>
+              <span className="text-muted-foreground/70">(</span>
+              <span
+                className={cn(
+                  "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                  isPassFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-foreground",
+                )}
+              >
+                {passRate}%
               </span>
-            </div>
-
-            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
-
-            {/* STEP 2 (CENTER): LIVE COMPLEX DATA IN FORMULA (RAW INPUTS, NOT RESUMIDO) */}
-            <div className="inline-flex flex-col items-center text-center font-mono shrink-0">
-              <div className="flex items-center text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap">
+              <span className="text-muted-foreground/60 px-0.5">×</span>
+              <span
+                className={cn(
+                  "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                  isPayoutChanceFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-foreground",
+                )}
+              >
+                {payoutChance}%
+              </span>
+              <span className="text-muted-foreground/60 px-0.5">×</span>
+              <span
+                className={cn(
+                  "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                  isAvgPayoutFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-foreground",
+                )}
+              >
+                ${avgPayout.toLocaleString("en-US")}
+              </span>
+              <span className="text-muted-foreground/70">)</span>
+            </>
+          }
+          valueDenominator={
+            <>
+              <span className="text-muted-foreground/70">− </span>
+              <span
+                className={cn(
+                  "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                  isBankrollFocused || isCostFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-foreground",
+                )}
+              >
+                {numAttempts}
+              </span>
+              <span className="text-muted-foreground/60 px-0.5">×</span>
+              <span
+                className={cn(
+                  "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                  isCostFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-foreground",
+                )}
+              >
+                ${evalCost}
+              </span>
+            </>
+          }
+          resultValue={
+            <span
+              className={cn(
+                "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
+                simResults.avgNetProfit >= 0 ? "text-profit" : "text-loss",
+              )}
+            >
+              <MonetaryValue>
+                {simResults.avgNetProfit >= 0
+                  ? `+$${simResults.avgNetProfit.toLocaleString("en-US")}`
+                  : `-$${Math.abs(simResults.avgNetProfit).toLocaleString("en-US")}`}
+              </MonetaryValue>
+            </span>
+          }
+          resultLabel="avg net"
+          resultSecondary={
+            bankroll > 0 ? (
+              <div className="flex items-baseline justify-end gap-1 text-[10px] sm:text-xs font-mono whitespace-nowrap">
                 <span
                   className={cn(
-                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
-                    isBankrollFocused || isCostFocused
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40"
-                      : "text-foreground",
-                  )}
-                >
-                  {numAttempts}
-                </span>
-                <span className="text-muted-foreground/60 px-0.5">×</span>
-                <span className="text-muted-foreground/70">(</span>
-                <span
-                  className={cn(
-                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
-                    isPassFocused
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
-                      : "text-foreground",
-                  )}
-                >
-                  {passRate}%
-                </span>
-                <span className="text-muted-foreground/60 px-0.5">×</span>
-                <span
-                  className={cn(
-                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
-                    isPayoutChanceFocused
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
-                      : "text-foreground",
-                  )}
-                >
-                  {payoutChance}%
-                </span>
-                <span className="text-muted-foreground/60 px-0.5">×</span>
-                <span
-                  className={cn(
-                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
-                    isAvgPayoutFocused
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
-                      : "text-foreground",
-                  )}
-                >
-                  ${avgPayout.toLocaleString("en-US")}
-                </span>
-                <span className="text-muted-foreground/70">)</span>
-              </div>
-              <span className="w-full border-b border-foreground/30 my-0.5" />
-              <div className="text-[10px] sm:text-xs px-1 pt-0.5 whitespace-nowrap">
-                <span className="text-muted-foreground/70">− </span>
-                <span
-                  className={cn(
-                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
-                    isBankrollFocused || isCostFocused
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  {numAttempts}
-                </span>
-                <span className="text-muted-foreground/60 px-0.5">×</span>
-                <span
-                  className={cn(
-                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
-                    isCostFocused
-                      ? "bg-primary/20 text-primary ring-1 ring-primary/40"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  ${evalCost}
-                </span>
-              </div>
-            </div>
-
-            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
-
-            {/* STEP 3 (RIGHT): FINAL ACTIONABLE RESULT (DIRECT ANSWER) */}
-            <div className="flex flex-col justify-center text-right shrink-0">
-              <div className="flex items-baseline justify-end gap-1">
-                <span
-                  className={cn(
-                    "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
+                    "font-semibold tnum",
                     simResults.avgNetProfit >= 0 ? "text-profit" : "text-loss",
                   )}
                 >
-                  <MonetaryValue>
-                    {simResults.avgNetProfit >= 0
-                      ? `+$${simResults.avgNetProfit.toLocaleString("en-US")}`
-                      : `-$${Math.abs(simResults.avgNetProfit).toLocaleString("en-US")}`}
-                  </MonetaryValue>
+                  {simResults.avgNetProfit >= 0 ? "+" : ""}
+                  {((simResults.avgNetProfit / bankroll) * 100).toFixed(1)}%
                 </span>
-                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">avg net</span>
+                <span className="text-muted-foreground">ROI</span>
               </div>
-              {bankroll > 0 && (
-                <div className="flex items-baseline justify-end gap-1 text-[10px] sm:text-xs font-mono whitespace-nowrap">
-                  <span
-                    className={cn(
-                      "font-semibold tnum",
-                      simResults.avgNetProfit >= 0 ? "text-profit" : "text-loss",
-                    )}
-                  >
-                    {simResults.avgNetProfit >= 0 ? "+" : ""}
-                    {((simResults.avgNetProfit / bankroll) * 100).toFixed(1)}%
-                  </span>
-                  <span className="text-muted-foreground">ROI</span>
-                </div>
-              )}
-            </div>
-          </div>
-
+            ) : undefined
+          }
+        >
           {/* 3-COLUMN METRICS BREAKDOWN */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
             <div>
@@ -461,7 +415,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
               ))}
             </div>
           </div>
-        </div>
+        </FormulaHud>
       </CardContent>
     </Card>
   );
