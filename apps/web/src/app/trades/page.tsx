@@ -491,10 +491,10 @@ function Trades() {
                             {header.isPlaceholder ? null : header.column.getCanSort() ? (
                               <button
                                 className={cn(
-                                  "group inline-flex items-center gap-1.5 transition-colors hover:text-foreground",
-                                  align === "right" && "ml-auto justify-end",
-                                  align === "center" && "mx-auto justify-center",
-                                  align === "left" && "justify-start",
+                                  "group flex w-full items-center gap-1.5 transition-colors hover:text-foreground",
+                                  align === "right" && "justify-end text-right",
+                                  align === "center" && "justify-center text-center",
+                                  align === "left" && "justify-start text-left",
                                 )}
                                 onClick={(event) => {
                                   setPage(0);
@@ -515,8 +515,10 @@ function Trades() {
                             ) : (
                               <div
                                 className={cn(
-                                  align === "center" && "flex justify-center",
-                                  align === "right" && "flex justify-end",
+                                  "flex w-full items-center",
+                                  align === "right" && "justify-end",
+                                  align === "center" && "justify-center",
+                                  align === "left" && "justify-start",
                                 )}
                               >
                                 <table.FlexRender header={header} />
