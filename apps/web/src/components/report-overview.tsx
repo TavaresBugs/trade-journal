@@ -25,18 +25,28 @@ interface OverviewData {
   playbooks: { id: string; name: string }[];
 }
 
-// Keep the original overview's aggregations and ordering alongside the advanced reports.
+// Keep the overview's aggregations and ordering with clean, standardized Title Case headers.
 const SECTIONS = [
-  { key: "symbol", title: "By symbol" },
-  { key: "direction", title: "Long vs short" },
-  { key: "weekday", title: "By weekday" },
-  { key: "duration", title: "By holding time" },
-  { key: "tag", title: "By tag" },
-  { key: "mistake", title: "By mistake" },
-  { key: "playbook", title: "By playbook" },
+  { key: "symbol", title: "By Symbol" },
+  { key: "direction", title: "Long vs. Short" },
+  { key: "weekday", title: "By Weekday" },
+  { key: "duration", title: "By Holding Time" },
+  { key: "tag", title: "By Tag" },
+  { key: "mistake", title: "By Mistake" },
+  { key: "playbook", title: "By Playbook" },
 ] as const;
 
 type SectionKey = (typeof SECTIONS)[number]["key"];
+
+const COLUMN_HEADERS: Record<SectionKey, string> = {
+  symbol: "Symbol",
+  direction: "Direction",
+  weekday: "Weekday",
+  duration: "Holding Time",
+  tag: "Tag",
+  mistake: "Mistake",
+  playbook: "Playbook",
+};
 
 const SECTION_ICONS: Record<SectionKey, React.ComponentType<{ className?: string }>> = {
   symbol: Coins,
@@ -60,15 +70,15 @@ const WEEKDAY_NAMES: Record<string, string> = {
 
 const EMPTY_STATES: Record<string, { title: string; desc: string }> = {
   tag: {
-    title: "No tags annotated",
+    title: "No Tags Annotated",
     desc: "Tag your trades during journal reviews to unlock setup-specific edge breakdowns.",
   },
   mistake: {
-    title: "No mistakes logged",
+    title: "No Mistakes Logged",
     desc: "Log execution and emotional leaks to track discipline and capital preservation.",
   },
   playbook: {
-    title: "No playbooks linked",
+    title: "No Playbooks Linked",
     desc: "Assign strategies to your trades to measure systematic edge and expectancy.",
   },
 };
@@ -122,28 +132,34 @@ function DimensionCell({
 
   if (sectionKey === "tag") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 px-2 py-0.5 font-mono text-xs font-medium text-foreground ring-1 ring-border/50">
-        <Tag className="h-3 w-3 text-muted-foreground" />
-        <span className="max-w-[160px] truncate">{label}</span>
-      </span>
+      <div className="flex items-center gap-1.5">
+        <Tag className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className="max-w-[160px] truncate rounded-md bg-muted/60 px-2 py-0.5 font-mono text-xs font-medium text-foreground ring-1 ring-border/50">
+          {label}
+        </span>
+      </div>
     );
   }
 
   if (sectionKey === "mistake") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-md bg-loss/10 px-2 py-0.5 text-xs font-medium text-loss ring-1 ring-loss/20">
-        <ShieldAlert className="h-3 w-3 shrink-0 text-loss" />
-        <span className="max-w-[160px] truncate">{label}</span>
-      </span>
+      <div className="flex items-center gap-1.5">
+        <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-loss" />
+        <span className="max-w-[160px] truncate rounded-md bg-loss/10 px-2 py-0.5 text-xs font-medium text-loss ring-1 ring-loss/20">
+          {label}
+        </span>
+      </div>
     );
   }
 
   if (sectionKey === "playbook") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/20">
-        <BookOpen className="h-3 w-3 shrink-0 text-primary" />
-        <span className="max-w-[160px] truncate">{label}</span>
-      </span>
+      <div className="flex items-center gap-1.5">
+        <BookOpen className="h-3.5 w-3.5 shrink-0 text-primary" />
+        <span className="max-w-[160px] truncate rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/20">
+          {label}
+        </span>
+      </div>
     );
   }
 
@@ -162,7 +178,7 @@ function SectionSummaryBadge({
   if (sectionKey === "symbol") {
     return (
       <span className="rounded-md bg-muted/50 px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground ring-1 ring-border/50">
-        {buckets.length} {buckets.length === 1 ? "asset" : "assets"}
+        {buckets.length} {buckets.length === 1 ? "Asset" : "Assets"}
       </span>
     );
   }
@@ -203,7 +219,7 @@ function SectionSummaryBadge({
 
   return (
     <span className="rounded-md bg-muted/50 px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground ring-1 ring-border/50">
-      {buckets.length} active
+      {buckets.length} Active
     </span>
   );
 }
@@ -216,7 +232,7 @@ function BreakdownEmptyState({
   Icon: React.ComponentType<{ className?: string }>;
 }) {
   const info = EMPTY_STATES[sectionKey] ?? {
-    title: "No data available",
+    title: "No Data Available",
     desc: "Execute trades matching your active filters to populate this breakdown.",
   };
 
@@ -286,15 +302,13 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground ring-1 ring-border/50">
-                <Clock className="h-3.5 w-3.5" />
-              </div>
+              <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
               <CardTitle className="text-xs font-semibold normal-case tracking-tight text-foreground">
-                Trade time performance
+                Trade Time Performance
               </CardTitle>
             </div>
             <span className="rounded-md bg-muted/50 px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground ring-1 ring-border/50">
-              Opening hour (24h)
+              Opening Hour (24h)
             </span>
           </CardHeader>
           <CardContent>
@@ -307,9 +321,7 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
             <Card key={section.key}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground ring-1 ring-border/50">
-                    <Icon className="h-3.5 w-3.5" />
-                  </div>
+                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <CardTitle className="text-xs font-semibold normal-case tracking-tight text-foreground">
                     {section.title}
                   </CardTitle>
@@ -323,27 +335,35 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        <TableHead>{section.title.replace("By ", "")}</TableHead>
-                        <TableHead className="text-right">Trades</TableHead>
-                        <TableHead className="text-right">Win %</TableHead>
-                        <TableHead className="text-right">Net P&L</TableHead>
+                        <TableHead className="text-left text-xs font-medium text-muted-foreground">
+                          {COLUMN_HEADERS[section.key]}
+                        </TableHead>
+                        <TableHead className="text-center text-xs font-medium text-muted-foreground">
+                          Trades
+                        </TableHead>
+                        <TableHead className="text-center text-xs font-medium text-muted-foreground">
+                          Win %
+                        </TableHead>
+                        <TableHead className="text-right text-xs font-medium text-muted-foreground">
+                          Net P&L
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {data.buckets[section.key].map((bucket) => (
                         <TableRow key={bucket.key} className="transition-colors hover:bg-muted/40">
-                          <TableCell className="font-medium">
+                          <TableCell className="text-left font-medium">
                             <DimensionCell
                               sectionKey={section.key}
                               rawKey={bucket.key}
                               label={label(section.key, bucket.key)}
                             />
                           </TableCell>
-                          <TableCell className="tnum font-mono text-right text-xs text-muted-foreground">
+                          <TableCell className="tnum font-mono text-center text-xs text-muted-foreground">
                             {bucket.trades}
                           </TableCell>
-                          <TableCell className="tnum text-right">
-                            <div className="inline-flex items-center justify-end gap-2">
+                          <TableCell className="tnum text-center">
+                            <div className="inline-flex items-center justify-center gap-2">
                               {bucket.winRate !== null ? (
                                 <div
                                   className="hidden h-1.5 w-10 overflow-hidden rounded-full bg-muted/60 sm:block"
