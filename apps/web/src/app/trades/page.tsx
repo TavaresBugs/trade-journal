@@ -11,9 +11,19 @@ import {
   tableFeatures,
   useTable,
   sortFns,
+  metaHelper,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Check, Columns3, Download, Tag, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Check,
+  Columns3,
+  Download,
+  Tag,
+  Trash2,
+} from "lucide-react";
 import { dayKeyOf, type TradeMetrics } from "@luxalgo/journal-core";
 import { FilterBar, useFilters } from "@/components/filter-bar";
 import { Pnl } from "@/components/pnl";
@@ -59,6 +69,7 @@ const features = tableFeatures({
   columnVisibilityFeature,
   sortedRowModel: createSortedRowModel(),
   sortFns,
+  columnMeta: metaHelper<{ align?: "left" | "center" | "right" }>(),
 });
 
 const EMPTY_TRADES: TradeRow[] = [];
@@ -91,6 +102,7 @@ function Trades() {
       {
         id: "select",
         enableSorting: false,
+        meta: { align: "center" },
         header: ({ table }) => (
           <Checkbox
             checked={
@@ -117,6 +129,7 @@ function Trades() {
         id: "closedAt",
         accessorKey: "closedAt",
         header: "Close date",
+        meta: { align: "left" },
         cell: ({ getValue }) => (
           <span className="text-muted-foreground">
             {getValue<string | null>() ? dayKeyOf(getValue<string>(), timeZone) : "open"}
@@ -127,6 +140,7 @@ function Trades() {
         id: "symbol",
         accessorKey: "symbol",
         header: "Symbol",
+        meta: { align: "left" },
         cell: ({ getValue }) => {
           const raw = getValue<string>();
           const canonical = normalizeSymbol(raw);
@@ -147,12 +161,14 @@ function Trades() {
         id: "direction",
         accessorKey: "direction",
         header: "Type",
+        meta: { align: "center" },
         cell: ({ getValue }) => <DirectionBadge direction={getValue<string>()} size="sm" />,
       },
       {
         id: "status",
         accessorKey: "status",
         header: "Status",
+        meta: { align: "center" },
         cell: ({ getValue }) => {
           const status = getValue<string>();
           return (
@@ -166,12 +182,14 @@ function Trades() {
         id: "quantity",
         accessorKey: "quantity",
         header: "Volume",
+        meta: { align: "right" },
         cell: ({ getValue }) => <span className="tnum">{fmtNumber(getValue<number>(), 4)}</span>,
       },
       {
         id: "avgEntry",
         accessorKey: "avgEntry",
         header: "Entry",
+        meta: { align: "right" },
         cell: ({ getValue }) => (
           <span className="tnum">
             <MonetaryValue>{fmtNumber(getValue<number>())}</MonetaryValue>
@@ -182,6 +200,7 @@ function Trades() {
         id: "avgExit",
         accessorKey: "avgExit",
         header: "Exit",
+        meta: { align: "right" },
         cell: ({ getValue }) => (
           <span className="tnum">
             <MonetaryValue>
@@ -194,6 +213,7 @@ function Trades() {
         id: "netPnl",
         accessorKey: "netPnl",
         header: "Net P&L",
+        meta: { align: "right" },
         cell: ({ getValue }) => <Pnl value={getValue<number>()} />,
       },
       {
@@ -201,12 +221,14 @@ function Trades() {
         accessorFn: (row) =>
           row.avgEntry * row.quantity > 0 ? row.netPnl / (row.avgEntry * row.quantity) : 0,
         header: "Net ROI",
+        meta: { align: "right" },
         cell: ({ getValue }) => <span className="tnum">{fmtPercent(getValue<number>(), 2)}</span>,
       },
       {
         id: "fees",
         accessorKey: "fees",
         header: "Fees",
+        meta: { align: "right" },
         cell: ({ getValue }) => (
           <span className="tnum text-muted-foreground">
             <MonetaryValue>{fmtMoney(getValue<number>())}</MonetaryValue>
@@ -217,6 +239,7 @@ function Trades() {
         id: "durationMs",
         accessorKey: "durationMs",
         header: "Duration",
+        meta: { align: "right" },
         cell: ({ getValue }) => (
           <span className="text-muted-foreground">{fmtDuration(getValue<number | null>())}</span>
         ),
@@ -225,6 +248,7 @@ function Trades() {
         id: "executionCount",
         accessorKey: "executionCount",
         header: "Execs",
+        meta: { align: "right" },
         cell: ({ getValue }) => (
           <span className="tnum text-muted-foreground">{getValue<number>()}</span>
         ),
@@ -234,6 +258,7 @@ function Trades() {
         accessorKey: "tags",
         enableSorting: false,
         header: "Tags",
+        meta: { align: "left" },
         cell: ({ getValue }) => (
           <span className="flex max-w-40 flex-wrap gap-1">
             {getValue<string[]>().map((tag) => (
@@ -248,6 +273,7 @@ function Trades() {
         id: "rating",
         accessorKey: "rating",
         header: "Rating",
+        meta: { align: "center" },
         cell: ({ getValue }) => {
           const rating = getValue<number | null>();
           return (
@@ -261,9 +287,10 @@ function Trades() {
         id: "reviewed",
         accessorKey: "reviewed",
         header: "Reviewed",
+        meta: { align: "center" },
         cell: ({ getValue }) =>
           getValue<boolean>() ? (
-            <Check className="h-4 w-4 text-profit" />
+            <Check className="h-4 w-4 text-profit mx-auto" />
           ) : (
             <span className="text-muted-foreground">–</span>
           ),
@@ -447,33 +474,57 @@ function Trades() {
               <table className="w-full text-sm">
                 <thead>
                   {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id} className="border-b">
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="h-9 whitespace-nowrap px-2 text-left text-xs font-medium text-muted-foreground"
-                        >
-                          {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                            <button
-                              className="inline-flex items-center gap-1 hover:text-foreground"
-                              onClick={(event) => {
-                                setPage(0);
-                                header.column.getToggleSortingHandler()?.(event);
-                              }}
-                            >
-                              <table.FlexRender header={header} />
-                              <ArrowUpDown
+                    <tr key={headerGroup.id} className="border-b border-border/70 bg-muted/20">
+                      {headerGroup.headers.map((header) => {
+                        const align = header.column.columnDef.meta?.align ?? "left";
+                        const isSorted = header.column.getIsSorted();
+                        return (
+                          <th
+                            key={header.id}
+                            className={cn(
+                              "h-10 whitespace-nowrap px-3 text-xs font-semibold text-muted-foreground select-none",
+                              align === "right" && "text-right",
+                              align === "center" && "text-center",
+                              align === "left" && "text-left",
+                            )}
+                          >
+                            {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                              <button
                                 className={cn(
-                                  "h-3 w-3",
-                                  header.column.getIsSorted() && "text-foreground",
+                                  "group inline-flex items-center gap-1.5 transition-colors hover:text-foreground",
+                                  align === "right" && "ml-auto justify-end",
+                                  align === "center" && "mx-auto justify-center",
+                                  align === "left" && "justify-start",
                                 )}
-                              />
-                            </button>
-                          ) : (
-                            <table.FlexRender header={header} />
-                          )}
-                        </th>
-                      ))}
+                                onClick={(event) => {
+                                  setPage(0);
+                                  header.column.getToggleSortingHandler()?.(event);
+                                }}
+                              >
+                                <span>
+                                  <table.FlexRender header={header} />
+                                </span>
+                                {isSorted === "asc" ? (
+                                  <ArrowUp className="h-3 w-3 shrink-0 text-foreground" />
+                                ) : isSorted === "desc" ? (
+                                  <ArrowDown className="h-3 w-3 shrink-0 text-foreground" />
+                                ) : (
+                                  <ArrowUpDown className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-60" />
+                                )}
+                              </button>
+                            ) : (
+                              <div
+                                className={cn(
+                                  align === "center" && "flex justify-center",
+                                  align === "right" && "flex justify-end",
+                                )}
+                              >
+                                <table.FlexRender header={header} />
+                              </div>
+                            )}
+                          </th>
+                        );
+                      })}
                     </tr>
                   ))}
                 </thead>
@@ -486,11 +537,22 @@ function Trades() {
                         router.push(`/trades/${encodeURIComponent(row.original.key)}?${query}`)
                       }
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="whitespace-nowrap px-2 py-2 align-middle">
-                          <table.FlexRender cell={cell} />
-                        </td>
-                      ))}
+                      {row.getVisibleCells().map((cell) => {
+                        const align = cell.column.columnDef.meta?.align ?? "left";
+                        return (
+                          <td
+                            key={cell.id}
+                            className={cn(
+                              "whitespace-nowrap px-3 py-2.5 align-middle text-sm",
+                              align === "right" && "text-right",
+                              align === "center" && "text-center",
+                              align === "left" && "text-left",
+                            )}
+                          >
+                            <table.FlexRender cell={cell} />
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))}
                   {table.getRowModel().rows.length === 0 && (
