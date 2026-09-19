@@ -29,7 +29,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BarChart3, Scale, SlidersHorizontal } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  BarChart2,
+  BarChart3,
+  Clock,
+  DollarSign,
+  Hash,
+  Scale,
+  SlidersHorizontal,
+  Trophy,
+  Zap,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useApi } from "@/lib/use-api";
 import { describeFilters } from "@/lib/filter-description";
@@ -646,6 +658,241 @@ function Reports() {
     </div>
   );
 }
+function HalfDonutGauge({
+  winRate,
+  trades,
+}: {
+  winRate: number | null;
+  trades: number;
+}) {
+  const safeRate =
+    winRate !== null && Number.isFinite(winRate) ? Math.max(0, Math.min(1, winRate)) : 0;
+  const wins = Math.round(safeRate * trades);
+  const losses = Math.max(0, trades - wins);
+  const winPct = (safeRate * 100).toFixed(1);
+  const lossPct = ((1 - safeRate) * 100).toFixed(1);
+
+  // Semicircle parameters
+  // Center: (70, 68), Radius: 54
+  // Start: (16, 68), End: (124, 68)
+  // Arc length = PI * 54 ≈ 169.65
+  const arcLength = 169.65;
+  const filledLength = trades > 0 && winRate !== null ? safeRate * arcLength : 0;
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <div className="relative h-24 w-40 sm:h-28 sm:w-44">
+        <svg viewBox="0 0 140 82" className="h-full w-full overflow-visible">
+          {/* Base Track */}
+          <path
+            d="M 16 68 A 54 54 0 0 1 124 68"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="10"
+            strokeLinecap="round"
+            className="text-muted/20"
+          />
+          {/* Loss Arc (underneath full span when trades > 0) */}
+          {trades > 0 && (
+            <path
+              d="M 16 68 A 54 54 0 0 1 124 68"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="10"
+              strokeLinecap="round"
+              className="text-loss/35"
+            />
+          )}
+          {/* Win Arc (drawn from left to right) */}
+          {trades > 0 && filledLength > 0 && (
+            <path
+              d="M 16 68 A 54 54 0 0 1 124 68"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="10"
+              strokeLinecap="round"
+              strokeDasharray={`${filledLength} 300`}
+              className="text-profit transition-all duration-700 ease-out"
+            />
+          )}
+          {/* Centered Percentage */}
+          <text
+            x="70"
+            y="56"
+            textAnchor="middle"
+            className="fill-foreground font-mono text-2xl font-bold tracking-tight"
+          >
+            {trades > 0 && winRate !== null ? `${winPct}%` : "–"}
+          </text>
+          <text
+            x="70"
+            y="70"
+            textAnchor="middle"
+            className="fill-muted-foreground text-[10px] font-semibold uppercase tracking-wider"
+          >
+            Win Rate
+          </text>
+        </svg>
+      </div>
+      {/* Footer Pill: W/L distribution */}
+      <div className="mt-1 flex items-center justify-center gap-2 text-xs">
+        <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-profit">
+          <span className="h-1.5 w-1.5 rounded-full bg-profit" />
+          {wins}W ({winPct}%)
+        </span>
+        <span className="text-muted-foreground/30">·</span>
+        <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-loss">
+          <span className="h-1.5 w-1.5 rounded-full bg-loss" />
+          {losses}L ({lossPct}%)
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function CohortSummary({ data }: { data: Analysis }) {
+  const s = data.summary;
+  const currency = data.currencies[0] ?? "USD";
+
+  return (
+    <div className="space-y-3.5">
+      {/* Top Hero: Meia Pizza + Primary Edge Metrics */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
+        {/* Meia Pizza Gauge Card */}
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border/50 bg-card/60 p-4 shadow-xs sm:col-span-5">
+          <HalfDonutGauge winRate={s.winRate} trades={s.trades} />
+        </div>
+
+        {/* Primary Edge Spotlight (Net P&L, Profit Factor, Realized R) */}
+        <div className="grid grid-cols-1 gap-2.5 sm:col-span-7">
+          {/* Net P&L Card */}
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-card/60 p-3.5 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
+                <DollarSign className="h-4 w-4 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Net P&L</p>
+                <p
+                  className={cn(
+                    "font-mono text-lg font-bold tabular-nums tracking-tight sm:text-xl",
+                    s.netPnl > 0
+                      ? "text-profit"
+                      : s.netPnl < 0
+                        ? "text-loss"
+                        : "text-foreground",
+                  )}
+                >
+                  <MonetaryValue>{money(s.netPnl, currency)}</MonetaryValue>
+                </p>
+              </div>
+            </div>
+            <Badge
+              variant="outline"
+              className={cn(
+                "font-mono text-xs font-medium",
+                s.netPnl > 0
+                  ? "border-profit/30 bg-profit/10 text-profit"
+                  : s.netPnl < 0
+                    ? "border-loss/30 bg-loss/10 text-loss"
+                    : "text-muted-foreground",
+              )}
+            >
+              {s.netPnl > 0 ? "Profitable" : s.netPnl < 0 ? "Drawdown" : "Neutral"}
+            </Badge>
+          </div>
+
+          {/* Profit Factor & Realized R Twin Cards */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="rounded-xl border border-border/50 bg-card/60 p-3 shadow-xs">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Scale className="h-3.5 w-3.5 text-primary" />
+                <span className="font-medium">Profit Factor</span>
+              </div>
+              <p
+                className={cn(
+                  "mt-1 font-mono text-base font-bold tabular-nums tracking-tight",
+                  s.profitFactor !== null && s.profitFactor >= 1.5
+                    ? "text-profit"
+                    : s.profitFactor !== null && s.profitFactor < 1
+                      ? "text-loss"
+                      : "text-foreground",
+                )}
+              >
+                {s.noLosses ? "∞" : number(s.profitFactor)}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border/50 bg-card/60 p-3 shadow-xs">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Zap className="h-3.5 w-3.5 text-blue-500" />
+                <span className="font-medium">Avg Realized R</span>
+              </div>
+              <p
+                className={cn(
+                  "mt-1 font-mono text-base font-bold tabular-nums tracking-tight",
+                  s.avgRealizedR !== null && s.avgRealizedR > 0
+                    ? "text-profit"
+                    : s.avgRealizedR !== null && s.avgRealizedR < 0
+                      ? "text-loss"
+                      : "text-foreground",
+                )}
+              >
+                {s.avgRealizedR !== null
+                  ? `${s.avgRealizedR > 0 ? "+" : ""}${number(s.avgRealizedR)}R`
+                  : "–"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Metrics Grid */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div className="rounded-xl border border-border/50 bg-card/60 p-3 shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="font-medium">Closed Trades</span>
+          </div>
+          <p className="mt-1 font-mono text-base font-bold tabular-nums tracking-tight text-foreground">
+            {s.trades}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-border/50 bg-card/60 p-3 shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <BarChart2 className="h-3.5 w-3.5 text-purple-400" />
+            <span className="font-medium">Entry Volume</span>
+          </div>
+          <p className="mt-1 font-mono text-base font-bold tabular-nums tracking-tight text-foreground">
+            {number(s.volume)}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-border/50 bg-card/60 p-3 shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5 text-teal-400" />
+            <span className="font-medium">Avg Holding</span>
+          </div>
+          <p className="mt-1 font-mono text-base font-bold tabular-nums tracking-tight text-foreground">
+            {fmtDuration(s.avgDurationMs)}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-border/50 bg-card/60 p-3 shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Trophy className="h-3.5 w-3.5 text-amber-500" />
+            <span className="font-medium">Avg Planned R</span>
+          </div>
+          <p className="mt-1 font-mono text-base font-bold tabular-nums tracking-tight text-foreground">
+            {s.avgPlannedR !== null ? `${number(s.avgPlannedR)}R` : "–"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Comparison({ initial }: { initial: AnalysisFilters }) {
   const privateMode = usePrivacy();
   const [a, setA] = useState<AnalysisFilters>({ ...initial, direction: "long" }),
@@ -672,10 +919,33 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
   const sumB = bb.data?.summary;
   const hasBothData = sumA && sumB && !aa.loading && !bb.loading && !multi;
 
+  const diffPnl = hasBothData ? sumB.netPnl - sumA.netPnl : 0;
+  const diffWin = hasBothData ? (sumB.winRate ?? 0) - (sumA.winRate ?? 0) : 0;
+
+  const outperformingGroup = hasBothData
+    ? diffPnl > 0
+      ? {
+          name: nameB,
+          key: "b",
+          pnlAdvantage: diffPnl,
+          winRateAdvantage: diffWin,
+          color: "text-purple-400",
+          badgeBg: "border-purple-500/25 bg-purple-500/10 text-purple-400",
+        }
+      : diffPnl < 0
+        ? {
+            name: nameA,
+            key: "a",
+            pnlAdvantage: Math.abs(diffPnl),
+            winRateAdvantage: -diffWin,
+            color: "text-primary",
+            badgeBg: "border-primary/25 bg-primary/10 text-primary",
+          }
+        : null
+    : null;
+
   const comparisonRows = hasBothData
     ? (() => {
-        const diffPnl = sumB.netPnl - sumA.netPnl;
-        const diffWin = (sumB.winRate ?? 0) - (sumA.winRate ?? 0);
         const diffPf =
           sumB.profitFactor !== null && sumA.profitFactor !== null
             ? sumB.profitFactor - sumA.profitFactor
@@ -690,6 +960,9 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
         return [
           {
             metric: "Net P&L",
+            icon: DollarSign,
+            iconColor: "text-emerald-500",
+            iconBg: "border-emerald-500/20 bg-emerald-500/10",
             valA: (
               <span
                 className={
@@ -719,14 +992,19 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
             deltaNode: (
               <span
                 className={cn(
-                  "font-bold",
+                  "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold",
                   diffPnl > 0
-                    ? "text-profit"
+                    ? "border border-profit/30 bg-profit/10 text-profit"
                     : diffPnl < 0
-                      ? "text-loss"
-                      : "text-muted-foreground",
+                      ? "border border-loss/30 bg-loss/10 text-loss"
+                      : "border border-border/40 bg-muted/40 text-muted-foreground",
                 )}
               >
+                {diffPnl > 0 ? (
+                  <ArrowUpRight className="h-3 w-3" />
+                ) : diffPnl < 0 ? (
+                  <ArrowDownRight className="h-3 w-3" />
+                ) : null}
                 <MonetaryValue>
                   {diffPnl > 0 ? "+" : ""}
                   {money(diffPnl, sharedCurrency)}
@@ -736,19 +1014,27 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
           },
           {
             metric: "Win Rate",
+            icon: Trophy,
+            iconColor: "text-amber-500",
+            iconBg: "border-amber-500/20 bg-amber-500/10",
             valA: percent(sumA.winRate),
             valB: percent(sumB.winRate),
             deltaNode: (
               <span
                 className={cn(
-                  "font-semibold",
+                  "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold",
                   diffWin > 0
-                    ? "text-profit"
+                    ? "border border-profit/30 bg-profit/10 text-profit"
                     : diffWin < 0
-                      ? "text-loss"
-                      : "text-muted-foreground",
+                      ? "border border-loss/30 bg-loss/10 text-loss"
+                      : "border border-border/40 bg-muted/40 text-muted-foreground",
                 )}
               >
+                {diffWin > 0 ? (
+                  <ArrowUpRight className="h-3 w-3" />
+                ) : diffWin < 0 ? (
+                  <ArrowDownRight className="h-3 w-3" />
+                ) : null}
                 {diffWin > 0 ? "+" : ""}
                 {(diffWin * 100).toFixed(1)}%
               </span>
@@ -756,20 +1042,28 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
           },
           {
             metric: "Profit Factor",
+            icon: Scale,
+            iconColor: "text-primary",
+            iconBg: "border-primary/20 bg-primary/10",
             valA: sumA.noLosses ? "∞" : number(sumA.profitFactor),
             valB: sumB.noLosses ? "∞" : number(sumB.profitFactor),
             deltaNode:
               diffPf !== null ? (
                 <span
                   className={cn(
-                    "font-semibold",
+                    "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold",
                     diffPf > 0
-                      ? "text-profit"
+                      ? "border border-profit/30 bg-profit/10 text-profit"
                       : diffPf < 0
-                        ? "text-loss"
-                        : "text-muted-foreground",
+                        ? "border border-loss/30 bg-loss/10 text-loss"
+                        : "border border-border/40 bg-muted/40 text-muted-foreground",
                   )}
                 >
+                  {diffPf > 0 ? (
+                    <ArrowUpRight className="h-3 w-3" />
+                  ) : diffPf < 0 ? (
+                    <ArrowDownRight className="h-3 w-3" />
+                  ) : null}
                   {diffPf > 0 ? "+" : ""}
                   {number(diffPf)}
                 </span>
@@ -779,6 +1073,9 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
           },
           {
             metric: "Avg Realized R",
+            icon: Zap,
+            iconColor: "text-blue-500",
+            iconBg: "border-blue-500/20 bg-blue-500/10",
             valA:
               sumA.avgRealizedR !== null
                 ? `${sumA.avgRealizedR > 0 ? "+" : ""}${number(sumA.avgRealizedR)}R`
@@ -791,14 +1088,19 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
               diffR !== null ? (
                 <span
                   className={cn(
-                    "font-semibold",
+                    "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-xs font-semibold",
                     diffR > 0
-                      ? "text-profit"
+                      ? "border border-profit/30 bg-profit/10 text-profit"
                       : diffR < 0
-                        ? "text-loss"
-                        : "text-muted-foreground",
+                        ? "border border-loss/30 bg-loss/10 text-loss"
+                        : "border border-border/40 bg-muted/40 text-muted-foreground",
                   )}
                 >
+                  {diffR > 0 ? (
+                    <ArrowUpRight className="h-3 w-3" />
+                  ) : diffR < 0 ? (
+                    <ArrowDownRight className="h-3 w-3" />
+                  ) : null}
                   {diffR > 0 ? "+" : ""}
                   {number(diffR)}R
                 </span>
@@ -808,10 +1110,13 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
           },
           {
             metric: "Closed Trades",
+            icon: Hash,
+            iconColor: "text-muted-foreground",
+            iconBg: "border-border/40 bg-muted/40",
             valA: String(sumA.trades),
             valB: String(sumB.trades),
             deltaNode: (
-              <span>
+              <span className="inline-flex items-center rounded-md border border-border/40 bg-muted/40 px-2 py-0.5 font-mono text-xs font-semibold text-muted-foreground">
                 {diffTrades > 0 ? "+" : ""}
                 {diffTrades}
               </span>
@@ -819,10 +1124,13 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
           },
           {
             metric: "Entry Volume",
+            icon: BarChart2,
+            iconColor: "text-purple-400",
+            iconBg: "border-purple-500/20 bg-purple-500/10",
             valA: number(sumA.volume),
             valB: number(sumB.volume),
             deltaNode: (
-              <span>
+              <span className="inline-flex items-center rounded-md border border-border/40 bg-muted/40 px-2 py-0.5 font-mono text-xs font-semibold text-muted-foreground">
                 {diffVol > 0 ? "+" : ""}
                 {number(diffVol)}
               </span>
@@ -830,12 +1138,20 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
           },
           {
             metric: "Avg Holding Time",
+            icon: Clock,
+            iconColor: "text-teal-400",
+            iconBg: "border-teal-500/20 bg-teal-500/10",
             valA: fmtDuration(sumA.avgDurationMs),
             valB: fmtDuration(sumB.avgDurationMs),
             deltaNode:
-              sumB.avgDurationMs !== null && sumA.avgDurationMs !== null
-                ? fmtDuration(Math.abs(sumB.avgDurationMs - sumA.avgDurationMs))
-                : "–",
+              sumB.avgDurationMs !== null && sumA.avgDurationMs !== null ? (
+                <span className="inline-flex items-center rounded-md border border-border/40 bg-muted/40 px-2 py-0.5 font-mono text-xs font-semibold text-muted-foreground">
+                  {sumB.avgDurationMs >= sumA.avgDurationMs ? "+" : "-"}
+                  {fmtDuration(Math.abs(sumB.avgDurationMs - sumA.avgDurationMs))}
+                </span>
+              ) : (
+                "–"
+              ),
           },
         ];
       })()
@@ -893,17 +1209,17 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
-                      "rounded-md px-2 py-0.5 font-mono text-xs font-bold",
+                      "inline-flex h-8 shrink-0 items-center rounded-lg px-3 font-mono text-xs font-bold tracking-wide uppercase shadow-xs",
                       group.key === "a"
-                        ? "border border-primary/20 bg-primary/15 text-primary"
-                        : "border border-purple-500/20 bg-purple-500/15 text-purple-400",
+                        ? "border border-primary/25 bg-primary/10 text-primary"
+                        : "border border-purple-500/25 bg-purple-500/10 text-purple-400",
                     )}
                   >
                     Group {group.key.toUpperCase()}
                   </span>
                   <input
                     aria-label={`Group ${group.key.toUpperCase()} name`}
-                    className="h-8 min-w-32 rounded-lg border bg-background px-2.5 text-sm font-semibold transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="h-8 min-w-36 rounded-lg border bg-background px-3 text-sm font-semibold transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     value={group.name}
                     onChange={(e) => group.setName(e.target.value)}
                   />
@@ -911,7 +1227,7 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-8 gap-1.5 text-xs font-medium"
+                  className="h-8 gap-1.5 rounded-lg text-xs font-medium"
                   onClick={() => {
                     setDraft({ ...group.filters });
                     setEditing(group.key);
@@ -940,13 +1256,19 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
                   {group.result.error}
                 </div>
               ) : group.result.loading ? (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <Skeleton key={i} className="h-20 rounded-xl" />
-                  ))}
+                <div className="space-y-3.5">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
+                    <Skeleton className="h-32 rounded-xl sm:col-span-5" />
+                    <Skeleton className="h-32 rounded-xl sm:col-span-7" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} className="h-16 rounded-xl" />
+                    ))}
+                  </div>
                 </div>
               ) : group.result.data && !multi ? (
-                <Summary data={group.result.data} />
+                <CohortSummary data={group.result.data} />
               ) : null}
             </CardContent>
           </Card>
@@ -982,14 +1304,62 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
                 }}
               />
             </div>
+
+            {/* Executive Edge Summary Banner */}
+            {outperformingGroup && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/50 bg-muted/20 px-3.5 py-2.5">
+                <div className="flex items-center gap-2">
+                  <Trophy className={cn("h-4 w-4 shrink-0", outperformingGroup.color)} />
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">{outperformingGroup.name}</span> is
+                    leading by{" "}
+                    <span className="font-mono font-bold text-profit">
+                      <MonetaryValue>+{money(outperformingGroup.pnlAdvantage, sharedCurrency)}</MonetaryValue>
+                    </span>
+                    {outperformingGroup.winRateAdvantage !== 0 && (
+                      <>
+                        {" "}with a{" "}
+                        <span
+                          className={cn(
+                            "font-mono font-semibold",
+                            outperformingGroup.winRateAdvantage > 0 ? "text-profit" : "text-loss",
+                          )}
+                        >
+                          {outperformingGroup.winRateAdvantage > 0 ? "+" : ""}
+                          {(outperformingGroup.winRateAdvantage * 100).toFixed(1)}%
+                        </span>{" "}
+                        win rate delta
+                      </>
+                    )}
+                    .
+                  </p>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={cn("text-[10px] font-bold uppercase tracking-wider", outperformingGroup.badgeBg)}
+                >
+                  Group {outperformingGroup.key.toUpperCase()} Edge
+                </Badge>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="p-0">
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="py-2.5">Metric</TableHead>
-                  <TableHead className="py-2.5 text-right font-mono">{nameA}</TableHead>
-                  <TableHead className="py-2.5 text-right font-mono">{nameB}</TableHead>
+                  <TableHead className="py-2.5 text-right font-mono">
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                      {nameA}
+                    </span>
+                  </TableHead>
+                  <TableHead className="py-2.5 text-right font-mono">
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-purple-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
+                      {nameB}
+                    </span>
+                  </TableHead>
                   <TableHead className="px-4 text-right font-mono font-semibold">
                     Delta ({nameB} − {nameA})
                   </TableHead>
@@ -998,11 +1368,25 @@ function Comparison({ initial }: { initial: AnalysisFilters }) {
               <TableBody>
                 {comparisonRows.map((row) => (
                   <TableRow key={row.metric} className="transition-colors hover:bg-muted/40">
-                    <TableCell className="py-2.5 font-medium">{row.metric}</TableCell>
-                    <TableCell className="py-2.5 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                    <TableCell className="py-2.5 font-medium">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={cn(
+                            "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border",
+                            row.iconBg,
+                          )}
+                        >
+                          <row.icon className={cn("h-3.5 w-3.5", row.iconColor)} />
+                        </div>
+                        <span className="text-xs font-semibold text-foreground sm:text-sm">
+                          {row.metric}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-2.5 text-right font-mono text-xs tabular-nums text-foreground">
                       {row.valA}
                     </TableCell>
-                    <TableCell className="py-2.5 text-right font-mono text-xs tabular-nums text-muted-foreground">
+                    <TableCell className="py-2.5 text-right font-mono text-xs tabular-nums text-foreground">
                       {row.valB}
                     </TableCell>
                     <TableCell className="px-4 text-right font-mono text-xs tabular-nums">
