@@ -126,16 +126,29 @@ export function SweetSpotMatrixCard({
                         const isSelected = selectedWr === cell.winRate && selectedRr === cell.riskReward;
                         const r = cell.rMultiple;
 
-                        // Color styles
-                        let bgStyle = "bg-loss/10 text-loss/80 hover:bg-loss/20";
+                        // Clean, borderless color styles for unselected cells
+                        let cellStyle = "bg-loss/10 text-loss/80 hover:bg-loss/20";
                         if (cell.isSweetSpot) {
-                          bgStyle = "bg-primary/20 text-primary font-semibold hover:bg-primary/30 ring-1 ring-primary/50";
+                          cellStyle = "bg-primary/15 text-primary font-semibold hover:bg-primary/25";
                         } else if (r > 0.6) {
-                          bgStyle = "bg-profit/25 text-profit font-semibold hover:bg-profit/35";
+                          cellStyle = "bg-profit/20 text-profit font-semibold hover:bg-profit/30";
                         } else if (r > 0) {
-                          bgStyle = "bg-profit/10 text-profit hover:bg-profit/20";
+                          cellStyle = "bg-profit/10 text-profit hover:bg-profit/20";
                         } else if (cell.isBreakeven) {
-                          bgStyle = "bg-muted text-muted-foreground hover:bg-muted/80";
+                          cellStyle = "bg-muted/40 text-muted-foreground hover:bg-muted/70";
+                        }
+
+                        // Saturated styling ONLY for the selected cell, in the same hue as its internal text
+                        if (isSelected) {
+                          if (cell.isSweetSpot) {
+                            cellStyle = "bg-primary text-primary-foreground font-bold shadow-sm z-10";
+                          } else if (r > 0) {
+                            cellStyle = "bg-profit text-white font-bold shadow-sm z-10";
+                          } else if (r < 0) {
+                            cellStyle = "bg-loss text-white font-bold shadow-sm z-10";
+                          } else {
+                            cellStyle = "bg-muted-foreground text-background font-bold shadow-sm z-10";
+                          }
                         }
 
                         return (
@@ -146,8 +159,7 @@ export function SweetSpotMatrixCard({
                             title={`Win Rate: ${cell.winRate}%, RR: ${cell.riskReward}R -> Expectancy: ${r >= 0 ? "+" : ""}${r}R per trade`}
                             className={cn(
                               "flex-1 h-6 mx-0.5 rounded flex items-center justify-center font-mono text-[10px] transition-all active:scale-[0.98] relative tnum",
-                              bgStyle,
-                              isSelected && "ring-2 ring-foreground font-bold shadow-sm z-10",
+                              cellStyle,
                             )}
                           >
                             {r >= 0 ? `+${r}` : `${r}`}
@@ -165,11 +177,11 @@ export function SweetSpotMatrixCard({
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground border-t border-border/40">
             <div className="flex items-center gap-3">
               <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-primary/40 ring-1 ring-primary/60 inline-block" />
+                <span className="h-2.5 w-2.5 rounded-sm bg-primary/30 inline-block" />
                 <span className="font-medium text-foreground">Sweet Spot (2R–5R, 35–50%)</span>
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm bg-profit/25 inline-block" />
+                <span className="h-2.5 w-2.5 rounded-sm bg-profit/20 inline-block" />
                 <span>Profitable</span>
               </span>
               <span className="inline-flex items-center gap-1">
