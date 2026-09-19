@@ -129,23 +129,37 @@ function Trades() {
         id: "closedAt",
         accessorKey: "closedAt",
         header: "Close date",
-        meta: { align: "left" },
-        cell: ({ getValue }) => (
-          <span className="text-muted-foreground">
-            {getValue<string | null>() ? dayKeyOf(getValue<string>(), timeZone) : "open"}
-          </span>
-        ),
+        meta: { align: "center" },
+        cell: ({ getValue }) => {
+          const val = getValue<string | null>();
+          if (!val) {
+            return <span className="text-muted-foreground">open</span>;
+          }
+          const day = dayKeyOf(val, timeZone);
+          const time = new Date(val).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+            timeZone,
+          });
+          return (
+            <div className="flex flex-col items-center justify-center leading-tight">
+              <span className="font-medium text-foreground">{day}</span>
+              <span className="text-[11px] text-muted-foreground">{time}</span>
+            </div>
+          );
+        },
       },
       {
         id: "symbol",
         accessorKey: "symbol",
         header: "Symbol",
-        meta: { align: "left" },
+        meta: { align: "center" },
         cell: ({ getValue }) => {
           const raw = getValue<string>();
           const canonical = normalizeSymbol(raw);
           return (
-            <span className="flex items-center gap-2.5 font-medium">
+            <span className="inline-flex items-center justify-center gap-2.5 font-medium">
               <AssetIcon symbol={raw} size="sm" />
               <span
                 className="font-semibold"
@@ -182,14 +196,16 @@ function Trades() {
         id: "quantity",
         accessorKey: "quantity",
         header: "Volume",
-        meta: { align: "right" },
-        cell: ({ getValue }) => <span className="tnum">{fmtNumber(getValue<number>(), 4)}</span>,
+        meta: { align: "center" },
+        cell: ({ getValue }) => (
+          <span className="tnum font-medium">{fmtNumber(getValue<number>(), 4)}</span>
+        ),
       },
       {
         id: "avgEntry",
         accessorKey: "avgEntry",
         header: "Entry",
-        meta: { align: "right" },
+        meta: { align: "center" },
         cell: ({ getValue }) => (
           <span className="tnum">
             <MonetaryValue>{fmtNumber(getValue<number>())}</MonetaryValue>
@@ -200,7 +216,7 @@ function Trades() {
         id: "avgExit",
         accessorKey: "avgExit",
         header: "Exit",
-        meta: { align: "right" },
+        meta: { align: "center" },
         cell: ({ getValue }) => (
           <span className="tnum">
             <MonetaryValue>
@@ -213,22 +229,22 @@ function Trades() {
         id: "netPnl",
         accessorKey: "netPnl",
         header: "Net P&L",
-        meta: { align: "right" },
-        cell: ({ getValue }) => <Pnl value={getValue<number>()} />,
+        meta: { align: "center" },
+        cell: ({ getValue }) => <Pnl value={getValue<number>()} className="font-semibold" />,
       },
       {
         id: "roi",
         accessorFn: (row) =>
           row.avgEntry * row.quantity > 0 ? row.netPnl / (row.avgEntry * row.quantity) : 0,
         header: "Net ROI",
-        meta: { align: "right" },
+        meta: { align: "center" },
         cell: ({ getValue }) => <span className="tnum">{fmtPercent(getValue<number>(), 2)}</span>,
       },
       {
         id: "fees",
         accessorKey: "fees",
         header: "Fees",
-        meta: { align: "right" },
+        meta: { align: "center" },
         cell: ({ getValue }) => (
           <span className="tnum text-muted-foreground">
             <MonetaryValue>{fmtMoney(getValue<number>())}</MonetaryValue>
@@ -239,7 +255,7 @@ function Trades() {
         id: "durationMs",
         accessorKey: "durationMs",
         header: "Duration",
-        meta: { align: "right" },
+        meta: { align: "center" },
         cell: ({ getValue }) => (
           <span className="text-muted-foreground">{fmtDuration(getValue<number | null>())}</span>
         ),
@@ -248,7 +264,7 @@ function Trades() {
         id: "executionCount",
         accessorKey: "executionCount",
         header: "Execs",
-        meta: { align: "right" },
+        meta: { align: "center" },
         cell: ({ getValue }) => (
           <span className="tnum text-muted-foreground">{getValue<number>()}</span>
         ),
@@ -258,16 +274,22 @@ function Trades() {
         accessorKey: "tags",
         enableSorting: false,
         header: "Tags",
-        meta: { align: "left" },
-        cell: ({ getValue }) => (
-          <span className="flex max-w-40 flex-wrap gap-1">
-            {getValue<string[]>().map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[10px]">
-                {tag}
-              </Badge>
-            ))}
-          </span>
-        ),
+        meta: { align: "center" },
+        cell: ({ getValue }) => {
+          const tags = getValue<string[]>();
+          if (!tags || tags.length === 0) {
+            return <span className="text-muted-foreground">—</span>;
+          }
+          return (
+            <span className="inline-flex max-w-40 flex-wrap items-center justify-center gap-1">
+              {tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-[10px]">
+                  {tag}
+                </Badge>
+              ))}
+            </span>
+          );
+        },
       },
       {
         id: "rating",
@@ -476,7 +498,7 @@ function Trades() {
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id} className="border-b border-border/70 bg-muted/20">
                       {headerGroup.headers.map((header) => {
-                        const align = header.column.columnDef.meta?.align ?? "left";
+                        const align = header.column.columnDef.meta?.align ?? "center";
                         const isSorted = header.column.getIsSorted();
                         return (
                           <th
@@ -540,7 +562,7 @@ function Trades() {
                       }
                     >
                       {row.getVisibleCells().map((cell) => {
-                        const align = cell.column.columnDef.meta?.align ?? "left";
+                        const align = cell.column.columnDef.meta?.align ?? "center";
                         return (
                           <td
                             key={cell.id}
