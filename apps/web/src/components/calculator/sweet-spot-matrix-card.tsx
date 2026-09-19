@@ -1,14 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, Copy, Check, Crosshair } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { HoverHint } from "@/components/ui/tooltip";
+import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/shared/formula-hud";
 import { cn } from "@/lib/utils";
 import {
   MATRIX_RR_RATIOS,
-  MATRIX_WIN_RATES,
   calculateBreakevenWinRate,
   generateSweetSpotMatrix,
 } from "@luxalgo/journal-core";
@@ -26,7 +23,18 @@ export function SweetSpotMatrixCard({
 }: SweetSpotMatrixCardProps) {
   const [selectedWr, setSelectedWr] = useState(winRate);
   const [selectedRr, setSelectedRr] = useState(riskReward);
-  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (winRate !== undefined) {
+      setSelectedWr(winRate);
+    }
+  }, [winRate]);
+
+  useEffect(() => {
+    if (riskReward !== undefined) {
+      setSelectedRr(riskReward);
+    }
+  }, [riskReward]);
 
   const matrix = generateSweetSpotMatrix();
   const beRate = calculateBreakevenWinRate(selectedRr);
@@ -42,16 +50,37 @@ export function SweetSpotMatrixCard({
     onSelect?.(wr, rr);
   };
 
-  const handleCopy = async () => {
-    const text = `System Matrix: Win Rate: ${selectedWr}% | RR: 1:${selectedRr} | Expectancy: ${currentRMultiple >= 0 ? "+" : ""}${currentRMultiple}R/trade | Breakeven Win Rate: ${beRate}% | Status: ${isSweetSpot ? "Sweet Spot" : isProfitable ? "Profitable" : "Negative Edge"}`;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Ignore
-    }
-  };
+  const hudCategory: FormulaHudCategory = isSweetSpot
+    ? {
+        label: "Sweet Spot",
+        color: "text-primary",
+        border: "border-primary/50",
+        bg: "bg-primary/20",
+        heading: "Realistic Sweet Spot (2R–5R, 35%–50%)",
+        advice:
+          "2R–5R with 35%–50% win rate represents the realistic zone: sustainable psychology, high resilience against drawdown variance, and strong positive mathematical expectancy.",
+      }
+    : isProfitable
+      ? {
+          label: "Profitable",
+          color: "text-profit",
+          border: "border-profit/40",
+          bg: "bg-profit/10",
+          heading: "Positive Expectancy System",
+          advice:
+            "System maintains positive statistical expectancy. Verify execution friction (fees & slippage) does not erode profitability.",
+        }
+      : {
+          label: "Negative Edge",
+          color: "text-loss",
+          border: "border-loss/40",
+          bg: "bg-loss/10",
+          heading: "Negative Edge System",
+          advice:
+            "The current win rate is below the breakeven threshold for this risk-to-reward ratio. Every trade loses capital on average.",
+        };
+
+  const copyText = `System Matrix: Win Rate: ${selectedWr}% | RR: 1:${selectedRr} | Expectancy: ${currentRMultiple >= 0 ? "+" : ""}${currentRMultiple}R/trade | Breakeven Win Rate: ${beRate}% | Status: ${hudCategory.label}`;
 
   return (
     <Card className="flex flex-col justify-between">
@@ -116,7 +145,7 @@ export function SweetSpotMatrixCard({
                             onClick={() => handleCellClick(cell.winRate, cell.riskReward)}
                             title={`Win Rate: ${cell.winRate}%, RR: ${cell.riskReward}R -> Expectancy: ${r >= 0 ? "+" : ""}${r}R per trade`}
                             className={cn(
-                              "flex-1 h-6 mx-0.5 rounded flex items-center justify-center font-mono text-[10px] transition-all relative tnum",
+                              "flex-1 h-6 mx-0.5 rounded flex items-center justify-center font-mono text-[10px] transition-all active:scale-[0.98] relative tnum",
                               bgStyle,
                               isSelected && "ring-2 ring-foreground font-bold shadow-sm z-10",
                             )}
@@ -154,112 +183,58 @@ export function SweetSpotMatrixCard({
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
-        <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5">
-          {/* HEADER ROW */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                Selected system edge
-              </span>
+        <FormulaHud
+          title="Selected system edge"
+          category={hudCategory}
+          copyText={copyText}
+          theoryNumerator="(Win% × RR) − Loss%"
+          theoryDenominator="Breakeven = 1 / (1 + RR)"
+          valueNumerator={
+            <>
+              <span className="font-semibold text-foreground tnum">{selectedWr}%</span>
+              <span className="text-muted-foreground/60 px-0.5">×</span>
+              <span className="font-semibold text-foreground tnum">{selectedRr}R</span>
+              <span className="text-muted-foreground/60 px-0.5">−</span>
+              <span className="font-semibold text-muted-foreground tnum">{100 - selectedWr}%</span>
+            </>
+          }
+          valueDenominator={
+            <>
+              <span className="text-muted-foreground/70">BE: </span>
+              <span className="font-semibold text-foreground tnum">{beRate}%</span>
               <span
                 className={cn(
-                  "h-4 inline-flex items-center rounded border px-1 font-mono text-[9px] font-semibold",
-                  isSweetSpot
-                    ? "border-primary/50 bg-primary/20 text-primary"
-                    : isProfitable
-                      ? "border-profit/40 bg-profit/10 text-profit"
-                      : "border-loss/40 bg-loss/10 text-loss",
+                  "text-[10px] ml-1 font-semibold tnum",
+                  selectedWr >= beRate ? "text-profit" : "text-loss",
                 )}
               >
-                {isSweetSpot ? "Sweet Spot" : isProfitable ? "Profitable" : "Negative Edge"}
+                ({selectedWr >= beRate ? "+" : ""}
+                {(selectedWr - beRate).toFixed(1)}% buffer)
               </span>
-            </div>
-            <HoverHint content="Copy system metrics to clipboard">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
-                onClick={handleCopy}
-              >
-                {copied ? (
-                  <Check className="h-3.5 w-3.5 text-profit" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
-                {copied ? "Copied" : "Copy"}
-              </Button>
-            </HoverHint>
-          </div>
-
-          {/* MAIN ROW: THE THREE-STEP PROGRESSION */}
-          <div className="flex items-center justify-between gap-1 sm:gap-2 py-1">
-            {/* STEP 1 (LEFT): THEORY */}
-            <div className="inline-flex flex-col items-center text-center shrink-0">
-              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pb-0.5 tracking-wide whitespace-nowrap">
-                (Win% × RR) − Loss%
-              </span>
-              <span className="w-full border-b border-foreground/30 my-0.5" />
-              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pt-0.5 tracking-wide whitespace-nowrap">
-                Breakeven = 1 / (1 + RR)
-              </span>
-            </div>
-
-            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
-
-            {/* STEP 2 (CENTER): LIVE COMPLEX DATA */}
-            <div className="inline-flex flex-col items-center text-center font-mono shrink-0">
-              <div className="text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap">
-                <span className="font-semibold text-foreground tnum">{selectedWr}%</span>
-                <span className="text-muted-foreground/60 px-0.5">×</span>
-                <span className="font-semibold text-foreground tnum">{selectedRr}R</span>
-                <span className="text-muted-foreground/60 px-0.5">−</span>
-                <span className="font-semibold text-muted-foreground tnum">{100 - selectedWr}%</span>
-              </div>
-              <span className="w-full border-b border-foreground/30 my-0.5" />
-              <div className="text-[10px] sm:text-xs px-1 pt-0.5 whitespace-nowrap">
-                <span className="text-muted-foreground/70">BE: </span>
-                <span className="font-semibold text-foreground tnum">{beRate}%</span>
-                <span
-                  className={cn(
-                    "text-[10px] ml-1 font-semibold tnum",
-                    selectedWr >= beRate ? "text-profit" : "text-loss",
-                  )}
-                >
-                  ({selectedWr >= beRate ? "+" : ""}
-                  {(selectedWr - beRate).toFixed(1)}% buffer)
-                </span>
-              </div>
-            </div>
-
-            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
-
-            {/* STEP 3 (RIGHT): DIRECT ACTIONABLE RESULT */}
-            <div className="flex flex-col justify-center text-right shrink-0">
-              <div className="flex items-baseline justify-end gap-1">
-                <span
-                  className={cn(
-                    "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
-                    currentRMultiple >= 0 ? "text-profit" : "text-loss",
-                  )}
-                >
-                  {currentRMultiple >= 0 ? `+${currentRMultiple}` : currentRMultiple}R
-                </span>
-                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                  / trade
-                </span>
-              </div>
-              <span
-                className={cn(
-                  "text-[10px] sm:text-xs font-mono font-medium tnum",
-                  isSweetSpot ? "text-primary font-semibold" : isProfitable ? "text-profit" : "text-loss",
-                )}
-              >
-                {isSweetSpot ? "Sweet Spot" : isProfitable ? "Positive Edge" : "Negative Edge"}
-              </span>
-            </div>
-          </div>
-
+            </>
+          }
+          resultValue={
+            <span
+              className={cn(
+                "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
+                currentRMultiple >= 0 ? "text-profit" : "text-loss",
+              )}
+            >
+              {currentRMultiple >= 0 ? `+${currentRMultiple}` : currentRMultiple}R
+            </span>
+          }
+          resultLabel="/ trade"
+          resultSecondary={
+            <span
+              className={cn(
+                "text-[10px] sm:text-xs font-mono font-medium tnum",
+                isSweetSpot ? "text-primary font-semibold" : isProfitable ? "text-profit" : "text-loss",
+              )}
+            >
+              {isSweetSpot ? "Sweet Spot" : isProfitable ? "Positive Edge" : "Negative Edge"}
+            </span>
+          }
+        >
           {/* 3-COLUMN METRICS BREAKDOWN */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
             <div>
@@ -285,7 +260,7 @@ export function SweetSpotMatrixCard({
               </span>
             </div>
           </div>
-        </div>
+        </FormulaHud>
       </CardContent>
     </Card>
   );

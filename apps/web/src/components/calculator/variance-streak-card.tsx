@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { AlertCircle, Copy, Check, ShieldAlert, Dice5 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { HoverHint } from "@/components/ui/tooltip";
+import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/shared/formula-hud";
 import { cn } from "@/lib/utils";
 import {
   calculateLosingStreakProbability,
@@ -28,7 +26,18 @@ export function VarianceStreakCard({
   const [selectedStreak, setSelectedStreak] = useState(6);
   const [isWrFocused, setIsWrFocused] = useState(false);
   const [isSampleFocused, setIsSampleFocused] = useState(false);
-  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (winRate !== undefined) {
+      setLocalWr(winRate);
+    }
+  }, [winRate]);
+
+  useEffect(() => {
+    if (sampleTrades !== undefined) {
+      setLocalSample(sampleTrades);
+    }
+  }, [sampleTrades]);
 
   const safeWr = Math.max(1, Math.min(99, localWr || 45));
   const safeSample = Math.max(10, Math.min(1000, localSample || 100));
@@ -46,16 +55,16 @@ export function VarianceStreakCard({
     onChange?.({ sampleTrades: val, winRate: safeWr });
   };
 
-  const handleCopy = async () => {
-    const text = `Variance & Streak Analysis: Win Rate: ${safeWr}% | Sample: ${safeSample} trades | Chance of ≥${selectedStreak} consecutive losses: ${streakProb}% | Fallacy Alert: Each trade is independent (${safeWr}% win prob).`;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Ignore
-    }
+  const streakCategory: FormulaHudCategory = {
+    label: "Markov Exact",
+    color: "text-primary",
+    border: "border-primary/50",
+    bg: "bg-primary/20",
+    heading: "Markov Chain Streak Distribution",
+    advice: `Calculated via finite Markov chain state transitions over ${safeSample} independent trades. With a ${safeWr}% win rate, experiencing ≥${selectedStreak} consecutive losses has an exact probability of ${streakProb}%.`,
   };
+
+  const copyText = `Variance & Streak Analysis: Win Rate: ${safeWr}% | Sample: ${safeSample} trades | Chance of ≥${selectedStreak} consecutive losses: ${streakProb}% | Fallacy Alert: Each trade is independent (${safeWr}% win prob).`;
 
   return (
     <Card className="flex flex-col justify-between">
@@ -88,6 +97,11 @@ export function VarianceStreakCard({
               onFocus={() => setIsWrFocused(true)}
               onBlur={() => setIsWrFocused(false)}
               onChange={(e) => handleWrChange(Number(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
             />
           </div>
 
@@ -106,6 +120,11 @@ export function VarianceStreakCard({
                 onFocus={() => setIsSampleFocused(true)}
                 onBlur={() => setIsSampleFocused(false)}
                 onChange={(e) => handleSampleChange(Number(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
               />
               <span className="text-xs font-mono text-muted-foreground">trades</span>
             </div>
@@ -119,7 +138,7 @@ export function VarianceStreakCard({
                 type="button"
                 onClick={() => handleSampleChange(preset)}
                 className={cn(
-                  "flex-1 rounded-md border py-1 font-mono text-[11px] transition-all",
+                  "flex-1 rounded-md border py-1 font-mono text-[11px] transition-all active:scale-[0.98]",
                   safeSample === preset
                     ? "border-primary bg-primary/10 font-semibold text-primary"
                     : "border-border/70 bg-muted/40 text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -134,85 +153,59 @@ export function VarianceStreakCard({
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
-        <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5">
-          {/* HEADER ROW */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                Streak probability
-              </span>
-              <span className="h-4 inline-flex items-center rounded border border-border/60 bg-background/60 px-1 font-mono text-[9px] text-muted-foreground">
-                Markov Exact
-              </span>
-            </div>
-            <HoverHint content="Copy variance metrics to clipboard">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
-                onClick={handleCopy}
-              >
-                {copied ? (
-                  <Check className="h-3.5 w-3.5 text-profit" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
+        <FormulaHud
+          title="Streak probability"
+          category={streakCategory}
+          copyText={copyText}
+          theoryNumerator="P(Losses ≥ k in N)"
+          theoryDenominator="Trade Independence (p)"
+          valueNumerator={
+            <div className="text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap">
+              <span className="text-muted-foreground/70">P(streak ≥ </span>
+              <span className="font-semibold text-loss tnum">{selectedStreak}</span>
+              <span className="text-muted-foreground/70"> in </span>
+              <span
+                className={cn(
+                  "font-semibold text-foreground tnum px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
+                  isSampleFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
                 )}
-                {copied ? "Copied" : "Copy"}
-              </Button>
-            </HoverHint>
-          </div>
-
-          {/* MAIN ROW: THE THREE-STEP PROGRESSION */}
-          <div className="flex items-center justify-between gap-1 sm:gap-2 py-1">
-            {/* STEP 1 (LEFT): THEORY */}
-            <div className="inline-flex flex-col items-center text-center shrink-0">
-              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pb-0.5 tracking-wide whitespace-nowrap">
-                P(Losses ≥ k in N)
+              >
+                {safeSample}
               </span>
-              <span className="w-full border-b border-foreground/30 my-0.5" />
-              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pt-0.5 tracking-wide whitespace-nowrap">
-                Trade Independence (p)
+              <span className="text-muted-foreground/70">)</span>
+            </div>
+          }
+          valueDenominator={
+            <div className="text-[10px] sm:text-xs px-1 pt-0.5 whitespace-nowrap">
+              <span className="text-muted-foreground/70">Next trade: </span>
+              <span
+                className={cn(
+                  "font-semibold text-foreground tnum px-0.5 py-0.5 rounded transition-[background-color,color] duration-150",
+                  isWrFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
+                )}
+              >
+                {safeWr}% win
               </span>
+              <span className="text-muted-foreground/70 text-[10px] ml-1 font-sans">(Coin flip)</span>
             </div>
-
-            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
-
-            {/* STEP 2 (CENTER): LIVE COMPLEX DATA */}
-            <div className="inline-flex flex-col items-center text-center font-mono shrink-0">
-              <div className="text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap">
-                <span className="text-muted-foreground/70">P(streak ≥ </span>
-                <span className="font-semibold text-loss tnum">{selectedStreak}</span>
-                <span className="text-muted-foreground/70"> in </span>
-                <span className="font-semibold text-foreground tnum">{safeSample}</span>
-                <span className="text-muted-foreground/70">)</span>
-              </div>
-              <span className="w-full border-b border-foreground/30 my-0.5" />
-              <div className="text-[10px] sm:text-xs px-1 pt-0.5 whitespace-nowrap">
-                <span className="text-muted-foreground/70">Next trade: </span>
-                <span className="font-semibold text-foreground tnum">{safeWr}% win</span>
-                <span className="text-muted-foreground/70 text-[10px] ml-1 font-sans">(Coin flip)</span>
-              </div>
-            </div>
-
-            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
-
-            {/* STEP 3 (RIGHT): DIRECT ACTIONABLE RESULT */}
-            <div className="flex flex-col justify-center text-right shrink-0">
-              <div className="flex items-baseline justify-end gap-1">
-                <span className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground tnum">
-                  {streakProb}%
-                </span>
-                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                  chance
-                </span>
-              </div>
-              <span className="text-[10px] sm:text-xs font-mono font-medium text-muted-foreground tnum">
-                {streakProb > 50 ? "Statistically normal" : "Uncommon streak"}
-              </span>
-            </div>
-          </div>
-
+          }
+          resultValue={
+            <span
+              className={cn(
+                "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
+                streakProb > 60 ? "text-loss" : streakProb > 30 ? "text-amber-500" : "text-profit",
+              )}
+            >
+              {streakProb}%
+            </span>
+          }
+          resultLabel="chance"
+          resultSecondary={
+            <span className="text-[10px] sm:text-xs font-mono font-medium text-muted-foreground tnum">
+              {streakProb > 50 ? "Statistically normal" : "Uncommon streak"}
+            </span>
+          }
+        >
           {/* STREAK DISTRIBUTION BARS */}
           <div className="mt-3 border-t border-border/40 pt-2.5 space-y-1.5">
             <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
@@ -225,34 +218,35 @@ export function VarianceStreakCard({
                 const barWidth = Math.max(4, Math.min(100, item.probability));
 
                 return (
-                  <div
+                  <button
                     key={item.streak}
+                    type="button"
                     onClick={() => setSelectedStreak(item.streak)}
                     className={cn(
-                      "flex items-center justify-between gap-2 rounded px-2 py-1 text-xs font-mono transition-all cursor-pointer",
+                      "w-full flex items-center justify-between gap-2 rounded px-2 py-1 text-xs font-mono transition-all text-left active:scale-[0.98]",
                       isSelected
                         ? "bg-primary/10 ring-1 ring-primary/40 font-semibold"
                         : "hover:bg-muted/50 text-muted-foreground",
                     )}
                   >
-                    <span className="w-20 text-foreground">≥ {item.streak} losses</span>
+                    <span className="w-20 text-foreground shrink-0">≥ {item.streak} losses</span>
                     <div className="flex-1 h-2 rounded-full bg-muted/60 overflow-hidden mx-2">
                       <div
                         className={cn(
                           "h-full rounded-full transition-all duration-300",
                           item.probability > 60
-                            ? "bg-amber-500"
+                            ? "bg-loss"
                             : item.probability > 25
-                              ? "bg-primary"
+                              ? "bg-amber-500"
                               : "bg-muted-foreground/50",
                         )}
                         style={{ width: `${barWidth}%` }}
                       />
                     </div>
-                    <div className="w-20 text-right">
+                    <div className="w-16 text-right shrink-0">
                       <span className="tnum font-bold text-foreground">{item.probability}%</span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -263,7 +257,7 @@ export function VarianceStreakCard({
               Even after a run of losses, each future trade remains completely independent with exactly {safeWr}% win probability. Never increase position size to recover losses.
             </div>
           </div>
-        </div>
+        </FormulaHud>
       </CardContent>
     </Card>
   );
