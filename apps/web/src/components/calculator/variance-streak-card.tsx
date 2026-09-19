@@ -129,45 +129,23 @@ export function VarianceStreakCard({
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Sample size (trades)
             </label>
-            <div className="flex items-center gap-1.5">
-              <Input
-                type="number"
-                min="10"
-                max="1000"
-                step="25"
-                className="h-9 w-24 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={localSample || ""}
-                placeholder="100"
-                onFocus={() => setIsSampleFocused(true)}
-                onBlur={() => setIsSampleFocused(false)}
-                onChange={(e) => handleSampleChange(Number(e.target.value))}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    (e.target as HTMLInputElement).blur();
-                  }
-                }}
-              />
-              <span className="text-xs font-mono text-muted-foreground">trades</span>
-            </div>
-          </div>
-
-          {/* QUICK SAMPLE PRESETS */}
-          <div className="flex items-center gap-1.5 pt-0.5">
-            {[50, 100, 200, 500].map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => handleSampleChange(preset)}
-                className={cn(
-                  "flex-1 rounded-md border py-1 font-mono text-[11px] transition-all active:scale-[0.98]",
-                  safeSample === preset
-                    ? "border-primary bg-primary/10 font-semibold text-primary"
-                    : "border-border/70 bg-muted/40 text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
-              >
-                {preset} trades
-              </button>
-            ))}
+            <Input
+              type="number"
+              min="10"
+              max="1000"
+              step="25"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={localSample || ""}
+              placeholder="100"
+              onFocus={() => setIsSampleFocused(true)}
+              onBlur={() => setIsSampleFocused(false)}
+              onChange={(e) => handleSampleChange(Number(e.target.value))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
           </div>
         </CardContent>
       </div>
