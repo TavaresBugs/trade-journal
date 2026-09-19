@@ -165,8 +165,8 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             </div>
             <div className="w-36">
               <Select value={instrumentId} onValueChange={handleInstrumentChange}>
-                <SelectTrigger className="h-9 w-full justify-between gap-2 px-2.5 text-xs font-mono font-semibold transition-all hover:bg-accent/40 active:scale-[0.98]">
-                  <div className="flex items-center gap-2 truncate">
+                <SelectTrigger className="relative h-9 w-full justify-center gap-2 px-2.5 text-xs font-mono font-semibold transition-all hover:bg-accent/40 active:scale-[0.98] [&>svg]:absolute [&>svg]:right-2.5">
+                  <div className="flex items-center gap-2">
                     <AssetIcon symbol={instrument.id} size="xs" />
                     <span className="font-bold text-foreground">{instrument.id}</span>
                   </div>
