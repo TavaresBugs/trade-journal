@@ -150,33 +150,20 @@ export function TradeExplorer({ query }: { query: string }) {
                 Asset
               </TableHead>
               <TableHead
-                className={cn(
-                  "py-2.5 text-center",
-                  showRealizedR ? "w-[12%]" : "w-[14%]",
-                )}
+                className={cn("py-2.5 text-center", showRealizedR ? "w-[12%]" : "w-[14%]")}
               >
                 Direction
               </TableHead>
               <TableHead className={cn("py-2.5", showRealizedR ? "w-[24%]" : "w-[28%]")}>
                 Closed At
               </TableHead>
-              <TableHead
-                className={cn(
-                  "px-3 text-right",
-                  showRealizedR ? "w-[15%]" : "w-[17%]",
-                )}
-              >
+              <TableHead className={cn("px-3 text-right", showRealizedR ? "w-[15%]" : "w-[17%]")}>
                 {xTitle}
               </TableHead>
               {showRealizedR && (
                 <TableHead className="w-[13%] px-3 text-right">Realized R</TableHead>
               )}
-              <TableHead
-                className={cn(
-                  "px-3 text-right",
-                  showRealizedR ? "w-[14%]" : "w-[15%]",
-                )}
-              >
+              <TableHead className={cn("px-3 text-right", showRealizedR ? "w-[14%]" : "w-[15%]")}>
                 {yTitle}
               </TableHead>
               <TableHead className="w-[4%] py-2.5 text-right"></TableHead>

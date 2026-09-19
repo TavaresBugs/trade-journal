@@ -21,8 +21,7 @@ export const number = (n: number | null): string =>
 export const percent = (n: number | null): string =>
   n === null ? "-" : `${(n * 100).toFixed(1)}%`;
 
-export const money = (n: number, currency: string): string =>
-  `${number(n)} ${currency}`;
+export const money = (n: number, currency: string): string => `${number(n)} ${currency}`;
 
 export const labels = (data: Analysis, key: string, dimension?: Dimension): string =>
   data.playbooks.find((p) => p.id === key)?.name ??

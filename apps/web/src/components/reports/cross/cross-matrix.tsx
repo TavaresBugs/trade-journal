@@ -81,9 +81,7 @@ export function CrossMatrix({
                     <HoverHint
                       key={c}
                       content={
-                        g
-                          ? `${g.trades} trades · Win rate ${percent(g.winRate)}`
-                          : "No trades"
+                        g ? `${g.trades} trades · Win rate ${percent(g.winRate)}` : "No trades"
                       }
                     >
                       <td
@@ -106,7 +104,9 @@ export function CrossMatrix({
         </table>
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>Cell values indicate net P&L in {currency}. Hover cells to inspect trades & win rate.</span>
+        <span>
+          Cell values indicate net P&L in {currency}. Hover cells to inspect trades & win rate.
+        </span>
         <div className="flex items-center gap-2 font-mono text-[11px]">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2 w-2 rounded-xs bg-loss/70" />

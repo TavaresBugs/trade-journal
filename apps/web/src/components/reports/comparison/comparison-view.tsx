@@ -208,14 +208,17 @@ export function ComparisonView({ initial }: ComparisonViewProps) {
                 <div className="flex items-center gap-2">
                   <Trophy className={cn("h-4 w-4 shrink-0", outperformingGroup.color)} />
                   <p className="text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">{outperformingGroup.name}</span> is
-                    leading by{" "}
+                    <span className="font-semibold text-foreground">{outperformingGroup.name}</span>{" "}
+                    is leading by{" "}
                     <span className="font-mono font-bold text-profit">
-                      <MonetaryValue>+{money(outperformingGroup.pnlAdvantage, sharedCurrency)}</MonetaryValue>
+                      <MonetaryValue>
+                        +{money(outperformingGroup.pnlAdvantage, sharedCurrency)}
+                      </MonetaryValue>
                     </span>
                     {outperformingGroup.winRateAdvantage !== 0 && (
                       <>
-                        {" "}with a{" "}
+                        {" "}
+                        with a{" "}
                         <span
                           className={cn(
                             "font-mono font-semibold",

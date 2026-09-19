@@ -225,15 +225,12 @@ function Reports() {
                         <div className="p-6">
                           <p className="rounded-xl border bg-muted/30 p-4 text-xs leading-relaxed text-muted-foreground">
                             These accounts use different currencies ({data?.currencies.join(", ")}).
-                            Select accounts with the same currency in Filters to compare monetary results.
+                            Select accounts with the same currency in Filters to compare monetary
+                            results.
                           </p>
                         </div>
                       ) : data ? (
-                        <CrossMatrix
-                          data={data}
-                          primary={primary}
-                          secondary={secondary}
-                        />
+                        <CrossMatrix data={data} primary={primary} secondary={secondary} />
                       ) : null}
                     </CardContent>
                   </Card>
@@ -250,7 +247,8 @@ function Reports() {
                             </CardTitle>
                           </div>
                           <span className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
-                            {data.groups.length} {data.groups.length === 1 ? "combination" : "combinations"}
+                            {data.groups.length}{" "}
+                            {data.groups.length === 1 ? "combination" : "combinations"}
                           </span>
                         </div>
                       </CardHeader>
@@ -331,7 +329,8 @@ function Reports() {
                       <div className="p-6">
                         <p className="rounded-xl border bg-muted/30 p-4 text-xs leading-relaxed text-muted-foreground">
                           These accounts use different currencies ({data?.currencies.join(", ")}).
-                          Select accounts with the same currency in Filters to compare monetary results.
+                          Select accounts with the same currency in Filters to compare monetary
+                          results.
                         </p>
                       </div>
                     ) : data ? (

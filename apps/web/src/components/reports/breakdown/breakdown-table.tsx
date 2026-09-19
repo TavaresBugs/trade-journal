@@ -43,9 +43,7 @@ export function BreakdownTable({
   if (data.groups.length === 0) {
     return (
       <div className="py-12 text-center">
-        <p className="text-sm font-medium text-foreground">
-          No closed trades match these filters.
-        </p>
+        <p className="text-sm font-medium text-foreground">No closed trades match these filters.</p>
         <p className="mt-1 text-xs text-muted-foreground">
           Adjust your filters or date range to see breakdown statistics.
         </p>

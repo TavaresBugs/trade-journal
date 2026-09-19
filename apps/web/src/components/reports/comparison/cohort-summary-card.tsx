@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  BarChart2,
-  Clock,
-  DollarSign,
-  Hash,
-  Scale,
-  Trophy,
-  Zap,
-} from "lucide-react";
+import { BarChart2, Clock, DollarSign, Hash, Scale, Trophy, Zap } from "lucide-react";
 import { cn, fmtDuration } from "@/lib/utils";
 import { MonetaryValue } from "@/components/privacy";
 import { HalfDonutGauge } from "../shared/half-donut-gauge";
@@ -49,11 +41,7 @@ export function CohortSummaryCard({ data }: { data: Analysis }) {
                 <p
                   className={cn(
                     "font-mono text-lg font-bold tabular-nums tracking-tight sm:text-xl",
-                    s.netPnl > 0
-                      ? "text-profit"
-                      : s.netPnl < 0
-                        ? "text-loss"
-                        : "text-foreground",
+                    s.netPnl > 0 ? "text-profit" : s.netPnl < 0 ? "text-loss" : "text-foreground",
                   )}
                 >
                   <MonetaryValue>{money(s.netPnl, currency)}</MonetaryValue>

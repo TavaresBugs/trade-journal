@@ -1,12 +1,6 @@
 "use client";
 
-export function HalfDonutGauge({
-  winRate,
-  trades,
-}: {
-  winRate: number | null;
-  trades: number;
-}) {
+export function HalfDonutGauge({ winRate, trades }: { winRate: number | null; trades: number }) {
   const safeRate =
     winRate !== null && Number.isFinite(winRate) ? Math.max(0, Math.min(1, winRate)) : 0;
   const wins = Math.round(safeRate * trades);
