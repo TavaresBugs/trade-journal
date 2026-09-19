@@ -144,48 +144,53 @@ export function TradeExplorer({ query }: { query: string }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="py-2.5">Trade / Closed</TableHead>
-              <TableHead className="px-2 text-right">{xTitle}</TableHead>
-              <TableHead className="pl-2 text-right">{yTitle}</TableHead>
+              <TableHead className="w-36 py-2.5">Asset</TableHead>
+              <TableHead className="w-24 py-2.5">Direction</TableHead>
+              <TableHead className="py-2.5">Closed At</TableHead>
+              <TableHead className="px-3 text-right">{xTitle}</TableHead>
+              <TableHead className="px-3 text-right">{yTitle}</TableHead>
+              <TableHead className="w-10 py-2.5 text-right"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {points.slice(shownPage * PAGE_SIZE, (shownPage + 1) * PAGE_SIZE).map((point) => (
               <TableRow key={point.key} className="hover:bg-muted/50">
                 <TableCell className="py-2.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <AssetIcon symbol={point.symbol} size="xs" />
-                      <span
-                        className="truncate text-xs font-semibold text-foreground"
-                        title={
-                          point.symbol !== normalizeSymbol(point.symbol) ? point.symbol : undefined
-                        }
-                      >
-                        {normalizeSymbol(point.symbol)}
-                      </span>
-                      <DirectionBadge direction={point.direction} size="xs" />
-                      <span className="font-mono text-[11px] text-muted-foreground">
-                        {date.format(new Date(point.closedAt))}
-                      </span>
-                    </div>
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                  <div className="flex items-center gap-2">
+                    <AssetIcon symbol={point.symbol} size="xs" />
+                    <span
+                      className="truncate text-xs font-semibold text-foreground"
+                      title={
+                        point.symbol !== normalizeSymbol(point.symbol) ? point.symbol : undefined
+                      }
                     >
-                      <Link href={detailHref(point.key)} title="Open trade details">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Link>
-                    </Button>
+                      {normalizeSymbol(point.symbol)}
+                    </span>
                   </div>
                 </TableCell>
-                <TableCell className="px-2 text-right font-mono text-xs tabular-nums">
+                <TableCell className="py-2.5">
+                  <DirectionBadge direction={point.direction} size="xs" />
+                </TableCell>
+                <TableCell className="py-2.5 font-mono text-xs text-muted-foreground">
+                  {date.format(new Date(point.closedAt))}
+                </TableCell>
+                <TableCell className="px-3 text-right font-mono text-xs tabular-nums">
                   {xValue(point)}
                 </TableCell>
-                <TableCell className="pl-2 text-right font-mono text-xs tabular-nums">
+                <TableCell className="px-3 text-right font-mono text-xs tabular-nums font-medium">
                   {value(point)}
+                </TableCell>
+                <TableCell className="py-2.5 text-right">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Link href={detailHref(point.key)} title="Open trade details">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
