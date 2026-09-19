@@ -19,6 +19,10 @@ interface EvCalculatorCardProps {
 export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
   const { avgPayout, payoutChance, cost, passRate } = values;
   const [copied, setCopied] = useState(false);
+  const [isPassFocused, setIsPassFocused] = useState(false);
+  const [isPayoutChanceFocused, setIsPayoutChanceFocused] = useState(false);
+  const [isAvgPayoutFocused, setIsAvgPayoutFocused] = useState(false);
+  const [isCostFocused, setIsCostFocused] = useState(false);
 
   const evResult = useMemo(() => {
     return calculateExpectedValue(cost, passRate, payoutChance, avgPayout);
@@ -63,7 +67,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
       <div>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
               EV Calculator
             </CardTitle>
             {cost > 0 && (
@@ -72,7 +76,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
               </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground [text-wrap:pretty]">
             Expected Value per Eval:{" "}
             <span className="font-mono text-[11px] font-medium text-foreground/80">
               (Pass Rate × Payout Chance × Avg Payout) − Eval Cost
@@ -90,6 +94,8 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={passRate || ""}
               placeholder="40"
+              onFocus={() => setIsPassFocused(true)}
+              onBlur={() => setIsPassFocused(false)}
               onChange={(e) => onChange({ passRate: Number(e.target.value) })}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -109,6 +115,8 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={payoutChance || ""}
               placeholder="40"
+              onFocus={() => setIsPayoutChanceFocused(true)}
+              onBlur={() => setIsPayoutChanceFocused(false)}
               onChange={(e) => onChange({ payoutChance: Number(e.target.value) })}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -128,6 +136,8 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={avgPayout || ""}
               placeholder="2000"
+              onFocus={() => setIsAvgPayoutFocused(true)}
+              onBlur={() => setIsAvgPayoutFocused(false)}
               onChange={(e) => onChange({ avgPayout: Number(e.target.value) })}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -147,6 +157,8 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={cost || ""}
               placeholder="89"
+              onFocus={() => setIsCostFocused(true)}
+              onBlur={() => setIsCostFocused(false)}
               onChange={(e) => onChange({ cost: Number(e.target.value) })}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -160,17 +172,24 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
-        <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5">
+        {/* UNIFIED HUD: EV HERO + LIVE MATHEMATICAL RESOLUTION */}
+        <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5 space-y-3">
+          {/* HEADER ROW */}
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Expected value outcome
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Expected value outcome
+              </span>
+              <span className="h-4 inline-flex items-center rounded border border-border/60 bg-background/60 px-1 font-mono text-[9px] text-muted-foreground">
+                Gross Return − Cost
+              </span>
+            </div>
             <HoverHint content="Copy EV breakdown to clipboard">
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
                 onClick={handleCopyEv}
               >
                 {copied ? (
@@ -183,36 +202,109 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
             </HoverHint>
           </div>
 
-          {/* EV HERO HIGHLIGHT */}
-          <div className="mt-1 flex items-baseline gap-2">
-            <span
-              className={cn(
-                "text-2xl font-bold tracking-tight font-mono tnum",
-                evResult >= 0 ? "text-profit" : "text-loss",
-              )}
-            >
-              <MonetaryValue>
-                {evResult >= 0 ? `+$${evResult.toFixed(2)}` : `-$${Math.abs(evResult).toFixed(2)}`}
-              </MonetaryValue>
-            </span>
-            <span className="text-sm font-medium text-muted-foreground">per eval</span>
-            {cost > 0 && (
-              <span
-                className={cn(
-                  "ml-auto text-xs font-mono font-medium",
-                  roiPercent >= 0 ? "text-profit" : "text-loss",
-                )}
-              >
-                {roiPercent >= 0 ? `+${roiPercent}% ROI` : `${roiPercent}% ROI`}
+          {/* MAIN ROW: THE THREE-STEP PROGRESSION (THEORY -> LIVE COMPLEX DATA -> DIRECT RESULT) */}
+          <div className="flex items-center justify-between gap-1 sm:gap-2 py-1">
+            {/* STEP 1 (LEFT): CONCEPTUAL / THEORETICAL FORMULA */}
+            <div className="inline-flex flex-col items-center text-center shrink-0">
+              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pb-0.5 tracking-wide whitespace-nowrap">
+                Pass% × Payout% × Avg
               </span>
-            )}
+              <span className="w-full border-b border-foreground/30 my-0.5" />
+              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pt-0.5 tracking-wide whitespace-nowrap">
+                − Eval Cost ($)
+              </span>
+            </div>
+
+            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
+
+            {/* STEP 2 (CENTER): LIVE COMPLEX DATA IN FORMULA (RAW INPUTS, NOT RESUMIDO) */}
+            <div className="inline-flex flex-col items-center text-center font-mono shrink-0">
+              <div className="flex items-center text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap">
+                <span
+                  className={cn(
+                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
+                    isPassFocused
+                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
+                      : "text-foreground",
+                  )}
+                >
+                  {passRate}%
+                </span>
+                <span className="text-muted-foreground/60 px-0.5">×</span>
+                <span
+                  className={cn(
+                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
+                    isPayoutChanceFocused
+                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
+                      : "text-foreground",
+                  )}
+                >
+                  {payoutChance}%
+                </span>
+                <span className="text-muted-foreground/60 px-0.5">×</span>
+                <span
+                  className={cn(
+                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
+                    isAvgPayoutFocused
+                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
+                      : "text-foreground",
+                  )}
+                >
+                  ${avgPayout.toLocaleString("en-US")}
+                </span>
+              </div>
+              <span className="w-full border-b border-foreground/30 my-0.5" />
+              <div className="text-[10px] sm:text-xs px-1 pt-0.5 whitespace-nowrap">
+                <span
+                  className={cn(
+                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum font-semibold",
+                    isCostFocused
+                      ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  − ${cost.toLocaleString("en-US")}
+                </span>
+              </div>
+            </div>
+
+            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
+
+            {/* STEP 3 (RIGHT): FINAL ACTIONABLE EV RESULT (DIRECT ANSWER) */}
+            <div className="flex flex-col justify-center text-right shrink-0">
+              <div className="flex items-baseline justify-end gap-1">
+                <span
+                  className={cn(
+                    "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
+                    evResult >= 0 ? "text-profit" : "text-loss",
+                  )}
+                >
+                  <MonetaryValue>
+                    {evResult >= 0
+                      ? `+$${evResult.toFixed(2)}`
+                      : `-$${Math.abs(evResult).toFixed(2)}`}
+                  </MonetaryValue>
+                </span>
+                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">/eval</span>
+              </div>
+              {cost > 0 && (
+                <span
+                  className={cn(
+                    "text-[10px] sm:text-xs font-mono font-medium tnum",
+                    roiPercent >= 0 ? "text-profit" : "text-loss",
+                  )}
+                >
+                  {roiPercent >= 0 ? `+${roiPercent}% ROI` : `${roiPercent}% ROI`}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* 3-COLUMN METRICS BREAKDOWN */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
             <div>
               <span className="block text-[11px] text-muted-foreground">Breakeven pass</span>
-              <span className="font-mono font-semibold text-foreground">
+              <span className="font-mono font-semibold text-foreground tnum">
                 {breakevenPassRate > 0 && breakevenPassRate <= 100
                   ? `${breakevenPassRate}%`
                   : "N/A"}
@@ -222,7 +314,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
               <span className="block text-[11px] text-muted-foreground">Edge buffer</span>
               <span
                 className={cn(
-                  "font-mono font-semibold",
+                  "font-mono font-semibold tnum",
                   edgeBuffer >= 0 ? "text-profit" : "text-loss",
                 )}
               >
@@ -231,7 +323,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
             </div>
             <div>
               <span className="block text-[11px] text-muted-foreground">Expected payout</span>
-              <span className="font-mono font-semibold text-profit">
+              <span className="font-mono font-semibold text-profit tnum">
                 <MonetaryValue>
                   +${Math.round(expectedPayoutPerPass).toLocaleString("en-US")}
                 </MonetaryValue>

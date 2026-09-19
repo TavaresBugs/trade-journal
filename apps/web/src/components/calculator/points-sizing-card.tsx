@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { OptionSelect } from "@/components/ui/option-select";
 import { HoverHint } from "@/components/ui/tooltip";
 import { MonetaryValue } from "@/components/privacy";
+import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
 
 interface PointsSizingCardProps {
@@ -50,6 +51,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
     costPerContract > 0 && riskDollars < costPerContract ? costPerContract : riskDollars;
 
   const [isRiskFocused, setIsRiskFocused] = useState(false);
+  const [isStopFocused, setIsStopFocused] = useState(false);
   const [riskInputText, setRiskInputText] = useState("");
 
   // Keep input text in sync when not actively focused
@@ -134,14 +136,14 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
       <div>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
               Position & Risk Sizing
             </CardTitle>
             <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
               Futures · Quant Sizing
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground [text-wrap:pretty]">
             Determine exact contracts from your technical chart stop and dollar risk.
           </p>
         </CardHeader>
@@ -224,6 +226,8 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={stopPoints || ""}
               placeholder="20.00"
+              onFocus={() => setIsStopFocused(true)}
+              onBlur={() => setIsStopFocused(false)}
               onChange={(e) => handleStopPointsChange(Number(e.target.value))}
             />
           </div>
@@ -250,17 +254,24 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
-        <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5">
+        {/* UNIFIED HUD: SIZING HERO + LIVE MATHEMATICAL RESOLUTION */}
+        <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5 space-y-3">
+          {/* HEADER ROW */}
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Recommended entry size
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Recommended entry size
+              </span>
+              <span className="h-4 inline-flex items-center rounded border border-border/60 bg-background/60 px-1 font-mono text-[9px] text-muted-foreground">
+                Risk ÷ Unit Cost
+              </span>
+            </div>
             <HoverHint content="Copy sizing breakdown to clipboard">
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
                 onClick={handleCopySizing}
               >
                 {copied ? (
@@ -273,19 +284,64 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             </HoverHint>
           </div>
 
-          {/* SIZING HIGHLIGHT */}
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-foreground font-mono tnum">
-              {sizing.recommendedContracts} {instrument.id}
-            </span>
-            <span className="text-sm font-medium text-muted-foreground">
-              contract{sizing.recommendedContracts > 1 ? "s" : ""}
-            </span>
-            {microName && sizing.microContracts > 0 && (
-              <span className="ml-auto text-xs text-muted-foreground font-mono">
-                or {sizing.microContracts} {microName}
+          {/* MAIN ROW: THE THREE-STEP PROGRESSION (THEORY -> LIVE DATA -> FINAL RESULT) */}
+          <div className="flex items-center justify-between gap-1 sm:gap-2 py-1">
+            {/* STEP 1 (LEFT): CONCEPTUAL / THEORETICAL FORMULA */}
+            <div className="inline-flex flex-col items-center text-center shrink-0">
+              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pb-0.5 tracking-wide whitespace-nowrap">
+                Max Risk ($)
               </span>
-            )}
+              <span className="w-full border-b border-foreground/30 my-0.5" />
+              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pt-0.5 tracking-wide whitespace-nowrap">
+                Stop × Point Value
+              </span>
+            </div>
+
+            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
+
+            {/* 2º ENTRADA (CENTRO): DADOS AO VIVO NO CÁLCULO (1ª imagem) */}
+            <div className="inline-flex flex-col items-center text-center font-mono shrink-0">
+              <span
+                className={cn(
+                  "text-xs sm:text-sm font-semibold px-1 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
+                  isRiskFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-foreground"
+                )}
+              >
+                ${effectiveRiskDollars > 0 ? effectiveRiskDollars.toLocaleString("en-US") : "0"}
+              </span>
+              <span className="w-full border-b border-foreground/30 my-0.5" />
+              <span
+                className={cn(
+                  "text-[10px] sm:text-xs px-1 py-0.5 rounded transition-[background-color,color] duration-150 tnum whitespace-nowrap",
+                  isStopFocused
+                    ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                    : "text-muted-foreground"
+                )}
+              >
+                {stopPoints > 0 ? stopPoints : "0"} pts × ${pointValue}
+              </span>
+            </div>
+
+            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
+
+            {/* 3º ENTRADA (DIREITA): RESULTADO FINAL (2ª imagem) */}
+            <div className="flex flex-col justify-center text-right shrink-0">
+              <div className="flex items-baseline justify-end gap-1">
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono tnum">
+                  {sizing.recommendedContracts} {instrument.id}
+                </span>
+                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                  contract{sizing.recommendedContracts > 1 ? "s" : ""}
+                </span>
+              </div>
+              {microName && sizing.microContracts > 0 && (
+                <span className="text-[10px] sm:text-xs text-muted-foreground font-mono whitespace-nowrap">
+                  or {sizing.microContracts} {microName} micros
+                </span>
+              )}
+            </div>
           </div>
 
           {/* RISK & TARGET SUMMARY */}

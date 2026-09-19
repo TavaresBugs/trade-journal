@@ -1,11 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ExecutionMode } from "@luxalgo/journal-core";
+import type { ExecutionMode, AccountSurvivalMode } from "@luxalgo/journal-core";
 
 export const CALCULATOR_STORAGE_KEY = "journal-calculator-v1";
 
 export interface CalculatorState {
+  activeTab?: "risk" | "strategy" | "portfolio";
+  strategy: {
+    winRate: number;
+    riskReward: number;
+    riskDollars: number;
+    feePerTrade: number;
+    slippageDollars: number;
+    sampleTrades: number;
+  };
+  survival: {
+    mode?: AccountSurvivalMode;
+    riskPercent: number;
+    drawdownPercent: number;
+  };
+  recovery: {
+    mode?: AccountSurvivalMode;
+  };
   ev: {
     avgPayout: number;
     payoutChance: number;
@@ -36,6 +53,23 @@ export interface CalculatorState {
 }
 
 export const DEFAULT_CALCULATOR_STATE: CalculatorState = {
+  activeTab: "risk",
+  strategy: {
+    winRate: 45,
+    riskReward: 2.5,
+    riskDollars: 1000,
+    feePerTrade: 5,
+    slippageDollars: 10,
+    sampleTrades: 100,
+  },
+  survival: {
+    mode: "funded",
+    riskPercent: 1.0,
+    drawdownPercent: 30,
+  },
+  recovery: {
+    mode: "funded",
+  },
   ev: {
     avgPayout: 2000,
     payoutChance: 40,
@@ -98,7 +132,67 @@ export function parseCalculatorState(stored: string | null): CalculatorState {
       bankroll: rawBudget?.bankroll ?? DEFAULT_CALCULATOR_STATE.budget.bankroll,
     };
 
+    const rawStrategy = parsed.strategy;
+    const strategy: CalculatorState["strategy"] = {
+      winRate:
+        typeof rawStrategy?.winRate === "number"
+          ? rawStrategy.winRate
+          : DEFAULT_CALCULATOR_STATE.strategy.winRate,
+      riskReward:
+        typeof rawStrategy?.riskReward === "number"
+          ? rawStrategy.riskReward
+          : DEFAULT_CALCULATOR_STATE.strategy.riskReward,
+      riskDollars:
+        typeof rawStrategy?.riskDollars === "number"
+          ? rawStrategy.riskDollars
+          : DEFAULT_CALCULATOR_STATE.strategy.riskDollars,
+      feePerTrade:
+        typeof rawStrategy?.feePerTrade === "number"
+          ? rawStrategy.feePerTrade
+          : DEFAULT_CALCULATOR_STATE.strategy.feePerTrade,
+      slippageDollars:
+        typeof rawStrategy?.slippageDollars === "number"
+          ? rawStrategy.slippageDollars
+          : DEFAULT_CALCULATOR_STATE.strategy.slippageDollars,
+      sampleTrades:
+        typeof rawStrategy?.sampleTrades === "number"
+          ? rawStrategy.sampleTrades
+          : DEFAULT_CALCULATOR_STATE.strategy.sampleTrades,
+    };
+
+    const rawSurvival = parsed.survival;
+    const survival: CalculatorState["survival"] = {
+      mode:
+        rawSurvival?.mode === "funded" || rawSurvival?.mode === "live"
+          ? rawSurvival.mode
+          : DEFAULT_CALCULATOR_STATE.survival.mode,
+      riskPercent:
+        typeof rawSurvival?.riskPercent === "number"
+          ? rawSurvival.riskPercent
+          : DEFAULT_CALCULATOR_STATE.survival.riskPercent,
+      drawdownPercent:
+        typeof rawSurvival?.drawdownPercent === "number"
+          ? rawSurvival.drawdownPercent
+          : DEFAULT_CALCULATOR_STATE.survival.drawdownPercent,
+    };
+
+    const rawRecovery = parsed.recovery;
+    const recovery: CalculatorState["recovery"] = {
+      mode: rawRecovery?.mode === "live" ? "live" : "funded",
+    };
+
+    const activeTab =
+      parsed.activeTab === "risk" ||
+      parsed.activeTab === "strategy" ||
+      parsed.activeTab === "portfolio"
+        ? parsed.activeTab
+        : DEFAULT_CALCULATOR_STATE.activeTab;
+
     return {
+      activeTab,
+      strategy,
+      survival,
+      recovery,
       ev: { ...DEFAULT_CALCULATOR_STATE.ev, ...parsed.ev },
       sizing,
       simulator: { ...DEFAULT_CALCULATOR_STATE.simulator, ...parsed.simulator },
@@ -130,9 +224,14 @@ export function useCalculatorState() {
     patch: Partial<CalculatorState[K]>,
   ) => {
     setState((prev) => {
+      const prevVal = prev[section];
+      const nextVal =
+        typeof prevVal === "object" && prevVal !== null && typeof patch === "object" && patch !== null
+          ? { ...prevVal, ...patch }
+          : patch;
       const next = {
         ...prev,
-        [section]: { ...prev[section], ...patch },
+        [section]: nextVal,
       };
       try {
         if (typeof window !== "undefined") {
@@ -140,6 +239,20 @@ export function useCalculatorState() {
         }
       } catch {
         // Handle storage quota or access errors gracefully
+      }
+      return next;
+    });
+  };
+
+  const setActiveTab = (tab: "risk" | "strategy" | "portfolio") => {
+    setState((prev) => {
+      const next = { ...prev, activeTab: tab };
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(CALCULATOR_STORAGE_KEY, JSON.stringify(next));
+        }
+      } catch {
+        // Handle storage error
       }
       return next;
     });
@@ -166,6 +279,8 @@ export function useCalculatorState() {
     state,
     isLoaded,
     updateState,
+    setActiveTab,
     resetSection,
   };
 }
+

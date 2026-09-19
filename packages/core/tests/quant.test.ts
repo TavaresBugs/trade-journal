@@ -7,6 +7,15 @@ import {
   calculatePointValue,
   calculatePointsFromDollars,
   calculatePositionSize,
+  calculateBreakevenWinRate,
+  calculateTradeExpectancy,
+  calculateRealExpectancy,
+  generateSweetSpotMatrix,
+  calculateLosingStreakProbability,
+  generateStreakDistribution,
+  calculateRecoveryPercentage,
+  calculateDrawdown50Probability,
+  calculateFundedSurvival,
   EXECUTION_PRESETS,
   NQ_DOLLARS_PER_POINT,
   QUANT_INSTRUMENTS,
@@ -73,6 +82,14 @@ describe("quant module (packages/core)", () => {
       expect(typeof res.avgNetProfit).toBe("number");
       expect(res.sampleOutcomes.length).toBeGreaterThan(0);
     });
+
+    it("handles zero simulations without NaN", () => {
+      const result = runReturnsSimulation(500, 89, 40, 40, 2000, 0);
+      expect(Number.isNaN(result.avgPayoutResult)).toBe(false);
+      expect(Number.isNaN(result.avgNetProfit)).toBe(false);
+      expect(result.avgPayoutResult).toBe(0);
+      expect(result.avgNetProfit).toBe(0);
+    });
   });
 
   describe("calculatePositionSize (JJ Simon execution rules)", () => {
@@ -136,11 +153,116 @@ describe("quant module (packages/core)", () => {
     });
   });
 
-  describe("runReturnsSimulation safety", () => {
-    it("handles zero simulations without NaN", () => {
-      const result = runReturnsSimulation(1, 0.4, 89, 2000, 0);
-      expect(Number.isNaN(result.avgPayoutResult)).toBe(false);
-      expect(Number.isNaN(result.avgNetProfit)).toBe(false);
+
+  describe("breakeven win rate", () => {
+    it("computes 50% for 1R system", () => {
+      expect(calculateBreakevenWinRate(1.0)).toBe(50.0);
+    });
+
+    it("computes 33.33% for 2R system", () => {
+      expect(calculateBreakevenWinRate(2.0)).toBe(33.33);
+    });
+
+    it("computes 20% for 4R system", () => {
+      expect(calculateBreakevenWinRate(4.0)).toBe(20.0);
+    });
+  });
+
+  describe("trade expectancy & friction", () => {
+    it("calculates paper expectancy for standard 50% win rate at 2R", () => {
+      // win 50% * $2,000 - loss 50% * $1,000 = $1,000 - $500 = $500
+      const res = calculateTradeExpectancy(50, 2.0, 1000);
+      expect(res.paperEv).toBe(500.0);
+      expect(res.rMultiple).toBe(0.5);
+      expect(res.breakevenWinRate).toBe(33.33);
+    });
+
+    it("calculates real expectancy deducting fees and slippage", () => {
+      const res = calculateRealExpectancy(50, 2.0, 1000, 10, 25);
+      expect(res.paperEv).toBe(500.0);
+      expect(res.totalFriction).toBe(35);
+      expect(res.realEv).toBe(465.0);
+      expect(res.netRMultiple).toBe(0.47);
+    });
+  });
+
+  describe("sweet spot matrix", () => {
+    it("generates full matrix with sweet spot highlights", () => {
+      const matrix = generateSweetSpotMatrix();
+      expect(matrix.length).toBe(12); // 12 win rates
+      expect(matrix[0]?.length).toBe(9); // 9 RR ratios
+
+      // Check sweet spot in 40% win rate with 3R
+      const row40 = matrix.find((r) => r[0]?.winRate === 40);
+      const cell40_3R = row40?.find((c) => c.riskReward === 3.0);
+      expect(cell40_3R?.isSweetSpot).toBe(true);
+      expect(cell40_3R?.isProfitable).toBe(true);
+
+      // Check unfeasible zone: 70% win rate with 8R is not sweet spot
+      const row70 = matrix.find((r) => r[0]?.winRate === 70);
+      const cell70_8R = row70?.find((c) => c.riskReward === 8.0);
+      expect(cell70_8R?.isSweetSpot).toBe(false);
+    });
+  });
+
+  describe("losing streak probability", () => {
+    it("calculates probability of losing streaks in a 100-trade sample", () => {
+      // At 50% win rate in 100 trades, prob of 5 consecutive losses is ~81%
+      const prob5 = calculateLosingStreakProbability(50, 100, 5);
+      expect(prob5).toBeGreaterThan(75);
+      expect(prob5).toBeCloseTo(81.0, 0);
+
+      // At 50% win rate in 100 trades, prob of 10 consecutive losses is small (~5% - 10%)
+      const prob10 = calculateLosingStreakProbability(50, 100, 10);
+      expect(prob10).toBeGreaterThan(1);
+      expect(prob10).toBeLessThan(20);
+
+      const dist = generateStreakDistribution(50, 100, [4, 6, 8]);
+      expect(dist).toHaveLength(3);
+      expect(dist[0]!.probability).toBeGreaterThan(dist[1]!.probability);
+      expect(dist[1]!.probability).toBeGreaterThan(dist[2]!.probability);
+    });
+  });
+
+  describe("loss recovery asymmetry", () => {
+    it("matches standard asymmetric recovery rules", () => {
+      expect(calculateRecoveryPercentage(10)).toBe(11.1);
+      expect(calculateRecoveryPercentage(20)).toBe(25.0);
+      expect(calculateRecoveryPercentage(50)).toBe(100.0);
+      expect(calculateRecoveryPercentage(80)).toBe(400.0);
+    });
+  });
+
+  describe("drawdown 50% risk probability", () => {
+    it("matches video chart 6 calibrations", () => {
+      expect(calculateDrawdown50Probability(0.5)).toBe(0.1);
+      expect(calculateDrawdown50Probability(1.0)).toBe(1.8);
+      expect(calculateDrawdown50Probability(2.0)).toBe(18.2);
+      expect(calculateDrawdown50Probability(5.0)).toBe(65.4);
+    });
+  });
+
+  describe("funded account survival", () => {
+    it("reveals real risk on $3,000 drawdown cushion for 50k account", () => {
+      // $500 risk is 1.0% of nominal 50k, but 16.7% of the 3k drawdown cushion!
+      const res = calculateFundedSurvival(3000, 500, 50000, 45, 100);
+      expect(res.nominalRiskPercent).toBe(1.0);
+      expect(res.cushionRiskPercent).toBe(16.7);
+      expect(res.lossesToBreach).toBe(6);
+      expect(res.cushionRuinProbability).toBeGreaterThan(10);
+      expect(res.cushionRuinProbability).toBeLessThan(25);
+      expect(res.category).toBe("Dangerous");
+    });
+
+    it("calculates conservative sizing for 10k account ($1,000 drawdown)", () => {
+      // $50 risk on 1k drawdown = 5% cushion risk, 20 losses to breach
+      const res = calculateFundedSurvival(1000, 50, 10000, 45, 100);
+      expect(res.cushionRiskPercent).toBe(5.0);
+      expect(res.lossesToBreach).toBe(20);
+      expect(res.cushionRuinProbability).toBeLessThan(1.0);
+      expect(res.category).toBe("Conservative");
     });
   });
 });
+
+

@@ -333,3 +333,352 @@ export function calculatePositionSize(
     riskRewardRatio,
   };
 }
+
+// -------------------------------------------------------------
+// System Design, Sweet Spot & Expectancy (from "The Math of Winning in Trading")
+// -------------------------------------------------------------
+
+export interface TradeExpectancyResult {
+  paperEv: number;
+  rMultiple: number;
+  winRate: number;
+  lossRate: number;
+  avgWin: number;
+  avgLoss: number;
+  breakevenWinRate: number;
+}
+
+export interface RealExpectancyResult extends TradeExpectancyResult {
+  realEv: number;
+  totalFriction: number;
+  netRMultiple: number;
+}
+
+/**
+ * Breakeven win rate formula: BE% = 1 / (1 + RR) * 100
+ * e.g. 1R -> 50%, 2R -> 33.33%, 4R -> 20%
+ */
+export function calculateBreakevenWinRate(riskRewardRatio: number): number {
+  if (riskRewardRatio <= 0) return 100;
+  return Number(((1 / (1 + riskRewardRatio)) * 100).toFixed(2));
+}
+
+/**
+ * Expectancy = (WinRate * AvgWin) - (LossRate * AvgLoss)
+ * rMultiple = (WinRate * RR) - (LossRate * 1)
+ */
+export function calculateTradeExpectancy(
+  winRatePercent: number,
+  riskRewardRatio: number,
+  riskDollars: number = 1000,
+): TradeExpectancyResult {
+  const p = Math.max(0, Math.min(100, winRatePercent)) / 100;
+  const q = 1 - p;
+  const avgWin = riskDollars * Math.max(0, riskRewardRatio);
+  const avgLoss = riskDollars;
+  const paperEv = Number((p * avgWin - q * avgLoss).toFixed(2));
+  const rMultiple = Number((p * riskRewardRatio - q).toFixed(2));
+  const breakevenWinRate = calculateBreakevenWinRate(riskRewardRatio);
+
+  return {
+    paperEv,
+    rMultiple,
+    winRate: Number((p * 100).toFixed(1)),
+    lossRate: Number((q * 100).toFixed(1)),
+    avgWin: Math.round(avgWin),
+    avgLoss: Math.round(avgLoss),
+    breakevenWinRate,
+  };
+}
+
+/**
+ * Real Expectancy including friction (commissions, exchange fees, slippage)
+ */
+export function calculateRealExpectancy(
+  winRatePercent: number,
+  riskRewardRatio: number,
+  riskDollars: number = 1000,
+  feePerTrade: number = 5,
+  slippageDollars: number = 10,
+): RealExpectancyResult {
+  const base = calculateTradeExpectancy(winRatePercent, riskRewardRatio, riskDollars);
+  const totalFriction = Math.max(0, feePerTrade) + Math.max(0, slippageDollars);
+  const realEv = Number((base.paperEv - totalFriction).toFixed(2));
+  const netRMultiple = riskDollars > 0 ? Number((realEv / riskDollars).toFixed(2)) : 0;
+
+  return {
+    ...base,
+    realEv,
+    totalFriction,
+    netRMultiple,
+  };
+}
+
+export interface MatrixCell {
+  winRate: number;
+  riskReward: number;
+  rMultiple: number;
+  breakevenWinRate: number;
+  isBreakeven: boolean;
+  isProfitable: boolean;
+  isSweetSpot: boolean;
+}
+
+export const MATRIX_WIN_RATES = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70] as const;
+export const MATRIX_RR_RATIOS = [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0] as const;
+
+/**
+ * Generates the 2D Heatmap Matrix of RR vs Win Rate with Sweet Spot tagging.
+ * The Sweet Spot: 2R to 5R with 35% to 50% Win Rate (video's core realism zone).
+ */
+export function generateSweetSpotMatrix(): MatrixCell[][] {
+  return MATRIX_WIN_RATES.map((wr) => {
+    return MATRIX_RR_RATIOS.map((rr) => {
+      const p = wr / 100;
+      const q = 1 - p;
+      const rMultiple = Number((p * rr - q).toFixed(2));
+      const be = calculateBreakevenWinRate(rr);
+      const isBreakeven = Math.abs(wr - be) <= 2.5;
+      const isProfitable = wr > be;
+      const isSweetSpot = rr >= 2.0 && rr <= 5.0 && wr >= 35 && wr <= 50;
+
+      return {
+        winRate: wr,
+        riskReward: rr,
+        rMultiple,
+        breakevenWinRate: be,
+        isBreakeven,
+        isProfitable,
+        isSweetSpot,
+      };
+    });
+  });
+}
+
+// -------------------------------------------------------------
+// Variance & Losing Streak Probability (Markov Chain / DP)
+// -------------------------------------------------------------
+
+/**
+ * Exact probability of observing at least one run of >= streakLength consecutive losses
+ * in a sample of sampleTrades trades.
+ * Solved via exact dynamic programming (O(N * k)).
+ */
+export function calculateLosingStreakProbability(
+  winRatePercent: number,
+  sampleTrades: number,
+  streakLength: number,
+): number {
+  if (streakLength <= 0) return 100;
+  if (sampleTrades < streakLength) return 0;
+  if (winRatePercent >= 100) return 0;
+  if (winRatePercent <= 0) return 100;
+
+  const p = winRatePercent / 100; // win probability
+  const q = 1 - p; // loss probability
+  const N = Math.min(1000, Math.max(1, sampleTrades));
+  const k = streakLength;
+
+  // dp[j] = probability of reaching current consecutive loss streak j without ever hitting k
+  let dp = new Array(k).fill(0);
+  dp[0] = 1;
+
+  for (let i = 0; i < N; i++) {
+    const nextDp = new Array(k).fill(0);
+    // Any trade that is a win resets the current losing streak to 0
+    let sumSurviving = 0;
+    for (let j = 0; j < k; j++) {
+      sumSurviving += dp[j];
+    }
+    nextDp[0] = sumSurviving * p;
+
+    // A loss extends streak from j to j+1 (if j+1 < k)
+    for (let j = 0; j < k - 1; j++) {
+      nextDp[j + 1] = dp[j] * q;
+    }
+
+    dp = nextDp;
+  }
+
+  // Total probability of never hitting streak length k
+  let probNeverHit = 0;
+  for (let j = 0; j < k; j++) {
+    probNeverHit += dp[j];
+  }
+
+  const probHit = Math.max(0, Math.min(1, 1 - probNeverHit));
+  return Number((probHit * 100).toFixed(1));
+}
+
+export interface StreakDistributionItem {
+  streak: number;
+  probability: number;
+}
+
+export function generateStreakDistribution(
+  winRatePercent: number,
+  sampleTrades: number = 100,
+  streaks: number[] = [3, 4, 5, 6, 7, 8, 9, 10],
+): StreakDistributionItem[] {
+  return streaks.map((k) => ({
+    streak: k,
+    probability: calculateLosingStreakProbability(winRatePercent, sampleTrades, k),
+  }));
+}
+
+// -------------------------------------------------------------
+// Capital Survival & Recovery Asymmetry (from "The Math of Winning in Trading")
+// -------------------------------------------------------------
+
+/**
+ * Recovery gain required to get back to breakeven after a loss:
+ * Gain% = L / (1 - L) * 100
+ * e.g. 10% loss -> +11.11%, 50% loss -> +100%
+ */
+export function calculateRecoveryPercentage(drawdownPercent: number): number {
+  if (drawdownPercent <= 0) return 0;
+  if (drawdownPercent >= 100) return 9999;
+  const l = drawdownPercent / 100;
+  return Number(((l / (1 - l)) * 100).toFixed(1));
+}
+
+export interface RecoveryRulerItem {
+  drawdown: number;
+  recovery: number;
+}
+
+export const STANDARD_RECOVERY_STEPS: RecoveryRulerItem[] = [
+  { drawdown: 10, recovery: 11.1 },
+  { drawdown: 20, recovery: 25.0 },
+  { drawdown: 30, recovery: 42.9 },
+  { drawdown: 40, recovery: 66.7 },
+  { drawdown: 50, recovery: 100.0 },
+  { drawdown: 60, recovery: 150.0 },
+  { drawdown: 70, recovery: 233.3 },
+  { drawdown: 80, recovery: 400.0 },
+  { drawdown: 90, recovery: 900.0 },
+];
+
+/**
+ * Probability of hitting a 50% account drawdown based on risk per trade.
+ * Calibrated against video chart 6:
+ * Risk 0.5% -> 0.1% chance
+ * Risk 1.0% -> 1.8% chance
+ * Risk 2.0% -> 18.2% chance
+ * Risk 5.0% -> 65.4% chance
+ * Risk 10.0% -> 94.5% chance
+ */
+export function calculateDrawdown50Probability(riskPercentPerTrade: number): number {
+  const r = Math.max(0.1, riskPercentPerTrade);
+  if (r <= 0.5) return Number((0.1 * (r / 0.5)).toFixed(1));
+  if (r <= 1.0) {
+    const t = (r - 0.5) / 0.5;
+    return Number((0.1 + t * (1.8 - 0.1)).toFixed(1));
+  }
+  if (r <= 2.0) {
+    const t = (r - 1.0) / 1.0;
+    return Number((1.8 + t * (18.2 - 1.8)).toFixed(1));
+  }
+  if (r <= 5.0) {
+    const t = (r - 2.0) / 3.0;
+    return Number((18.2 + t * (65.4 - 18.2)).toFixed(1));
+  }
+  const t = Math.min(1, (r - 5.0) / 5.0);
+  return Number((65.4 + t * (95.0 - 65.4)).toFixed(1));
+}
+
+export interface RiskDrawdownRow {
+  riskPercent: number;
+  drawdown50Prob: number;
+  riskCategory: "Conservative" | "Optimal" | "Dangerous" | "Fatal";
+}
+
+export const STANDARD_RISK_SURVIVAL_TABLE: RiskDrawdownRow[] = [
+  { riskPercent: 0.5, drawdown50Prob: 0.1, riskCategory: "Conservative" },
+  { riskPercent: 1.0, drawdown50Prob: 1.8, riskCategory: "Optimal" },
+  { riskPercent: 2.0, drawdown50Prob: 18.2, riskCategory: "Dangerous" },
+  { riskPercent: 5.0, drawdown50Prob: 65.4, riskCategory: "Fatal" },
+];
+
+// -------------------------------------------------------------
+// Funded Account vs Live Account Survival (Prop Firm Reality)
+// -------------------------------------------------------------
+
+export type AccountSurvivalMode = "funded" | "live";
+
+export interface FundedAccountPreset {
+  id: string;
+  name: string;
+  nominalBalance: number;
+  maxDrawdown: number;
+}
+
+export const FUNDED_ACCOUNT_PRESETS: readonly FundedAccountPreset[] = [
+  { id: "10k", name: "10K Account", nominalBalance: 10000, maxDrawdown: 1000 },
+  { id: "25k", name: "25K Account", nominalBalance: 25000, maxDrawdown: 1500 },
+  { id: "50k", name: "50K Account", nominalBalance: 50000, maxDrawdown: 3000 },
+  { id: "100k", name: "100K Account", nominalBalance: 100000, maxDrawdown: 3000 },
+  { id: "150k", name: "150K Account", nominalBalance: 150000, maxDrawdown: 4500 },
+] as const;
+
+export interface FundedSurvivalResult {
+  nominalBalance: number;
+  maxDrawdown: number;
+  dollarRisk: number;
+  nominalRiskPercent: number;
+  cushionRiskPercent: number;
+  lossesToBreach: number;
+  breachProbability: number;
+  cushionRuinProbability: number;
+  category: "Conservative" | "Optimal" | "Dangerous" | "Fatal";
+}
+
+export function calculateFundedSurvival(
+  maxDrawdown: number,
+  dollarRisk: number,
+  nominalBalance: number = 50000,
+  winRatePercent: number = 45,
+  sampleTrades: number = 100,
+): FundedSurvivalResult {
+  const safeDd = Math.max(100, maxDrawdown);
+  const safeRisk = Math.max(10, dollarRisk);
+  const safeNominal = Math.max(safeDd, nominalBalance);
+
+  const nominalRiskPercent = Number(((safeRisk / safeNominal) * 100).toFixed(2));
+  const cushionRiskPercent = Number(((safeRisk / safeDd) * 100).toFixed(1));
+  const lossesToBreach = Math.max(1, Math.floor(safeDd / safeRisk));
+  const breachProbability = calculateLosingStreakProbability(
+    winRatePercent,
+    sampleTrades,
+    lossesToBreach,
+  );
+
+  // Absorbing barrier Gambler's Ruin approximation on the drawdown cushion
+  // Evaluates systemic ruin probability for a typical trend/mean-reversion edge (e.g. 45% WR at 2.0R)
+  const mu = 0.35;
+  const variance = 2.23;
+  const gamma = (2 * mu) / variance;
+  const cushionRuinProbability = Number(
+    Math.min(100, Math.max(0.1, Math.exp(-gamma * lossesToBreach) * 100)).toFixed(1),
+  );
+
+  let category: FundedSurvivalResult["category"] = "Optimal";
+  if (lossesToBreach >= 15) category = "Conservative";
+  else if (lossesToBreach >= 10) category = "Optimal";
+  else if (lossesToBreach >= 6) category = "Dangerous";
+  else category = "Fatal";
+
+  return {
+    nominalBalance: safeNominal,
+    maxDrawdown: safeDd,
+    dollarRisk: safeRisk,
+    nominalRiskPercent,
+    cushionRiskPercent,
+    lossesToBreach,
+    breachProbability,
+    cushionRuinProbability,
+    category,
+  };
+}
+
+

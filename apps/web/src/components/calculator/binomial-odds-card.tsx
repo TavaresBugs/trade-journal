@@ -20,6 +20,9 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
   const { passRate, bankroll } = values;
   const evalCost = values.evalCost ?? 89;
   const [copied, setCopied] = useState(false);
+  const [isBankrollFocused, setIsBankrollFocused] = useState(false);
+  const [isCostFocused, setIsCostFocused] = useState(false);
+  const [isPassFocused, setIsPassFocused] = useState(false);
   const [distributionMode, setDistributionMode] = useState<"cumulative" | "exact">("cumulative");
 
   // Cap at 30 attempts for binomial numerical stability and responsive rendering
@@ -63,64 +66,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
         </CardHeader>
 
         <CardContent className="space-y-3.5">
-          {/* 1º: BANKROLL ($) */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Bankroll ($)
-              </label>
-              <div className="flex items-center gap-1">
-                {[500, 1000, 2000].map((b) => (
-                  <button
-                    key={b}
-                    type="button"
-                    onClick={() => onChange({ bankroll: b })}
-                    className={cn(
-                      "h-5 inline-flex items-center justify-center rounded border px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none transition-colors",
-                      bankroll === b
-                        ? "border-border bg-accent text-foreground font-semibold"
-                        : "border-border/60 text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                    )}
-                  >
-                    ${b >= 1000 ? `${b / 1000}k` : b}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={bankroll || ""}
-              placeholder="500"
-              onChange={(e) => onChange({ bankroll: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
-
-          {/* 2º: COST PER EVAL ($) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Cost per eval ($)
-            </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={evalCost || ""}
-              placeholder="89"
-              onChange={(e) => onChange({ evalCost: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
-
-          {/* 3º: PASS RATE (%) */}
+          {/* 1º: PASS RATE (%) */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Pass rate (%)
@@ -130,7 +76,51 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
               className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={passRate || ""}
               placeholder="40"
+              onFocus={() => setIsPassFocused(true)}
+              onBlur={() => setIsPassFocused(false)}
               onChange={(e) => onChange({ passRate: Number(e.target.value) })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
+          </div>
+
+          {/* 2º: BANKROLL ($) */}
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Bankroll ($)
+            </label>
+            <Input
+              type="number"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={bankroll || ""}
+              placeholder="500"
+              onFocus={() => setIsBankrollFocused(true)}
+              onBlur={() => setIsBankrollFocused(false)}
+              onChange={(e) => onChange({ bankroll: Number(e.target.value) })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
+          </div>
+
+          {/* 3º: COST PER EVAL ($) */}
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Cost per eval ($)
+            </label>
+            <Input
+              type="number"
+              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={evalCost || ""}
+              placeholder="89"
+              onFocus={() => setIsCostFocused(true)}
+              onBlur={() => setIsCostFocused(false)}
+              onChange={(e) => onChange({ evalCost: Number(e.target.value) })}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   (e.target as HTMLInputElement).blur();
@@ -154,16 +144,22 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
         <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5">
+          {/* HEADER ROW */}
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Binomial pass model
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Binomial pass model
+              </span>
+              <span className="h-4 inline-flex items-center rounded border border-border/60 bg-background/60 px-1 font-mono text-[9px] text-muted-foreground">
+                Cumulative Odds
+              </span>
+            </div>
             <HoverHint content="Copy binomial analysis to clipboard">
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
                 onClick={handleCopyAnalysis}
               >
                 {copied ? (
@@ -176,31 +172,96 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             </HoverHint>
           </div>
 
-          {/* HERO METRIC */}
-          <div className="mt-1 flex items-baseline gap-2">
-            <span
-              className={cn(
-                "text-2xl font-bold tracking-tight font-mono tnum",
-                binomialData.atLeastOne >= 50 ? "text-profit" : "text-loss",
-              )}
-            >
-              {binomialData.atLeastOne.toFixed(2)}%
-            </span>
-            <HoverHint
-              content={`Cumulative probability of passing 1 or more funded accounts across your ${budgetEvalCount} attempts`}
-            >
-              <span className="cursor-help text-sm font-medium text-muted-foreground underline decoration-muted-foreground/30 underline-offset-2">
-                chance to pass at least 1 eval
+          {/* MAIN ROW: THE THREE-STEP PROGRESSION (THEORY -> LIVE COMPLEX DATA -> DIRECT RESULT) */}
+          <div className="flex items-center justify-between gap-1 sm:gap-2 py-1">
+            {/* STEP 1 (LEFT): CONCEPTUAL / THEORETICAL FORMULA */}
+            <div className="inline-flex flex-col items-center text-center shrink-0">
+              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pb-0.5 tracking-wide whitespace-nowrap">
+                1 − (1 − Pass%)ⁿ
               </span>
-            </HoverHint>
-            <span
-              className={cn(
-                "ml-auto text-xs font-mono font-medium",
-                binomialData.riskOfRuin > 15 ? "text-loss" : "text-muted-foreground",
-              )}
-            >
-              Risk of ruin: {binomialData.riskOfRuin.toFixed(2)}%
-            </span>
+              <span className="w-full border-b border-foreground/30 my-0.5" />
+              <span className="text-[10px] sm:text-[11px] font-serif italic text-muted-foreground px-1 pt-0.5 tracking-wide whitespace-nowrap">
+                n = Bankroll ÷ Cost
+              </span>
+            </div>
+
+            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
+
+            {/* STEP 2 (CENTER): LIVE COMPLEX DATA IN FORMULA (RAW INPUTS, NOT RESUMIDO) */}
+            <div className="inline-flex flex-col items-center text-center font-mono shrink-0">
+              <div className="flex items-center text-[11px] sm:text-xs font-medium tracking-tight px-1 pb-0.5 whitespace-nowrap">
+                <span className="text-muted-foreground">1 − (1 − </span>
+                <span
+                  className={cn(
+                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
+                    isPassFocused
+                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
+                      : "text-foreground",
+                  )}
+                >
+                  {passRate}%
+                </span>
+                <span className="text-muted-foreground">)</span>
+                <sup
+                  className={cn(
+                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum text-[10px]",
+                    isBankrollFocused || isCostFocused
+                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
+                      : "text-foreground",
+                  )}
+                >
+                  {budgetEvalCount}
+                </sup>
+              </div>
+              <span className="w-full border-b border-foreground/30 my-0.5" />
+              <div className="text-[10px] sm:text-xs px-1 pt-0.5 whitespace-nowrap">
+                <span className="text-muted-foreground">{budgetEvalCount} = </span>
+                <span
+                  className={cn(
+                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
+                    isBankrollFocused
+                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  ${bankroll.toLocaleString("en-US")}
+                </span>
+                <span className="text-muted-foreground/60 px-0.5">÷</span>
+                <span
+                  className={cn(
+                    "px-0.5 py-0.5 rounded transition-[background-color,color] duration-150 tnum",
+                    isCostFocused
+                      ? "bg-primary/20 text-primary ring-1 ring-primary/40 font-semibold"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  ${evalCost}
+                </span>
+              </div>
+            </div>
+
+            <span className="text-muted-foreground/50 text-sm font-sans font-light shrink-0">=</span>
+
+            {/* STEP 3 (RIGHT): FINAL ACTIONABLE RESULT (DIRECT ANSWER) */}
+            <div className="flex flex-col justify-center text-right shrink-0">
+              <div className="flex items-baseline justify-end gap-1">
+                <span
+                  className={cn(
+                    "text-xl sm:text-2xl font-bold tracking-tight font-mono tnum",
+                    binomialData.atLeastOne >= 50 ? "text-profit" : "text-loss",
+                  )}
+                >
+                  {binomialData.atLeastOne.toFixed(1)}%
+                </span>
+                <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">pass ≥ 1</span>
+              </div>
+              <div className="flex items-baseline justify-end gap-1 text-[10px] sm:text-xs font-mono whitespace-nowrap">
+                <span className="font-semibold text-loss tnum">
+                  {binomialData.riskOfRuin.toFixed(1)}%
+                </span>
+                <span className="text-muted-foreground">risk of ruin</span>
+              </div>
+            </div>
           </div>
 
           {/* 3-COLUMN METRICS BREAKDOWN */}
@@ -221,12 +282,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
               <span className="block text-[11px] text-muted-foreground">
                 Risk of ruin (0 passes)
               </span>
-              <span
-                className={cn(
-                  "font-mono font-semibold",
-                  binomialData.riskOfRuin > 15 ? "text-loss" : "text-muted-foreground",
-                )}
-              >
+              <span className="font-mono font-semibold text-loss tnum">
                 {binomialData.riskOfRuin.toFixed(2)}%
               </span>
             </div>
