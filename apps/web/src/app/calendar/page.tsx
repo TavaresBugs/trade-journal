@@ -239,18 +239,6 @@ function CalendarListView({ query }: { query: string }) {
 
   return (
     <div className="space-y-2.5">
-      {/* Subtle Desktop Column Header Bar */}
-      {data && data.days.length > 0 && (
-        <div className="hidden md:grid grid-cols-12 items-center gap-4 px-4 py-2 text-xs font-semibold text-muted-foreground border-b border-border/60 select-none">
-          <div className="col-span-2">Date</div>
-          <div className="col-span-3">Traded Assets</div>
-          <div className="col-span-2 text-center">Outcome</div>
-          <div className="col-span-2 text-center">Activity</div>
-          <div className="col-span-2 text-right">Net P&L</div>
-          <div className="col-span-1 text-right">Journal</div>
-        </div>
-      )}
-
       {error ? (
         <div role="alert" className="space-y-2 text-sm text-destructive">
           <p>{error}</p>
