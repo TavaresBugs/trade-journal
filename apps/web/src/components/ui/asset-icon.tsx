@@ -51,7 +51,7 @@ export function AssetIcon({ symbol, size = "sm", className, showBorder = false }
       >
         {/* Back icon (quote currency) - Top Right */}
         <span
-          className="absolute top-0 right-0 overflow-hidden rounded-full bg-muted/40 shadow-xs"
+          className="absolute top-0 right-0 overflow-hidden rounded-full bg-muted/40 shadow-xs ring-1 ring-black/5 dark:ring-white/10"
           style={{ width: s.icon, height: s.icon, zIndex: 1 }}
         >
           <img
@@ -60,6 +60,7 @@ export function AssetIcon({ symbol, size = "sm", className, showBorder = false }
             className="h-full w-full object-cover"
             onError={() => handleError(1)}
             loading="lazy"
+            draggable={false}
           />
         </span>
 
@@ -74,6 +75,7 @@ export function AssetIcon({ symbol, size = "sm", className, showBorder = false }
             className="h-full w-full object-cover"
             onError={() => handleError(0)}
             loading="lazy"
+            draggable={false}
           />
         </span>
       </span>
@@ -84,7 +86,7 @@ export function AssetIcon({ symbol, size = "sm", className, showBorder = false }
   return (
     <span
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full select-none bg-muted/30",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full select-none bg-muted/30 ring-1 ring-black/5 dark:ring-white/10",
         showBorder && "ring-1 ring-border",
         className,
       )}
@@ -98,6 +100,7 @@ export function AssetIcon({ symbol, size = "sm", className, showBorder = false }
         className="h-full w-full object-cover"
         onError={() => handleError(0)}
         loading="lazy"
+        draggable={false}
       />
     </span>
   );

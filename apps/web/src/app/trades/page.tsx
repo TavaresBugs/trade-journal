@@ -104,25 +104,29 @@ function Trades() {
         enableSorting: false,
         meta: { align: "center" },
         header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllRowsSelected()
-                ? true
-                : table.getIsSomeRowsSelected()
-                  ? "indeterminate"
-                  : false
-            }
-            onCheckedChange={(value) => table.toggleAllRowsSelected(value === true)}
-            aria-label="Select all matching trades"
-          />
+          <div className="flex items-center justify-center">
+            <Checkbox
+              checked={
+                table.getIsAllRowsSelected()
+                  ? true
+                  : table.getIsSomeRowsSelected()
+                    ? "indeterminate"
+                    : false
+              }
+              onCheckedChange={(value) => table.toggleAllRowsSelected(value === true)}
+              aria-label="Select all matching trades"
+            />
+          </div>
         ),
         cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(value === true)}
-            onClick={(event) => event.stopPropagation()}
-            aria-label="Select trade"
-          />
+          <div className="flex items-center justify-center">
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(value === true)}
+              onClick={(event) => event.stopPropagation()}
+              aria-label="Select trade"
+            />
+          </div>
         ),
       },
       {
@@ -133,7 +137,7 @@ function Trades() {
         cell: ({ getValue }) => {
           const val = getValue<string | null>();
           if (!val) {
-            return <span className="text-muted-foreground">open</span>;
+            return <span className="text-muted-foreground select-none">–</span>;
           }
           const day = dayKeyOf(val, timeZone);
           const time = new Date(val).toLocaleTimeString("en-US", {
@@ -144,8 +148,8 @@ function Trades() {
           });
           return (
             <div className="flex flex-col items-center justify-center leading-tight">
-              <span className="font-medium text-foreground">{day}</span>
-              <span className="text-[11px] text-muted-foreground">{time}</span>
+              <span className="font-medium text-foreground tnum">{day}</span>
+              <span className="text-[11px] text-muted-foreground tnum">{time}</span>
             </div>
           );
         },
@@ -176,7 +180,11 @@ function Trades() {
         accessorKey: "direction",
         header: "Type",
         meta: { align: "center" },
-        cell: ({ getValue }) => <DirectionBadge direction={getValue<string>()} size="sm" />,
+        cell: ({ getValue }) => (
+          <div className="flex items-center justify-center">
+            <DirectionBadge direction={getValue<string>()} size="sm" />
+          </div>
+        ),
       },
       {
         id: "status",
@@ -186,9 +194,14 @@ function Trades() {
         cell: ({ getValue }) => {
           const status = getValue<string>();
           return (
-            <Badge variant={status === "win" ? "profit" : status === "loss" ? "loss" : "secondary"}>
-              {status.toUpperCase()}
-            </Badge>
+            <div className="flex items-center justify-center">
+              <Badge
+                variant={status === "win" ? "profit" : status === "loss" ? "loss" : "secondary"}
+                className="tracking-wide"
+              >
+                {status.toUpperCase()}
+              </Badge>
+            </div>
           );
         },
       },
@@ -257,7 +270,9 @@ function Trades() {
         header: "Duration",
         meta: { align: "center" },
         cell: ({ getValue }) => (
-          <span className="text-muted-foreground">{fmtDuration(getValue<number | null>())}</span>
+          <span className="tnum text-muted-foreground">
+            {fmtDuration(getValue<number | null>())}
+          </span>
         ),
       },
       {
@@ -278,16 +293,16 @@ function Trades() {
         cell: ({ getValue }) => {
           const tags = getValue<string[]>();
           if (!tags || tags.length === 0) {
-            return <span className="text-muted-foreground">—</span>;
+            return <span className="text-muted-foreground select-none">—</span>;
           }
           return (
-            <span className="inline-flex max-w-40 flex-wrap items-center justify-center gap-1">
+            <div className="mx-auto flex max-w-44 flex-wrap items-center justify-center gap-1">
               {tags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="text-[10px]">
                   {tag}
                 </Badge>
               ))}
-            </span>
+            </div>
           );
         },
       },
@@ -299,7 +314,7 @@ function Trades() {
         cell: ({ getValue }) => {
           const rating = getValue<number | null>();
           return (
-            <span className="text-muted-foreground">
+            <span className="text-muted-foreground select-none">
               {rating === null ? "–" : "★".repeat(rating)}
             </span>
           );
@@ -312,9 +327,11 @@ function Trades() {
         meta: { align: "center" },
         cell: ({ getValue }) =>
           getValue<boolean>() ? (
-            <Check className="h-4 w-4 text-profit mx-auto" />
+            <div className="flex items-center justify-center">
+              <Check className="h-4 w-4 text-profit" />
+            </div>
           ) : (
-            <span className="text-muted-foreground">–</span>
+            <span className="text-muted-foreground select-none">–</span>
           ),
       },
     ],
@@ -372,7 +389,9 @@ function Trades() {
               </CardHeader>
               <CardContent>
                 <Pnl value={m.netPnl} className="text-xl font-semibold" />
-                <span className="ml-2 text-xs text-muted-foreground">{m.closedTrades} trades</span>
+                <span className="ml-2 text-xs text-muted-foreground tnum">
+                  {m.closedTrades} trades
+                </span>
               </CardContent>
             </Card>
             <Card>
@@ -513,7 +532,7 @@ function Trades() {
                             {header.isPlaceholder ? null : header.column.getCanSort() ? (
                               <button
                                 className={cn(
-                                  "group flex w-full items-center gap-1.5 transition-colors hover:text-foreground",
+                                  "group flex w-full items-center gap-1.5 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm",
                                   align === "right" && "justify-end text-right",
                                   align === "center" && "justify-center text-center",
                                   align === "left" && "justify-start text-left",
@@ -523,6 +542,12 @@ function Trades() {
                                   header.column.getToggleSortingHandler()?.(event);
                                 }}
                               >
+                                {align === "center" && (
+                                  <span
+                                    className="h-3 w-3 shrink-0 select-none pointer-events-none opacity-0"
+                                    aria-hidden="true"
+                                  />
+                                )}
                                 <span>
                                   <table.FlexRender header={header} />
                                 </span>
@@ -531,7 +556,7 @@ function Trades() {
                                 ) : isSorted === "desc" ? (
                                   <ArrowDown className="h-3 w-3 shrink-0 text-foreground" />
                                 ) : (
-                                  <ArrowUpDown className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-60" />
+                                  <ArrowUpDown className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-60" />
                                 )}
                               </button>
                             ) : (

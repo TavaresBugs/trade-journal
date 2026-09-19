@@ -17,14 +17,36 @@ export function DirectionBadge({
   className,
   ...props
 }: DirectionBadgeProps) {
-  const isLong = (direction ?? "").toLowerCase() === "long";
+  if (!direction) {
+    return <span className="text-muted-foreground select-none">–</span>;
+  }
+
+  const dir = direction.toLowerCase();
+  if (dir !== "long" && dir !== "short") {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center justify-center rounded-md border border-transparent bg-muted/50 font-medium text-muted-foreground select-none",
+          size === "xs" && "px-1.5 py-0.5 text-[10px]",
+          size === "sm" && "px-2 py-0.5 text-xs",
+          size === "md" && "px-2.5 py-1 text-xs",
+          className,
+        )}
+        {...props}
+      >
+        {direction.toUpperCase()}
+      </span>
+    );
+  }
+
+  const isLong = dir === "long";
   const Icon = isLong ? TrendingUp : TrendingDown;
   const label = isLong ? "LONG" : "SHORT";
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-medium tracking-wide rounded-md border border-transparent select-none transition-colors",
+        "inline-flex items-center justify-center gap-1 font-medium tracking-wide rounded-md border border-transparent select-none transition-colors",
         size === "xs" && "px-1.5 py-0.5 text-[10px]",
         size === "sm" && "px-2 py-0.5 text-xs",
         size === "md" && "px-2.5 py-1 text-xs",

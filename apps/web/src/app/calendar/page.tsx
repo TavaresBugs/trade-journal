@@ -96,13 +96,13 @@ function CalendarView() {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 active:scale-[0.97]"
                   onClick={() => shift(-1)}
                   aria-label="Previous month"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="w-32 text-center text-xs font-semibold sm:w-36 sm:text-sm">
+                <span className="w-32 text-center text-xs font-semibold select-none sm:w-36 sm:text-sm tnum">
                   {new Date(Date.UTC(month.year, month.month - 1)).toLocaleString("en-US", {
                     month: "long",
                     year: "numeric",
@@ -112,7 +112,7 @@ function CalendarView() {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 active:scale-[0.97]"
                   onClick={() => shift(1)}
                   aria-label="Next month"
                 >
@@ -121,7 +121,7 @@ function CalendarView() {
               </div>
             )}
 
-            {/* View Mode Toggle: Grade vs Lista */}
+            {/* View Mode Toggle: Grid vs List */}
             <div
               role="group"
               aria-label="Layout view mode"
@@ -132,37 +132,34 @@ function CalendarView() {
                 onClick={() => handleViewChange("grid")}
                 aria-pressed={viewMode === "grid"}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium transition-all duration-150 select-none",
+                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium transition-[color,background-color,box-shadow,transform] duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:scale-[0.98]",
                   viewMode === "grid"
                     ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground",
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                 )}
               >
-                <LayoutGrid className="h-3.5 w-3.5" />
-                <span>Grade</span>
+                <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
+                <span>Grid</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleViewChange("list")}
                 aria-pressed={viewMode === "list"}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium transition-all duration-150 select-none",
+                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium transition-[color,background-color,box-shadow,transform] duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:scale-[0.98]",
                   viewMode === "list"
                     ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground",
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                 )}
               >
-                <List className="h-3.5 w-3.5" />
-                <span>Lista</span>
+                <List className="h-3.5 w-3.5 shrink-0" />
+                <span>List</span>
               </button>
             </div>
 
-            <Link
-              href={`/journal/${today}?${query}`}
-              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              View today
-            </Link>
+            <Button asChild size="sm">
+              <Link href={`/journal/${today}?${query}`}>View today</Link>
+            </Button>
           </div>
         }
       />
@@ -254,13 +251,13 @@ function CalendarListView({ query }: { query: string }) {
         <Link
           key={day.date}
           href={`/journal/${day.date}?${query}`}
-          className="group block rounded-lg transition-all focus:outline-none"
+          className="group block rounded-lg transition-[box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <Card className="rounded-lg border border-border/60 bg-card transition-all duration-150 hover:border-border/90 hover:bg-muted/20 hover:shadow-xs">
+          <Card className="rounded-lg border border-border/60 bg-card transition-[border-color,background-color,box-shadow] duration-150 ease-out hover:border-border/90 hover:bg-muted/20 hover:shadow-xs">
             <CardContent className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 p-3.5">
               {/* Date & Weekday */}
               <div className="w-full shrink-0 sm:w-32">
-                <div className="text-sm font-semibold text-foreground tracking-tight">
+                <div className="text-sm font-semibold text-foreground tracking-tight tnum">
                   {day.date}
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -295,12 +292,15 @@ function CalendarListView({ query }: { query: string }) {
               {/* Day Note & Action Indicator */}
               <div className="flex items-center gap-3 ml-auto">
                 {day.hasNote && (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 text-xs font-medium text-foreground">
-                    <NotebookPen className="h-3.5 w-3.5 text-brand" />
-                    <span>Nota</span>
-                  </span>
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 px-2 py-0.5 text-xs font-medium text-foreground"
+                  >
+                    <NotebookPen className="h-3.5 w-3.5 text-brand shrink-0" />
+                    <span>Note</span>
+                  </Badge>
                 )}
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-50 transition-opacity group-hover:opacity-100 group-hover:text-foreground" />
+                <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-50 transition-[opacity,transform,color] group-hover:opacity-100 group-hover:text-foreground group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </div>
             </CardContent>
           </Card>
