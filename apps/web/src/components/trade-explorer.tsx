@@ -135,21 +135,51 @@ export function TradeExplorer({ query }: { query: string }) {
   const pages = Math.ceil(points.length / PAGE_SIZE);
   const shownPage = Math.min(page, Math.max(0, pages - 1));
 
+  const showRealizedR = y !== "realizedR";
+
   const table = (
     <div className="space-y-3 px-4 pb-4 pt-1">
       <p className="text-xs text-muted-foreground">
         All {points.length} comparable trades, newest close first. Dates use {data.timeZone}.
       </p>
       <div className="max-h-96 overflow-auto">
-        <Table>
+        <Table className="min-w-[640px] table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-36 py-2.5">Asset</TableHead>
-              <TableHead className="w-24 py-2.5">Direction</TableHead>
-              <TableHead className="py-2.5">Closed At</TableHead>
-              <TableHead className="px-3 text-right">{xTitle}</TableHead>
-              <TableHead className="px-3 text-right">{yTitle}</TableHead>
-              <TableHead className="w-10 py-2.5 text-right"></TableHead>
+              <TableHead className={cn("py-2.5", showRealizedR ? "w-[18%]" : "w-[22%]")}>
+                Asset
+              </TableHead>
+              <TableHead
+                className={cn(
+                  "py-2.5 text-center",
+                  showRealizedR ? "w-[12%]" : "w-[14%]",
+                )}
+              >
+                Direction
+              </TableHead>
+              <TableHead className={cn("py-2.5", showRealizedR ? "w-[24%]" : "w-[28%]")}>
+                Closed At
+              </TableHead>
+              <TableHead
+                className={cn(
+                  "px-3 text-right",
+                  showRealizedR ? "w-[15%]" : "w-[17%]",
+                )}
+              >
+                {xTitle}
+              </TableHead>
+              {showRealizedR && (
+                <TableHead className="w-[13%] px-3 text-right">Realized R</TableHead>
+              )}
+              <TableHead
+                className={cn(
+                  "px-3 text-right",
+                  showRealizedR ? "w-[14%]" : "w-[15%]",
+                )}
+              >
+                {yTitle}
+              </TableHead>
+              <TableHead className="w-[4%] py-2.5 text-right"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -168,7 +198,7 @@ export function TradeExplorer({ query }: { query: string }) {
                     </span>
                   </div>
                 </TableCell>
-                <TableCell className="py-2.5">
+                <TableCell className="py-2.5 text-center">
                   <DirectionBadge direction={point.direction} size="xs" />
                 </TableCell>
                 <TableCell className="py-2.5 font-mono text-xs text-muted-foreground">
@@ -177,6 +207,26 @@ export function TradeExplorer({ query }: { query: string }) {
                 <TableCell className="px-3 text-right font-mono text-xs tabular-nums">
                   {xValue(point)}
                 </TableCell>
+                {showRealizedR && (
+                  <TableCell className="px-3 text-right font-mono text-xs tabular-nums font-medium">
+                    {point.realizedR !== null ? (
+                      <span
+                        className={
+                          point.realizedR > 0
+                            ? "text-profit"
+                            : point.realizedR < 0
+                              ? "text-loss"
+                              : "text-muted-foreground"
+                        }
+                      >
+                        {point.realizedR > 0 ? "+" : ""}
+                        {point.realizedR.toFixed(2)}R
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground select-none">–</span>
+                    )}
+                  </TableCell>
+                )}
                 <TableCell className="px-3 text-right font-mono text-xs tabular-nums font-medium">
                   {value(point)}
                 </TableCell>
