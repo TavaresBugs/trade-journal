@@ -2,10 +2,12 @@
 
 import { useState, useEffect, Fragment } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/shared/formula-hud";
 import { cn } from "@/lib/utils";
 import {
   MATRIX_RR_RATIOS,
+  MATRIX_WIN_RATES,
   calculateBreakevenWinRate,
   generateSweetSpotMatrix,
 } from "@luxalgo/journal-core";
@@ -36,13 +38,35 @@ export function SweetSpotMatrixCard({
     }
   }, [riskReward]);
 
+  const safeWr = Math.max(1, Math.min(99, selectedWr || 45));
+  const safeRr = Math.max(0.1, Math.min(20, selectedRr || 2.5));
+  const lossRate = Number((100 - safeWr).toFixed(1));
+
   const matrix = generateSweetSpotMatrix();
-  const beRate = calculateBreakevenWinRate(selectedRr);
-  const p = selectedWr / 100;
+  const beRate = calculateBreakevenWinRate(safeRr);
+  const p = safeWr / 100;
   const q = 1 - p;
-  const currentRMultiple = Number((p * selectedRr - q).toFixed(2));
-  const isSweetSpot = selectedRr >= 2.0 && selectedRr <= 5.0 && selectedWr >= 35 && selectedWr <= 50;
-  const isProfitable = selectedWr > beRate;
+  const currentRMultiple = Number((p * safeRr - q).toFixed(2));
+  const isSweetSpot = safeRr >= 2.0 && safeRr <= 5.0 && safeWr >= 35 && safeWr <= 50;
+  const isProfitable = safeWr > beRate;
+
+  // Closest grid point for custom off-grid inputs
+  const closestWr = MATRIX_WIN_RATES.reduce((prev, curr) =>
+    Math.abs(curr - safeWr) < Math.abs(prev - safeWr) ? curr : prev,
+  );
+  const closestRr = MATRIX_RR_RATIOS.reduce((prev, curr) =>
+    Math.abs(curr - safeRr) < Math.abs(prev - safeRr) ? curr : prev,
+  );
+
+  const handleWrInput = (val: number) => {
+    setSelectedWr(val);
+    onSelect?.(val, selectedRr);
+  };
+
+  const handleRrInput = (val: number) => {
+    setSelectedRr(val);
+    onSelect?.(selectedWr, val);
+  };
 
   const handleCellClick = (wr: number, rr: number) => {
     setSelectedWr(wr);
@@ -100,6 +124,68 @@ export function SweetSpotMatrixCard({
         </CardHeader>
 
         <CardContent className="space-y-3">
+          {/* INTERACTIVE CUSTOM SYSTEM INPUTS */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 rounded-lg border border-border/70 bg-muted/20">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-foreground uppercase tracking-wide">
+                Custom System:
+              </span>
+              <span className="text-[10px] text-muted-foreground hidden md:inline">
+                Type custom values or click any cell below
+              </span>
+            </div>
+
+            <div className="flex items-center flex-wrap gap-2 sm:gap-2.5">
+              {/* 1. WIN RATE */}
+              <div className="flex items-center gap-1.5">
+                <label className="text-[11px] font-mono text-muted-foreground">Win %:</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="99"
+                  step="0.5"
+                  className="h-7 w-20 text-center font-mono text-xs tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  value={selectedWr}
+                  onChange={(e) => handleWrInput(Number(e.target.value))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  }}
+                />
+              </div>
+
+              {/* 2. RISK TO REWARD */}
+              <div className="flex items-center gap-1.5">
+                <label className="text-[11px] font-mono text-muted-foreground">RR (1:X):</label>
+                <Input
+                  type="number"
+                  min="0.1"
+                  max="20"
+                  step="0.1"
+                  className="h-7 w-20 text-center font-mono text-xs tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  value={selectedRr}
+                  onChange={(e) => handleRrInput(Number(e.target.value))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  }}
+                />
+              </div>
+
+              {/* 3. LOSS RATE (100 - WIN%) */}
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/50 border border-border/50 text-[11px] font-mono">
+                <span className="text-muted-foreground">Loss %:</span>
+                <span className="font-semibold text-muted-foreground tnum">{lossRate}%</span>
+              </div>
+
+              {/* 4. EXACT CUSTOM EXPECTANCY BADGE */}
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-border/60 font-mono text-[11px]">
+                <span className="text-muted-foreground">Edge:</span>
+                <span className={cn("font-bold tnum", currentRMultiple >= 0 ? "text-profit" : "text-loss")}>
+                  {currentRMultiple >= 0 ? `+${currentRMultiple}` : currentRMultiple}R
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* MATRIX HEATMAP MOSAIC */}
           <div className="overflow-x-auto pb-1">
             <div className="min-w-[500px]">
@@ -128,7 +214,8 @@ export function SweetSpotMatrixCard({
 
                       {/* TILES */}
                       {row.map((cell) => {
-                        const isSelected = selectedWr === cell.winRate && selectedRr === cell.riskReward;
+                        const isExactSelected = selectedWr === cell.winRate && selectedRr === cell.riskReward;
+                        const isClosestMatch = cell.winRate === closestWr && cell.riskReward === closestRr;
                         const r = cell.rMultiple;
 
                         // Continuous Heatmap Gradient
@@ -155,8 +242,8 @@ export function SweetSpotMatrixCard({
                           cellStyle = "bg-loss/20 text-loss font-medium hover:bg-loss/30";
                         }
 
-                        // Saturated styling ONLY for the selected cell, in the same hue as its internal text
-                        if (isSelected) {
+                        // Saturated styling for exact selected cell or closest off-grid target
+                        if (isExactSelected) {
                           if (cell.isSweetSpot) {
                             cellStyle = "bg-primary text-primary-foreground font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
                           } else if (r > 0) {
@@ -166,6 +253,8 @@ export function SweetSpotMatrixCard({
                           } else {
                             cellStyle = "bg-muted-foreground text-background font-bold shadow-md z-10 scale-[1.04]";
                           }
+                        } else if (isClosestMatch && (selectedWr !== closestWr || selectedRr !== closestRr)) {
+                          cellStyle = cn(cellStyle, "ring-2 ring-primary/80 font-bold z-10");
                         }
 
                         return (
@@ -220,11 +309,11 @@ export function SweetSpotMatrixCard({
           theoryDenominator="Breakeven = 1 / (1 + RR)"
           valueNumerator={
             <>
-              <span className="font-semibold text-foreground tnum">{selectedWr}%</span>
+              <span className="font-semibold text-foreground tnum">{safeWr}%</span>
               <span className="text-muted-foreground/60 px-0.5">×</span>
-              <span className="font-semibold text-foreground tnum">{selectedRr}R</span>
+              <span className="font-semibold text-foreground tnum">{safeRr}R</span>
               <span className="text-muted-foreground/60 px-0.5">−</span>
-              <span className="font-semibold text-muted-foreground tnum">{100 - selectedWr}%</span>
+              <span className="font-semibold text-muted-foreground tnum">{lossRate}%</span>
             </>
           }
           valueDenominator={
@@ -234,11 +323,11 @@ export function SweetSpotMatrixCard({
               <span
                 className={cn(
                   "text-[10px] ml-1 font-semibold tnum",
-                  selectedWr >= beRate ? "text-profit" : "text-loss",
+                  safeWr >= beRate ? "text-profit" : "text-loss",
                 )}
               >
-                ({selectedWr >= beRate ? "+" : ""}
-                {(selectedWr - beRate).toFixed(1)}% buffer)
+                ({safeWr >= beRate ? "+" : ""}
+                {(safeWr - beRate).toFixed(1)}% buffer)
               </span>
             </>
           }
@@ -275,17 +364,17 @@ export function SweetSpotMatrixCard({
               <span
                 className={cn(
                   "font-mono font-semibold tnum",
-                  selectedWr >= beRate ? "text-profit" : "text-loss",
+                  safeWr >= beRate ? "text-profit" : "text-loss",
                 )}
               >
-                {selectedWr >= beRate ? "+" : ""}
-                {(selectedWr - beRate).toFixed(1)}%
+                {safeWr >= beRate ? "+" : ""}
+                {(safeWr - beRate).toFixed(1)}%
               </span>
             </div>
             <div>
               <span className="block text-[11px] text-muted-foreground">Realistic status</span>
               <span className="font-mono font-semibold text-foreground">
-                {isSweetSpot ? "Sweet Spot" : selectedRr >= 6.0 ? "Hard to execute" : "Valid edge"}
+                {isSweetSpot ? "Sweet Spot" : safeRr >= 6.0 ? "Hard to execute" : isProfitable ? "Valid edge" : "Negative edge"}
               </span>
             </div>
           </div>
