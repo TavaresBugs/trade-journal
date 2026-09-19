@@ -123,135 +123,109 @@ export function SweetSpotMatrixCard({
           </p>
         </CardHeader>
 
-        <CardContent className="space-y-3">
-          {/* INTERACTIVE CUSTOM SYSTEM INPUTS */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 rounded-lg border border-border/70 bg-muted/20">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-foreground uppercase tracking-wide">
-                Custom System:
-              </span>
-              <span className="text-[10px] text-muted-foreground hidden md:inline">
-                Type custom values or click any cell below
-              </span>
+        <CardContent className="space-y-3.5">
+          {/* STANDARD SYSTEM INPUTS (VERTICAL FORMAT MATCHING ALL CARDS) */}
+          <div className="space-y-3.5 pb-2">
+            {/* 1º: WIN RATE (%) */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Win rate (%)
+              </label>
+              <Input
+                type="number"
+                min="1"
+                max="99"
+                step="0.5"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={selectedWr || ""}
+                placeholder="45"
+                onChange={(e) => handleWrInput(Number(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                }}
+              />
             </div>
 
-            <div className="flex items-center flex-wrap gap-2 sm:gap-2.5">
-              {/* 1. WIN RATE */}
-              <div className="flex items-center gap-1.5">
-                <label className="text-[11px] font-mono text-muted-foreground">Win %:</label>
-                <Input
-                  type="number"
-                  min="1"
-                  max="99"
-                  step="0.5"
-                  className="h-7 w-20 text-center font-mono text-xs tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={selectedWr}
-                  onChange={(e) => handleWrInput(Number(e.target.value))}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                  }}
-                />
-              </div>
+            {/* 2º: RISK TO REWARD (RR) */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Risk to reward (1:X)
+              </label>
+              <Input
+                type="number"
+                min="0.1"
+                max="20"
+                step="0.1"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={selectedRr || ""}
+                placeholder="2.5"
+                onChange={(e) => handleRrInput(Number(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                }}
+              />
+            </div>
 
-              {/* 2. RISK TO REWARD */}
-              <div className="flex items-center gap-1.5">
-                <label className="text-[11px] font-mono text-muted-foreground">RR (1:X):</label>
-                <Input
-                  type="number"
-                  min="0.1"
-                  max="20"
-                  step="0.1"
-                  className="h-7 w-20 text-center font-mono text-xs tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={selectedRr}
-                  onChange={(e) => handleRrInput(Number(e.target.value))}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                  }}
-                />
-              </div>
-
-              {/* 3. LOSS RATE (100 - WIN%) */}
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/50 border border-border/50 text-[11px] font-mono">
-                <span className="text-muted-foreground">Loss %:</span>
-                <span className="font-semibold text-muted-foreground tnum">{lossRate}%</span>
-              </div>
-
-              {/* 4. EXACT CUSTOM EXPECTANCY BADGE */}
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-border/60 font-mono text-[11px]">
-                <span className="text-muted-foreground">Edge:</span>
-                <span className={cn("font-bold tnum", currentRMultiple >= 0 ? "text-profit" : "text-loss")}>
-                  {currentRMultiple >= 0 ? `+${currentRMultiple}` : currentRMultiple}R
-                </span>
+            {/* 3º: LOSS RATE (%) - DERIVED */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Loss rate (%)
+              </label>
+              <div className="h-9 w-36 flex items-center justify-center rounded-md border border-border/60 bg-muted/40 font-mono text-sm font-semibold text-muted-foreground tnum">
+                {lossRate}%
               </div>
             </div>
           </div>
 
-          {/* MATRIX HEATMAP MOSAIC */}
-          <div className="overflow-x-auto pb-1">
-            <div className="min-w-[500px]">
+          {/* MATRIX HEATMAP (ORIGINAL SIZE PRESERVED) */}
+          <div className="overflow-x-auto pb-1 pt-2 border-t border-border/40">
+            <div className="min-w-[480px]">
               {/* HEADER ROW: RR RATIOS */}
-              <div className="grid grid-cols-[52px_repeat(9,1fr)] gap-[1px] mb-[1px] text-center text-[10px] font-mono text-muted-foreground">
-                <div className="flex items-center justify-start pl-1.5 font-semibold uppercase tracking-wider">
-                  Win %
-                </div>
+              <div className="flex items-center text-center text-[10px] font-mono text-muted-foreground pb-1 border-b border-border/60">
+                <div className="w-14 text-left font-semibold uppercase tracking-wider">Win %</div>
                 {MATRIX_RR_RATIOS.map((rr) => (
-                  <div key={rr} className="py-1 font-semibold">
+                  <div key={rr} className="flex-1 font-semibold">
                     1:{rr}R
                   </div>
                 ))}
               </div>
 
-              {/* CONTIGUOUS HEATMAP GRID */}
-              <div className="grid grid-cols-[52px_repeat(9,1fr)] gap-[1px] bg-border/40 p-[1px] rounded-lg overflow-hidden">
+              {/* ROWS: WIN RATES */}
+              <div className="space-y-1 pt-1">
                 {matrix.map((row) => {
                   const wr = row[0]!.winRate;
                   return (
-                    <Fragment key={wr}>
-                      {/* ROW HEADER: WIN % */}
-                      <div className="flex items-center justify-start pl-1.5 font-mono text-[11px] font-medium text-foreground bg-muted/30">
+                    <div key={wr} className="flex items-center text-center">
+                      <div className="w-14 text-left font-mono text-[11px] font-medium text-foreground">
                         {wr}%
                       </div>
-
-                      {/* TILES */}
                       {row.map((cell) => {
                         const isExactSelected = selectedWr === cell.winRate && selectedRr === cell.riskReward;
                         const isClosestMatch = cell.winRate === closestWr && cell.riskReward === closestRr;
                         const r = cell.rMultiple;
 
-                        // Continuous Heatmap Gradient
+                        // Clean, borderless color styles for unselected cells
                         let cellStyle = "bg-loss/10 text-loss/80 hover:bg-loss/20";
                         if (cell.isSweetSpot) {
-                          if (r > 0.8) {
-                            cellStyle = "bg-primary/30 text-primary font-bold hover:bg-primary/40";
-                          } else if (r > 0.4) {
-                            cellStyle = "bg-primary/22 text-primary font-semibold hover:bg-primary/30";
-                          } else {
-                            cellStyle = "bg-primary/15 text-primary font-medium hover:bg-primary/25";
-                          }
-                        } else if (r > 1.5) {
-                          cellStyle = "bg-profit/35 text-profit font-bold hover:bg-profit/45";
-                        } else if (r > 0.8) {
-                          cellStyle = "bg-profit/25 text-profit font-semibold hover:bg-profit/35";
-                        } else if (r > 0.4) {
-                          cellStyle = "bg-profit/18 text-profit font-medium hover:bg-profit/28";
+                          cellStyle = "bg-primary/15 text-primary font-semibold hover:bg-primary/25";
+                        } else if (r > 0.6) {
+                          cellStyle = "bg-profit/20 text-profit font-semibold hover:bg-profit/30";
                         } else if (r > 0) {
-                          cellStyle = "bg-profit/10 text-profit/90 hover:bg-profit/20";
+                          cellStyle = "bg-profit/10 text-profit hover:bg-profit/20";
                         } else if (cell.isBreakeven) {
                           cellStyle = "bg-muted/40 text-muted-foreground hover:bg-muted/70";
-                        } else if (r < -0.3) {
-                          cellStyle = "bg-loss/20 text-loss font-medium hover:bg-loss/30";
                         }
 
-                        // Saturated styling for exact selected cell or closest off-grid target
+                        // Saturated styling ONLY for the selected cell, in the same hue as its internal text
                         if (isExactSelected) {
                           if (cell.isSweetSpot) {
-                            cellStyle = "bg-primary text-primary-foreground font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
+                            cellStyle = "bg-primary text-primary-foreground font-bold shadow-sm z-10";
                           } else if (r > 0) {
-                            cellStyle = "bg-profit text-white font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
+                            cellStyle = "bg-profit text-white font-bold shadow-sm z-10";
                           } else if (r < 0) {
-                            cellStyle = "bg-loss text-white font-bold shadow-md ring-1 ring-white/30 z-10 scale-[1.04]";
+                            cellStyle = "bg-loss text-white font-bold shadow-sm z-10";
                           } else {
-                            cellStyle = "bg-muted-foreground text-background font-bold shadow-md z-10 scale-[1.04]";
+                            cellStyle = "bg-muted-foreground text-background font-bold shadow-sm z-10";
                           }
                         } else if (isClosestMatch && (selectedWr !== closestWr || selectedRr !== closestRr)) {
                           cellStyle = cn(cellStyle, "ring-2 ring-primary/80 font-bold z-10");
@@ -264,7 +238,7 @@ export function SweetSpotMatrixCard({
                             onClick={() => handleCellClick(cell.winRate, cell.riskReward)}
                             title={`Win Rate: ${cell.winRate}%, RR: ${cell.riskReward}R -> Expectancy: ${r >= 0 ? "+" : ""}${r}R per trade`}
                             className={cn(
-                              "h-8 sm:h-8.5 flex items-center justify-center font-mono text-[10px] sm:text-[11px] transition-all relative tnum select-none",
+                              "flex-1 h-6 mx-0.5 rounded flex items-center justify-center font-mono text-[10px] transition-all active:scale-[0.98] relative tnum",
                               cellStyle,
                             )}
                           >
@@ -272,7 +246,7 @@ export function SweetSpotMatrixCard({
                           </button>
                         );
                       })}
-                    </Fragment>
+                    </div>
                   );
                 })}
               </div>
