@@ -24,13 +24,11 @@ export function DirectionBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-semibold tracking-wide rounded-full border select-none transition-colors",
+        "inline-flex items-center gap-1 font-medium tracking-wide rounded-md border border-transparent select-none transition-colors",
         size === "xs" && "px-1.5 py-0.5 text-[10px]",
-        size === "sm" && "px-2 py-0.5 text-[11px]",
+        size === "sm" && "px-2 py-0.5 text-xs",
         size === "md" && "px-2.5 py-1 text-xs",
-        isLong
-          ? "border-profit/30 bg-profit/5 text-profit dark:border-profit/35 dark:bg-profit/10"
-          : "border-loss/30 bg-loss/5 text-loss dark:border-loss/35 dark:bg-loss/10",
+        isLong ? "bg-profit/15 text-profit" : "bg-loss/15 text-loss",
         className,
       )}
       {...props}
@@ -39,10 +37,10 @@ export function DirectionBadge({
         className={cn(
           "shrink-0",
           size === "xs" && "h-2.5 w-2.5",
-          size === "sm" && "h-3 w-3",
-          size === "md" && "h-3.5 w-3.5",
+          size === "sm" && "h-3.5 w-3.5",
+          size === "md" && "h-4 w-4",
         )}
-        strokeWidth={2.5}
+        strokeWidth={2}
       />
       <span>{label}</span>
     </span>
