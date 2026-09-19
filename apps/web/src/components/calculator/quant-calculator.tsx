@@ -51,23 +51,23 @@ export function QuantCalculator() {
           <TabsList className="h-10 p-1 bg-muted/60 border border-border/60 self-start sm:self-auto">
             <TabsTrigger
               value="risk"
-              className="text-xs px-3 py-1.5 gap-1.5 font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              className="group text-xs px-3 py-1.5 gap-1.5 font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
-              <Shield className="h-3.5 w-3.5 text-profit" />
+              <Shield className="h-3.5 w-3.5 text-profit/70 transition-colors group-hover:text-profit group-data-[state=active]:text-profit" />
               1. Risk &amp; Execution
             </TabsTrigger>
             <TabsTrigger
               value="strategy"
-              className="text-xs px-3 py-1.5 gap-1.5 font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              className="group text-xs px-3 py-1.5 gap-1.5 font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
-              <Crosshair className="h-3.5 w-3.5 text-primary" />
+              <Crosshair className="h-3.5 w-3.5 text-amber-400/70 transition-colors group-hover:text-amber-400 group-data-[state=active]:text-amber-400" />
               2. Strategy &amp; Edge
             </TabsTrigger>
             <TabsTrigger
               value="portfolio"
-              className="text-xs px-3 py-1.5 gap-1.5 font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              className="group text-xs px-3 py-1.5 gap-1.5 font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
-              <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+              <Layers className="h-3.5 w-3.5 text-brand/70 transition-colors group-hover:text-brand group-data-[state=active]:text-brand" />
               3. Portfolio &amp; Capital
             </TabsTrigger>
           </TabsList>
