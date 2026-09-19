@@ -25,6 +25,8 @@ export function SweetSpotMatrixCard({
 }: SweetSpotMatrixCardProps) {
   const [selectedWr, setSelectedWr] = useState(winRate);
   const [selectedRr, setSelectedRr] = useState(riskReward);
+  const [beInputStr, setBeInputStr] = useState("");
+  const [isBeFocused, setIsBeFocused] = useState(false);
 
   useEffect(() => {
     if (winRate !== undefined) {
@@ -66,6 +68,18 @@ export function SweetSpotMatrixCard({
   const handleRrInput = (val: number) => {
     setSelectedRr(val);
     onSelect?.(selectedWr, val);
+  };
+
+  const handleBeInput = (valStr: string) => {
+    setBeInputStr(valStr);
+    const num = parseFloat(valStr);
+    if (!isNaN(num) && num > 0 && num < 100) {
+      // RR = (100 - BE) / BE
+      const derivedRr = Number(((100 - num) / num).toFixed(2));
+      const clampedRr = Math.max(0.1, Math.min(20, derivedRr));
+      setSelectedRr(clampedRr);
+      onSelect?.(selectedWr, clampedRr);
+    }
   };
 
   const handleCellClick = (wr: number, rr: number) => {
@@ -160,6 +174,37 @@ export function SweetSpotMatrixCard({
                 value={selectedRr || ""}
                 placeholder="2.5"
                 onChange={(e) => handleRrInput(Number(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                }}
+              />
+            </div>
+
+            {/* 3º: BREAKEVEN RATE (%) */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col">
+                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Breakeven rate (%)
+                </label>
+                <span className="text-[10px] text-muted-foreground/70">1 / (1 + RR) · Linked to RR</span>
+              </div>
+              <Input
+                type="number"
+                min="1"
+                max="95"
+                step="0.5"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={isBeFocused ? beInputStr : beRate || ""}
+                placeholder="28.6"
+                onFocus={() => {
+                  setIsBeFocused(true);
+                  setBeInputStr(String(beRate));
+                }}
+                onBlur={() => {
+                  setIsBeFocused(false);
+                  setBeInputStr("");
+                }}
+                onChange={(e) => handleBeInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                 }}
@@ -325,7 +370,7 @@ export function SweetSpotMatrixCard({
           {/* 3-COLUMN METRICS BREAKDOWN */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
             <div>
-              <span className="block text-[11px] text-muted-foreground">Breakeven rate (1/(1+RR))</span>
+              <span className="block text-[11px] text-muted-foreground">Breakeven threshold</span>
               <span className="font-mono font-semibold text-foreground tnum">{beRate}%</span>
             </div>
             <div>
