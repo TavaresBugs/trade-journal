@@ -299,17 +299,17 @@ function CalendarListView({ query }: { query: string }) {
                   {/* Column 2: Traded Assets */}
                   <div className="col-span-12 sm:col-span-4 md:col-span-3">
                     {symbols.length > 0 ? (
-                      <div className="flex flex-wrap items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-3">
                         {symbols.slice(0, 3).map((sym) => {
                           const canonical = normalizeSymbol(sym);
                           return (
                             <span
                               key={sym}
-                              className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/70 select-none"
+                              className="inline-flex items-center gap-2 font-medium select-none"
                               title={sym !== canonical ? `Contract: ${sym}` : undefined}
                             >
-                              <AssetIcon symbol={sym} size="xs" />
-                              <span className="font-semibold tracking-tight text-[11px]">
+                              <AssetIcon symbol={sym} size="sm" />
+                              <span className="font-semibold text-sm tracking-tight text-foreground">
                                 {canonical}
                               </span>
                             </span>
@@ -317,7 +317,7 @@ function CalendarListView({ query }: { query: string }) {
                         })}
                         {symbols.length > 3 && (
                           <span
-                            className="inline-flex items-center rounded-md border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground"
+                            className="text-xs font-medium text-muted-foreground"
                             title={symbols.slice(3).join(", ")}
                           >
                             +{symbols.length - 3}
