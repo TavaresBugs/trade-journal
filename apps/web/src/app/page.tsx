@@ -36,6 +36,7 @@ import { MonetaryValue } from "@/components/privacy";
 import { Pnl } from "@/components/pnl";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { DirectionBadge } from "@/components/ui/direction-badge";
+import { normalizeSymbol } from "@/lib/assets/asset-icons";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -478,59 +479,103 @@ function DashboardContent({
                         Open positions
                       </TabsTrigger>
                     </TabsList>
-                    <TabsContent value="recent" className="space-y-1">
+                    <TabsContent value="recent" className="space-y-1 mt-2">
                       {data.recentTrades.length === 0 && <Empty label="No closed trades yet" />}
-                      {data.recentTrades.map((trade) => (
-                        <Link
-                          key={trade.key}
-                          href={`/trades/${encodeURIComponent(trade.key)}?${query}`}
-                          className="dashboard-activity-row flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-accent/60"
-                        >
-                          <span className="flex items-center gap-2.5">
-                            <Badge
-                              variant={
-                                trade.status === "win"
-                                  ? "profit"
-                                  : trade.status === "loss"
-                                    ? "loss"
-                                    : "secondary"
-                              }
-                            >
-                              {trade.status.toUpperCase()}
-                            </Badge>
-                            <AssetIcon symbol={trade.symbol} size="xs" />
-                            <span className="font-semibold">{trade.symbol}</span>
-                            <DirectionBadge direction={trade.direction} size="xs" />
-                          </span>
-                          <span className="dashboard-activity-detail flex items-center">
-                            <span className="text-xs text-muted-foreground">
-                              {trade.closedAt && dayKeyOf(trade.closedAt, data.timeZone)}
-                            </span>
-                            <Pnl value={trade.netPnl} />
-                          </span>
-                        </Link>
-                      ))}
+                      {data.recentTrades.map((trade) => {
+                        const canonical = normalizeSymbol(trade.symbol);
+                        return (
+                          <Link
+                            key={trade.key}
+                            href={`/trades/${encodeURIComponent(trade.key)}?${query}`}
+                            className="group flex items-center justify-between gap-2.5 sm:gap-4 rounded-lg px-2.5 py-2 text-sm transition-[background-color,transform] duration-150 ease-out hover:bg-muted/40 active:scale-[0.995]"
+                          >
+                            {/* Left cluster: Outcome badge + Asset Icon & Ticker + Direction badge */}
+                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                              <Badge
+                                variant={
+                                  trade.status === "win"
+                                    ? "profit"
+                                    : trade.status === "loss"
+                                      ? "loss"
+                                      : "secondary"
+                                }
+                                className="w-12 justify-center text-[10px] font-bold tracking-wider py-0.5 shrink-0 select-none"
+                              >
+                                {trade.status.toUpperCase()}
+                              </Badge>
+
+                              <div className="flex items-center gap-2 w-28 sm:w-32 shrink-0 min-w-0">
+                                <AssetIcon symbol={trade.symbol} size="sm" />
+                                <span
+                                  className="font-semibold text-sm text-foreground tracking-tight truncate"
+                                  title={
+                                    trade.symbol !== canonical
+                                      ? `Broker: ${trade.symbol}`
+                                      : undefined
+                                  }
+                                >
+                                  {canonical}
+                                </span>
+                              </div>
+
+                              <DirectionBadge
+                                direction={trade.direction}
+                                size="xs"
+                                className="shrink-0"
+                              />
+                            </div>
+
+                            {/* Right cluster: Date + P&L */}
+                            <div className="flex items-center gap-3 sm:gap-4 ml-auto shrink-0">
+                              <span className="text-xs text-muted-foreground tnum font-medium">
+                                {trade.closedAt && dayKeyOf(trade.closedAt, data.timeZone)}
+                              </span>
+                              <div className="w-20 text-right shrink-0">
+                                <Pnl value={trade.netPnl} className="text-sm font-semibold tnum" />
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </TabsContent>
-                    <TabsContent value="open" className="space-y-1">
+                    <TabsContent value="open" className="space-y-1 mt-2">
                       {data.openPositions.length === 0 && (
                         <Empty label="Flat — no open positions" />
                       )}
-                      {data.openPositions.map((position) => (
-                        <div
-                          key={position.key}
-                          className="dashboard-activity-row flex items-center justify-between rounded-md px-2 py-1.5 text-sm"
-                        >
-                          <span className="flex items-center gap-2.5">
-                            <AssetIcon symbol={position.symbol} size="xs" />
-                            <span className="font-semibold">{position.symbol}</span>
-                            <DirectionBadge direction={position.direction} size="xs" />
-                          </span>
-                          <span className="tnum text-xs text-muted-foreground">
-                            {fmtNumber(position.quantity, 4)} @{" "}
-                            <MonetaryValue>{fmtNumber(position.avgEntry)}</MonetaryValue>
-                          </span>
-                        </div>
-                      ))}
+                      {data.openPositions.map((position) => {
+                        const canonical = normalizeSymbol(position.symbol);
+                        return (
+                          <div
+                            key={position.key}
+                            className="flex items-center justify-between gap-2.5 sm:gap-4 rounded-lg px-2.5 py-2 text-sm"
+                          >
+                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                              <div className="flex items-center gap-2 w-28 sm:w-32 shrink-0 min-w-0">
+                                <AssetIcon symbol={position.symbol} size="sm" />
+                                <span
+                                  className="font-semibold text-sm text-foreground tracking-tight truncate"
+                                  title={
+                                    position.symbol !== canonical
+                                      ? `Broker: ${position.symbol}`
+                                      : undefined
+                                  }
+                                >
+                                  {canonical}
+                                </span>
+                              </div>
+                              <DirectionBadge
+                                direction={position.direction}
+                                size="xs"
+                                className="shrink-0"
+                              />
+                            </div>
+                            <span className="tnum text-xs text-muted-foreground ml-auto font-medium">
+                              {fmtNumber(position.quantity, 4)} @{" "}
+                              <MonetaryValue>{fmtNumber(position.avgEntry)}</MonetaryValue>
+                            </span>
+                          </div>
+                        );
+                      })}
                     </TabsContent>
                   </Tabs>
                 </CardContent>
