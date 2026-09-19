@@ -53,16 +53,9 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
     <Card className="flex flex-col justify-between">
       <div>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
-              EV Calculator
-            </CardTitle>
-            {cost > 0 && (
-              <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-                ${cost} eval cost
-              </span>
-            )}
-          </div>
+          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
+            EV Calculator
+          </CardTitle>
           <p className="text-xs text-muted-foreground [text-wrap:pretty]">
             Expected Value per Eval:{" "}
             <span className="font-mono text-[11px] font-medium text-foreground/80">

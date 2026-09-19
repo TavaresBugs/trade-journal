@@ -36,16 +36,9 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
     <Card className="flex flex-col justify-between">
       <div>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
-              Eval Budget & Pass Odds
-            </CardTitle>
-            {evalCost > 0 && (
-              <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-                ${evalCost} eval cost
-              </span>
-            )}
-          </div>
+          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+            Eval Budget & Pass Odds
+          </CardTitle>
           <p className="text-xs text-muted-foreground">
             Calculate evaluation capacity from bankroll and the cumulative binomial probability of
             qualification.
