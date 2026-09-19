@@ -453,7 +453,9 @@ function Trades() {
         {selectedKeys.length > 0 && (
           <Card>
             <CardContent className="flex flex-wrap items-center gap-2 py-2">
-              <span className="text-sm text-muted-foreground">{selectedKeys.length} selected</span>
+              <span className="text-sm text-muted-foreground tnum">
+                {selectedKeys.length} selected
+              </span>
               <Button variant="outline" size="sm" onClick={() => bulk("review")}>
                 <Check />
                 Mark reviewed
@@ -623,7 +625,7 @@ function Trades() {
             </div>
             {sortedRows.length > pageSize && (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-xs text-muted-foreground">
-                <span>
+                <span className="tnum">
                   {currentPage * pageSize + 1}–
                   {Math.min((currentPage + 1) * pageSize, sortedRows.length)} of{" "}
                   {fmtNumber(sortedRows.length, 0)} trades
@@ -637,7 +639,7 @@ function Trades() {
                   >
                     Previous
                   </Button>
-                  <span>
+                  <span className="tnum">
                     Page {currentPage + 1} of {pageCount}
                   </span>
                   <Button

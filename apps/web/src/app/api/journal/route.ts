@@ -28,8 +28,8 @@ export const GET = handler(async (request: Request) => {
         list = [];
         daySymbolsMap.set(date, list);
       }
-      if (trade.symbol && !list.includes(trade.symbol)) {
-        list.push(trade.symbol);
+      if (trade.symbol && trade.symbol.trim() && !list.includes(trade.symbol.trim())) {
+        list.push(trade.symbol.trim());
       }
     }
   }
