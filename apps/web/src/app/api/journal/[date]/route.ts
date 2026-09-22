@@ -6,7 +6,7 @@ import { bad, handler, ok } from "@/server/api";
 import { nowIso } from "@/server/ids";
 import { getTimeZone } from "@/server/settings";
 import { queryTrades } from "@/server/trades-query";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 
 type Params = { params: Promise<{ date: string }> };
 

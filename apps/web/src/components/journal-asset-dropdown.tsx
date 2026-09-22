@@ -11,188 +11,167 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AssetIcon } from "@/components/ui/asset-icon";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
+import { tvManifest } from "@/lib/assets/asset-icons";
+import {
+  SYMBOL_SPECS,
+  formatSpecBadge,
+  getSymbolSpec,
+  isCalculableSymbol,
+} from "@/lib/assets/symbol-specs";
 import { cn } from "@/lib/utils";
+
+export type AssetCategory = "futures" | "stocks" | "forex" | "crypto";
 
 export interface AssetMeta {
   symbol: string;
   name: string;
-  category: "indices" | "commodities" | "forex" | "crypto" | "stocks";
+  category: AssetCategory;
   aliases?: string[];
+  specBadge?: string | null;
 }
 
-export const ASSET_CATALOG: AssetMeta[] = [
-  // --- Global Indices (Futures & CFDs) ---
-  {
-    symbol: "NQ",
-    name: "Nasdaq 100 (Futures)",
-    category: "indices",
-    aliases: ["NAS100", "USTEC", "NASDAQ"],
-  },
-  { symbol: "MNQ", name: "Micro E-mini Nasdaq 100", category: "indices" },
-  {
-    symbol: "US100",
-    name: "Nasdaq 100 (CFD Spot)",
-    category: "indices",
-    aliases: ["NAS100", "USTEC"],
-  },
-  { symbol: "ES", name: "S&P 500 (Futures)", category: "indices", aliases: ["SPX", "SP500"] },
-  { symbol: "MES", name: "Micro E-mini S&P 500", category: "indices" },
-  {
-    symbol: "US500",
-    name: "S&P 500 (CFD Spot)",
-    category: "indices",
-    aliases: ["SPX500", "SP500"],
-  },
-  { symbol: "YM", name: "Dow Jones 30 (Futures)", category: "indices", aliases: ["DJ30", "DOW"] },
-  { symbol: "MYM", name: "Micro E-mini Dow Jones", category: "indices" },
-  {
-    symbol: "US30",
-    name: "Dow Jones 30 (CFD Spot)",
-    category: "indices",
-    aliases: ["DJ30", "WALLSTREET"],
-  },
-  {
-    symbol: "RTY",
-    name: "Russell 2000 (Futures)",
-    category: "indices",
-    aliases: ["M2K", "RUSSELL"],
-  },
-  {
-    symbol: "US2000",
-    name: "Russell 2000 (CFD Spot)",
-    category: "indices",
-    aliases: ["M2K", "RUSSELL"],
-  },
-  { symbol: "DXY", name: "US Dollar Index", category: "indices", aliases: ["USDX", "DOLAR"] },
-  { symbol: "GER40", name: "DAX 40 (Germany)", category: "indices", aliases: ["DAX", "DE40"] },
-  { symbol: "UK100", name: "FTSE 100 (United Kingdom)", category: "indices", aliases: ["FTSE"] },
-  {
-    symbol: "JP225",
-    name: "Nikkei 225 (Japan)",
-    category: "indices",
-    aliases: ["NIKKEI", "JPN225"],
-  },
-  { symbol: "EU50", name: "Euro Stoxx 50", category: "indices" },
+function getAssetCategory(rawCat: string, symbol: string): AssetCategory {
+  if (rawCat === "forex") return "forex";
+  if (rawCat === "crypto") return "crypto";
+  if (rawCat === "stocks" || rawCat === "funds") return "stocks";
+  if (rawCat === "b3") {
+    // WIN, WDO, IND, DOL are Brazilian Futures contracts
+    if (["WIN", "WDO", "IND", "DOL"].includes(symbol)) return "futures";
+    return "stocks";
+  }
+  // indices, commodities, bonds, currencies, futures
+  return "futures";
+}
 
-  // --- Commodities & Metals ---
-  {
-    symbol: "XAUUSD",
-    name: "Gold Spot",
-    category: "commodities",
-    aliases: ["GOLD", "GC", "MGC", "OURO"],
-  },
-  {
-    symbol: "XAGUSD",
-    name: "Silver Spot",
-    category: "commodities",
-    aliases: ["SILVER", "SI", "MSI", "PRATA"],
-  },
-  {
-    symbol: "CL",
-    name: "Crude Oil (WTI)",
-    category: "commodities",
-    aliases: ["USOIL", "WTI", "MCL", "PETROLEO", "OIL"],
-  },
-  { symbol: "NG", name: "Natural Gas", category: "commodities", aliases: ["NATGAS", "GAS"] },
-  { symbol: "HG", name: "Copper", category: "commodities", aliases: ["COPPER", "COBRE"] },
+function buildAssetCatalog(): AssetMeta[] {
+  const list: AssetMeta[] = [];
+  const seen = new Set<string>();
 
-  // --- Forex (Currencies) ---
-  { symbol: "EURUSD", name: "Euro / US Dollar", category: "forex", aliases: ["EUR/USD"] },
-  {
-    symbol: "GBPUSD",
-    name: "British Pound / US Dollar",
-    category: "forex",
-    aliases: ["GBP/USD", "CABLE"],
-  },
-  {
-    symbol: "USDJPY",
-    name: "US Dollar / Japanese Yen",
-    category: "forex",
-    aliases: ["USD/JPY", "YEN"],
-  },
-  {
-    symbol: "AUDUSD",
-    name: "Australian Dollar / US Dollar",
-    category: "forex",
-    aliases: ["AUD/USD", "AUSSIE"],
-  },
-  {
-    symbol: "USDCAD",
-    name: "US Dollar / Canadian Dollar",
-    category: "forex",
-    aliases: ["USD/CAD", "LOONIE"],
-  },
-  {
-    symbol: "USDCHF",
-    name: "US Dollar / Swiss Franc",
-    category: "forex",
-    aliases: ["USD/CHF", "SWISSIE"],
-  },
-  {
-    symbol: "NZDUSD",
-    name: "New Zealand Dollar / US Dollar",
-    category: "forex",
-    aliases: ["NZD/USD", "KIWI"],
-  },
-  { symbol: "EURGBP", name: "Euro / British Pound", category: "forex", aliases: ["EUR/GBP"] },
-  { symbol: "EURJPY", name: "Euro / Japanese Yen", category: "forex", aliases: ["EUR/JPY"] },
-  {
-    symbol: "GBPJPY",
-    name: "British Pound / Japanese Yen",
-    category: "forex",
-    aliases: ["GBP/JPY", "GUFFY"],
-  },
+  // 1. Curated symbols with official names and specifications
+  for (const spec of Object.values(SYMBOL_SPECS)) {
+    const sym = spec.symbol.toUpperCase();
+    seen.add(sym);
+    list.push({
+      symbol: sym,
+      name: spec.name,
+      category: getAssetCategory(spec.category, sym),
+      aliases: spec.aliases,
+      specBadge: formatSpecBadge(spec),
+    });
+  }
 
-  // --- Crypto ---
-  {
-    symbol: "BTCUSD",
-    name: "Bitcoin / USD",
-    category: "crypto",
-    aliases: ["BTC", "BTCUSDT", "BITCOIN"],
-  },
-  {
-    symbol: "ETHUSD",
-    name: "Ethereum / USD",
-    category: "crypto",
-    aliases: ["ETH", "ETHUSDT", "ETHEREUM"],
-  },
-  {
-    symbol: "SOLUSD",
-    name: "Solana / USD",
-    category: "crypto",
-    aliases: ["SOL", "SOLUSDT", "SOLANA"],
-  },
-  { symbol: "XRPUSD", name: "Ripple / USD", category: "crypto", aliases: ["XRP", "RIPPLE"] },
-  { symbol: "ADAUSD", name: "Cardano / USD", category: "crypto", aliases: ["ADA", "CARDANO"] },
+  // 2. Ingest B3 stocks/ETFs from TV manifest (Stocks category)
+  for (const [sym, data] of Object.entries(tvManifest.b3 || {})) {
+    const s = sym.toUpperCase();
+    if (!seen.has(s)) {
+      seen.add(s);
+      list.push({
+        symbol: s,
+        name: data.name || s,
+        category: getAssetCategory("b3", s),
+        specBadge: "R$1/share",
+      });
+    }
+  }
 
-  // --- Equities & ETFs ---
-  { symbol: "AAPL", name: "Apple Inc.", category: "stocks", aliases: ["APPLE"] },
-  { symbol: "NVDA", name: "NVIDIA Corp.", category: "stocks", aliases: ["NVIDIA"] },
-  { symbol: "TSLA", name: "Tesla Inc.", category: "stocks", aliases: ["TESLA"] },
-  { symbol: "MSFT", name: "Microsoft Corp.", category: "stocks", aliases: ["MICROSOFT"] },
-  { symbol: "AMZN", name: "Amazon.com Inc.", category: "stocks", aliases: ["AMAZON"] },
-  {
-    symbol: "META",
-    name: "Meta Platforms",
-    category: "stocks",
-    aliases: ["FACEBOOK", "INSTAGRAM"],
+  // 3. Ingest US Stocks & ETFs from TV manifest (Stocks category)
+  for (const [sym, data] of Object.entries(tvManifest.stocks || {})) {
+    const s = sym.toUpperCase();
+    if (!seen.has(s)) {
+      seen.add(s);
+      list.push({
+        symbol: s,
+        name: data.name || s,
+        category: "stocks",
+        specBadge: "$1/share",
+      });
+    }
+  }
+
+  // 4. Ingest Crypto from TV manifest (Crypto category)
+  for (const [sym, data] of Object.entries(tvManifest.crypto || {})) {
+    const s = sym.toUpperCase();
+    if (!seen.has(s)) {
+      seen.add(s);
+      list.push({
+        symbol: s,
+        name: data.name || s,
+        category: "crypto",
+        specBadge: "Spot $1",
+      });
+    }
+  }
+
+  // 5. Ingest Funds / ETFs from TV manifest (Stocks category)
+  for (const [sym, data] of Object.entries(tvManifest.funds || {})) {
+    const s = sym.toUpperCase();
+    if (!seen.has(s)) {
+      seen.add(s);
+      list.push({
+        symbol: s,
+        name: data.name || s,
+        category: "stocks",
+        specBadge: "$1/share",
+      });
+    }
+  }
+
+  // 6. Major Forex pairs (Forex category)
+  const majorForex = [
+    { symbol: "EURUSD", name: "Euro / US Dollar" },
+    { symbol: "GBPUSD", name: "British Pound / US Dollar" },
+    { symbol: "USDJPY", name: "US Dollar / Japanese Yen" },
+    { symbol: "USDCHF", name: "US Dollar / Swiss Franc" },
+    { symbol: "AUDUSD", name: "Australian Dollar / US Dollar" },
+    { symbol: "USDCAD", name: "US Dollar / Canadian Dollar" },
+    { symbol: "NZDUSD", name: "New Zealand Dollar / US Dollar" },
+    { symbol: "EURGBP", name: "Euro / British Pound" },
+    { symbol: "EURJPY", name: "Euro / Japanese Yen" },
+    { symbol: "GBPJPY", name: "British Pound / Japanese Yen" },
+    { symbol: "AUDJPY", name: "Australian Dollar / Japanese Yen" },
+    { symbol: "EURAUD", name: "Euro / Australian Dollar" },
+    { symbol: "USDBRL", name: "US Dollar / Brazilian Real" },
+    { symbol: "EURBRL", name: "Euro / Brazilian Real" },
+  ];
+  for (const fx of majorForex) {
+    if (!seen.has(fx.symbol)) {
+      seen.add(fx.symbol);
+      list.push({
+        symbol: fx.symbol,
+        name: fx.name,
+        category: "forex",
+        specBadge: null,
+      });
+    }
+  }
+
+  return list;
+}
+
+let _cachedCatalog: AssetMeta[] | null = null;
+
+export function getAssetCatalog(): AssetMeta[] {
+  if (!_cachedCatalog) {
+    _cachedCatalog = buildAssetCatalog();
+  }
+  return _cachedCatalog;
+}
+
+export const ASSET_CATALOG: AssetMeta[] = new Proxy([] as AssetMeta[], {
+  get(target, prop, receiver) {
+    const catalog = getAssetCatalog();
+    return Reflect.get(catalog, prop, receiver);
   },
-  { symbol: "GOOGL", name: "Alphabet (Google)", category: "stocks", aliases: ["GOOGLE"] },
-  { symbol: "AMD", name: "Advanced Micro Devices", category: "stocks" },
-  { symbol: "SPY", name: "SPDR S&P 500 ETF", category: "stocks" },
-  { symbol: "QQQ", name: "Invesco QQQ Trust", category: "stocks" },
-];
+});
 
 const CATEGORY_TABS = [
   { id: "all", label: "All" },
   { id: "today", label: "Today" },
-  { id: "user", label: "My Assets" },
-  { id: "indices", label: "Indices" },
-  { id: "commodities", label: "Commodities" },
+  { id: "futures", label: "Futures" },
+  { id: "stocks", label: "Stocks" },
   { id: "forex", label: "Forex" },
   { id: "crypto", label: "Crypto" },
-  { id: "stocks", label: "Stocks" },
 ] as const;
 
 export interface JournalAssetDropdownProps {
@@ -205,6 +184,11 @@ export interface JournalAssetDropdownProps {
   emptyLabel?: string;
   className?: string;
   hideGeneralJournal?: boolean;
+  showValues?: boolean;
+  allowClear?: boolean;
+  align?: "start" | "end" | "center";
+  alignCenter?: boolean;
+  onlyCalculable?: boolean;
 }
 
 export function JournalAssetDropdown({
@@ -217,6 +201,11 @@ export function JournalAssetDropdown({
   emptyLabel,
   className,
   hideGeneralJournal = false,
+  showValues = false,
+  allowClear = !hideGeneralJournal,
+  align = "start",
+  alignCenter = false,
+  onlyCalculable = false,
 }: JournalAssetDropdownProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -230,17 +219,108 @@ export function JournalAssetDropdown({
     return Array.from(new Set(allTradedSymbols.map((s) => normalizeSymbol(s)).filter(Boolean)));
   }, [allTradedSymbols]);
 
-  // Smart filter by search query and category tab
-  const filteredCatalog = useMemo(() => {
+  // Traded assets from user history to display at the top of the "All" tab
+  const userAssetItems = useMemo(() => {
+    if (activeTab !== "all" || userHistorySymbols.length === 0) return [];
     const q = search.trim().toLowerCase();
     const normQ = q ? normalizeSymbol(q).toLowerCase() : "";
 
-    return ASSET_CATALOG.filter((item) => {
+    const catalogMap = new Map<string, AssetMeta>();
+    for (const item of ASSET_CATALOG) {
+      catalogMap.set(item.symbol.toUpperCase(), item);
+    }
+
+    const list: AssetMeta[] = [];
+    for (const sym of userHistorySymbols) {
+      if (onlyCalculable && !isCalculableSymbol(sym)) {
+        continue;
+      }
+      const s = sym.toUpperCase();
+      const existing = catalogMap.get(s);
+      const meta: AssetMeta = existing || {
+        symbol: s,
+        name: getSymbolSpec(s)?.name || s,
+        category: (getSymbolSpec(s)?.category as AssetCategory) || "futures",
+        specBadge: getSymbolSpec(s) ? formatSpecBadge(getSymbolSpec(s)!) : null,
+      };
+
+      if (!q) {
+        list.push(meta);
+      } else {
+        const match =
+          meta.symbol.toLowerCase().includes(q) ||
+          meta.symbol.toLowerCase().includes(normQ) ||
+          meta.name.toLowerCase().includes(q) ||
+          meta.aliases?.some((a) => a.toLowerCase().includes(q) || a.toLowerCase().includes(normQ));
+        if (match) {
+          list.push(meta);
+        }
+      }
+    }
+    return list;
+  }, [activeTab, userHistorySymbols, search, onlyCalculable]);
+
+  // Today trades items (when on Today tab)
+  const todayAssetItems = useMemo(() => {
+    if (activeTab !== "today" || todaySymbols.length === 0) return [];
+    const q = search.trim().toLowerCase();
+    const normQ = q ? normalizeSymbol(q).toLowerCase() : "";
+
+    const catalogMap = new Map<string, AssetMeta>();
+    for (const item of ASSET_CATALOG) {
+      catalogMap.set(item.symbol.toUpperCase(), item);
+    }
+
+    const list: AssetMeta[] = [];
+    for (const sym of todaySymbols) {
+      if (onlyCalculable && !isCalculableSymbol(sym)) {
+        continue;
+      }
+      const s = sym.toUpperCase();
+      const existing = catalogMap.get(s);
+      const meta: AssetMeta = existing || {
+        symbol: s,
+        name: getSymbolSpec(s)?.name || s,
+        category: (getSymbolSpec(s)?.category as AssetCategory) || "futures",
+        specBadge: getSymbolSpec(s) ? formatSpecBadge(getSymbolSpec(s)!) : null,
+      };
+
+      if (!q) {
+        list.push(meta);
+      } else {
+        const match =
+          meta.symbol.toLowerCase().includes(q) ||
+          meta.symbol.toLowerCase().includes(normQ) ||
+          meta.name.toLowerCase().includes(q) ||
+          meta.aliases?.some((a) => a.toLowerCase().includes(q) || a.toLowerCase().includes(normQ));
+        if (match) {
+          list.push(meta);
+        }
+      }
+    }
+    return list;
+  }, [activeTab, todaySymbols, search, onlyCalculable]);
+
+  // Filtered catalog assets (excluding user traded items in "All" to avoid duplicates)
+  const filteredCatalog = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const normQ = q ? normalizeSymbol(q).toLowerCase() : "";
+    const userSymbolsSet = new Set(userHistorySymbols.map((s) => s.toUpperCase()));
+
+    const matched = ASSET_CATALOG.filter((item) => {
+      // In onlyCalculable mode (e.g. Points Calculator), only allow assets with quantified futures specs
+      if (onlyCalculable && !isCalculableSymbol(item.symbol)) {
+        return false;
+      }
+
+      // In "All", user's traded assets are already featured prominently at the top
+      if (activeTab === "all" && userSymbolsSet.has(item.symbol.toUpperCase())) {
+        return false;
+      }
+
       // Tab / category filter
       if (activeTab === "today") {
-        if (!todaySymbols.includes(item.symbol)) return false;
-      } else if (activeTab === "user") {
-        if (!userHistorySymbols.includes(item.symbol)) return false;
+        return false; // Handled separately by todayAssetItems
       } else if (activeTab !== "all") {
         if (item.category !== activeTab) return false;
       }
@@ -254,28 +334,21 @@ export function JournalAssetDropdown({
         return true;
       return false;
     });
-  }, [search, activeTab, todaySymbols, userHistorySymbols]);
 
-  // Traded symbols from user history not found in standard catalog
-  const extraUserSymbols = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const catalogSymbols = new Set(ASSET_CATALOG.map((a) => a.symbol.toUpperCase()));
-
-    const list =
-      activeTab === "today"
-        ? todaySymbols.filter((s) => !catalogSymbols.has(s))
-        : activeTab === "user" || activeTab === "all"
-          ? userHistorySymbols.filter((s) => !catalogSymbols.has(s))
-          : [];
-
-    if (!q) return list;
-    return list.filter((s) => s.toLowerCase().includes(q));
-  }, [activeTab, todaySymbols, userHistorySymbols, search]);
+    // When browsing "All" without search and not in onlyCalculable mode, display top 60
+    if (!q && activeTab === "all" && !onlyCalculable) {
+      return matched.slice(0, 60);
+    }
+    return matched;
+  }, [search, activeTab, userHistorySymbols, onlyCalculable]);
 
   const hasExactMatch = useMemo(() => {
     const q = search.trim().toUpperCase();
     if (!q) return false;
     const normQ = normalizeSymbol(q);
+    if (onlyCalculable) {
+      return isCalculableSymbol(q) || isCalculableSymbol(normQ);
+    }
     return (
       ASSET_CATALOG.some(
         (a) =>
@@ -286,7 +359,7 @@ export function JournalAssetDropdown({
       userHistorySymbols.includes(normQ) ||
       todaySymbols.includes(normQ)
     );
-  }, [search, userHistorySymbols, todaySymbols]);
+  }, [search, userHistorySymbols, todaySymbols, onlyCalculable]);
 
   const handleSelect = (sym: string | null) => {
     const normalized = sym ? normalizeSymbol(sym) : null;
@@ -303,6 +376,42 @@ export function JournalAssetDropdown({
     }
   };
 
+  const renderAssetItem = (item: AssetMeta) => {
+    const isSelected = currentAsset === item.symbol;
+    return (
+      <DropdownMenuItem
+        key={item.symbol}
+        onClick={() => handleSelect(item.symbol)}
+        className={cn(
+          "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors group",
+          isSelected
+            ? "bg-accent font-semibold text-accent-foreground"
+            : "hover:bg-accent/50",
+        )}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <AssetIcon symbol={item.symbol} size="xs" />
+          <div className="flex flex-col min-w-0">
+            <span className="font-mono font-semibold text-foreground text-xs leading-none mb-0.5">
+              {item.symbol}
+            </span>
+            <span className="text-[10px] text-muted-foreground truncate leading-none">
+              {item.name}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {showValues && item.specBadge && (
+            <span className="text-[10px] font-mono tnum px-1.5 py-0.5 rounded bg-muted/70 text-muted-foreground/90 border border-border/40 select-none">
+              {item.specBadge}
+            </span>
+          )}
+          {isSelected && <Check className="size-3.5 text-sky-400 shrink-0" />}
+        </div>
+      </DropdownMenuItem>
+    );
+  };
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
@@ -310,24 +419,32 @@ export function JournalAssetDropdown({
           <button
             type="button"
             className={cn(
-              "journal-filter-trigger flex h-9 w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-1 text-xs shadow-xs transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-left cursor-pointer",
+              "journal-filter-trigger flex h-9 w-full items-center rounded-lg border border-input bg-transparent px-3 py-1 text-xs shadow-xs transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer",
+              alignCenter
+                ? "relative justify-center px-6 text-center"
+                : "justify-between text-left",
               className,
             )}
             title="Click to select or enter trade symbol"
             aria-label="Select symbol"
           >
             {currentAsset ? (
-              <div className="flex items-center gap-2 truncate">
+              <div className={cn("flex items-center gap-2 truncate", alignCenter && "justify-center")}>
                 <AssetIcon symbol={currentAsset} size="xs" />
                 <span className="font-mono font-bold text-foreground">{currentAsset}</span>
               </div>
             ) : (
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground truncate">
                 {placeholder ?? emptyLabel ?? "Select or enter symbol…"}
               </span>
             )}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {currentAsset && (
+            <div
+              className={cn(
+                "flex items-center gap-1.5 shrink-0",
+                alignCenter ? "absolute right-2.5 top-1/2 -translate-y-1/2" : "",
+              )}
+            >
+              {currentAsset && allowClear && (
                 <span
                   role="button"
                   tabIndex={0}
@@ -335,7 +452,7 @@ export function JournalAssetDropdown({
                     e.stopPropagation();
                     onSelectAsset(null);
                   }}
-                  className="rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                  className="rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer pointer-events-auto"
                   title="Clear symbol filter"
                 >
                   <X className="size-3" />
@@ -369,7 +486,7 @@ export function JournalAssetDropdown({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        align="start"
+        align={align}
         className="w-80 p-0 shadow-2xl rounded-xl border border-border/60 bg-popover text-popover-foreground overflow-hidden"
       >
         {/* Header with Search */}
@@ -414,7 +531,7 @@ export function JournalAssetDropdown({
           >
             {CATEGORY_TABS.filter((tab) => {
               if (tab.id === "today" && todaySymbols.length === 0) return false;
-              if (tab.id === "user" && userHistorySymbols.length === 0) return false;
+              if (onlyCalculable && (tab.id === "forex" || tab.id === "stocks")) return false;
               return true;
             }).map((tab) => {
               const isSelected = activeTab === tab.id;
@@ -440,8 +557,8 @@ export function JournalAssetDropdown({
 
         {/* Scrollable Asset List */}
         <div className="max-h-72 overflow-y-auto scrollbar-mini p-1.5 pt-1 space-y-0.5">
-          {/* Custom Symbol Option if no exact match exists */}
-          {search.trim() && !hasExactMatch && (
+          {/* Custom Symbol Option if no exact match exists (disabled in onlyCalculable mode) */}
+          {!onlyCalculable && search.trim() && !hasExactMatch && (
             <DropdownMenuItem
               onClick={() => handleSelect(normalizeSymbol(search.trim()))}
               className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs cursor-pointer bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 font-medium mb-1"
@@ -475,80 +592,63 @@ export function JournalAssetDropdown({
             </DropdownMenuItem>
           )}
 
-          {/* User History Symbols (if any) */}
-          {extraUserSymbols.length > 0 && (
+          {/* User's Traded Assets Section (My Assets) at the top of All */}
+          {activeTab === "all" && userAssetItems.length > 0 && (
             <>
-              {((search.trim() && !hasExactMatch) || !hideGeneralJournal) && (
+              {(!hideGeneralJournal || (search.trim() && !hasExactMatch)) && (
                 <DropdownMenuSeparator className="my-1" />
               )}
-              <DropdownMenuLabel className="text-[10px] uppercase font-semibold text-muted-foreground px-2 py-0.5">
-                Your Traded Assets
-              </DropdownMenuLabel>
-              {extraUserSymbols.map((sym) => {
-                const isSelected = currentAsset === sym;
-                return (
-                  <DropdownMenuItem
-                    key={sym}
-                    onClick={() => handleSelect(sym)}
-                    className={cn(
-                      "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors",
-                      isSelected
-                        ? "bg-accent font-semibold text-accent-foreground"
-                        : "hover:bg-accent/50",
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <AssetIcon symbol={sym} size="xs" />
-                      <span className="font-mono font-semibold">{sym}</span>
-                    </div>
-                    {isSelected && <Check className="size-3.5 text-sky-400 shrink-0" />}
-                  </DropdownMenuItem>
-                );
-              })}
+              <div className="flex items-center justify-between px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <span>My Assets</span>
+                <span className="text-muted-foreground/60 font-mono text-[9px]">
+                  {userAssetItems.length}
+                </span>
+              </div>
+              {userAssetItems.map(renderAssetItem)}
             </>
           )}
 
-          {/* Catalog Assets List */}
-          {filteredCatalog.length > 0 ? (
+          {/* Today Trades Section (when on Today tab) */}
+          {activeTab === "today" && (
             <>
-              {((search.trim() && !hasExactMatch) ||
-                !hideGeneralJournal ||
-                extraUserSymbols.length > 0) && <DropdownMenuSeparator className="my-1" />}
-              {filteredCatalog.map((item) => {
-                const isSelected = currentAsset === item.symbol;
-                return (
-                  <DropdownMenuItem
-                    key={item.symbol}
-                    onClick={() => handleSelect(item.symbol)}
-                    className={cn(
-                      "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors group",
-                      isSelected
-                        ? "bg-accent font-semibold text-accent-foreground"
-                        : "hover:bg-accent/50",
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <AssetIcon symbol={item.symbol} size="xs" />
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-mono font-semibold text-foreground text-xs leading-none mb-0.5">
-                          {item.symbol}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground truncate leading-none">
-                          {item.name}
-                        </span>
-                      </div>
-                    </div>
-                    {isSelected && <Check className="size-3.5 text-sky-400 shrink-0" />}
-                  </DropdownMenuItem>
-                );
-              })}
+              {(!hideGeneralJournal || (search.trim() && !hasExactMatch)) && (
+                <DropdownMenuSeparator className="my-1" />
+              )}
+              {todayAssetItems.length > 0 ? (
+                todayAssetItems.map(renderAssetItem)
+              ) : (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  No trades recorded for today.
+                </div>
+              )}
             </>
-          ) : (
-            !search.trim() && (
-              <div className="py-6 text-center text-xs text-muted-foreground">
-                No assets found in this category.
-              </div>
-            )
+          )}
+
+          {/* General Catalog Assets (when not on today tab) */}
+          {activeTab !== "today" && (
+            <>
+              {filteredCatalog.length > 0 && (
+                <>
+                  {((activeTab === "all" && userAssetItems.length > 0) ||
+                    !hideGeneralJournal ||
+                    (search.trim() && !hasExactMatch)) && (
+                    <DropdownMenuSeparator className="my-1" />
+                  )}
+                  {activeTab === "all" && userAssetItems.length > 0 && (
+                    <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {search.trim() ? "Other Assets" : "All Assets"}
+                    </div>
+                  )}
+                  {filteredCatalog.map(renderAssetItem)}
+                </>
+              )}
+
+              {userAssetItems.length === 0 && filteredCatalog.length === 0 && (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  {search.trim() ? "No matching assets found." : "No assets found in this category."}
+                </div>
+              )}
+            </>
           )}
         </div>
       </DropdownMenuContent>

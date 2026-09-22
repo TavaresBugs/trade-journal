@@ -7,9 +7,19 @@ const ROOT = join(__dirname, "..");
 const ICONS_ROOT = join(ROOT, "apps/web/public/assets/icons");
 const MANIFEST_PATH = join(ROOT, "apps/web/src/lib/assets/tv-icons-manifest.json");
 
-// Import TradingView Desktop CDP bridge
-const { evaluateAsync, disconnect } =
-  await import("/home/jhontavares/tradingview-mcp/src/connection.js");
+// Import TradingView Desktop CDP bridge (configurable via TRADINGVIEW_MCP_PATH)
+const tvMcpPath =
+  process.env.TRADINGVIEW_MCP_PATH ||
+  "/home/jhontavares/tradingview-mcp/src/connection.js";
+let evaluateAsync;
+let disconnect;
+try {
+  const mcp = await import(tvMcpPath);
+  evaluateAsync = mcp.evaluateAsync;
+  disconnect = mcp.disconnect;
+} catch {
+  // Graceful fallback when CDP bridge is not running
+}
 
 const TV_LOGO_CDN = "https://s3-symbol-logo.tradingview.com";
 

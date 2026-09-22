@@ -19,7 +19,7 @@ import {
 import { MIN_TREND_POINTS, type PerformanceTrendsResponse } from "@/lib/performance-trends";
 import { useApi } from "@/lib/use-api";
 import { cn, fmtPercent } from "@/lib/utils";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 import { Pnl } from "./pnl";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";

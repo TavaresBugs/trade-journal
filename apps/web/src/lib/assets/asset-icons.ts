@@ -4,6 +4,9 @@
  */
 
 import tvManifestRaw from "./tv-icons-manifest.json";
+import { normalizeSymbol } from "./symbol-utils";
+
+export { normalizeSymbol };
 
 export interface AssetIconConfig {
   icons: string[];
@@ -92,6 +95,29 @@ export const SINGLE_ASSETS: Record<string, { icon: string; color: string }> = {
   JPN225: { icon: `${ICON_BASE}/flags/jp.svg`, color: "#BC002D" },
   NIKKEI: { icon: `${ICON_BASE}/flags/jp.svg`, color: "#BC002D" },
 
+  // --- Brazilian B3 Futures ---
+  WIN: { icon: `${ICON_BASE}/flags/br.svg`, color: "#009C3B" },
+  IND: { icon: `${ICON_BASE}/flags/br.svg`, color: "#009C3B" },
+  WDO: { icon: `${ICON_BASE}/flags/br.svg`, color: "#002776" },
+  DOL: { icon: `${ICON_BASE}/flags/br.svg`, color: "#002776" },
+
+  // --- Bonds & Rates ---
+  ZN: { icon: `${ICON_BASE}/flags/us.svg`, color: "#1E3A8A" },
+  ZB: { icon: `${ICON_BASE}/flags/us.svg`, color: "#1E3A8A" },
+  ZF: { icon: `${ICON_BASE}/flags/us.svg`, color: "#1E3A8A" },
+  ZT: { icon: `${ICON_BASE}/flags/us.svg`, color: "#1E3A8A" },
+  TN: { icon: `${ICON_BASE}/flags/us.svg`, color: "#1E3A8A" },
+  UB: { icon: `${ICON_BASE}/flags/us.svg`, color: "#1E3A8A" },
+
+  // --- CME Currency Futures ---
+  "6E": { icon: `${ICON_BASE}/flags/eu.svg`, color: "#003399" },
+  M6E: { icon: `${ICON_BASE}/flags/eu.svg`, color: "#003399" },
+  "6B": { icon: `${ICON_BASE}/flags/gb.svg`, color: "#C8102E" },
+  M6B: { icon: `${ICON_BASE}/flags/gb.svg`, color: "#C8102E" },
+  "6A": { icon: `${ICON_BASE}/flags/au.svg`, color: "#00008B" },
+  "6C": { icon: `${ICON_BASE}/flags/ca.svg`, color: "#FF0000" },
+  "6J": { icon: `${ICON_BASE}/flags/jp.svg`, color: "#BC002D" },
+
   // --- Commodities ---
   GC: { icon: `${ICON_BASE}/commodities/gold.svg`, color: "#EAB308" },
   MGC: { icon: `${ICON_BASE}/commodities/gold.svg`, color: "#EAB308" },
@@ -100,6 +126,7 @@ export const SINGLE_ASSETS: Record<string, { icon: string; color: string }> = {
 
   SI: { icon: `${ICON_BASE}/commodities/silver.svg`, color: "#9CA3AF" },
   MSI: { icon: `${ICON_BASE}/commodities/silver.svg`, color: "#9CA3AF" },
+  SIL: { icon: `${ICON_BASE}/commodities/silver.svg`, color: "#9CA3AF" },
   SILVER: { icon: `${ICON_BASE}/commodities/silver.svg`, color: "#9CA3AF" },
   XAGUSD: { icon: `${ICON_BASE}/commodities/silver.svg`, color: "#9CA3AF" },
 
@@ -113,7 +140,12 @@ export const SINGLE_ASSETS: Record<string, { icon: string; color: string }> = {
   NATGAS: { icon: `${ICON_BASE}/commodities/natural-gas.svg`, color: "#3B82F6" },
 
   HG: { icon: `${ICON_BASE}/commodities/copper.svg`, color: "#B45309" },
+  MHG: { icon: `${ICON_BASE}/commodities/copper.svg`, color: "#B45309" },
   COPPER: { icon: `${ICON_BASE}/commodities/copper.svg`, color: "#B45309" },
+
+  PL: { icon: `${ICON_BASE}/commodities/gold.svg`, color: "#E5E7EB" },
+  RB: { icon: `${ICON_BASE}/commodities/crude-oil.svg`, color: "#EF4444" },
+  HO: { icon: `${ICON_BASE}/commodities/crude-oil.svg`, color: "#F97316" },
 
   // --- Crypto ---
   BTC: { icon: `${ICON_BASE}/crypto/bitcoin.svg`, color: "#F97316" },
@@ -149,172 +181,7 @@ export const CRYPTO_BASES: Record<string, string> = {
   XRP: `${ICON_BASE}/crypto/ripple.svg`,
 };
 
-/**
- * Resolves a raw broker symbol into its clean canonical market asset.
- * Uses pattern recognition / containment to reliably identify the underlying
- * instrument across brokers (CFD spot, futures, forex, crypto) without destructive string deletion.
- *
- * Examples:
- * - "us100.cash", "US100_cash", "US100CASH" -> "US100"
- * - "us500.cash", "SPX500.pro", "ESU24" -> "US500" / "ES"
- * - "EURUSD.pro", "EUR/USD", "FX:EUR_USD" -> "EURUSD"
- * - "XAUUSD.raw", "GOLD_cash", "XAU/USD" -> "XAUUSD"
- */
-export function normalizeSymbol(raw: string): string {
-  if (!raw) return "";
-  let s = raw.trim().toUpperCase();
 
-  // Guard standalone tickers (e.g. Horizons High Interest Savings ETF 'CASH')
-  if (s === "CASH") return "CASH";
-
-  // 1. Strip exchange prefix (e.g. CME:NQ -> NQ, FX:EURUSD -> EURUSD)
-  if (s.includes(":")) {
-    const parts = s.split(":");
-    s = parts[parts.length - 1] ?? s;
-  }
-
-  // 1.5 Strip common broker account suffixes (.pro, .cash, .raw, .std, .ecn, _sb, etc.)
-  if (s !== "CASH") {
-    s = s.replace(/[\._]?(CASH|PRO|RAW|STD|ECN|MINI|MICRO|SB)$/i, "");
-  }
-
-  // 2. Continuous futures contract patterns (e.g. NQM24, ESU24, MESZ24, GCQ24)
-  const futuresMatch = s.match(
-    /^(NQ|MNQ|ES|MES|YM|MYM|RTY|M2K|CL|MCL|GC|MGC|SI|MSI|NG|HG)[FGHJKMNQUVXZ]?\d{1,4}!*$/,
-  );
-  if (futuresMatch?.[1]) {
-    return futuresMatch[1];
-  }
-
-  // Strip non-alphanumeric noise for pattern containment tests
-  const clean = s.replace(/[^A-Z0-9]/g, "");
-
-  // 3. Index Canonical Matching by Inclusion
-  // Nasdaq-100 family
-  if (
-    clean.includes("US100") ||
-    clean.includes("NAS100") ||
-    clean.includes("USTEC") ||
-    clean.includes("NDX") ||
-    clean === "NQ" ||
-    clean === "MNQ"
-  ) {
-    return clean === "MNQ" ? "MNQ" : clean === "NQ" ? "NQ" : "US100";
-  }
-
-  // S&P 500 family
-  if (
-    clean.includes("US500") ||
-    clean.includes("SPX500") ||
-    clean.includes("SP500") ||
-    clean.includes("SPX") ||
-    clean === "ES" ||
-    clean === "MES"
-  ) {
-    return clean === "MES" ? "MES" : clean === "ES" ? "ES" : "US500";
-  }
-
-  // Dow Jones 30 family
-  if (
-    clean.includes("US30") ||
-    clean.includes("DJ30") ||
-    clean.includes("DJI") ||
-    clean.includes("WALLSTREET") ||
-    clean === "YM" ||
-    clean === "MYM"
-  ) {
-    return clean === "MYM" ? "MYM" : clean === "YM" ? "YM" : "US30";
-  }
-
-  // Russell 2000 family
-  if (clean.includes("US2000") || clean.includes("RUSSELL") || clean === "RTY" || clean === "M2K") {
-    return clean === "M2K" ? "M2K" : clean === "RTY" ? "RTY" : "US2000";
-  }
-
-  // US Dollar Index
-  if (clean.includes("DXY") || clean.includes("USDX")) {
-    return "DXY";
-  }
-
-  // DAX / German 40
-  if (clean.includes("GER40") || clean.includes("DE40") || clean.includes("DAX")) {
-    return "GER40";
-  }
-
-  // FTSE 100
-  if (clean.includes("UK100") || clean.includes("FTSE")) {
-    return "UK100";
-  }
-
-  // Nikkei 225
-  if (clean.includes("JP225") || clean.includes("JPN225") || clean.includes("NIKKEI")) {
-    return "JP225";
-  }
-
-  // 4. Commodities Canonical Matching by Inclusion
-  if (clean.includes("XAUUSD")) return "XAUUSD";
-  if (clean.includes("GOLD")) return "GOLD";
-  if (clean.includes("XAGUSD")) return "XAGUSD";
-  if (clean.includes("SILVER")) return "SILVER";
-  if (
-    clean.includes("USOIL") ||
-    clean.includes("UKOIL") ||
-    clean.includes("CRUDE") ||
-    clean.includes("WTI") ||
-    clean.includes("BRENT")
-  ) {
-    return "USOIL";
-  }
-  if (clean.includes("NATGAS")) return "NATGAS";
-  if (clean.includes("COPPER")) return "COPPER";
-
-  // Exact match for known single assets (GC, SI, CL, NQ, ES, YM, RTY, BTC, ETH, etc.)
-  if (SINGLE_ASSETS[clean]) {
-    return clean;
-  }
-
-  // Exact matches in manifest categories before attempting pair splitting
-  if (tvManifest.funds?.[clean]) return clean;
-  if (tvManifest.stocks?.[clean]) return clean;
-  if (tvManifest.b3?.[clean]) return clean;
-  if (tvManifest.commodities?.[clean]) return clean;
-  if (tvManifest.indices?.[clean]) return clean;
-
-  // 5. Forex Pairs Canonical Matching (matches any 3-letter currency pair)
-  const currencyCodes = Object.keys(CURRENCY_FLAGS).filter((c) => c.length === 3);
-  for (const base of currencyCodes) {
-    if (clean.startsWith(base)) {
-      const remainder = clean.slice(base.length);
-      for (const quote of currencyCodes) {
-        if (remainder === quote) {
-          return `${base}${quote}`;
-        }
-      }
-    }
-  }
-
-  // 6. Crypto Pairs Canonical Matching (sort longest first, only match valid quote suffixes)
-  const sortedCryptoBases = Object.keys(CRYPTO_BASES).sort((a, b) => b.length - a.length);
-  for (const crypto of sortedCryptoBases) {
-    if (clean === crypto) return crypto;
-    if (clean.startsWith(crypto)) {
-      const remainder = clean.slice(crypto.length);
-      if (
-        remainder === "USDT" ||
-        remainder === "USD" ||
-        remainder === "BUSD" ||
-        remainder === "USDC"
-      ) {
-        return `${crypto}${remainder}`;
-      }
-      if (currencyCodes.includes(remainder)) {
-        return `${crypto}${remainder}`;
-      }
-    }
-  }
-
-  return clean || s;
-}
 
 /**
  * Resolves an asset symbol into an icon configuration.
@@ -416,7 +283,13 @@ export function getBrokerIcon(nameOrSlug: string): string | null {
   if (!nameOrSlug) return null;
   const clean = nameOrSlug.trim();
   const upper = clean.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  return tvManifest.brokers?.[clean]?.icon || tvManifest.brokers?.[upper]?.icon || null;
+  const lower = clean.toLowerCase();
+  return (
+    tvManifest.brokers?.[clean]?.icon ||
+    tvManifest.brokers?.[upper]?.icon ||
+    tvManifest.brokers?.[lower]?.icon ||
+    null
+  );
 }
 
 /**

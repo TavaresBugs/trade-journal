@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dimension } from "@luxalgo/journal-core";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { Badge } from "@/components/ui/badge";
 import { MonetaryValue } from "@/components/privacy";

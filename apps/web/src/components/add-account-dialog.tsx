@@ -54,59 +54,108 @@ export const BROKER_CATALOG: BrokerCatalogItem[] = [
     category: "crypto",
     icon: "hyperliquid.png",
     status: "active",
+    subtitle: "Perpetual DEX",
   },
-  { id: "binance", name: "Binance", category: "crypto", icon: "binance.png", status: "active" },
-  { id: "kraken", name: "Kraken", category: "crypto", icon: "kraken.png", status: "active" },
+  {
+    id: "binance",
+    name: "Binance",
+    category: "crypto",
+    icon: "binance.svg",
+    status: "active",
+    subtitle: "Spot & Futures API",
+  },
+  {
+    id: "kraken",
+    name: "Kraken",
+    category: "crypto",
+    icon: "kraken.svg",
+    status: "active",
+    subtitle: "Spot & Margin API",
+  },
   {
     id: "bybit",
     name: "Bybit",
     category: "crypto",
-    icon: "bybit.png",
+    icon: "bybit.svg",
     status: "active",
+    subtitle: "Unified Account API",
     invertInDark: true,
   },
   {
     id: "okx",
     name: "OKX",
     category: "crypto",
-    icon: "okx.png",
+    icon: "okx.svg",
     status: "active",
+    subtitle: "API v5 Sync",
     invertInDark: true,
   },
   {
     id: "crypto-com",
     name: "Crypto.com",
     category: "crypto",
-    icon: "cryptocom.png",
+    icon: "cryptocom.svg",
     status: "active",
+    subtitle: "Exchange API",
   },
 
   // Stocks & Options
-  { id: "alpaca", name: "Alpaca", category: "stocks", icon: "alpaca.png", status: "active" },
-  { id: "public", name: "Public", category: "stocks", icon: "public.png", status: "active" },
-  { id: "webull", name: "Webull", category: "stocks", icon: "webull.png", status: "active" },
-  { id: "tradier", name: "Tradier", category: "stocks", icon: "tradier.png", status: "active" },
+  {
+    id: "alpaca",
+    name: "Alpaca",
+    category: "stocks",
+    icon: "alpaca.svg",
+    status: "active",
+    subtitle: "Commission-free API",
+  },
+  {
+    id: "public",
+    name: "Public",
+    category: "stocks",
+    icon: "public.svg",
+    status: "active",
+    subtitle: "Stocks & ETFs",
+  },
+  {
+    id: "webull",
+    name: "Webull",
+    category: "stocks",
+    icon: "webull.svg",
+    status: "active",
+    subtitle: "Open API Sync",
+  },
+  {
+    id: "tradier",
+    name: "Tradier",
+    category: "stocks",
+    icon: "tradier.svg",
+    status: "active",
+    subtitle: "Equities & Options API",
+  },
   {
     id: "questrade",
     name: "Questrade",
     category: "stocks",
-    icon: "questrade.png",
+    icon: "questrade.svg",
     status: "active",
+    subtitle: "API Sync",
     invertInDark: true,
   },
   {
     id: "trading212",
-    name: "Trading212",
+    name: "Trading 212",
     category: "stocks",
     icon: "trading212.png",
     status: "active",
+    subtitle: "Zero-Commission Investing",
   },
   {
     id: "ibkr-flex",
     name: "Interactive Brokers",
     category: "stocks",
-    icon: "ibkr.png",
+    icon: "ibkr.svg",
     status: "active",
+    subtitle: "Flex Query & Web API",
   },
   {
     id: "etrade",
@@ -120,7 +169,7 @@ export const BROKER_CATALOG: BrokerCatalogItem[] = [
     id: "tastytrade",
     name: "tastytrade",
     category: "stocks",
-    icon: "tastytrade.png",
+    icon: "tastytrade.svg",
     status: "soon",
     subtitle: "Soon · CSV import today",
   },
@@ -128,7 +177,7 @@ export const BROKER_CATALOG: BrokerCatalogItem[] = [
     id: "tradestation",
     name: "TradeStation",
     category: "stocks",
-    icon: "tradestation.png",
+    icon: "tradestation.svg",
     status: "soon",
     subtitle: "Soon · CSV import today",
   },
@@ -163,7 +212,7 @@ export const BROKER_CATALOG: BrokerCatalogItem[] = [
     id: "tradovate",
     name: "Tradovate",
     category: "futures",
-    icon: "tradovate.png",
+    icon: "tradovate.svg",
     status: "soon",
     subtitle: "Soon · CSV import today",
   },
@@ -171,7 +220,7 @@ export const BROKER_CATALOG: BrokerCatalogItem[] = [
     id: "ninjatrader",
     name: "NinjaTrader",
     category: "futures",
-    icon: "ninjatrader.png",
+    icon: "ninjatrader.svg",
     status: "soon",
     subtitle: "Soon · CSV import today",
   },
@@ -450,22 +499,25 @@ export function AddAccountDialog({
                             setSelectedBroker(broker);
                             setBrokerAccountName(broker.name);
                           }}
-                          className="group flex items-center gap-2.5 rounded-xl border border-border/70 p-2.5 text-left transition-all hover:bg-muted/50 hover:border-border active:scale-[0.98] cursor-pointer"
+                          className="group flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/40 p-2.5 text-left transition-all hover:bg-muted/50 hover:border-border active:scale-[0.98] cursor-pointer"
                         >
-                          <span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background/80 p-1">
-                            <img
-                              src={`/assets/brokers/${broker.icon}`}
-                              alt=""
-                              className={cn(
-                                "size-full object-contain",
-                                broker.invertInDark && "dark:invert",
-                              )}
-                            />
-                          </span>
+                          <img
+                            src={`/assets/brokers/${broker.icon}`}
+                            alt=""
+                            className={cn(
+                              "size-8 shrink-0 rounded-md object-contain",
+                              broker.invertInDark && "dark:invert",
+                            )}
+                          />
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-xs font-medium text-foreground">
+                            <span className="block truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
                               {broker.name}
                             </span>
+                            {broker.subtitle && (
+                              <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
+                                {broker.subtitle}
+                              </span>
+                            )}
                           </span>
                         </button>
                       ))}
@@ -494,32 +546,30 @@ export function AddAccountDialog({
                             "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
                             broker.status === "soon"
                               ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
-                              : "border-border/70 hover:bg-muted/50 hover:border-border",
+                              : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
                           )}
                         >
-                          <span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background/80 p-1">
-                            <img
-                              src={`/assets/brokers/${broker.icon}`}
-                              alt=""
-                              className={cn(
-                                "size-full object-contain",
-                                broker.invertInDark && "dark:invert",
-                              )}
-                            />
-                          </span>
+                          <img
+                            src={`/assets/brokers/${broker.icon}`}
+                            alt=""
+                            className={cn(
+                              "size-8 shrink-0 rounded-md object-contain",
+                              broker.invertInDark && "dark:invert",
+                            )}
+                          />
                           <span className="min-w-0 flex-1">
                             <span
                               className={cn(
-                                "block truncate text-xs font-medium",
+                                "block truncate text-xs font-semibold",
                                 broker.status === "soon"
                                   ? "text-muted-foreground"
-                                  : "text-foreground",
+                                  : "text-foreground group-hover:text-primary transition-colors",
                               )}
                             >
                               {broker.name}
                             </span>
                             {broker.subtitle && (
-                              <span className="block truncate text-[10px] text-muted-foreground/80">
+                              <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
                                 {broker.subtitle}
                               </span>
                             )}
@@ -553,25 +603,30 @@ export function AddAccountDialog({
                             "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
                             broker.status === "soon"
                               ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
-                              : "border-border/70 hover:bg-muted/50 hover:border-border",
+                              : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
                           )}
                         >
-                          <span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background/80 p-1">
-                            <img
-                              src={`/assets/brokers/${broker.icon}`}
-                              alt=""
-                              className={cn(
-                                "size-full object-contain",
-                                broker.invertInDark && "dark:invert",
-                              )}
-                            />
-                          </span>
+                          <img
+                            src={`/assets/brokers/${broker.icon}`}
+                            alt=""
+                            className={cn(
+                              "size-8 shrink-0 rounded-md object-contain",
+                              broker.invertInDark && "dark:invert",
+                            )}
+                          />
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate text-xs font-semibold text-foreground">
+                            <span
+                              className={cn(
+                                "block truncate text-xs font-semibold",
+                                broker.status === "soon"
+                                  ? "text-muted-foreground"
+                                  : "text-foreground group-hover:text-primary transition-colors",
+                              )}
+                            >
                               {broker.name}
                             </span>
                             {broker.subtitle && (
-                              <span className="block truncate text-[10px] text-muted-foreground/80">
+                              <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
                                 {broker.subtitle}
                               </span>
                             )}
@@ -624,16 +679,14 @@ export function AddAccountDialog({
                 </button>
 
                 <div className="flex items-center gap-3 border-b border-border/60 pb-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/60 bg-background p-1.5 shadow-xs">
-                    <img
-                      src={`/assets/brokers/${selectedBroker.icon}`}
-                      alt=""
-                      className={cn(
-                        "size-full object-contain",
-                        selectedBroker.invertInDark && "dark:invert",
-                      )}
-                    />
-                  </span>
+                  <img
+                    src={`/assets/brokers/${selectedBroker.icon}`}
+                    alt=""
+                    className={cn(
+                      "size-9 shrink-0 rounded-lg object-contain",
+                      selectedBroker.invertInDark && "dark:invert",
+                    )}
+                  />
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">
                       Connect {selectedBroker.name}

@@ -30,7 +30,7 @@ import { Pnl } from "@/components/pnl";
 import { MonetaryValue } from "@/components/privacy";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { DirectionBadge } from "@/components/ui/direction-badge";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

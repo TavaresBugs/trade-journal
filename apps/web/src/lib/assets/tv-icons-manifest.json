@@ -2117,13 +2117,13 @@
   },
   "crypto": {
     "BTC": {
-      "icon": "/assets/icons/crypto/bip.svg",
-      "name": "BTC",
+      "icon": "/assets/icons/crypto/bitcoin.svg",
+      "name": "Bitcoin",
       "logoid": "crypto/XTVCBTC"
     },
     "ETH": {
       "icon": "/assets/icons/crypto/eth.svg",
-      "name": "ETH",
+      "name": "Ethereum",
       "logoid": "crypto/XTVCETH"
     },
     "SOL": {
@@ -2486,11 +2486,6 @@
       "name": "MUBARAK / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCMUBARAK"
     },
-    "OTHERS.D": {
-      "icon": "/assets/icons/crypto/total.svg",
-      "name": "Crypto Total Market Cap Excluding Top 10 Dominance, %",
-      "logoid": "crypto-total-market-cap"
-    },
     "CAKE": {
       "icon": "/assets/icons/crypto/cake.svg",
       "name": "CAKE / TetherUS",
@@ -2550,11 +2545,6 @@
       "icon": "/assets/icons/crypto/solana.svg",
       "name": "SOLANA",
       "logoid": "crypto/XTVCSOL"
-    },
-    "BITCOIN": {
-      "icon": "/assets/icons/crypto/bitcoin.svg",
-      "name": "Bitcoin",
-      "logoid": "crypto/XTVCBTC"
     },
     "RAY": {
       "icon": "/assets/icons/crypto/ray.svg",
@@ -2646,11 +2636,6 @@
       "name": "ZAMA / TetherUS",
       "logoid": "crypto/XTVCZAMA"
     },
-    "ETH.D": {
-      "icon": "/assets/icons/crypto/eth.svg",
-      "name": "Market Cap ETH Dominance, %",
-      "logoid": "crypto/XTVCETH"
-    },
     "BTW": {
       "icon": "/assets/icons/crypto/btw.svg",
       "name": "BTW / TetherUS PERPETUAL CONTRACT",
@@ -2696,11 +2681,6 @@
       "name": "DYDX / TetherUS",
       "logoid": "crypto/XTVCDYDXN"
     },
-    "PUMPFUN": {
-      "icon": "/assets/icons/crypto/pump.svg",
-      "name": "PUMPFUNUSDT Perpetual Contract",
-      "logoid": "crypto/XTVCPUMPF"
-    },
     "THETA": {
       "icon": "/assets/icons/crypto/theta.svg",
       "name": "Theta Token / TetherUS",
@@ -2740,11 +2720,6 @@
       "icon": "/assets/icons/crypto/qnt.svg",
       "name": "QNT / TetherUS",
       "logoid": "crypto/XTVCQNT"
-    },
-    "GOLDXAU": {
-      "icon": "/assets/icons/commodities/gc.svg",
-      "name": "GOLD(XAU)/USDT Perpetual Contract",
-      "logoid": "metal/gold"
     },
     "ETHC": {
       "icon": "/assets/icons/crypto/eth.svg",
@@ -2830,11 +2805,6 @@
       "icon": "/assets/icons/crypto/pi.svg",
       "name": "Pi Network/USDT",
       "logoid": "crypto/XTVCPI3"
-    },
-    "NASDAQ100": {
-      "icon": "/assets/icons/indices/nq.svg",
-      "name": "NASDAQ100/USDT Perpetual Contract",
-      "logoid": "indices/nasdaq-100"
     },
     "BEAT": {
       "icon": "/assets/icons/crypto/beat.svg",
@@ -3046,11 +3016,6 @@
       "name": "Onyxcoin / US Dollar",
       "logoid": "crypto/XTVCXCN"
     },
-    "C.D": {
-      "icon": "/assets/icons/crypto/c-d.svg",
-      "name": "Market Cap USDC Dominance, %",
-      "logoid": "crypto/XTVCUSDC"
-    },
     "AVA": {
       "icon": "/assets/icons/crypto/ava.svg",
       "name": "AVA / TetherUS PERPETUAL CONTRACT",
@@ -3065,11 +3030,6 @@
       "icon": "/assets/icons/crypto/cys.svg",
       "name": "CYS / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCCYSI"
-    },
-    "OILWTI": {
-      "icon": "/assets/icons/commodities/cl.svg",
-      "name": "Oil WTI/USDT Perpetual Contract",
-      "logoid": "crude-oil"
     },
     "XRPKRW": {
       "icon": "/assets/icons/crypto/xrp.svg",
@@ -3166,11 +3126,6 @@
       "name": "Bitcoin / BRL",
       "logoid": "crypto/XTVCBTC"
     },
-    "DOGETHB": {
-      "icon": "/assets/icons/crypto/doge.svg",
-      "name": "Dogecoin",
-      "logoid": "crypto/XTVCDOGE"
-    },
     "XRPTHB": {
       "icon": "/assets/icons/crypto/xrp.svg",
       "name": "XRP",
@@ -3215,11 +3170,6 @@
       "icon": "/assets/icons/crypto/sol.svg",
       "name": "SOL / Ethereum",
       "logoid": "crypto/XTVCSOL"
-    },
-    "STABLE.C.D": {
-      "icon": "/assets/icons/crypto/total.svg",
-      "name": "Crypto Stablecoins Dominance, %",
-      "logoid": "crypto-total-market-cap"
     },
     "POWER": {
       "icon": "/assets/icons/crypto/power.svg",
@@ -3306,11 +3256,6 @@
       "name": "CHILLGUY / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCCHILLGUY"
     },
-    "OILBRENT": {
-      "icon": "/assets/icons/commodities/cl.svg",
-      "name": "Oil Brent/USDT Perpetual Contract",
-      "logoid": "crude-oil"
-    },
     "KMNO": {
       "icon": "/assets/icons/crypto/kmno.svg",
       "name": "KMNO / TetherUS PERPETUAL CONTRACT",
@@ -3325,11 +3270,6 @@
       "icon": "/assets/icons/crypto/skyai.svg",
       "name": "SKYAI / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCSKYAI2"
-    },
-    "ETH.UM": {
-      "icon": "/assets/icons/crypto/eth.svg",
-      "name": "ETHUSD UM X-Perp Contract",
-      "logoid": "crypto/XTVCETH"
     },
     "MAGMA": {
       "icon": "/assets/icons/crypto/magma.svg",
@@ -3380,11 +3320,6 @@
       "icon": "/assets/icons/crypto/stg.svg",
       "name": "STG / TetherUS",
       "logoid": "crypto/XTVCSTG"
-    },
-    "NEARTHB": {
-      "icon": "/assets/icons/crypto/near.svg",
-      "name": "NEAR Protocol",
-      "logoid": "crypto/XTVCNEAR"
     },
     "GOL": {
       "icon": "/assets/icons/commodities/gc.svg",
@@ -3593,16 +3528,6 @@
     }
   },
   "stocks": {
-    "SPY": {
-      "icon": "/assets/icons/funds/spy.svg",
-      "name": "SPDR S&P 500 ETF TRUST",
-      "logoid": "spdr-sandp500-etf-tr"
-    },
-    "QQQ": {
-      "icon": "/assets/icons/funds/qqq.svg",
-      "name": "Invesco QQQ Trust, Series 1",
-      "logoid": "invesco"
-    },
     "AAPL": {
       "icon": "/assets/icons/stocks/aapl.svg",
       "name": "Apple Inc.",
@@ -3703,11 +3628,6 @@
       "name": "Nebius Group N.V.",
       "logoid": "nebius-group-nv"
     },
-    "IWM": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares Russell 2000 Index Fund",
-      "logoid": "ishares"
-    },
     "ORCL": {
       "icon": "/assets/icons/stocks/orcl.svg",
       "name": "Oracle Corporation",
@@ -3717,11 +3637,6 @@
       "icon": "/assets/icons/stocks/mrvl.svg",
       "name": "Marvell Technology, Inc.",
       "logoid": "marvell-tech"
-    },
-    "SOXL": {
-      "icon": "/assets/icons/funds/soxl.svg",
-      "name": "Direxion Daily Semiconductor Bull 3X ETF",
-      "logoid": "direxion"
     },
     "RKLB": {
       "icon": "/assets/icons/stocks/rklb.svg",
@@ -3773,11 +3688,6 @@
       "name": "SoFi Technologies, Inc.",
       "logoid": "sofi"
     },
-    "SMH": {
-      "icon": "/assets/icons/funds/smh.svg",
-      "name": "VanEck Semiconductor ETF",
-      "logoid": "vaneck"
-    },
     "SMCI": {
       "icon": "/assets/icons/stocks/smci.svg",
       "name": "Super Micro Computer, Inc.",
@@ -3798,11 +3708,6 @@
       "name": "GameStop Corporation",
       "logoid": "gamestop"
     },
-    "GLD": {
-      "icon": "/assets/icons/funds/spy.svg",
-      "name": "SPDR Gold Shares",
-      "logoid": "spdr-sandp500-etf-tr"
-    },
     "TSM": {
       "icon": "/assets/icons/stocks/tsm.svg",
       "name": "Taiwan Semiconductor Manufacturing Company Ltd.",
@@ -3812,16 +3717,6 @@
       "icon": "/assets/icons/stocks/baba.svg",
       "name": "Alibaba Group Holding Limited",
       "logoid": "alibaba"
-    },
-    "SOXX": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares PHLX SOX Semiconductor Sector Index Fund",
-      "logoid": "ishares"
-    },
-    "TQQQ": {
-      "icon": "/assets/icons/funds/tqqq.svg",
-      "name": "ProShares UltraPro QQQ",
-      "logoid": "proshares"
     },
     "SKHY": {
       "icon": "/assets/icons/stocks/skhy.svg",
@@ -3943,11 +3838,6 @@
       "name": "Oklo Inc.",
       "logoid": "altc"
     },
-    "VOO": {
-      "icon": "/assets/icons/funds/voo.svg",
-      "name": "Vanguard S&P 500 ETF",
-      "logoid": "vanguard"
-    },
     "PANW": {
       "icon": "/assets/icons/stocks/panw.svg",
       "name": "Palo Alto Networks, Inc.",
@@ -3993,16 +3883,6 @@
       "name": "Bank of America Corporation",
       "logoid": "bank-of-america"
     },
-    "XLE": {
-      "icon": "/assets/icons/funds/xle.svg",
-      "name": "State Street Energy Select Sector SPDR ETF",
-      "logoid": "sector/energy"
-    },
-    "TLT": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares 20+ Year Treasury Bond ETF",
-      "logoid": "ishares"
-    },
     "ONDS": {
       "icon": "/assets/icons/stocks/onds.svg",
       "name": "Ondas Inc",
@@ -4012,21 +3892,6 @@
       "icon": "/assets/icons/stocks/asml.svg",
       "name": "ASML Holding N.V. - New York Registry Shares",
       "logoid": "asml"
-    },
-    "SLV": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares Silver Trust",
-      "logoid": "ishares"
-    },
-    "XLK": {
-      "icon": "/assets/icons/funds/xlk.svg",
-      "name": "State Street Technology Select Sector SPDR ETF",
-      "logoid": "sector/technology"
-    },
-    "USO": {
-      "icon": "/assets/icons/funds/uso.svg",
-      "name": "United States Oil Fund",
-      "logoid": "uscf-fund"
     },
     "JPM": {
       "icon": "/assets/icons/stocks/jpm.svg",
@@ -4083,11 +3948,6 @@
       "name": "Shopify Inc.",
       "logoid": "shopify"
     },
-    "XLF": {
-      "icon": "/assets/icons/funds/xlf.svg",
-      "name": "State Street Financial Select Sector SPDR ETF",
-      "logoid": "sector/financial"
-    },
     "RGTI": {
       "icon": "/assets/icons/stocks/rgti.svg",
       "name": "Rigetti Computing, Inc.",
@@ -4097,11 +3957,6 @@
       "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Expanded Tech-Software Sector ETF",
       "logoid": "ishares"
-    },
-    "DIA": {
-      "icon": "/assets/icons/stocks/dia.svg",
-      "name": "State Street SPDR Dow Jones Industrial Average ETF Trust",
-      "logoid": "spdr-sandp500-etf-tr"
     },
     "COST": {
       "icon": "/assets/icons/stocks/cost.svg",
@@ -4218,11 +4073,6 @@
       "name": "PepsiCo, Inc.",
       "logoid": "pepsico"
     },
-    "XLV": {
-      "icon": "/assets/icons/funds/xlv.svg",
-      "name": "State Street Health Care Select Sector SPDR ETF",
-      "logoid": "sector/health-care"
-    },
     "MAGS": {
       "icon": "/assets/icons/stocks/ram.svg",
       "name": "Roundhill Magnificent Seven ETF",
@@ -4293,20 +4143,10 @@
       "name": "Redwire Corporation",
       "logoid": "redwire"
     },
-    "XLP": {
-      "icon": "/assets/icons/funds/xlp.svg",
-      "name": "State Street Consumer Staples Select Sector SPDR ETF",
-      "logoid": "sector/consumer-staples"
-    },
     "NU": {
       "icon": "/assets/icons/stocks/nu.svg",
       "name": "Nu Holdings Ltd.",
       "logoid": "nu-holdings"
-    },
-    "XLU": {
-      "icon": "/assets/icons/funds/xlu.svg",
-      "name": "State Street Utilities Select Sector SPDR ETF",
-      "logoid": "sector/utilities"
     },
     "VEEE": {
       "icon": "/assets/icons/stocks/veee.svg",
@@ -4317,11 +4157,6 @@
       "icon": "/assets/icons/stocks/ceg.svg",
       "name": "Constellation Energy Corporation",
       "logoid": "constellation-energy-cad-hedged-cibc-cdr"
-    },
-    "XLI": {
-      "icon": "/assets/icons/funds/xli.svg",
-      "name": "State Street Industrial Select Sector SPDR ETF",
-      "logoid": "sector/industrial"
     },
     "QBTS": {
       "icon": "/assets/icons/stocks/qbts.svg",
@@ -4367,11 +4202,6 @@
       "icon": "/assets/icons/stocks/gs.svg",
       "name": "Goldman Sachs Group, Inc. (The)",
       "logoid": "golden-sachs-etf-trust-goldman"
-    },
-    "SQQQ": {
-      "icon": "/assets/icons/funds/tqqq.svg",
-      "name": "ProShares UltraPro Short QQQ",
-      "logoid": "proshares"
     },
     "KLAC": {
       "icon": "/assets/icons/stocks/klac.svg",
@@ -4458,11 +4288,6 @@
       "name": "Viking Therapeutics, Inc.",
       "logoid": "viking-therapeutics"
     },
-    "XLC": {
-      "icon": "/assets/icons/funds/xlc.svg",
-      "name": "State Street Communication Services Select Sector SPDR ETF",
-      "logoid": "communication-services"
-    },
     "RIVN": {
       "icon": "/assets/icons/stocks/rivn.svg",
       "name": "Rivian Automotive, Inc.",
@@ -4547,11 +4372,6 @@
       "icon": "/assets/icons/stocks/dcoy.svg",
       "name": "Decoy Therapeutics Inc.",
       "logoid": "decoy-therapeutics"
-    },
-    "XLB": {
-      "icon": "/assets/icons/funds/xlb.svg",
-      "name": "State Street Materials Select Sector SPDR ETF",
-      "logoid": "sector/materials"
     },
     "MRK": {
       "icon": "/assets/icons/stocks/mrk.svg",
@@ -4688,11 +4508,6 @@
       "name": "Enphase Energy, Inc.",
       "logoid": "enphase-energy"
     },
-    "EWZ": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares MSCI Brazil ETF",
-      "logoid": "ishares"
-    },
     "BB": {
       "icon": "/assets/icons/stocks/bb.svg",
       "name": "BlackBerry Limited",
@@ -4727,11 +4542,6 @@
       "icon": "/assets/icons/stocks/oscr.svg",
       "name": "Oscar Health, Inc.",
       "logoid": "oscar-health"
-    },
-    "XLRE": {
-      "icon": "/assets/icons/funds/xlre.svg",
-      "name": "State Street Real Estate Select Sector SPDR ETF",
-      "logoid": "sector/real-estate"
     },
     "BTTC": {
       "icon": "/assets/icons/stocks/bttc.svg",
@@ -4803,11 +4613,6 @@
       "name": "Duolingo, Inc.",
       "logoid": "duolingo"
     },
-    "HYG": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares iBoxx $ High Yield Corporate Bond ETF",
-      "logoid": "ishares"
-    },
     "SBET": {
       "icon": "/assets/icons/stocks/sbet.svg",
       "name": "Sharplink, Inc.",
@@ -4877,11 +4682,6 @@
       "icon": "/assets/icons/stocks/glxy.svg",
       "name": "Galaxy Digital Inc.",
       "logoid": "galaxy-digital"
-    },
-    "VTI": {
-      "icon": "/assets/icons/funds/voo.svg",
-      "name": "Vanguard Morningstar Total Stock Market ETF",
-      "logoid": "vanguard"
     },
     "U": {
       "icon": "/assets/icons/stocks/u.svg",
@@ -5162,11 +4962,6 @@
       "icon": "/assets/icons/stocks/dkng.svg",
       "name": "DraftKings Inc.",
       "logoid": "draftkings"
-    },
-    "ARKK": {
-      "icon": "/assets/icons/funds/arkk.svg",
-      "name": "ARK Innovation ETF",
-      "logoid": "ark-etf-tr"
     },
     "UAL": {
       "icon": "/assets/icons/stocks/ual.svg",
@@ -5633,11 +5428,6 @@
       "name": "Illumina, Inc.",
       "logoid": "illumina"
     },
-    "EEM": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares MSCI Emerging Index Fund",
-      "logoid": "ishares"
-    },
     "FISV": {
       "icon": "/assets/icons/stocks/fisv.svg",
       "name": "Fiserv, Inc.",
@@ -5812,11 +5602,6 @@
       "icon": "/assets/icons/funds/spy.svg",
       "name": "State Street SPDR S&P Oil & Gas Exploration & Production ETF",
       "logoid": "spdr-sandp500-etf-tr"
-    },
-    "UNG": {
-      "icon": "/assets/icons/funds/uso.svg",
-      "name": "United States Natural Gas Fund LP",
-      "logoid": "uscf-fund"
     },
     "HWM": {
       "icon": "/assets/icons/stocks/hwm.svg",
@@ -6132,11 +5917,6 @@
       "icon": "/assets/icons/stocks/dino.svg",
       "name": "HF Sinclair Corporation",
       "logoid": "hf-sinclair"
-    },
-    "LQD": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares iBoxx $ Investment Grade Corporate Bond ETF",
-      "logoid": "ishares"
     },
     "RXT": {
       "icon": "/assets/icons/stocks/rxt.svg",
@@ -6703,11 +6483,6 @@
       "name": "United States Antimony Corporation",
       "logoid": "united-states-antimony"
     },
-    "BTC": {
-      "icon": "/assets/icons/stocks/btc.svg",
-      "name": "Grayscale Bitcoin Mini Trust (BTC)",
-      "logoid": "grayscale"
-    },
     "ROST": {
       "icon": "/assets/icons/stocks/rost.svg",
       "name": "Ross Stores, Inc.",
@@ -6737,1006 +6512,6 @@
       "icon": "/assets/icons/stocks/dfdv.svg",
       "name": "DeFi Development Corp.",
       "logoid": "defidevcorp"
-    },
-    "PETR4": {
-      "icon": "/assets/icons/b3/petr4.svg",
-      "name": "Petroleo Brasileiro SA Pfd",
-      "logoid": "brasileiro-petrobras"
-    },
-    "BBAS3": {
-      "icon": "/assets/icons/b3/bbas3.svg",
-      "name": "Banco do Brasil S.A.",
-      "logoid": "banco-do-brasil"
-    },
-    "VALE3": {
-      "icon": "/assets/icons/b3/vale3.svg",
-      "name": "Vale S.A.",
-      "logoid": "vale"
-    },
-    "ITUB4": {
-      "icon": "/assets/icons/b3/itub4.svg",
-      "name": "Itau Unibanco Holding SA Pfd",
-      "logoid": "itau-unibanco"
-    },
-    "BOVA11": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares Ibovespa Fundo de Indice",
-      "logoid": "ishares"
-    },
-    "BBDC4": {
-      "icon": "/assets/icons/b3/bbdc3.svg",
-      "name": "Banco Bradesco SA Pfd",
-      "logoid": "bradesco"
-    },
-    "BBSE3": {
-      "icon": "/assets/icons/b3/bbas3.svg",
-      "name": "BB Seguridade Participacoes SA",
-      "logoid": "banco-do-brasil"
-    },
-    "ITSA4": {
-      "icon": "/assets/icons/b3/itsa3.svg",
-      "name": "Itausa SA Non-Cum Perp Pfd Registered Shs",
-      "logoid": "itausa"
-    },
-    "WEGE3": {
-      "icon": "/assets/icons/b3/wege3.svg",
-      "name": "WEG SA",
-      "logoid": "weg"
-    },
-    "PRIO3": {
-      "icon": "/assets/icons/b3/prio3.svg",
-      "name": "Prio SA",
-      "logoid": "petrorio-on-nm"
-    },
-    "B3SA3": {
-      "icon": "/assets/icons/b3/b3sa3.svg",
-      "name": "B3 SA - Brasil, Bolsa, Balcao",
-      "logoid": "b3-on-nm"
-    },
-    "MGLU3": {
-      "icon": "/assets/icons/b3/mglu3.svg",
-      "name": "Magazine Luiza S.A.",
-      "logoid": "magaz-luiza-on-nm"
-    },
-    "CXSE3": {
-      "icon": "/assets/icons/b3/cxse3.svg",
-      "name": "Caixa Seguridade Participacoes SA",
-      "logoid": "caixa-segurion"
-    },
-    "CMIG4": {
-      "icon": "/assets/icons/b3/cmig4.svg",
-      "name": "Companhia Energetica de Minas Gerais SA Pfd",
-      "logoid": "cemig"
-    },
-    "AXIA3": {
-      "icon": "/assets/icons/b3/axia3.svg",
-      "name": "AXIA Energia SA",
-      "logoid": "axia-energiapnc-n1"
-    },
-    "EMBJ3": {
-      "icon": "/assets/icons/b3/embj3.svg",
-      "name": "Embraer S.A.",
-      "logoid": "embraer"
-    },
-    "AURA33": {
-      "icon": "/assets/icons/b3/aura33.svg",
-      "name": "Aura Minerals Inc Shs Unsponsored Brazilian Depositary Receipt Repr 1 Sh",
-      "logoid": "aura-360-dr3"
-    },
-    "TASA4": {
-      "icon": "/assets/icons/b3/tasa3.svg",
-      "name": "Taurus Armas S.A. Pfd",
-      "logoid": "taurus-armas"
-    },
-    "POMO4": {
-      "icon": "/assets/icons/b3/pomo3.svg",
-      "name": "Marcopolo SA Pfd",
-      "logoid": "marcopolo"
-    },
-    "TRXF11": {
-      "icon": "/assets/icons/b3/trxf11.svg",
-      "name": "TRX Real Estate Fundo Investimento Imobiliario",
-      "logoid": "fii-trxe-corci"
-    },
-    "CSNA3": {
-      "icon": "/assets/icons/b3/csna3.svg",
-      "name": "Companhia Siderurgica Nacional",
-      "logoid": "companhia-siderurgica-nacional"
-    },
-    "SBSP3": {
-      "icon": "/assets/icons/b3/sbsp3.svg",
-      "name": "Companhia de Saneamento Basico do Estado de Sao Paulo SABESP",
-      "logoid": "sabesp"
-    },
-    "BPAC11": {
-      "icon": "/assets/icons/b3/bpac11.svg",
-      "name": "Banco BTG Pactual SA Units Cons of 1 Sh + 2 Pfd Shs A",
-      "logoid": "btgp"
-    },
-    "LREN3": {
-      "icon": "/assets/icons/b3/lren3.svg",
-      "name": "Lojas Renner S.A.",
-      "logoid": "lojas-renner"
-    },
-    "CMIN3": {
-      "icon": "/assets/icons/b3/cmin3.svg",
-      "name": "CSN Mineracao SA",
-      "logoid": "csn-mineracao"
-    },
-    "PETR3": {
-      "icon": "/assets/icons/b3/petr4.svg",
-      "name": "Petroleo Brasileiro SA",
-      "logoid": "brasileiro-petrobras"
-    },
-    "OBTC3": {
-      "icon": "/assets/icons/b3/obtc3.svg",
-      "name": "Oranjebtc SA Educacao e Investimento",
-      "logoid": "oranjebtc"
-    },
-    "ABEV3": {
-      "icon": "/assets/icons/b3/abev3.svg",
-      "name": "Ambev SA",
-      "logoid": "ambev"
-    },
-    "BEEF3": {
-      "icon": "/assets/icons/b3/beef3.svg",
-      "name": "Minerva S.A.",
-      "logoid": "minerva-on-nm"
-    },
-    "BBDC3": {
-      "icon": "/assets/icons/b3/bbdc3.svg",
-      "name": "Banco Bradesco SA",
-      "logoid": "bradesco"
-    },
-    "SUZB3": {
-      "icon": "/assets/icons/b3/suzb3.svg",
-      "name": "Suzano S.A.",
-      "logoid": "suzano"
-    },
-    "XPML11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "XP Malls Fundo Investimento Imobiliario Investor",
-      "logoid": "fii"
-    },
-    "IVVB11": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares S&P 500 Fundo de Investimento em Cotas de Fundo de Indice - Investimento no Exterior",
-      "logoid": "ishares"
-    },
-    "JHSF3": {
-      "icon": "/assets/icons/b3/jhsf3.svg",
-      "name": "JHSF Participacoes S.A.",
-      "logoid": "jhsf-part-on-nm"
-    },
-    "VAMO3": {
-      "icon": "/assets/icons/b3/vamo3.svg",
-      "name": "Vamos Locacao de Caminhoes, Maquinas e Equipamentos SA",
-      "logoid": "vamos-on-nm"
-    },
-    "PSSA3": {
-      "icon": "/assets/icons/b3/pssa3.svg",
-      "name": "Porto Seguro S.A.",
-      "logoid": "porto-seguro"
-    },
-    "TSMC34": {
-      "icon": "/assets/icons/stocks/tsm.svg",
-      "name": "Taiwan Semiconductor Manufacturing Co., Ltd. ADR Unsponsored Brazilian Depository Receipt Repr 0.125 ADR",
-      "logoid": "taiwan-semiconductor"
-    },
-    "TIMS3": {
-      "icon": "/assets/icons/b3/tims3.svg",
-      "name": "TIM S.A.",
-      "logoid": "tim-participacoes"
-    },
-    "VULC3": {
-      "icon": "/assets/icons/b3/vulc3.svg",
-      "name": "Vulcabras SA",
-      "logoid": "vulcabras"
-    },
-    "TAEE11": {
-      "icon": "/assets/icons/b3/taee11.svg",
-      "name": "Transmissora Alianca De Energia Eletrica S.A. Unit",
-      "logoid": "taesa"
-    },
-    "CPFE3": {
-      "icon": "/assets/icons/b3/cpfe3.svg",
-      "name": "CPFL Energia S.A.",
-      "logoid": "cpfl-energia"
-    },
-    "CSAN3": {
-      "icon": "/assets/icons/b3/csan3.svg",
-      "name": "Cosan S.A.",
-      "logoid": "cosan"
-    },
-    "GGBR4": {
-      "icon": "/assets/icons/b3/ggbr4.svg",
-      "name": "Gerdau S.A. Pfd",
-      "logoid": "gerdau"
-    },
-    "EGIE3": {
-      "icon": "/assets/icons/b3/egie3.svg",
-      "name": "ENGIE Brasil Energia S.A.",
-      "logoid": "engie-brasilon-nm"
-    },
-    "CYRE3": {
-      "icon": "/assets/icons/b3/cyre3.svg",
-      "name": "Cyrela Brazil Realty SA Empreendimentos e Participacoes",
-      "logoid": "cyrela-realton-nm"
-    },
-    "COGN3": {
-      "icon": "/assets/icons/b3/cogn3.svg",
-      "name": "Cogna Educacao S.A.",
-      "logoid": "cogna"
-    },
-    "AZZA3": {
-      "icon": "/assets/icons/b3/azza3.svg",
-      "name": "Azzas 2154 SA",
-      "logoid": "arezzo"
-    },
-    "ALOS3": {
-      "icon": "/assets/icons/b3/alos3.svg",
-      "name": "Allos S.A.",
-      "logoid": "allos-on-nm"
-    },
-    "VIVT3": {
-      "icon": "/assets/icons/b3/vivt3.svg",
-      "name": "Telefonica Brasil S.A.",
-      "logoid": "telefonica"
-    },
-    "MXRF11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "Maxi Renda Fundo de Investimento Imobiliario Cotas",
-      "logoid": "fii"
-    },
-    "MRVE3": {
-      "icon": "/assets/icons/b3/mrve3.svg",
-      "name": "MRV Engenharia e Participacoes S.A.",
-      "logoid": "mrv"
-    },
-    "KLBN4": {
-      "icon": "/assets/icons/b3/klbn4.svg",
-      "name": "Klabin SA Non-Cum Perp Pfd Registered Shs",
-      "logoid": "klabin"
-    },
-    "USIM5": {
-      "icon": "/assets/icons/b3/usim5.svg",
-      "name": "Usinas Siderurgicas de Minas Gerais SA-Usiminas Pfd A",
-      "logoid": "usiminas-pna-n1"
-    },
-    "DIRR3": {
-      "icon": "/assets/icons/b3/dirr3.svg",
-      "name": "Direcional Engenharia S.A.",
-      "logoid": "direcional"
-    },
-    "IRBR3": {
-      "icon": "/assets/icons/b3/irbr3.svg",
-      "name": "IRB Brasil Resseguros SA",
-      "logoid": "irbbrasil-reon"
-    },
-    "SAPR4": {
-      "icon": "/assets/icons/b3/sapr4.svg",
-      "name": "Companhia de Saneamento do Parana - Sanepar Non-Cum Perp Pfd Registered Shs",
-      "logoid": "sanepar"
-    },
-    "SIMH3": {
-      "icon": "/assets/icons/b3/simh3.svg",
-      "name": "Simpar SA",
-      "logoid": "jsl"
-    },
-    "FLRY3": {
-      "icon": "/assets/icons/b3/flry3.svg",
-      "name": "Fleury SA",
-      "logoid": "fleury-on-nm"
-    },
-    "HASH11": {
-      "icon": "/assets/icons/funds/hash11.svg",
-      "name": "Hashdex Nasdaq Crypto Index Fundo de Indice",
-      "logoid": "hashdex"
-    },
-    "GOLD11": {
-      "icon": "/assets/icons/b3/gold11.svg",
-      "name": "Gold - Trend ETF LBMA Ouro Fundo Investimento Cotas de Fundo de Indice Investiment Exterior",
-      "logoid": "firf-xp-ie-fidc"
-    },
-    "BHIA3": {
-      "icon": "/assets/icons/b3/bhia3.svg",
-      "name": "Grupo Casas Bahia S.A.",
-      "logoid": "casas-bahia-on-nm"
-    },
-    "BRAV3": {
-      "icon": "/assets/icons/b3/brav3.svg",
-      "name": "Brava Energia SA",
-      "logoid": "brava-on-nm"
-    },
-    "HAPV3": {
-      "icon": "/assets/icons/b3/hapv3.svg",
-      "name": "Hapvida Participacoes e Investimentos SA",
-      "logoid": "hapvida"
-    },
-    "SMAL11": {
-      "icon": "/assets/icons/funds/eem.svg",
-      "name": "iShares BM&FBOVESPA Small Cap Index Fund",
-      "logoid": "ishares"
-    },
-    "TOTS3": {
-      "icon": "/assets/icons/b3/tots3.svg",
-      "name": "TOTVS S.A.",
-      "logoid": "totvs"
-    },
-    "CSMG3": {
-      "icon": "/assets/icons/b3/csmg3.svg",
-      "name": "Companhia de Saneamento de Minas Gerais",
-      "logoid": "copasa"
-    },
-    "CPLE3": {
-      "icon": "/assets/icons/b3/cple3.svg",
-      "name": "Companhia Paranaense de Energia",
-      "logoid": "cia-paranaense"
-    },
-    "CEAB3": {
-      "icon": "/assets/icons/b3/ceab3.svg",
-      "name": "C&A Modas SA",
-      "logoid": "cea-modas-on-nm"
-    },
-    "EQTL3": {
-      "icon": "/assets/icons/b3/eqtl3.svg",
-      "name": "Equatorial S.A.",
-      "logoid": "equatorial"
-    },
-    "RENT3": {
-      "icon": "/assets/icons/b3/rent3.svg",
-      "name": "Localiza Rent A Car SA",
-      "logoid": "localiza"
-    },
-    "M2ST34": {
-      "icon": "/assets/icons/stocks/mstr.svg",
-      "name": "Strategy Inc -A- Unsponsored BDR",
-      "logoid": "strategy-cad-hedged-cibc-cdr"
-    },
-    "HGLG11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "Patria Log - Fundo de Investimento Imobiliario - Responsabilidade Limitada Cotas",
-      "logoid": "fii"
-    },
-    "INBR32": {
-      "icon": "/assets/icons/b3/inbr32.svg",
-      "name": "Inter & Co., Inc. Shs Unsponsored Brazilian Depositary Receipt Repr 1 Sh",
-      "logoid": "inter-and-co"
-    },
-    "ISAE4": {
-      "icon": "/assets/icons/b3/isae4.svg",
-      "name": "Isa Energia Brasil SA Non-Cum Perp Pfd Registered Shs",
-      "logoid": "interconexion-electrica-sa-esp"
-    },
-    "BRAP4": {
-      "icon": "/assets/icons/b3/brap4.svg",
-      "name": "Bradespar SA Pfd",
-      "logoid": "bradespar"
-    },
-    "MBRF3": {
-      "icon": "/assets/icons/b3/mbrf3.svg",
-      "name": "MBRF Global Foods Company S.A.",
-      "logoid": "marfrig-on-nm"
-    },
-    "CASH3": {
-      "icon": "/assets/icons/b3/cash3.svg",
-      "name": "Meliuz SA",
-      "logoid": "meliuz"
-    },
-    "VIVA3": {
-      "icon": "/assets/icons/b3/viva3.svg",
-      "name": "Vivara Participacoes SA",
-      "logoid": "vivara-sa-on-nm"
-    },
-    "SLCE3": {
-      "icon": "/assets/icons/b3/slce3.svg",
-      "name": "SLC Agricola S.A.",
-      "logoid": "slc-agricola"
-    },
-    "BTLG11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "BTG Pactual Logistica Fundo de Investimento Imobiliario Responsabilidade Limitada",
-      "logoid": "fii"
-    },
-    "COIN11": {
-      "icon": "/assets/icons/b3/coin11.svg",
-      "name": "Buena Vista Neos Bitcoin High Income Etf",
-      "logoid": "etf-bv-qqqi-ci"
-    },
-    "SMTO3": {
-      "icon": "/assets/icons/b3/smto3.svg",
-      "name": "Sao Martinho S.A.",
-      "logoid": "sao-martinhoon"
-    },
-    "POMO3": {
-      "icon": "/assets/icons/b3/pomo3.svg",
-      "name": "Marcopolo SA",
-      "logoid": "marcopolo"
-    },
-    "ENEV3": {
-      "icon": "/assets/icons/b3/enev3.svg",
-      "name": "Eneva S.A.",
-      "logoid": "eneva"
-    },
-    "AURE3": {
-      "icon": "/assets/icons/b3/aure3.svg",
-      "name": "Auren Energia SA",
-      "logoid": "auren-on-nm"
-    },
-    "GGRC11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "Zagros Renda Imobiliaria Fundo de Investimento Imobiliario - Responsabilidade Limitada",
-      "logoid": "fii"
-    },
-    "EZTC3": {
-      "icon": "/assets/icons/b3/eztc3.svg",
-      "name": "EZ TEC Empreendimentos e Participacoes SA",
-      "logoid": "eztec"
-    },
-    "CURY3": {
-      "icon": "/assets/icons/b3/cury3.svg",
-      "name": "Cury Construtora e Incorporadora SA",
-      "logoid": "cury-s-a-on-nm"
-    },
-    "BRKM5": {
-      "icon": "/assets/icons/b3/brkm5.svg",
-      "name": "Braskem S.A. Pfd A",
-      "logoid": "braskem"
-    },
-    "BRSR6": {
-      "icon": "/assets/icons/b3/brsr6.svg",
-      "name": "Banco do Estado do Rio Grande do Sul SA Pfd Series B",
-      "logoid": "banrisul"
-    },
-    "MOVI3": {
-      "icon": "/assets/icons/b3/movi3.svg",
-      "name": "Movida Participacoes SA",
-      "logoid": "movida-on-nm"
-    },
-    "SAPR11": {
-      "icon": "/assets/icons/b3/sapr4.svg",
-      "name": "Companhia de Saneamento do Parana - Sanepar Units Cons of 1 Sh + 4 Pfd Shs",
-      "logoid": "sanepar"
-    },
-    "SPCX34": {
-      "icon": "/assets/icons/stocks/spcx.svg",
-      "name": "Space Exploration Technologies Corp. Shs Unsponsored Brazilian Depositary Receipt Repr 0.66667 Sh",
-      "logoid": "spacex"
-    },
-    "VBBR3": {
-      "icon": "/assets/icons/b3/vbbr3.svg",
-      "name": "Vibra Energia SA",
-      "logoid": "vibra-on-nm"
-    },
-    "UGPA3": {
-      "icon": "/assets/icons/b3/ugpa3.svg",
-      "name": "Ultrapar Participacoes S.A.",
-      "logoid": "ultrapar-participacoes"
-    },
-    "ABCB4": {
-      "icon": "/assets/icons/b3/abcb4.svg",
-      "name": "Banco ABC Brasil SA Conv Pfd",
-      "logoid": "abc-brasil"
-    },
-    "ALPA4": {
-      "icon": "/assets/icons/b3/alpa4.svg",
-      "name": "Alpargatas SA Pfd",
-      "logoid": "alpargatas"
-    },
-    "RDOR3": {
-      "icon": "/assets/icons/b3/rdor3.svg",
-      "name": "Rede D'Or Sao Luiz SA",
-      "logoid": "rede-d-or"
-    },
-    "RADL3": {
-      "icon": "/assets/icons/b3/radl3.svg",
-      "name": "Raia Drogasil S.A.",
-      "logoid": "raiadrogasilon"
-    },
-    "RAIZ4": {
-      "icon": "/assets/icons/b3/raiz4.svg",
-      "name": "Raizen SA Non-Cum Perp Pfd Registered Shs",
-      "logoid": "raizen"
-    },
-    "GMAT3": {
-      "icon": "/assets/icons/b3/gmat3.svg",
-      "name": "Grupo Mateus SA",
-      "logoid": "grupo-mateuson-nm"
-    },
-    "RECV3": {
-      "icon": "/assets/icons/b3/recv3.svg",
-      "name": "Petroreconcavo SA",
-      "logoid": "petrorecsa-on-nm"
-    },
-    "KLBN11": {
-      "icon": "/assets/icons/b3/klbn4.svg",
-      "name": "Klabin SA Ctf de Deposito de Acoes Cons of 1 Sh + 4 Pfd Shs",
-      "logoid": "klabin"
-    },
-    "ASAI3": {
-      "icon": "/assets/icons/b3/asai3.svg",
-      "name": "Sendas Distribuidora SA",
-      "logoid": "assai-on-nm"
-    },
-    "GOAU4": {
-      "icon": "/assets/icons/b3/ggbr4.svg",
-      "name": "Metalurgica Gerdau SA Pfd",
-      "logoid": "gerdau"
-    },
-    "NVDC34": {
-      "icon": "/assets/icons/stocks/nvda.svg",
-      "name": "NVIDIA Corporation Shs Unsponsored Brazilian Depository Receipt Repr 0.02083 Sh",
-      "logoid": "nvidia"
-    },
-    "KNCR11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "Kinea Rendimentos Imobiliarios Fundo de Investimento Imobiliario - FII Cotas",
-      "logoid": "fii"
-    },
-    "SANB11": {
-      "icon": "/assets/icons/b3/sanb11.svg",
-      "name": "Banco Santander (Brasil) S.A. Units Cons of 1 Sh + 1 Pfd Sh",
-      "logoid": "santander"
-    },
-    "TAEE4": {
-      "icon": "/assets/icons/b3/taee11.svg",
-      "name": "Transmissora Alianca De Energia Eletrica S.A. Pfd",
-      "logoid": "taesa"
-    },
-    "RANI3": {
-      "icon": "/assets/icons/b3/rani3.svg",
-      "name": "Irani Papel e Embalagem SA",
-      "logoid": "celul-irani"
-    },
-    "ITUB3": {
-      "icon": "/assets/icons/b3/itub4.svg",
-      "name": "Itau Unibanco Holding S.A.",
-      "logoid": "itau-unibanco"
-    },
-    "BMGB4": {
-      "icon": "/assets/icons/b3/bmgb4.svg",
-      "name": "Banco Bmg SA BMG Pfd Registered Shs -144A- Reg S",
-      "logoid": "banco-bmg-pn-ej-n1"
-    },
-    "YDUQ3": {
-      "icon": "/assets/icons/b3/yduq3.svg",
-      "name": "YDUQS Participacoes SA",
-      "logoid": "yduqs-part-on-nm"
-    },
-    "CVCB3": {
-      "icon": "/assets/icons/b3/cvcb3.svg",
-      "name": "CVC Brasil Operadora e Agencia de Viagens SA",
-      "logoid": "cvc-brasil-on-nm"
-    },
-    "HYPE3": {
-      "icon": "/assets/icons/b3/hype3.svg",
-      "name": "Hypera S.A.",
-      "logoid": "hypera"
-    },
-    "KEPL3": {
-      "icon": "/assets/icons/b3/kepl3.svg",
-      "name": "Kepler Weber SA",
-      "logoid": "kepler-weberon-eb"
-    },
-    "PMAM3": {
-      "icon": "/assets/icons/b3/pmam3.svg",
-      "name": "Paranapanema S.A.",
-      "logoid": "paranapanemaon-nm"
-    },
-    "LEVE3": {
-      "icon": "/assets/icons/b3/leve3.svg",
-      "name": "Mahle-Metal Leve S.A.",
-      "logoid": "metal-leve"
-    },
-    "SAUD3": {
-      "icon": "/assets/icons/b3/saud3.svg",
-      "name": "Bradsaude SA",
-      "logoid": "bradsaude-sa"
-    },
-    "ONCO3": {
-      "icon": "/assets/icons/b3/onco3.svg",
-      "name": "Oncoclinicas do Brasil Servicos Medicos SA",
-      "logoid": "oncoclinicason-nm"
-    },
-    "ROXO34": {
-      "icon": "/assets/icons/stocks/nu.svg",
-      "name": "Nu Holdings Ltd. Shs -A- Sponsored Brazilian Depositary Receipt Repr 0.16667 Sh -A-",
-      "logoid": "nu-holdings"
-    },
-    "TTEN3": {
-      "icon": "/assets/icons/b3/tten3.svg",
-      "name": "Tres Tentos Agroindustrial SA",
-      "logoid": "3tentos-on-nm"
-    },
-    "UNIP6": {
-      "icon": "/assets/icons/b3/unip6.svg",
-      "name": "Unipar Carbocloro SA Pfd Class B",
-      "logoid": "unipar"
-    },
-    "DIVO11": {
-      "icon": "/assets/icons/b3/itub4.svg",
-      "name": "IT NOW IDIV Fundo de Indice Cotas",
-      "logoid": "itau-unibanco"
-    },
-    "LAVV3": {
-      "icon": "/assets/icons/b3/lavv3.svg",
-      "name": "LAVVI Empreendimentos Imobiliarios SA",
-      "logoid": "lavvi-on-nm"
-    },
-    "GRND3": {
-      "icon": "/assets/icons/b3/grnd3.svg",
-      "name": "Grendene S.A.",
-      "logoid": "grendene"
-    },
-    "HGRU11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "Patria Renda Urbana Fundo de Investimento Imobiliario Responsabilidade Limitada",
-      "logoid": "fii"
-    },
-    "GARE11": {
-      "icon": "/assets/icons/b3/gare11.svg",
-      "name": "Fundo de Investimento Imobiliario Guardian Real Estate",
-      "logoid": "fii-guardianci-er"
-    },
-    "TEND3": {
-      "icon": "/assets/icons/b3/tend3.svg",
-      "name": "Construtora Tenda SA",
-      "logoid": "tenda"
-    },
-    "QBTC11": {
-      "icon": "/assets/icons/b3/qbtc11.svg",
-      "name": "QR CME CF Bitcoin Reference Rate Fundo de Indice Investimento no Exterior",
-      "logoid": "qr-bitcoin-ci"
-    },
-    "LFTB11": {
-      "icon": "/assets/icons/b3/lftb11.svg",
-      "name": "Investo ETF Marketvector Brazil Treasury 760 Day Target Duration Classe de Indice Responsabilidade Limitada",
-      "logoid": "investo"
-    },
-    "AMER3": {
-      "icon": "/assets/icons/b3/amer3.svg",
-      "name": "Americanas SA",
-      "logoid": "americanas"
-    },
-    "INTB3": {
-      "icon": "/assets/icons/b3/intb3.svg",
-      "name": "Intelbras SA Industria de Telecomunicacao Eletronica Brasileir",
-      "logoid": "intelbras-on-nm"
-    },
-    "PGMN3": {
-      "icon": "/assets/icons/b3/pgmn3.svg",
-      "name": "Empreendimentos Pague Menos SA",
-      "logoid": "pague-menos-on-nm"
-    },
-    "MELI34": {
-      "icon": "/assets/icons/stocks/meli.svg",
-      "name": "MercadoLibre, Inc. Shs Unsponsored Brazilian Depository Receipt Repr 0.00833 Sh",
-      "logoid": "mercadolibre"
-    },
-    "MDIA3": {
-      "icon": "/assets/icons/b3/mdia3.svg",
-      "name": "M. Dias Branco SA Industria e Comercio de Alimentos",
-      "logoid": "m-diasbranco"
-    },
-    "CAML3": {
-      "icon": "/assets/icons/b3/caml3.svg",
-      "name": "Camil Alimentos SA",
-      "logoid": "camil"
-    },
-    "RAIL3": {
-      "icon": "/assets/icons/b3/rail3.svg",
-      "name": "Rumo SA",
-      "logoid": "rumo-s-a"
-    },
-    "ECOR3": {
-      "icon": "/assets/icons/b3/ecor3.svg",
-      "name": "EcoRodovias Infraestrutura e Logistica S.A.",
-      "logoid": "ecorodovias"
-    },
-    "SOJA3": {
-      "icon": "/assets/icons/b3/soja3.svg",
-      "name": "Boa Safra Sementes SA",
-      "logoid": "boa-safra-on-nm"
-    },
-    "BITH11": {
-      "icon": "/assets/icons/funds/hash11.svg",
-      "name": "Hashdex Nasdaq Bitcoin Reference Rate Fundo de Indice",
-      "logoid": "hashdex"
-    },
-    "SMFT3": {
-      "icon": "/assets/icons/b3/smft3.svg",
-      "name": "Smartfit Escola de Ginastica e Danca SA",
-      "logoid": "smart-fit-on-nm"
-    },
-    "FESA4": {
-      "icon": "/assets/icons/b3/fesa4.svg",
-      "name": "Cia de Ferro Ligas da Bahia-Ferbasa Pfd",
-      "logoid": "ferbasa"
-    },
-    "MDNE3": {
-      "icon": "/assets/icons/b3/mdne3.svg",
-      "name": "Moura Dubeux Engenharia SA",
-      "logoid": "moura-dubeuxon-nm"
-    },
-    "MULT3": {
-      "icon": "/assets/icons/b3/mult3.svg",
-      "name": "Multiplan Empreendimentos Imobiliarios SA",
-      "logoid": "multiplan-on-n2"
-    },
-    "TSLA34": {
-      "icon": "/assets/icons/stocks/tsla.svg",
-      "name": "Tesla, Inc. Unsponsored Brazilian Depositary Receipt Repr 0.03125 Sh",
-      "logoid": "tesla"
-    },
-    "PLPL3": {
-      "icon": "/assets/icons/b3/plpl3.svg",
-      "name": "Plano & Plano Desenvolvimento Imobiliario Ltda",
-      "logoid": "planoeplano-on-nm"
-    },
-    "SNEL11": {
-      "icon": "/assets/icons/b3/snel11.svg",
-      "name": "Fundo de Investimento Imobiliario Suno Energias Limpas",
-      "logoid": "fiagro-snfz-ci"
-    },
-    "BRBI11": {
-      "icon": "/assets/icons/b3/brbi11.svg",
-      "name": "BRBI BR Partners S.A. Units Cons of 1 Sh and 2 Pfd Shs",
-      "logoid": "br-partners-unt-n2"
-    },
-    "NASD11": {
-      "icon": "/assets/icons/b3/gold11.svg",
-      "name": "Trend ETF Nasdaq 100 Fundo de Indice",
-      "logoid": "firf-xp-ie-fidc"
-    },
-    "LWSA3": {
-      "icon": "/assets/icons/b3/lwsa3.svg",
-      "name": "LWSA S.A.",
-      "logoid": "locaweb"
-    },
-    "AGRO3": {
-      "icon": "/assets/icons/b3/agro3.svg",
-      "name": "BrasilAgro Cia Brasileira de Propriedades Agricolas",
-      "logoid": "brasilagro"
-    },
-    "WIZC3": {
-      "icon": "/assets/icons/b3/wizc3.svg",
-      "name": "WIZ Co Participacoes e Corretagem de Seguros SA",
-      "logoid": "wiz-s-a"
-    },
-    "XPLG11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "XP Log Fundo Investimento Imobiliario FII",
-      "logoid": "fii"
-    },
-    "WRLD11": {
-      "icon": "/assets/icons/b3/lftb11.svg",
-      "name": "Investo FTSE Global Equities ETF",
-      "logoid": "investo"
-    },
-    "FIQE3": {
-      "icon": "/assets/icons/b3/fiqe3.svg",
-      "name": "Unifique Telecomunicacoes SA",
-      "logoid": "unifique-on-nm"
-    },
-    "GOGL34": {
-      "icon": "/assets/icons/stocks/goog.svg",
-      "name": "Alphabet Inc Shs A Unsponsored Brazilian Depository Receipt Repr 0.08333 Sh -",
-      "logoid": "alphabet"
-    },
-    "VISC11": {
-      "icon": "/assets/icons/b3/visc11.svg",
-      "name": "Vinci Shopping Centers Fundo de Investimento Imobiliario - FII Cotas",
-      "logoid": "vinci"
-    },
-    "TUPY3": {
-      "icon": "/assets/icons/b3/tupy3.svg",
-      "name": "Tupy S.A.",
-      "logoid": "tupy"
-    },
-    "SHUL4": {
-      "icon": "/assets/icons/b3/shul4.svg",
-      "name": "Schulz S.A.Non-Cum Perp Pfd Registered Shs",
-      "logoid": "schulz"
-    },
-    "SEER3": {
-      "icon": "/assets/icons/b3/seer3.svg",
-      "name": "Grupo Ser Educacional SA",
-      "logoid": "ser-educa"
-    },
-    "PCAR3": {
-      "icon": "/assets/icons/b3/pcar3.svg",
-      "name": "Companhia Brasileira de Distribuicao",
-      "logoid": "cia-brasileira-distr-pao-de-acucar"
-    },
-    "NATU3": {
-      "icon": "/assets/icons/b3/natu3.svg",
-      "name": "Natura Cosmeticos SA",
-      "logoid": "natura-and-co"
-    },
-    "BBAS3F": {
-      "icon": "/assets/icons/b3/bbas3.svg",
-      "name": "Banco do Brasil S.A.",
-      "logoid": "banco-do-brasil"
-    },
-    "M1TA34": {
-      "icon": "/assets/icons/stocks/meta.svg",
-      "name": "Meta Platforms Inc Shs Unsponsored Brazilian Depository Receipts Repr 0.03571 Sh",
-      "logoid": "meta-platforms"
-    },
-    "RAPT4": {
-      "icon": "/assets/icons/b3/rapt4.svg",
-      "name": "Randoncorp S.A.",
-      "logoid": "randon"
-    },
-    "AAPL34": {
-      "icon": "/assets/icons/stocks/aapl.svg",
-      "name": "Apple Inc. Shs Unsponsored Brazilian Depository Receipt Repr 0.05 Sh",
-      "logoid": "apple"
-    },
-    "CPTS11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "Capitania Securities II Fundo de Investimento Imobiliario Cotas",
-      "logoid": "fii"
-    },
-    "ANIM3": {
-      "icon": "/assets/icons/b3/anim3.svg",
-      "name": "Anima Holding SA",
-      "logoid": "anima"
-    },
-    "MUTC34": {
-      "icon": "/assets/icons/stocks/mu.svg",
-      "name": "Micron Technology Inc Shs Unsponsored Brazilian Depository Receipt Repr 0.1666667 Sh",
-      "logoid": "micron-technology"
-    },
-    "ALZR11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "Alianza Trust Renda Imobiliaria Fundo Investimento Imobiliario Investor",
-      "logoid": "fii"
-    },
-    "KNRI11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "Kinea Renda Imobiliaria Fundo de Investimento Imobiliario - FII Cotas",
-      "logoid": "fii"
-    },
-    "POSI3": {
-      "icon": "/assets/icons/b3/posi3.svg",
-      "name": "Positivo Tecnologia SA",
-      "logoid": "positivo-tecon"
-    },
-    "KNSC11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "Kinea Securities Fundo de Investimento Imobiliario",
-      "logoid": "fii"
-    },
-    "ARML3": {
-      "icon": "/assets/icons/b3/arml3.svg",
-      "name": "Armac Locacao Logistica e Servicos SA",
-      "logoid": "armac-on-ed-nm"
-    },
-    "MOTV3": {
-      "icon": "/assets/icons/b3/motv3.svg",
-      "name": "Motiva Infraestrutura de Mobilidade SA",
-      "logoid": "motiva-sa-on-nm"
-    },
-    "HGBS11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "CSHG Brasil Shopping Fundo de Investimento Imobiliario Cotas",
-      "logoid": "fii"
-    },
-    "DASA3": {
-      "icon": "/assets/icons/b3/dasa3.svg",
-      "name": "Diagnosticos da America S.A.",
-      "logoid": "dasa-on-nm"
-    },
-    "ITSA3": {
-      "icon": "/assets/icons/b3/itsa3.svg",
-      "name": "Itausa SA",
-      "logoid": "itausa"
-    },
-    "JALL3": {
-      "icon": "/assets/icons/b3/jall3.svg",
-      "name": "Jalles Machado SA",
-      "logoid": "jallesmachadon-nm"
-    },
-    "TRIS3": {
-      "icon": "/assets/icons/b3/tris3.svg",
-      "name": "Trisul S.A.",
-      "logoid": "trisul"
-    },
-    "BMOB3": {
-      "icon": "/assets/icons/b3/bmob3.svg",
-      "name": "Bemobi Mobile Tech SA",
-      "logoid": "bemobi-tech-on-nm"
-    },
-    "TASA3": {
-      "icon": "/assets/icons/b3/tasa3.svg",
-      "name": "Taurus Armas S.A.",
-      "logoid": "taurus-armas"
-    },
-    "MTRE3": {
-      "icon": "/assets/icons/b3/mtre3.svg",
-      "name": "Mitre Realty Empreendimentos e Participacoes SA",
-      "logoid": "mitre-realtyon-nm"
-    },
-    "ROMI3": {
-      "icon": "/assets/icons/b3/romi3.svg",
-      "name": "Romi SA",
-      "logoid": "industrias-romi"
-    },
-    "JBSS32": {
-      "icon": "/assets/icons/b3/jbss32.svg",
-      "name": "JBS N.V. Shs Sponsored Brazilian Depositary Receipt Repr 1 Sh A",
-      "logoid": "jbs-nv-dr2"
-    },
-    "QUAL3": {
-      "icon": "/assets/icons/b3/qual3.svg",
-      "name": "Qualicorp Consultoria e Corretora de Seguros S.A.",
-      "logoid": "qualicorp-on-nm"
-    },
-    "AMBP3": {
-      "icon": "/assets/icons/b3/ambp3.svg",
-      "name": "Ambipar Participacoes e Empreendimentos SA",
-      "logoid": "ambipar"
-    },
-    "MSFT34": {
-      "icon": "/assets/icons/stocks/msft.svg",
-      "name": "Microsoft Corp Shs Unsponsored Brazilian Depository Receipt Repr 0.04167 Sh",
-      "logoid": "microsoft"
-    },
-    "SBFG3": {
-      "icon": "/assets/icons/b3/sbfg3.svg",
-      "name": "Grupo SBF S.A.",
-      "logoid": "grupo-sbf-on-nm"
-    },
-    "AUAU3": {
-      "icon": "/assets/icons/b3/auau3.svg",
-      "name": "Uniao Pet Participacoes SA",
-      "logoid": "uniao-pet-participacoes-sa"
-    },
-    "TAEE3": {
-      "icon": "/assets/icons/b3/taee11.svg",
-      "name": "Transmissora Alianca De Energia Eletrica S.A.",
-      "logoid": "taesa"
-    },
-    "TGAR11": {
-      "icon": "/assets/icons/b3/tgar11.svg",
-      "name": "Fundo de Investimento Imobiliario TG Ativo Real Cotas",
-      "logoid": "fii-tg-ativoci-er"
-    },
-    "ITLC34": {
-      "icon": "/assets/icons/stocks/intc.svg",
-      "name": "Intel Corporation Shs Unsponsored Brazilian Depository Receipt Repr 0.1667 Sh",
-      "logoid": "intel"
-    },
-    "LIGT3": {
-      "icon": "/assets/icons/b3/ligt3.svg",
-      "name": "Light S.A.",
-      "logoid": "light"
-    },
-    "AZEV3": {
-      "icon": "/assets/icons/b3/azev3.svg",
-      "name": "Azevedo & Travassos SA",
-      "logoid": "azevedo-on"
-    },
-    "BTHF11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "BTG Pactual Real Estate Hedge Fund FII Fundo de Investimento Imobiliario Responsabilidade Limitada",
-      "logoid": "fii"
-    },
-    "MLAS3": {
-      "icon": "/assets/icons/b3/mlas3.svg",
-      "name": "Multi Group S.A",
-      "logoid": "multilaser-on-ed-nm"
-    },
-    "KLBN3": {
-      "icon": "/assets/icons/b3/klbn4.svg",
-      "name": "Klabin SA",
-      "logoid": "klabin"
-    },
-    "PVBI11": {
-      "icon": "/assets/icons/b3/alzr11.svg",
-      "name": "Patria - VBI Asset Management Ltda",
-      "logoid": "fii"
     }
   },
   "b3": {
@@ -8935,305 +7710,312 @@
   },
   "brokers": {
     "easyMarkets": {
-      "icon": "/assets/icons/brokers/easymarkets.svg",
+      "icon": "/assets/brokers/easymarkets.svg",
       "name": "easyMarkets",
-      "slug": "EASYMARKETS"
+      "id": "EASYMARKETS"
     },
     "EASYMARKETS": {
-      "icon": "/assets/icons/brokers/easymarkets.svg",
+      "icon": "/assets/brokers/easymarkets.svg",
       "name": "easyMarkets",
-      "slug": "EASYMARKETS"
+      "id": "EASYMARKETS"
     },
     "BTCC": {
-      "icon": "/assets/icons/brokers/btcc.svg",
+      "icon": "/assets/brokers/btcc.svg",
       "name": "BTCC",
-      "slug": "BTCC"
+      "id": "BTCC"
     },
     "WhiteBIT": {
-      "icon": "/assets/icons/brokers/whitebit.svg",
+      "icon": "/assets/brokers/whitebit.svg",
       "name": "WhiteBIT",
-      "slug": "WHITEBIT"
+      "id": "WHITEBIT"
     },
     "WHITEBIT": {
-      "icon": "/assets/icons/brokers/whitebit.svg",
+      "icon": "/assets/brokers/whitebit.svg",
       "name": "WhiteBIT",
-      "slug": "WHITEBIT"
+      "id": "WHITEBIT"
     },
     "ThinkMarkets": {
-      "icon": "/assets/icons/brokers/thinkmarkets.svg",
+      "icon": "/assets/brokers/thinkmarkets.svg",
       "name": "ThinkMarkets",
-      "slug": "THINKMARKETS"
+      "id": "THINKMARKETS"
     },
     "THINKMARKETS": {
-      "icon": "/assets/icons/brokers/thinkmarkets.svg",
+      "icon": "/assets/brokers/thinkmarkets.svg",
       "name": "ThinkMarkets",
-      "slug": "THINKMARKETS"
+      "id": "THINKMARKETS"
     },
     "Capital.com": {
-      "icon": "/assets/icons/brokers/capital-com.svg",
+      "icon": "/assets/brokers/capital-com.svg",
       "name": "Capital.com",
-      "slug": "CAPITALCOM"
+      "id": "CAPITALCOM"
     },
     "CAPITALCOM": {
-      "icon": "/assets/icons/brokers/capital-com.svg",
+      "icon": "/assets/brokers/capital-com.svg",
       "name": "Capital.com",
-      "slug": "CAPITALCOM"
+      "id": "CAPITALCOM"
     },
     "FxPro": {
-      "icon": "/assets/icons/brokers/fxpro.svg",
+      "icon": "/assets/brokers/fxpro.svg",
       "name": "FxPro",
-      "slug": "FXPRO"
+      "id": "FXPRO"
     },
     "FXPRO": {
-      "icon": "/assets/icons/brokers/fxpro.svg",
+      "icon": "/assets/brokers/fxpro.svg",
       "name": "FxPro",
-      "slug": "FXPRO"
+      "id": "FXPRO"
     },
     "Pepperstone": {
-      "icon": "/assets/icons/brokers/pepperstone.svg",
+      "icon": "/assets/brokers/pepperstone.svg",
       "name": "Pepperstone",
-      "slug": "PEPPERSTONE"
+      "id": "PEPPERSTONE"
     },
     "PEPPERSTONE": {
-      "icon": "/assets/icons/brokers/pepperstone.svg",
+      "icon": "/assets/brokers/pepperstone.svg",
       "name": "Pepperstone",
-      "slug": "PEPPERSTONE"
+      "id": "PEPPERSTONE"
     },
     "NinjaTrader": {
-      "icon": "/assets/icons/brokers/ninjatrader.svg",
+      "icon": "/assets/brokers/ninjatrader.svg",
       "name": "NinjaTrader",
-      "slug": "NINJATRADER"
+      "id": "NINJATRADER"
     },
     "NINJATRADER": {
-      "icon": "/assets/icons/brokers/ninjatrader.svg",
+      "icon": "/assets/brokers/ninjatrader.svg",
       "name": "NinjaTrader",
-      "slug": "NINJATRADER"
+      "id": "NINJATRADER"
     },
     "Vantage": {
-      "icon": "/assets/icons/brokers/vantage.svg",
+      "icon": "/assets/brokers/vantage.svg",
       "name": "Vantage",
-      "slug": "VANTAGE"
+      "id": "VANTAGE"
     },
     "VANTAGE": {
-      "icon": "/assets/icons/brokers/vantage.svg",
+      "icon": "/assets/brokers/vantage.svg",
       "name": "Vantage",
-      "slug": "VANTAGE"
+      "id": "VANTAGE"
     },
     "Tickmill": {
-      "icon": "/assets/icons/brokers/tickmill.svg",
+      "icon": "/assets/brokers/tickmill.svg",
       "name": "Tickmill",
-      "slug": "TICKMILL"
+      "id": "TICKMILL"
     },
     "TICKMILL": {
-      "icon": "/assets/icons/brokers/tickmill.svg",
+      "icon": "/assets/brokers/tickmill.svg",
       "name": "Tickmill",
-      "slug": "TICKMILL"
+      "id": "TICKMILL"
     },
     "FOREX.com": {
-      "icon": "/assets/icons/brokers/forex-com.svg",
+      "icon": "/assets/brokers/forex-com.svg",
       "name": "FOREX.com",
-      "slug": "FOREXCOM"
+      "id": "FOREXCOM"
     },
     "FOREXCOM": {
-      "icon": "/assets/icons/brokers/forex-com.svg",
+      "icon": "/assets/brokers/forex-com.svg",
       "name": "FOREX.com",
-      "slug": "FOREXCOM"
+      "id": "FOREXCOM"
     },
     "OKX": {
-      "icon": "/assets/icons/brokers/okx.svg",
-      "name": "OKX"
+      "icon": "/assets/brokers/okx.svg",
+      "name": "OKX",
+      "id": "OKX"
     },
     "FXCM": {
-      "icon": "/assets/icons/brokers/fxcm.svg",
+      "icon": "/assets/brokers/fxcm.svg",
       "name": "FXCM",
-      "slug": "FXCM"
+      "id": "FXCM"
     },
     "BingX": {
-      "icon": "/assets/icons/brokers/bingx.svg",
+      "icon": "/assets/brokers/bingx.svg",
       "name": "BingX",
-      "slug": "BINGBON"
+      "id": "BINGBON"
     },
     "BINGBON": {
-      "icon": "/assets/icons/brokers/bingx.svg",
+      "icon": "/assets/brokers/bingx.svg",
       "name": "BingX",
-      "slug": "BINGBON"
+      "id": "BINGBON"
     },
     "AMP Futures": {
-      "icon": "/assets/icons/brokers/amp-futures.svg",
+      "icon": "/assets/brokers/amp-futures.svg",
       "name": "AMP Futures",
       "slug": "AMP"
     },
     "AMP": {
-      "icon": "/assets/icons/brokers/amp-futures.svg",
-      "name": "AMP Futures",
-      "slug": "AMP"
+      "icon": "/assets/brokers/amp.svg",
+      "name": "AMP",
+      "id": "AMP"
     },
     "Eightcap": {
-      "icon": "/assets/icons/brokers/eightcap.svg",
+      "icon": "/assets/brokers/eightcap.svg",
       "name": "Eightcap",
-      "slug": "EIGHTCAP"
+      "id": "EIGHTCAP"
     },
     "EIGHTCAP": {
-      "icon": "/assets/icons/brokers/eightcap.svg",
+      "icon": "/assets/brokers/eightcap.svg",
       "name": "Eightcap",
-      "slug": "EIGHTCAP"
+      "id": "EIGHTCAP"
     },
     "TradeStation": {
-      "icon": "/assets/icons/brokers/tradestation.svg",
+      "icon": "/assets/brokers/tradestation.svg",
       "name": "TradeStation",
-      "slug": "TRADESTATION"
+      "id": "TRADESTATION"
     },
     "TRADESTATION": {
-      "icon": "/assets/icons/brokers/tradestation.svg",
+      "icon": "/assets/brokers/tradestation.svg",
       "name": "TradeStation",
-      "slug": "TRADESTATION"
+      "id": "TRADESTATION"
     },
     "Gate": {
-      "icon": "/assets/icons/brokers/gate.svg",
+      "icon": "/assets/brokers/gate.svg",
       "name": "Gate",
-      "slug": "GATE"
+      "id": "GATE"
     },
     "GATE": {
-      "icon": "/assets/icons/brokers/gate.svg",
+      "icon": "/assets/brokers/gate.svg",
       "name": "Gate",
-      "slug": "GATE"
+      "id": "GATE"
     },
     "ActivTrades": {
-      "icon": "/assets/icons/brokers/activtrades.svg",
+      "icon": "/assets/brokers/activtrades.svg",
       "name": "ActivTrades",
-      "slug": "ACTIVTRADES"
+      "id": "ACTIVTRADES"
     },
     "ACTIVTRADES": {
-      "icon": "/assets/icons/brokers/activtrades.svg",
+      "icon": "/assets/brokers/activtrades.svg",
       "name": "ActivTrades",
-      "slug": "ACTIVTRADES"
+      "id": "ACTIVTRADES"
     },
     "Webull": {
-      "icon": "/assets/icons/brokers/webull.svg",
+      "icon": "/assets/brokers/webull.svg",
       "name": "Webull",
-      "slug": "WEBULL"
+      "id": "WEBULL"
     },
     "WEBULL": {
-      "icon": "/assets/icons/brokers/webull.svg",
+      "icon": "/assets/brokers/webull.svg",
       "name": "Webull",
-      "slug": "WEBULL"
+      "id": "WEBULL"
     },
     "Kraken": {
-      "icon": "/assets/icons/brokers/kraken.svg",
-      "name": "Kraken"
+      "icon": "/assets/brokers/kraken.svg",
+      "name": "Kraken",
+      "id": "KRAKEN"
     },
     "KRAKEN": {
-      "icon": "/assets/icons/brokers/kraken.svg",
-      "name": "Kraken"
+      "icon": "/assets/brokers/kraken.svg",
+      "name": "Kraken",
+      "id": "KRAKEN"
     },
     "CMC Markets": {
-      "icon": "/assets/icons/brokers/cmc-markets.svg",
+      "icon": "/assets/brokers/cmc-markets.svg",
       "name": "CMC Markets",
-      "slug": "CMCMARKETS"
+      "id": "CMCMARKETS"
     },
     "CMCMARKETS": {
-      "icon": "/assets/icons/brokers/cmc-markets.svg",
+      "icon": "/assets/brokers/cmc-markets.svg",
       "name": "CMC Markets",
-      "slug": "CMCMARKETS"
+      "id": "CMCMARKETS"
     },
     "Binance": {
-      "icon": "/assets/icons/brokers/binance.svg",
+      "icon": "/assets/brokers/binance.svg",
       "name": "Binance",
-      "slug": "BINANCE"
+      "id": "BINANCE"
     },
     "BINANCE": {
-      "icon": "/assets/icons/brokers/binance.svg",
+      "icon": "/assets/brokers/binance.svg",
       "name": "Binance",
-      "slug": "BINANCE"
+      "id": "BINANCE"
     },
     "Interactive Brokers": {
-      "icon": "/assets/icons/brokers/interactive-brokers.svg",
-      "name": "Interactive Brokers"
+      "icon": "/assets/brokers/ibkr.svg",
+      "name": "Interactive Brokers",
+      "id": "IBKR"
     },
     "IBKR": {
-      "icon": "/assets/icons/brokers/interactive-brokers.svg",
+      "icon": "/assets/brokers/ibkr.svg",
       "name": "Interactive Brokers",
-      "slug": "IBKR"
+      "id": "IBKR"
     },
     "Crypto.com Exchange": {
-      "icon": "/assets/icons/brokers/crypto-com-exchange.svg",
+      "icon": "/assets/brokers/cryptocom.svg",
       "name": "Crypto.com Exchange",
-      "slug": "CRYPTOCOM"
+      "id": "CRYPTOCOM"
     },
     "CRYPTOCOM": {
-      "icon": "/assets/icons/brokers/crypto-com-exchange.svg",
+      "icon": "/assets/brokers/cryptocom.svg",
       "name": "Crypto.com Exchange",
-      "slug": "CRYPTOCOM"
+      "id": "CRYPTOCOM"
     },
     "Clear Street": {
-      "icon": "/assets/icons/brokers/clear-street.svg",
+      "icon": "/assets/brokers/clear-street.svg",
       "name": "Clear Street",
-      "slug": "CLEARSTREET"
+      "id": "CLEARSTREET"
     },
     "CLEARSTREET": {
-      "icon": "/assets/icons/brokers/clear-street.svg",
+      "icon": "/assets/brokers/clear-street.svg",
       "name": "Clear Street",
-      "slug": "CLEARSTREET"
+      "id": "CLEARSTREET"
     },
     "CoinW": {
-      "icon": "/assets/icons/brokers/coinw.svg",
+      "icon": "/assets/brokers/coinw.svg",
       "name": "CoinW",
-      "slug": "COINW"
+      "id": "COINW"
     },
     "COINW": {
-      "icon": "/assets/icons/brokers/coinw.svg",
+      "icon": "/assets/brokers/coinw.svg",
       "name": "CoinW",
-      "slug": "COINW"
+      "id": "COINW"
     },
     "IG": {
-      "icon": "/assets/icons/brokers/ig.svg",
+      "icon": "/assets/brokers/ig.svg",
       "name": "IG",
-      "slug": "IG"
+      "id": "IG"
     },
     "FP Markets": {
-      "icon": "/assets/icons/brokers/fp-markets.svg",
+      "icon": "/assets/brokers/fp-markets.svg",
       "name": "FP Markets",
-      "slug": "FPMARKETS"
+      "id": "FPMARKETS"
     },
     "FPMARKETS": {
-      "icon": "/assets/icons/brokers/fp-markets.svg",
+      "icon": "/assets/brokers/fp-markets.svg",
       "name": "FP Markets",
-      "slug": "FPMARKETS"
+      "id": "FPMARKETS"
     },
     "Genial Investimentos": {
-      "icon": "/assets/icons/brokers/genial-investimentos.svg",
+      "icon": "/assets/brokers/genial-investimentos.svg",
       "name": "Genial Investimentos",
-      "slug": "GENIALINVESTIMENTOS"
+      "id": "GENIALINVESTIMENTOS"
     },
     "GENIALINVESTIMENTOS": {
-      "icon": "/assets/icons/brokers/genial-investimentos.svg",
+      "icon": "/assets/brokers/genial-investimentos.svg",
       "name": "Genial Investimentos",
-      "slug": "GENIALINVESTIMENTOS"
+      "id": "GENIALINVESTIMENTOS"
     },
     "Swissquote": {
-      "icon": "/assets/icons/brokers/swissquote.svg",
+      "icon": "/assets/brokers/swissquote.svg",
       "name": "Swissquote",
-      "slug": "SWISSQUOTE"
+      "id": "SWISSQUOTE"
     },
     "SWISSQUOTE": {
-      "icon": "/assets/icons/brokers/swissquote.svg",
+      "icon": "/assets/brokers/swissquote.svg",
       "name": "Swissquote",
-      "slug": "SWISSQUOTE"
+      "id": "SWISSQUOTE"
     },
     "Tradovate": {
-      "icon": "/assets/icons/brokers/tradovate.svg",
-      "name": "Tradovate"
+      "icon": "/assets/brokers/tradovate.svg",
+      "name": "Tradovate",
+      "id": "TRADOVATE"
     },
     "TRADOVATE": {
-      "icon": "/assets/icons/brokers/tradovate.svg",
-      "name": "Tradovate"
+      "icon": "/assets/brokers/tradovate.svg",
+      "name": "Tradovate",
+      "id": "TRADOVATE"
     },
     "OANDA": {
-      "icon": "/assets/icons/brokers/oanda.svg",
-      "name": "OANDA"
+      "icon": "/assets/brokers/oanda.svg",
+      "name": "OANDA",
+      "id": "OANDA"
     },
     "Charles Schwab": {
-      "icon": "/assets/icons/stocks/schd.svg",
+      "icon": "/assets/brokers/schwab.png",
       "name": "Charles Schwab"
     },
     "CHARLESSCHWAB": {
@@ -9249,32 +8031,1147 @@
       "name": "Robinhood"
     },
     "Fidelity": {
-      "icon": "/assets/icons/brokers/fidelity.svg",
+      "icon": "/assets/brokers/fidelity.svg",
       "name": "Fidelity"
     },
     "FIDELITY": {
-      "icon": "/assets/icons/brokers/fidelity.svg",
+      "icon": "/assets/brokers/fidelity.svg",
       "name": "Fidelity"
     },
     "Coinbase": {
-      "icon": "/assets/icons/brokers/coinbase.svg",
+      "icon": "/assets/brokers/coinbase.svg",
       "name": "Coinbase"
     },
     "COINBASE": {
-      "icon": "/assets/icons/brokers/coinbase.svg",
-      "name": "Coinbase"
+      "icon": "/assets/brokers/coinbase-advanced.svg",
+      "name": "Coinbase Advanced",
+      "id": "COINBASE"
     },
     "Bybit": {
-      "icon": "/assets/icons/brokers/bybit.svg",
-      "name": "Bybit"
+      "icon": "/assets/brokers/bybit.svg",
+      "name": "Bybit",
+      "id": "BYBIT"
     },
     "BYBIT": {
-      "icon": "/assets/icons/brokers/bybit.svg",
-      "name": "Bybit"
+      "icon": "/assets/brokers/bybit.svg",
+      "name": "Bybit",
+      "id": "BYBIT"
     },
     "INTERACTIVEBROKERS": {
-      "icon": "/assets/icons/brokers/interactive-brokers.svg",
-      "name": "Interactive Brokers"
+      "icon": "/assets/brokers/ibkr.svg",
+      "name": "Interactive Brokers",
+      "id": "IBKR"
+    },
+    "BINGX": {
+      "icon": "/assets/brokers/bingx.svg",
+      "name": "BingX",
+      "id": "BINGBON"
+    },
+    "CRYPTOCOMEXCHANGE": {
+      "icon": "/assets/brokers/cryptocom.svg",
+      "name": "Crypto.com Exchange",
+      "id": "CRYPTOCOM"
+    },
+    "Paper Trading": {
+      "icon": "/assets/brokers/paper-trading.svg",
+      "name": "Paper Trading",
+      "id": "Paper"
+    },
+    "Paper": {
+      "icon": "/assets/brokers/paper-trading.svg",
+      "name": "Paper Trading",
+      "id": "Paper"
+    },
+    "PAPERTRADING": {
+      "icon": "/assets/brokers/paper-trading.svg",
+      "name": "Paper Trading",
+      "id": "Paper"
+    },
+    "Fusion Markets": {
+      "icon": "/assets/brokers/fusion-markets.svg",
+      "name": "Fusion Markets",
+      "id": "FUSIONMARKETS"
+    },
+    "FUSIONMARKETS": {
+      "icon": "/assets/brokers/fusion-markets.svg",
+      "name": "Fusion Markets",
+      "id": "FUSIONMARKETS"
+    },
+    "MEXC": {
+      "icon": "/assets/brokers/mexc.svg",
+      "name": "MEXC",
+      "id": "MEXC"
+    },
+    "Bitget": {
+      "icon": "/assets/brokers/bitget.svg",
+      "name": "Bitget",
+      "id": "BITGET"
+    },
+    "BITGET": {
+      "icon": "/assets/brokers/bitget.svg",
+      "name": "Bitget",
+      "id": "BITGET"
+    },
+    "Trade Nation": {
+      "icon": "/assets/brokers/trade-nation.svg",
+      "name": "Trade Nation",
+      "id": "TRADENATION"
+    },
+    "TRADENATION": {
+      "icon": "/assets/brokers/trade-nation.svg",
+      "name": "Trade Nation",
+      "id": "TRADENATION"
+    },
+    "BlackBull Markets": {
+      "icon": "/assets/brokers/blackbull-markets.svg",
+      "name": "BlackBull Markets",
+      "id": "BLACKBULL"
+    },
+    "BLACKBULL": {
+      "icon": "/assets/brokers/blackbull-markets.svg",
+      "name": "BlackBull Markets",
+      "id": "BLACKBULL"
+    },
+    "BLACKBULLMARKETS": {
+      "icon": "/assets/brokers/blackbull-markets.svg",
+      "name": "BlackBull Markets",
+      "id": "BLACKBULL"
+    },
+    "moomoo": {
+      "icon": "/assets/brokers/moomoo.svg",
+      "name": "moomoo",
+      "id": "MOOMOO"
+    },
+    "MOOMOO": {
+      "icon": "/assets/brokers/moomoo.svg",
+      "name": "moomoo",
+      "id": "MOOMOO"
+    },
+    "IC": {
+      "icon": "/assets/brokers/ic.svg",
+      "name": "IC",
+      "id": "ICMARKETS"
+    },
+    "ICMARKETS": {
+      "icon": "/assets/brokers/ic.svg",
+      "name": "IC",
+      "id": "ICMARKETS"
+    },
+    "Delta Exchange": {
+      "icon": "/assets/brokers/delta-exchange.svg",
+      "name": "Delta Exchange",
+      "id": "DELTA"
+    },
+    "DELTA": {
+      "icon": "/assets/brokers/delta-exchange.svg",
+      "name": "Delta Exchange",
+      "id": "DELTA"
+    },
+    "DELTAEXCHANGE": {
+      "icon": "/assets/brokers/delta-exchange.svg",
+      "name": "Delta Exchange",
+      "id": "DELTA"
+    },
+    "Bajaj Broking": {
+      "icon": "/assets/brokers/bajaj-broking.svg",
+      "name": "Bajaj Broking",
+      "id": "BAJAJ"
+    },
+    "BAJAJ": {
+      "icon": "/assets/brokers/bajaj-broking.svg",
+      "name": "Bajaj Broking",
+      "id": "BAJAJ"
+    },
+    "BAJAJBROKING": {
+      "icon": "/assets/brokers/bajaj-broking.svg",
+      "name": "Bajaj Broking",
+      "id": "BAJAJ"
+    },
+    "CapTrader": {
+      "icon": "/assets/brokers/captrader.svg",
+      "name": "CapTrader",
+      "id": "CAPTRADER"
+    },
+    "CAPTRADER": {
+      "icon": "/assets/brokers/captrader.svg",
+      "name": "CapTrader",
+      "id": "CAPTRADER"
+    },
+    "ColmexPro": {
+      "icon": "/assets/brokers/colmexpro.svg",
+      "name": "ColmexPro",
+      "id": "COLMEX"
+    },
+    "COLMEX": {
+      "icon": "/assets/brokers/colmexpro.svg",
+      "name": "ColmexPro",
+      "id": "COLMEX"
+    },
+    "COLMEXPRO": {
+      "icon": "/assets/brokers/colmexpro.svg",
+      "name": "ColmexPro",
+      "id": "COLMEX"
+    },
+    "CoinSwitch": {
+      "icon": "/assets/brokers/coinswitch.svg",
+      "name": "CoinSwitch",
+      "id": "COINSWITCH"
+    },
+    "COINSWITCH": {
+      "icon": "/assets/brokers/coinswitch.svg",
+      "name": "CoinSwitch",
+      "id": "COINSWITCH"
+    },
+    "AvaFutures": {
+      "icon": "/assets/brokers/avafutures.svg",
+      "name": "AvaFutures",
+      "id": "AVA_FUTURES"
+    },
+    "AVA_FUTURES": {
+      "icon": "/assets/brokers/avafutures.svg",
+      "name": "AvaFutures",
+      "id": "AVA_FUTURES"
+    },
+    "AVAFUTURES": {
+      "icon": "/assets/brokers/avafutures.svg",
+      "name": "AvaFutures",
+      "id": "AVA_FUTURES"
+    },
+    "INDmoney": {
+      "icon": "/assets/brokers/indmoney.svg",
+      "name": "INDmoney",
+      "id": "INDSTOCKS"
+    },
+    "INDSTOCKS": {
+      "icon": "/assets/brokers/indmoney.svg",
+      "name": "INDmoney",
+      "id": "INDSTOCKS"
+    },
+    "INDMONEY": {
+      "icon": "/assets/brokers/indmoney.svg",
+      "name": "INDmoney",
+      "id": "INDSTOCKS"
+    },
+    "Deriv": {
+      "icon": "/assets/brokers/deriv.svg",
+      "name": "Deriv",
+      "id": "DERIV"
+    },
+    "DERIV": {
+      "icon": "/assets/brokers/deriv.svg",
+      "name": "Deriv",
+      "id": "DERIV"
+    },
+    "Kotak Neo": {
+      "icon": "/assets/brokers/kotak-neo.svg",
+      "name": "Kotak Neo",
+      "id": "KOTAK"
+    },
+    "KOTAK": {
+      "icon": "/assets/brokers/kotak-neo.svg",
+      "name": "Kotak Neo",
+      "id": "KOTAK"
+    },
+    "KOTAKNEO": {
+      "icon": "/assets/brokers/kotak-neo.svg",
+      "name": "Kotak Neo",
+      "id": "KOTAK"
+    },
+    "EsaFX": {
+      "icon": "/assets/brokers/esafx.svg",
+      "name": "EsaFX",
+      "id": "ESAFX"
+    },
+    "ESAFX": {
+      "icon": "/assets/brokers/esafx.svg",
+      "name": "EsaFX",
+      "id": "ESAFX"
+    },
+    "Blueberry": {
+      "icon": "/assets/brokers/blueberry.svg",
+      "name": "Blueberry",
+      "id": "BLUEBERRYMARKETS"
+    },
+    "BLUEBERRYMARKETS": {
+      "icon": "/assets/brokers/blueberry.svg",
+      "name": "Blueberry",
+      "id": "BLUEBERRYMARKETS"
+    },
+    "BLUEBERRY": {
+      "icon": "/assets/brokers/blueberry.svg",
+      "name": "Blueberry",
+      "id": "BLUEBERRYMARKETS"
+    },
+    "DNSE": {
+      "icon": "/assets/brokers/dnse.svg",
+      "name": "DNSE",
+      "id": "DNSE"
+    },
+    "Eco Valores": {
+      "icon": "/assets/brokers/eco-valores.svg",
+      "name": "Eco Valores",
+      "id": "ECOVALORES"
+    },
+    "ECOVALORES": {
+      "icon": "/assets/brokers/eco-valores.svg",
+      "name": "Eco Valores",
+      "id": "ECOVALORES"
+    },
+    "Osmanli Yatirim": {
+      "icon": "/assets/brokers/osmanli-yatirim.svg",
+      "name": "Osmanli Yatirim",
+      "id": "OSMANLI"
+    },
+    "OSMANLI": {
+      "icon": "/assets/brokers/osmanli-yatirim.svg",
+      "name": "Osmanli Yatirim",
+      "id": "OSMANLI"
+    },
+    "OSMANLIYATIRIM": {
+      "icon": "/assets/brokers/osmanli-yatirim.svg",
+      "name": "Osmanli Yatirim",
+      "id": "OSMANLI"
+    },
+    "Optimus Futures": {
+      "icon": "/assets/brokers/optimus-futures.svg",
+      "name": "Optimus Futures",
+      "id": "OPTIMUS"
+    },
+    "OPTIMUS": {
+      "icon": "/assets/brokers/optimus-futures.svg",
+      "name": "Optimus Futures",
+      "id": "OPTIMUS"
+    },
+    "OPTIMUSFUTURES": {
+      "icon": "/assets/brokers/optimus-futures.svg",
+      "name": "Optimus Futures",
+      "id": "OPTIMUS"
+    },
+    "Interactive IL": {
+      "icon": "/assets/brokers/interactive-il.svg",
+      "name": "Interactive IL",
+      "id": "INTERACTIVEIL"
+    },
+    "INTERACTIVEIL": {
+      "icon": "/assets/brokers/interactive-il.svg",
+      "name": "Interactive IL",
+      "id": "INTERACTIVEIL"
+    },
+    "Fyers": {
+      "icon": "/assets/brokers/fyers.svg",
+      "name": "Fyers",
+      "id": "FYERS"
+    },
+    "FYERS": {
+      "icon": "/assets/brokers/fyers.svg",
+      "name": "Fyers",
+      "id": "FYERS"
+    },
+    "Gotrade": {
+      "icon": "/assets/brokers/gotrade.svg",
+      "name": "Gotrade",
+      "id": "GOTRADE"
+    },
+    "GOTRADE": {
+      "icon": "/assets/brokers/gotrade.svg",
+      "name": "Gotrade",
+      "id": "GOTRADE"
+    },
+    "tastyfx": {
+      "icon": "/assets/brokers/tastyfx.svg",
+      "name": "tastyfx",
+      "id": "TASTYFX"
+    },
+    "TASTYFX": {
+      "icon": "/assets/brokers/tastyfx.svg",
+      "name": "tastyfx",
+      "id": "TASTYFX"
+    },
+    "Dhan": {
+      "icon": "/assets/brokers/dhan.svg",
+      "name": "Dhan",
+      "id": "DHAN"
+    },
+    "DHAN": {
+      "icon": "/assets/brokers/dhan.svg",
+      "name": "Dhan",
+      "id": "DHAN"
+    },
+    "tastytrade": {
+      "icon": "/assets/brokers/tastytrade.svg",
+      "name": "tastytrade",
+      "id": "TASTYTRADE"
+    },
+    "TASTYTRADE": {
+      "icon": "/assets/brokers/tastytrade.svg",
+      "name": "tastytrade",
+      "id": "TASTYTRADE"
+    },
+    "CXM": {
+      "icon": "/assets/brokers/cxm.svg",
+      "name": "CXM",
+      "id": "CXM"
+    },
+    "EdgeClear": {
+      "icon": "/assets/brokers/edgeclear.svg",
+      "name": "EdgeClear",
+      "id": "EDGECLEAR"
+    },
+    "EDGECLEAR": {
+      "icon": "/assets/brokers/edgeclear.svg",
+      "name": "EdgeClear",
+      "id": "EDGECLEAR"
+    },
+    "Kiwoom Securities": {
+      "icon": "/assets/brokers/kiwoom-securities.svg",
+      "name": "Kiwoom Securities",
+      "id": "KIWOOM"
+    },
+    "KIWOOM": {
+      "icon": "/assets/brokers/kiwoom-securities.svg",
+      "name": "Kiwoom Securities",
+      "id": "KIWOOM"
+    },
+    "KIWOOMSECURITIES": {
+      "icon": "/assets/brokers/kiwoom-securities.svg",
+      "name": "Kiwoom Securities",
+      "id": "KIWOOM"
+    },
+    "GBE brokers": {
+      "icon": "/assets/brokers/gbe-brokers.svg",
+      "name": "GBE brokers",
+      "id": "GBEBROKERS"
+    },
+    "GBEBROKERS": {
+      "icon": "/assets/brokers/gbe-brokers.svg",
+      "name": "GBE brokers",
+      "id": "GBEBROKERS"
+    },
+    "B2PRIME": {
+      "icon": "/assets/brokers/b2prime.svg",
+      "name": "B2PRIME",
+      "id": "B2PRIME"
+    },
+    "Samuel Sekuritas": {
+      "icon": "/assets/brokers/samuel-sekuritas.svg",
+      "name": "Samuel Sekuritas",
+      "id": "SAMUEL"
+    },
+    "SAMUEL": {
+      "icon": "/assets/brokers/samuel-sekuritas.svg",
+      "name": "Samuel Sekuritas",
+      "id": "SAMUEL"
+    },
+    "SAMUELSEKURITAS": {
+      "icon": "/assets/brokers/samuel-sekuritas.svg",
+      "name": "Samuel Sekuritas",
+      "id": "SAMUEL"
+    },
+    "Coinbase Advanced": {
+      "icon": "/assets/brokers/coinbase-advanced.svg",
+      "name": "Coinbase Advanced",
+      "id": "COINBASE"
+    },
+    "COINBASEADVANCED": {
+      "icon": "/assets/brokers/coinbase-advanced.svg",
+      "name": "Coinbase Advanced",
+      "id": "COINBASE"
+    },
+    "GO Markets": {
+      "icon": "/assets/brokers/go-markets.svg",
+      "name": "GO Markets",
+      "id": "GOMARKETS"
+    },
+    "GOMARKETS": {
+      "icon": "/assets/brokers/go-markets.svg",
+      "name": "GO Markets",
+      "id": "GOMARKETS"
+    },
+    "Angel One": {
+      "icon": "/assets/brokers/angel-one.svg",
+      "name": "Angel One",
+      "id": "ANGELONE"
+    },
+    "ANGELONE": {
+      "icon": "/assets/brokers/angel-one.svg",
+      "name": "Angel One",
+      "id": "ANGELONE"
+    },
+    "IRONBEAM": {
+      "icon": "/assets/brokers/ironbeam.svg",
+      "name": "IRONBEAM",
+      "id": "IRONBEAM"
+    },
+    "NOVA": {
+      "icon": "/assets/brokers/nova.svg",
+      "name": "NOVA",
+      "id": "PHILLIPNOVA"
+    },
+    "PHILLIPNOVA": {
+      "icon": "/assets/brokers/nova.svg",
+      "name": "NOVA",
+      "id": "PHILLIPNOVA"
+    },
+    "Questrade": {
+      "icon": "/assets/brokers/questrade.svg",
+      "name": "Questrade",
+      "id": "QUESTRADE"
+    },
+    "QUESTRADE": {
+      "icon": "/assets/brokers/questrade.svg",
+      "name": "Questrade",
+      "id": "QUESTRADE"
+    },
+    "Alchemy Markets": {
+      "icon": "/assets/brokers/alchemy-markets.svg",
+      "name": "Alchemy Markets",
+      "id": "ALCHEMYMARKETS"
+    },
+    "ALCHEMYMARKETS": {
+      "icon": "/assets/brokers/alchemy-markets.svg",
+      "name": "Alchemy Markets",
+      "id": "ALCHEMYMARKETS"
+    },
+    "CoinJar": {
+      "icon": "/assets/brokers/coinjar.svg",
+      "name": "CoinJar",
+      "id": "COINJAR"
+    },
+    "COINJAR": {
+      "icon": "/assets/brokers/coinjar.svg",
+      "name": "CoinJar",
+      "id": "COINJAR"
+    },
+    "Tradier Futures": {
+      "icon": "/assets/brokers/tradier-futures.svg",
+      "name": "Tradier Futures",
+      "id": "TRADIER_FUTURES"
+    },
+    "TRADIER_FUTURES": {
+      "icon": "/assets/brokers/tradier-futures.svg",
+      "name": "Tradier Futures",
+      "id": "TRADIER_FUTURES"
+    },
+    "TRADIERFUTURES": {
+      "icon": "/assets/brokers/tradier-futures.svg",
+      "name": "Tradier Futures",
+      "id": "TRADIER_FUTURES"
+    },
+    "StoneX": {
+      "icon": "/assets/brokers/stonex.svg",
+      "name": "StoneX",
+      "id": "STONEX"
+    },
+    "STONEX": {
+      "icon": "/assets/brokers/stonex.svg",
+      "name": "StoneX",
+      "id": "STONEX"
+    },
+    "Investrade": {
+      "icon": "/assets/brokers/investrade.svg",
+      "name": "Investrade",
+      "id": "INVESTRADE"
+    },
+    "INVESTRADE": {
+      "icon": "/assets/brokers/investrade.svg",
+      "name": "Investrade",
+      "id": "INVESTRADE"
+    },
+    "Rava Bursatil": {
+      "icon": "/assets/brokers/rava-bursatil.svg",
+      "name": "Rava Bursatil",
+      "id": "RAVABURSATIL"
+    },
+    "RAVABURSATIL": {
+      "icon": "/assets/brokers/rava-bursatil.svg",
+      "name": "Rava Bursatil",
+      "id": "RAVABURSATIL"
+    },
+    "Osmanli FX": {
+      "icon": "/assets/brokers/osmanli-fx.svg",
+      "name": "Osmanli FX",
+      "id": "OSMANLIFX"
+    },
+    "OSMANLIFX": {
+      "icon": "/assets/brokers/osmanli-fx.svg",
+      "name": "Osmanli FX",
+      "id": "OSMANLIFX"
+    },
+    "Darwinex": {
+      "icon": "/assets/brokers/darwinex.svg",
+      "name": "Darwinex",
+      "id": "DARWINEX"
+    },
+    "DARWINEX": {
+      "icon": "/assets/brokers/darwinex.svg",
+      "name": "Darwinex",
+      "id": "DARWINEX"
+    },
+    "Opofinance": {
+      "icon": "/assets/brokers/opofinance.svg",
+      "name": "Opofinance",
+      "id": "OPOFINANCE"
+    },
+    "OPOFINANCE": {
+      "icon": "/assets/brokers/opofinance.svg",
+      "name": "Opofinance",
+      "id": "OPOFINANCE"
+    },
+    "Errante": {
+      "icon": "/assets/brokers/errante.svg",
+      "name": "Errante",
+      "id": "ERRANTE"
+    },
+    "ERRANTE": {
+      "icon": "/assets/brokers/errante.svg",
+      "name": "Errante",
+      "id": "ERRANTE"
+    },
+    "Al Ramz": {
+      "icon": "/assets/brokers/al-ramz.svg",
+      "name": "Al Ramz",
+      "id": "ALRAMZ"
+    },
+    "ALRAMZ": {
+      "icon": "/assets/brokers/al-ramz.svg",
+      "name": "Al Ramz",
+      "id": "ALRAMZ"
+    },
+    "PhillipCapital Turkiye": {
+      "icon": "/assets/brokers/phillipcapital-turkiye.svg",
+      "name": "PhillipCapital Turkiye",
+      "id": "PHILLIPCAPITAL_TR"
+    },
+    "PHILLIPCAPITAL_TR": {
+      "icon": "/assets/brokers/phillipcapital-turkiye.svg",
+      "name": "PhillipCapital Turkiye",
+      "id": "PHILLIPCAPITAL_TR"
+    },
+    "PHILLIPCAPITALTURKIYE": {
+      "icon": "/assets/brokers/phillipcapital-turkiye.svg",
+      "name": "PhillipCapital Turkiye",
+      "id": "PHILLIPCAPITAL_TR"
+    },
+    "WH Selfinvest": {
+      "icon": "/assets/brokers/wh-selfinvest.svg",
+      "name": "WH Selfinvest",
+      "id": "WHSELFINVEST"
+    },
+    "WHSELFINVEST": {
+      "icon": "/assets/brokers/wh-selfinvest.svg",
+      "name": "WH Selfinvest",
+      "id": "WHSELFINVEST"
+    },
+    "Purple Trading": {
+      "icon": "/assets/brokers/purple-trading.svg",
+      "name": "Purple Trading",
+      "id": "PURPLETRADING"
+    },
+    "PURPLETRADING": {
+      "icon": "/assets/brokers/purple-trading.svg",
+      "name": "Purple Trading",
+      "id": "PURPLETRADING"
+    },
+    "Derayah": {
+      "icon": "/assets/brokers/derayah.svg",
+      "name": "Derayah",
+      "id": "DERAYAH"
+    },
+    "DERAYAH": {
+      "icon": "/assets/brokers/derayah.svg",
+      "name": "Derayah",
+      "id": "DERAYAH"
+    },
+    "MEXEM": {
+      "icon": "/assets/brokers/mexem.svg",
+      "name": "MEXEM",
+      "id": "MEXEM"
+    },
+    "A1 Capital": {
+      "icon": "/assets/brokers/a1-capital.svg",
+      "name": "A1 Capital",
+      "id": "A1CAPITAL"
+    },
+    "A1CAPITAL": {
+      "icon": "/assets/brokers/a1-capital.svg",
+      "name": "A1 Capital",
+      "id": "A1CAPITAL"
+    },
+    "YLG Futures": {
+      "icon": "/assets/brokers/ylg-futures.svg",
+      "name": "YLG Futures",
+      "id": "YLG"
+    },
+    "YLG": {
+      "icon": "/assets/brokers/ylg-futures.svg",
+      "name": "YLG Futures",
+      "id": "YLG"
+    },
+    "YLGFUTURES": {
+      "icon": "/assets/brokers/ylg-futures.svg",
+      "name": "YLG Futures",
+      "id": "YLG"
+    },
+    "FXTF": {
+      "icon": "/assets/brokers/fxtf.svg",
+      "name": "FXTF",
+      "id": "FXTF"
+    },
+    "Public": {
+      "icon": "/assets/brokers/public.svg",
+      "name": "Public",
+      "id": "PUBLICCOM"
+    },
+    "PUBLICCOM": {
+      "icon": "/assets/brokers/public.svg",
+      "name": "Public",
+      "id": "PUBLICCOM"
+    },
+    "PUBLIC": {
+      "icon": "/assets/brokers/public.svg",
+      "name": "Public",
+      "id": "PUBLICCOM"
+    },
+    "iBroker": {
+      "icon": "/assets/brokers/ibroker.svg",
+      "name": "iBroker",
+      "id": "IBROKER"
+    },
+    "IBROKER": {
+      "icon": "/assets/brokers/ibroker.svg",
+      "name": "iBroker",
+      "id": "IBROKER"
+    },
+    "Plus500US": {
+      "icon": "/assets/brokers/plus500us.svg",
+      "name": "Plus500US",
+      "id": "PLUS500US"
+    },
+    "PLUS500US": {
+      "icon": "/assets/brokers/plus500us.svg",
+      "name": "Plus500US",
+      "id": "PLUS500US"
+    },
+    "InnovestX": {
+      "icon": "/assets/brokers/innovestx.svg",
+      "name": "InnovestX",
+      "id": "INNOVESTX"
+    },
+    "INNOVESTX": {
+      "icon": "/assets/brokers/innovestx.svg",
+      "name": "InnovestX",
+      "id": "INNOVESTX"
+    },
+    "CFI": {
+      "icon": "/assets/brokers/cfi.svg",
+      "name": "CFI",
+      "id": "CFI"
+    },
+    "Info Yatirim": {
+      "icon": "/assets/brokers/info-yatirim.svg",
+      "name": "Info Yatirim",
+      "id": "INFOYATIRIM"
+    },
+    "INFOYATIRIM": {
+      "icon": "/assets/brokers/info-yatirim.svg",
+      "name": "Info Yatirim",
+      "id": "INFOYATIRIM"
+    },
+    "Riyad Capital": {
+      "icon": "/assets/brokers/riyad-capital.svg",
+      "name": "Riyad Capital",
+      "id": "RIYADCAPITAL"
+    },
+    "RIYADCAPITAL": {
+      "icon": "/assets/brokers/riyad-capital.svg",
+      "name": "Riyad Capital",
+      "id": "RIYADCAPITAL"
+    },
+    "Alpaca": {
+      "icon": "/assets/brokers/alpaca.svg",
+      "name": "Alpaca",
+      "id": "ALPACA"
+    },
+    "ALPACA": {
+      "icon": "/assets/brokers/alpaca.svg",
+      "name": "Alpaca",
+      "id": "ALPACA"
+    },
+    "Bitazza": {
+      "icon": "/assets/brokers/bitazza.svg",
+      "name": "Bitazza",
+      "id": "BITAZZA"
+    },
+    "BITAZZA": {
+      "icon": "/assets/brokers/bitazza.svg",
+      "name": "Bitazza",
+      "id": "BITAZZA"
+    },
+    "TradeZero": {
+      "icon": "/assets/brokers/tradezero.svg",
+      "name": "TradeZero",
+      "id": "TRADEZERO"
+    },
+    "TRADEZERO": {
+      "icon": "/assets/brokers/tradezero.svg",
+      "name": "TradeZero",
+      "id": "TRADEZERO"
+    },
+    "WH SelfInvest Futures": {
+      "icon": "/assets/brokers/wh-selfinvest.svg",
+      "name": "WH SelfInvest Futures",
+      "id": "WHSELFINVEST_FUTURES"
+    },
+    "WHSELFINVEST_FUTURES": {
+      "icon": "/assets/brokers/wh-selfinvest.svg",
+      "name": "WH SelfInvest Futures",
+      "id": "WHSELFINVEST_FUTURES"
+    },
+    "WHSELFINVESTFUTURES": {
+      "icon": "/assets/brokers/wh-selfinvest.svg",
+      "name": "WH SelfInvest Futures",
+      "id": "WHSELFINVEST_FUTURES"
+    },
+    "Liberator": {
+      "icon": "/assets/brokers/liberator.svg",
+      "name": "Liberator",
+      "id": "LIBERATOR"
+    },
+    "LIBERATOR": {
+      "icon": "/assets/brokers/liberator.svg",
+      "name": "Liberator",
+      "id": "LIBERATOR"
+    },
+    "RoboMarkets": {
+      "icon": "/assets/brokers/robomarkets.svg",
+      "name": "RoboMarkets",
+      "id": "ROBOMARKETS"
+    },
+    "ROBOMARKETS": {
+      "icon": "/assets/brokers/robomarkets.svg",
+      "name": "RoboMarkets",
+      "id": "ROBOMARKETS"
+    },
+    "Skilling": {
+      "icon": "/assets/brokers/skilling.svg",
+      "name": "Skilling",
+      "id": "SKILLING"
+    },
+    "SKILLING": {
+      "icon": "/assets/brokers/skilling.svg",
+      "name": "Skilling",
+      "id": "SKILLING"
+    },
+    "Dorman Trading": {
+      "icon": "/assets/brokers/dorman-trading.svg",
+      "name": "Dorman Trading",
+      "id": "DORMAN"
+    },
+    "DORMAN": {
+      "icon": "/assets/brokers/dorman-trading.svg",
+      "name": "Dorman Trading",
+      "id": "DORMAN"
+    },
+    "DORMANTRADING": {
+      "icon": "/assets/brokers/dorman-trading.svg",
+      "name": "Dorman Trading",
+      "id": "DORMAN"
+    },
+    "Spreadex Trading": {
+      "icon": "/assets/brokers/spreadex-trading.svg",
+      "name": "Spreadex Trading",
+      "id": "SPREADEX"
+    },
+    "SPREADEX": {
+      "icon": "/assets/brokers/spreadex-trading.svg",
+      "name": "Spreadex Trading",
+      "id": "SPREADEX"
+    },
+    "SPREADEXTRADING": {
+      "icon": "/assets/brokers/spreadex-trading.svg",
+      "name": "Spreadex Trading",
+      "id": "SPREADEX"
+    },
+    "Webull Pay": {
+      "icon": "/assets/brokers/webull-pay.svg",
+      "name": "Webull Pay",
+      "id": "WEBULLPAY"
+    },
+    "WEBULLPAY": {
+      "icon": "/assets/brokers/webull-pay.svg",
+      "name": "Webull Pay",
+      "id": "WEBULLPAY"
+    },
+    "Velocity Trade": {
+      "icon": "/assets/brokers/velocity-trade.svg",
+      "name": "Velocity Trade",
+      "id": "VELOCITY"
+    },
+    "VELOCITY": {
+      "icon": "/assets/brokers/velocity-trade.svg",
+      "name": "Velocity Trade",
+      "id": "VELOCITY"
+    },
+    "VELOCITYTRADE": {
+      "icon": "/assets/brokers/velocity-trade.svg",
+      "name": "Velocity Trade",
+      "id": "VELOCITY"
+    },
+    "DAOLSEC": {
+      "icon": "/assets/brokers/daolsec.svg",
+      "name": "DAOLSEC",
+      "id": "DAOL"
+    },
+    "DAOL": {
+      "icon": "/assets/brokers/daolsec.svg",
+      "name": "DAOLSEC",
+      "id": "DAOL"
+    },
+    "Herenya": {
+      "icon": "/assets/brokers/herenya.svg",
+      "name": "Herenya",
+      "id": "HERENYA"
+    },
+    "HERENYA": {
+      "icon": "/assets/brokers/herenya.svg",
+      "name": "Herenya",
+      "id": "HERENYA"
+    },
+    "KSecurities": {
+      "icon": "/assets/brokers/ksecurities.svg",
+      "name": "KSecurities",
+      "id": "KSECURITIES"
+    },
+    "KSECURITIES": {
+      "icon": "/assets/brokers/ksecurities.svg",
+      "name": "KSecurities",
+      "id": "KSECURITIES"
+    },
+    "Phemex": {
+      "icon": "/assets/brokers/phemex.svg",
+      "name": "Phemex",
+      "id": "PHEMEX"
+    },
+    "PHEMEX": {
+      "icon": "/assets/brokers/phemex.svg",
+      "name": "Phemex",
+      "id": "PHEMEX"
+    },
+    "Beyond": {
+      "icon": "/assets/brokers/beyond.svg",
+      "name": "Beyond",
+      "id": "BEYOND"
+    },
+    "BEYOND": {
+      "icon": "/assets/brokers/beyond.svg",
+      "name": "Beyond",
+      "id": "BEYOND"
+    },
+    "xCube": {
+      "icon": "/assets/brokers/xcube.svg",
+      "name": "xCube",
+      "id": "XCUBE"
+    },
+    "XCUBE": {
+      "icon": "/assets/brokers/xcube.svg",
+      "name": "xCube",
+      "id": "XCUBE"
+    },
+    "Gemini": {
+      "icon": "/assets/brokers/gemini.svg",
+      "name": "Gemini",
+      "id": "GEMINI"
+    },
+    "GEMINI": {
+      "icon": "/assets/brokers/gemini.svg",
+      "name": "Gemini",
+      "id": "GEMINI"
+    },
+    "Tradier": {
+      "icon": "/assets/brokers/tradier.svg",
+      "name": "Tradier",
+      "id": "TRADIER"
+    },
+    "TRADIER": {
+      "icon": "/assets/brokers/tradier.svg",
+      "name": "Tradier",
+      "id": "TRADIER"
+    },
+    "Cobra Trading": {
+      "icon": "/assets/brokers/cobra-trading.svg",
+      "name": "Cobra Trading",
+      "id": "COBRATRADING"
+    },
+    "COBRATRADING": {
+      "icon": "/assets/brokers/cobra-trading.svg",
+      "name": "Cobra Trading",
+      "id": "COBRATRADING"
+    },
+    "Bitstamp": {
+      "icon": "/assets/brokers/bitstamp.svg",
+      "name": "Bitstamp",
+      "id": "BITSTAMP"
+    },
+    "BITSTAMP": {
+      "icon": "/assets/brokers/bitstamp.svg",
+      "name": "Bitstamp",
+      "id": "BITSTAMP"
+    },
+    "Midas": {
+      "icon": "/assets/brokers/midas.svg",
+      "name": "Midas",
+      "id": "MIDAS"
+    },
+    "MIDAS": {
+      "icon": "/assets/brokers/midas.svg",
+      "name": "Midas",
+      "id": "MIDAS"
+    },
+    "CGSI (Thailand)": {
+      "icon": "/assets/brokers/cgsi-thailand.svg",
+      "name": "CGSI (Thailand)",
+      "id": "CGSI"
+    },
+    "CGSI": {
+      "icon": "/assets/brokers/cgsi-thailand.svg",
+      "name": "CGSI (Thailand)",
+      "id": "CGSI"
+    },
+    "CGSITHAILAND": {
+      "icon": "/assets/brokers/cgsi-thailand.svg",
+      "name": "CGSI (Thailand)",
+      "id": "CGSI"
+    },
+    "Share.Market": {
+      "icon": "/assets/brokers/share-market.svg",
+      "name": "Share.Market",
+      "id": "SHAREMARKET"
+    },
+    "SHAREMARKET": {
+      "icon": "/assets/brokers/share-market.svg",
+      "name": "Share.Market",
+      "id": "SHAREMARKET"
+    },
+    "Alice Blue": {
+      "icon": "/assets/brokers/alice-blue.svg",
+      "name": "Alice Blue",
+      "id": "ALICEBLUE"
+    },
+    "ALICEBLUE": {
+      "icon": "/assets/brokers/alice-blue.svg",
+      "name": "Alice Blue",
+      "id": "ALICEBLUE"
+    },
+    "Paytm Money": {
+      "icon": "/assets/brokers/paytm-money.svg",
+      "name": "Paytm Money",
+      "id": "PAYTM"
+    },
+    "PAYTM": {
+      "icon": "/assets/brokers/paytm-money.svg",
+      "name": "Paytm Money",
+      "id": "PAYTM"
+    },
+    "PAYTMMONEY": {
+      "icon": "/assets/brokers/paytm-money.svg",
+      "name": "Paytm Money",
+      "id": "PAYTM"
+    },
+    "StoneX Trading": {
+      "icon": "/assets/brokers/stonex-trading.svg",
+      "name": "StoneX Trading",
+      "id": "CITYINDEX"
+    },
+    "CITYINDEX": {
+      "icon": "/assets/brokers/stonex-trading.svg",
+      "name": "StoneX Trading",
+      "id": "CITYINDEX"
+    },
+    "STONEXTRADING": {
+      "icon": "/assets/brokers/stonex-trading.svg",
+      "name": "StoneX Trading",
+      "id": "CITYINDEX"
+    },
+    "Motilal Oswal": {
+      "icon": "/assets/brokers/motilal-oswal.svg",
+      "name": "Motilal Oswal",
+      "id": "MOTILALOSWAL"
+    },
+    "MOTILALOSWAL": {
+      "icon": "/assets/brokers/motilal-oswal.svg",
+      "name": "Motilal Oswal",
+      "id": "MOTILALOSWAL"
+    },
+    "Saxo": {
+      "icon": "/assets/brokers/saxo.svg",
+      "name": "Saxo",
+      "id": "SAXOBANK"
+    },
+    "SAXOBANK": {
+      "icon": "/assets/brokers/saxo.svg",
+      "name": "Saxo",
+      "id": "SAXOBANK"
+    },
+    "SAXO": {
+      "icon": "/assets/brokers/saxo.svg",
+      "name": "Saxo",
+      "id": "SAXOBANK"
+    },
+    "SCHWAB": {
+      "icon": "/assets/brokers/schwab.png",
+      "name": "Charles Schwab"
+    },
+    "E*TRADE": {
+      "icon": "/assets/brokers/etrade.png",
+      "name": "E*TRADE"
+    },
+    "ETRADE": {
+      "icon": "/assets/brokers/etrade.png",
+      "name": "E*TRADE"
+    },
+    "FTMO": {
+      "icon": "/assets/brokers/ftmo.png",
+      "name": "FTMO"
+    },
+    "ftmo": {
+      "icon": "/assets/brokers/ftmo.png",
+      "name": "FTMO"
+    },
+    "TOPSTEP": {
+      "icon": "/assets/brokers/topstep.jpg",
+      "name": "Topstep"
+    },
+    "Topstep": {
+      "icon": "/assets/brokers/topstep.jpg",
+      "name": "Topstep"
+    },
+    "topstep": {
+      "icon": "/assets/brokers/topstep.jpg",
+      "name": "Topstep"
+    },
+    "HYPERLIQUID": {
+      "icon": "/assets/brokers/hyperliquid.png",
+      "name": "Hyperliquid"
+    },
+    "Hyperliquid": {
+      "icon": "/assets/brokers/hyperliquid.png",
+      "name": "Hyperliquid"
+    },
+    "hyperliquid": {
+      "icon": "/assets/brokers/hyperliquid.png",
+      "name": "Hyperliquid"
+    },
+    "TRADING212": {
+      "icon": "/assets/brokers/trading212.png",
+      "name": "Trading 212"
+    },
+    "Trading 212": {
+      "icon": "/assets/brokers/trading212.png",
+      "name": "Trading 212"
+    },
+    "trading212": {
+      "icon": "/assets/brokers/trading212.png",
+      "name": "Trading 212"
     }
   },
   "exchanges": {

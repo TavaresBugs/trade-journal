@@ -23,7 +23,7 @@ import { DirectionBadge } from "./ui/direction-badge";
 import { useApi } from "@/lib/use-api";
 import { cn, fmtMoney, fmtPercent, pnlClass } from "@/lib/utils";
 import { describeFilters } from "@/lib/filter-description";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 
 interface OverviewData {
   buckets: Record<

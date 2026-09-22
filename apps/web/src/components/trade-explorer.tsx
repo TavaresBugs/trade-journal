@@ -27,7 +27,7 @@ import { useApi } from "@/lib/use-api";
 import { ReportMarketEstimates } from "./report-market-estimates";
 import { MonetaryValue } from "./privacy";
 import { cn, fmtMoney } from "@/lib/utils";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 import { Pnl } from "./pnl";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";

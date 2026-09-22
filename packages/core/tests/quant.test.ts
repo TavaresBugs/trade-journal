@@ -51,6 +51,24 @@ describe("quant module (packages/core)", () => {
 
     const tnote = QUANT_INSTRUMENTS.find((i) => i.id === "ZN");
     expect(tnote?.multiplier).toBe(1000);
+
+    // Verify Brazilian B3 Futures
+    const miniIndice = QUANT_INSTRUMENTS.find((i) => i.id === "WIN");
+    expect(miniIndice?.multiplier).toBe(0.2);
+    expect(miniIndice?.tickSize).toBe(5.0);
+    expect(miniIndice?.tickValue).toBe(1.0);
+    expect(miniIndice?.currency).toBe("BRL");
+
+    const miniDolar = QUANT_INSTRUMENTS.find((i) => i.id === "WDO");
+    expect(miniDolar?.multiplier).toBe(10);
+    expect(miniDolar?.tickSize).toBe(0.5);
+    expect(miniDolar?.tickValue).toBe(5.0);
+    expect(miniDolar?.currency).toBe("BRL");
+
+    // Verify CME Currency Futures
+    const euroFx = QUANT_INSTRUMENTS.find((i) => i.id === "6E");
+    expect(euroFx?.multiplier).toBe(125000);
+    expect(euroFx?.tickValue).toBe(6.25);
   });
 
   describe("calculateExpectedValue", () => {

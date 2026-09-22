@@ -38,7 +38,7 @@ import { MonetaryValue } from "@/components/privacy";
 import { Pnl } from "@/components/pnl";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { DirectionBadge } from "@/components/ui/direction-badge";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

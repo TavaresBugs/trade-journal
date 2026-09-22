@@ -1,7 +1,7 @@
 "use client";
 
 import { DIMENSIONS, type Dimension } from "@luxalgo/journal-core";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 import { MonetaryValue } from "@/components/privacy";
 import { HoverHint } from "@/components/ui/tooltip";
 import { GroupLabel } from "../shared/group-label";

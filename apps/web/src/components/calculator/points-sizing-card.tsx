@@ -8,7 +8,8 @@ import {
 } from "@luxalgo/journal-core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { JournalAssetDropdown } from "@/components/journal-asset-dropdown";
+import { getQuantInstrument, getSymbolSpec } from "@/lib/assets/symbol-specs";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
@@ -24,17 +25,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
   const { instrumentId, stopPoints, riskDollars, targetPoints } = values;
 
   const instrument: QuantInstrument = useMemo(() => {
-    return (
-      QUANT_INSTRUMENTS.find((i) => i.id === instrumentId) ?? {
-        id: "NQ",
-        name: "NQ ($20/pt)",
-        multiplier: 20,
-        tickSize: 0.25,
-        category: "indices",
-        microId: "MNQ",
-        assetTitle: "Nasdaq-100",
-      }
-    );
+    return getQuantInstrument(instrumentId) ?? QUANT_INSTRUMENTS[0]!;
   }, [instrumentId]);
 
   const microName = instrument.microId ?? null;
@@ -94,7 +85,26 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
   }, [effectiveRiskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints, microRatio]);
 
   const handleInstrumentChange = (val: string) => {
-    const nextInst = QUANT_INSTRUMENTS.find((i) => i.id === val) ?? instrument;
+    const nextInst =
+      QUANT_INSTRUMENTS.find((i) => i.id === val) ??
+      (() => {
+        const spec = getSymbolSpec(val);
+        if (spec && spec.pointValue) {
+          return {
+            id: spec.symbol,
+            name: `${spec.symbol} (${spec.currency === "BRL" ? "R$" : "$"}${spec.pointValue}/pt)`,
+            multiplier: spec.pointValue,
+            tickSize: spec.tickSize ?? 0.01,
+            tickValue: spec.tickValue ?? 0.01,
+            currency: spec.currency ?? "USD",
+            category: (spec.category as any) ?? "indices",
+            microId: spec.microId,
+            assetTitle: spec.name,
+          };
+        }
+        return instrument;
+      })();
+
     if (stopPoints > 0) {
       const nextCost = Math.round(stopPoints * nextInst.multiplier);
       // If current risk budget does not cover 1 contract of the new instrument, adjust to max loss
@@ -121,14 +131,17 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
     }
   };
 
+  const isBrl = instrument.currency === "BRL";
+  const curr = isBrl ? "R$" : "$";
+
   const copyText = useMemo(() => {
     const targetLabel = isDefaultTarget
-      ? `TP (2:1): ${effectiveTargetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`
-      : `TP: ${targetPoints} pts (+$${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`;
+      ? `TP (2:1): ${effectiveTargetPoints} pts (+${curr}${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`
+      : `TP: ${targetPoints} pts (+${curr}${(sizing.targetDollars ?? 0).toLocaleString("en-US")})`;
 
     return `${instrument.id}: ${sizing.recommendedContracts} contract${
       sizing.recommendedContracts > 1 ? "s" : ""
-    } | SL: ${stopPoints} pts (-$${sizing.actualRiskDollars.toLocaleString("en-US")}) | ${targetLabel}`;
+    } | SL: ${stopPoints} pts (-${curr}${sizing.actualRiskDollars.toLocaleString("en-US")}) | ${targetLabel}`;
   }, [
     instrument.id,
     sizing.recommendedContracts,
@@ -138,6 +151,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
     isDefaultTarget,
     effectiveTargetPoints,
     targetPoints,
+    curr,
   ]);
 
   return (
@@ -165,131 +179,31 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
                 Market instrument
               </label>
               <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-                ${instrument.multiplier}/pt
+                {curr}{instrument.multiplier}/pt
               </span>
             </div>
             <div className="w-36">
-              <Select value={instrumentId} onValueChange={handleInstrumentChange}>
-                <SelectTrigger className="relative h-9 w-full justify-center gap-2 px-2.5 text-xs font-mono font-semibold transition-all hover:bg-accent/40 active:scale-[0.98] [&>svg]:absolute [&>svg]:right-2.5">
-                  <div className="flex items-center gap-2">
-                    <AssetIcon symbol={instrument.id} size="xs" />
-                    <span className="font-bold text-foreground">{instrument.id}</span>
-                  </div>
-                </SelectTrigger>
-                <SelectContent align="end" className="max-h-80 w-72 p-1">
-                  {/* US Indices */}
-                  <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                    US Equity Indices
-                  </div>
-                  {QUANT_INSTRUMENTS.filter((i) => i.category === "indices").map((inst) => (
-                    <SelectItem key={inst.id} value={inst.id} className="text-xs py-1.5">
-                      <div className="flex items-center justify-between w-full gap-3">
-                        <div className="flex items-center gap-2 truncate">
-                          <AssetIcon symbol={inst.id} size="xs" />
-                          <span className="font-mono font-bold text-foreground">{inst.id}</span>
-                          <span className="text-[11px] text-muted-foreground truncate">
-                            {inst.assetTitle}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[10px] text-muted-foreground shrink-0 bg-muted/60 px-1 py-0.5 rounded border border-border/40">
-                          ${inst.multiplier}/pt
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-
-                  {/* Micro Indices */}
-                  <div className="mt-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-t border-border/40">
-                    Micro Equity Indices
-                  </div>
-                  {QUANT_INSTRUMENTS.filter((i) => i.category === "micros").map((inst) => (
-                    <SelectItem key={inst.id} value={inst.id} className="text-xs py-1.5">
-                      <div className="flex items-center justify-between w-full gap-3">
-                        <div className="flex items-center gap-2 truncate">
-                          <AssetIcon symbol={inst.id} size="xs" />
-                          <span className="font-mono font-bold text-foreground">{inst.id}</span>
-                          <span className="text-[11px] text-muted-foreground truncate">
-                            {inst.assetTitle}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[10px] text-muted-foreground shrink-0 bg-muted/60 px-1 py-0.5 rounded border border-border/40">
-                          ${inst.multiplier}/pt
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-
-                  {/* Commodities & Metals */}
-                  <div className="mt-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-t border-border/40">
-                    Commodities & Metals
-                  </div>
-                  {QUANT_INSTRUMENTS.filter((i) => i.category === "commodities").map((inst) => (
-                    <SelectItem key={inst.id} value={inst.id} className="text-xs py-1.5">
-                      <div className="flex items-center justify-between w-full gap-3">
-                        <div className="flex items-center gap-2 truncate">
-                          <AssetIcon symbol={inst.id} size="xs" />
-                          <span className="font-mono font-bold text-foreground">{inst.id}</span>
-                          <span className="text-[11px] text-muted-foreground truncate">
-                            {inst.assetTitle}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[10px] text-muted-foreground shrink-0 bg-muted/60 px-1 py-0.5 rounded border border-border/40">
-                          ${inst.multiplier}/pt
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-
-                  {/* Bonds & Rates */}
-                  <div className="mt-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-t border-border/40">
-                    Bonds & Rates
-                  </div>
-                  {QUANT_INSTRUMENTS.filter((i) => i.category === "bonds").map((inst) => (
-                    <SelectItem key={inst.id} value={inst.id} className="text-xs py-1.5">
-                      <div className="flex items-center justify-between w-full gap-3">
-                        <div className="flex items-center gap-2 truncate">
-                          <AssetIcon symbol={inst.id} size="xs" />
-                          <span className="font-mono font-bold text-foreground">{inst.id}</span>
-                          <span className="text-[11px] text-muted-foreground truncate">
-                            {inst.assetTitle}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[10px] text-muted-foreground shrink-0 bg-muted/60 px-1 py-0.5 rounded border border-border/40">
-                          ${inst.multiplier}/pt
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-
-                  {/* Crypto Futures */}
-                  <div className="mt-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-t border-border/40">
-                    Crypto Futures (CME)
-                  </div>
-                  {QUANT_INSTRUMENTS.filter((i) => i.category === "crypto").map((inst) => (
-                    <SelectItem key={inst.id} value={inst.id} className="text-xs py-1.5">
-                      <div className="flex items-center justify-between w-full gap-3">
-                        <div className="flex items-center gap-2 truncate">
-                          <AssetIcon symbol={inst.id} size="xs" />
-                          <span className="font-mono font-bold text-foreground">{inst.id}</span>
-                          <span className="text-[11px] text-muted-foreground truncate">
-                            {inst.assetTitle}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[10px] text-muted-foreground shrink-0 bg-muted/60 px-1 py-0.5 rounded border border-border/40">
-                          ${inst.multiplier}/pt
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <JournalAssetDropdown
+                currentAsset={instrument.id}
+                onSelectAsset={(val) => {
+                  if (val) handleInstrumentChange(val);
+                }}
+                triggerVariant="form"
+                alignCenter={true}
+                hideGeneralJournal={true}
+                showValues={true}
+                allowClear={false}
+                onlyCalculable={true}
+                align="end"
+                className="h-9 font-mono font-semibold"
+              />
             </div>
           </div>
 
-          {/* 2º: MAX DOLLAR RISK */}
+          {/* 2º: MAX RISK */}
           <div className="flex items-center justify-between gap-4">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Max dollar risk ($)
+              Max risk ({curr})
             </label>
             <Input
               type="number"
@@ -384,10 +298,10 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             border: "border-primary/50",
             bg: "bg-primary/20",
             heading: `${instrument.assetTitle ?? instrument.id} Position Sizing`,
-            advice: `Calculated from technical chart stop (${stopPoints} pts @ $${instrument.multiplier}/pt) and maximum allowable dollar risk.`,
+            advice: `Calculated from technical chart stop (${stopPoints} pts @ ${curr}${instrument.multiplier}/pt${instrument.tickValue ? ` • 1 tick = ${curr}${instrument.tickValue}` : ""}) and maximum allowable risk.`,
           }}
           copyText={copyText}
-          theoryNumerator="Max Risk ($)"
+          theoryNumerator={`Max Risk (${curr})`}
           theoryDenominator="Stop × Point Value"
           valueNumerator={
             <span
@@ -396,7 +310,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
                 isRiskFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
               )}
             >
-              ${effectiveRiskDollars > 0 ? effectiveRiskDollars.toLocaleString("en-US") : "0"}
+              {curr}{effectiveRiskDollars > 0 ? effectiveRiskDollars.toLocaleString("en-US") : "0"}
             </span>
           }
           valueDenominator={
@@ -408,7 +322,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
                   : "text-muted-foreground",
               )}
             >
-              {stopPoints > 0 ? stopPoints : "0"} pts × ${pointValue}
+              {stopPoints > 0 ? stopPoints : "0"} pts × {curr}{pointValue}
             </span>
           }
           resultValue={
@@ -430,7 +344,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <div>
               <span className="block text-[11px] text-muted-foreground">Loss at stop</span>
               <span className="font-mono font-semibold text-loss tnum">
-                <MonetaryValue>-${sizing.actualRiskDollars.toLocaleString("en-US")}</MonetaryValue>
+                <MonetaryValue>-{curr}{sizing.actualRiskDollars.toLocaleString("en-US")}</MonetaryValue>
               </span>
             </div>
             <div>
@@ -442,7 +356,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               </span>
               <span className="font-mono font-semibold text-profit tnum">
                 <MonetaryValue>
-                  +${(sizing.targetDollars ?? 0).toLocaleString("en-US")}
+                  +{curr}{(sizing.targetDollars ?? 0).toLocaleString("en-US")}
                 </MonetaryValue>
               </span>
             </div>

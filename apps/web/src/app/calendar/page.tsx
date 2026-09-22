@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Loading from "@/app/loading";
 import { useApi } from "@/lib/use-api";
 import { AssetIcon } from "@/components/ui/asset-icon";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 import { cn, fmtMoney, fmtNumber, fmtPercent } from "@/lib/utils";
 
 interface JournalDay {

@@ -1,5 +1,5 @@
 import type { GroupSummary, Dimension } from "@luxalgo/journal-core";
-import { normalizeSymbol } from "@/lib/assets/asset-icons";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 
 export interface Group extends GroupSummary {
   row: string;

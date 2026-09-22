@@ -739,22 +739,25 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
                       setSelectedBroker(broker);
                       setBrokerAccountName(broker.name);
                     }}
-                    className="group flex items-center gap-2.5 rounded-xl border border-border/70 p-2.5 text-left transition-all hover:bg-muted/50 hover:border-border active:scale-[0.98] cursor-pointer"
+                    className="group flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/40 p-2.5 text-left transition-all hover:bg-muted/50 hover:border-border active:scale-[0.98] cursor-pointer"
                   >
-                    <span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background/80 p-1">
-                      <img
-                        src={`/assets/brokers/${broker.icon}`}
-                        alt=""
-                        className={cn(
-                          "size-full object-contain",
-                          broker.invertInDark && "dark:invert",
-                        )}
-                      />
-                    </span>
+                    <img
+                      src={`/assets/brokers/${broker.icon}`}
+                      alt=""
+                      className={cn(
+                        "size-8 shrink-0 rounded-md object-contain",
+                        broker.invertInDark && "dark:invert",
+                      )}
+                    />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-medium text-foreground">
+                      <span className="block truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
                         {broker.name}
                       </span>
+                      {broker.subtitle && (
+                        <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
+                          {broker.subtitle}
+                        </span>
+                      )}
                     </span>
                   </button>
                 ))}
@@ -783,30 +786,30 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
                       "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
                       broker.status === "soon"
                         ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
-                        : "border-border/70 hover:bg-muted/50 hover:border-border",
+                        : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
                     )}
                   >
-                    <span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background/80 p-1">
-                      <img
-                        src={`/assets/brokers/${broker.icon}`}
-                        alt=""
-                        className={cn(
-                          "size-full object-contain",
-                          broker.invertInDark && "dark:invert",
-                        )}
-                      />
-                    </span>
+                    <img
+                      src={`/assets/brokers/${broker.icon}`}
+                      alt=""
+                      className={cn(
+                        "size-8 shrink-0 rounded-md object-contain",
+                        broker.invertInDark && "dark:invert",
+                      )}
+                    />
                     <span className="min-w-0 flex-1">
                       <span
                         className={cn(
-                          "block truncate text-xs font-medium",
-                          broker.status === "soon" ? "text-muted-foreground" : "text-foreground",
+                          "block truncate text-xs font-semibold",
+                          broker.status === "soon"
+                            ? "text-muted-foreground"
+                            : "text-foreground group-hover:text-primary transition-colors",
                         )}
                       >
                         {broker.name}
                       </span>
                       {broker.subtitle && (
-                        <span className="block truncate text-[10px] text-muted-foreground/80">
+                        <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
                           {broker.subtitle}
                         </span>
                       )}
@@ -840,25 +843,30 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
                       "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
                       broker.status === "soon"
                         ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
-                        : "border-border/70 hover:bg-muted/50 hover:border-border",
+                        : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
                     )}
                   >
-                    <span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background/80 p-1">
-                      <img
-                        src={`/assets/brokers/${broker.icon}`}
-                        alt=""
-                        className={cn(
-                          "size-full object-contain",
-                          broker.invertInDark && "dark:invert",
-                        )}
-                      />
-                    </span>
+                    <img
+                      src={`/assets/brokers/${broker.icon}`}
+                      alt=""
+                      className={cn(
+                        "size-8 shrink-0 rounded-md object-contain",
+                        broker.invertInDark && "dark:invert",
+                      )}
+                    />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-semibold text-foreground">
+                      <span
+                        className={cn(
+                          "block truncate text-xs font-semibold",
+                          broker.status === "soon"
+                            ? "text-muted-foreground"
+                            : "text-foreground group-hover:text-primary transition-colors",
+                        )}
+                      >
                         {broker.name}
                       </span>
                       {broker.subtitle && (
-                        <span className="block truncate text-[10px] text-muted-foreground/80">
+                        <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
                           {broker.subtitle}
                         </span>
                       )}
@@ -906,16 +914,14 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
           </button>
 
           <div className="flex items-center gap-3 border-b border-border/60 pb-3">
-            <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/60 bg-background p-1.5 shadow-xs">
-              <img
-                src={`/assets/brokers/${selectedBroker.icon}`}
-                alt=""
-                className={cn(
-                  "size-full object-contain",
-                  selectedBroker.invertInDark && "dark:invert",
-                )}
-              />
-            </span>
+            <img
+              src={`/assets/brokers/${selectedBroker.icon}`}
+              alt=""
+              className={cn(
+                "size-9 shrink-0 rounded-lg object-contain",
+                selectedBroker.invertInDark && "dark:invert",
+              )}
+            />
             <div>
               <h3 className="text-sm font-semibold text-foreground">
                 Connect {selectedBroker.name}

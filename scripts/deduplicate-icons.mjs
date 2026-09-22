@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const ICONS_ROOT = join(ROOT, "apps/web/public/assets/icons");
+const BROKERS_ROOT = join(ROOT, "apps/web/public/assets/brokers");
 const MANIFEST_PATH = join(ROOT, "apps/web/src/lib/assets/tv-icons-manifest.json");
 
 function getAllSvgFiles(dir) {
@@ -161,7 +162,7 @@ function deduplicate() {
   const indexKeys = new Set(Object.keys(manifest.indices || {}));
   const commodityKeys = new Set(Object.keys(manifest.commodities || {}));
 
-  // Known non-crypto items that leak into crypto via perpetual futures
+  // Known non-crypto items that leak into crypto via perpetual futures or dominance tickers
   const nonCryptoExclusions = new Set([
     // ETFs & Indices
     "QQQ",
@@ -178,6 +179,11 @@ function deduplicate() {
     "SPX",
     "DXY",
     "NDX",
+    "NASDAQ100",
+    "ETH.D",
+    "OTHERS.D",
+    "C.D",
+    "STABLE.C.D",
     // Synthetic Stocks
     "MSTR",
     "MU",
@@ -196,8 +202,17 @@ function deduplicate() {
     "XAG",
     "XAU",
     "GOLD",
+    "GOLDXAU",
+    "OILWTI",
+    "OILBRENT",
     "SILVER",
     "NATGAS",
+    // Misc synthetic pairs / aliases
+    "ETH.UM",
+    "DOGETHB",
+    "NEARTHB",
+    "BITCOIN",
+    "PUMPFUN",
   ]);
 
   let removedCryptoCount = 0;
@@ -205,6 +220,8 @@ function deduplicate() {
     const isExcluded =
       nonCryptoExclusions.has(coin) ||
       coin.endsWith(".P") ||
+      coin.endsWith(".D") ||
+      coin.includes(".UM") ||
       coin.startsWith("1000") ||
       coin.includes("TOTAL") ||
       (stockKeys.has(coin) && !["BTC", "ETH", "SOL", "STX", "DASH", "QNT"].includes(coin)) ||
@@ -221,11 +238,24 @@ function deduplicate() {
     `✓ Removed ${removedCryptoCount} contaminated/synthetic entries from manifest.crypto`,
   );
 
+  // De-pollute manifest.stocks (remove B3 equities, ETFs, and BTC trust that belong in dedicated categories)
+  const b3Keys = new Set(Object.keys(manifest.b3 || {}));
+  let removedStocksCount = 0;
+  for (const stock of Object.keys(manifest.stocks || {})) {
+    if (b3Keys.has(stock) || fundKeys.has(stock) || stock === "BTC") {
+      delete manifest.stocks[stock];
+      removedStocksCount++;
+    }
+  }
+  console.log(
+    `✓ Removed ${removedStocksCount} cross-polluted entries (B3 / Funds / BTC) from manifest.stocks`,
+  );
+
   // ----------------------------------------------------
   // Step 2: Compute SHA-256 Hashes of all SVGs
   // ----------------------------------------------------
   console.log("\n[2/5] Computing SHA-256 hashes of all SVG files...");
-  const allFiles = getAllSvgFiles(ICONS_ROOT);
+  const allFiles = [...getAllSvgFiles(ICONS_ROOT), ...getAllSvgFiles(BROKERS_ROOT)];
   const hashMap = new Map(); // sha256 -> [fullPath1, fullPath2, ...]
 
   for (const file of allFiles) {
@@ -337,6 +367,10 @@ function deduplicate() {
     "/assets/icons/flags/gb.svg",
     "/assets/icons/flags/jp.svg",
     "/assets/icons/fallback.svg",
+    "/assets/icons/crypto/bitcoin.svg",
+    "/assets/icons/crypto/ethereum.svg",
+    "/assets/icons/crypto/solana.svg",
+    "/assets/icons/crypto/total.svg",
   ];
   for (const p of staticActive) activeReferencedIcons.add(p);
 
@@ -370,7 +404,7 @@ function deduplicate() {
   );
   console.log(`✓ Updated manifest saved to ${MANIFEST_PATH}`);
 
-  const finalFiles = getAllSvgFiles(ICONS_ROOT);
+  const finalFiles = [...getAllSvgFiles(ICONS_ROOT), ...getAllSvgFiles(BROKERS_ROOT)];
   console.log(`✓ Final unique physical SVG files on disk: ${finalFiles.length}`);
   console.log("\n=== Deduplication & Sanitization Complete! ===");
 }
