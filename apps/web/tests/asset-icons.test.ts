@@ -148,6 +148,30 @@ describe("asset-icons normalization and dynamic resolver", () => {
       expect(solusdt.type).toBe("pair");
       expect(solusdt.icons[0]).toContain("crypto/solana.svg");
       expect(solusdt.icons[1]).toContain("crypto/tether.svg");
+
+      const dogeusdt = getAssetIconConfig("DOGEUSDT");
+      expect(dogeusdt.type).toBe("pair");
+      expect(dogeusdt.icons[0]).toContain("crypto/doge.svg");
+      expect(dogeusdt.icons[1]).toContain("crypto/tether.svg");
+    });
+
+    it("resolves TradingView ingested stocks and ETFs to official vector SVGs", () => {
+      expect(getAssetIconConfig("AAPL").icons[0]).toContain("stocks/aapl.svg");
+      expect(getAssetIconConfig("TSLA").icons[0]).toContain("stocks/tsla.svg");
+      expect(getAssetIconConfig("NVDA").icons[0]).toContain("stocks/nvda.svg");
+      expect(getAssetIconConfig("MSFT").icons[0]).toContain("stocks/msft.svg");
+      expect(getAssetIconConfig("SPY").icons[0]).toContain("funds/spy.svg");
+      expect(getAssetIconConfig("QQQ").icons[0]).toContain("funds/qqq.svg");
+    });
+
+    it("resolves extended commodities and forex pairs from TradingView ingestion", () => {
+      expect(getAssetIconConfig("COFFEE").icons[0]).toContain("commodities/kc.svg");
+      expect(getAssetIconConfig("CORN").icons[0]).toContain("commodities/zc.svg");
+
+      const usdmxn = getAssetIconConfig("USDMXN");
+      expect(usdmxn.type).toBe("pair");
+      expect(usdmxn.icons[0]).toContain("flags/usd.svg");
+      expect(usdmxn.icons[1]).toContain("flags/mxn.svg");
     });
 
     it("returns fallback for unmapped custom symbols", () => {

@@ -3,6 +3,8 @@
  * Maps symbols to TradingView vector SVG icons with automatic currency pair blending.
  */
 
+import tvManifestRaw from "./tv-icons-manifest.json";
+
 export interface AssetIconConfig {
   icons: string[];
   type: "single" | "pair";
@@ -12,10 +14,27 @@ export interface AssetIconConfig {
   color?: string;
 }
 
+interface TvManifestEntry {
+  icon: string;
+  name?: string;
+  logoid?: string;
+}
+
+interface TvManifest {
+  flags: Record<string, TvManifestEntry>;
+  indices: Record<string, TvManifestEntry>;
+  commodities: Record<string, TvManifestEntry>;
+  crypto: Record<string, TvManifestEntry>;
+  stocks: Record<string, TvManifestEntry>;
+  funds: Record<string, TvManifestEntry>;
+}
+
+export const tvManifest = tvManifestRaw as unknown as TvManifest;
+
 const ICON_BASE = "/assets/icons";
 const FALLBACK_ICON = `${ICON_BASE}/fallback.svg`;
 
-/** Currency flag vectors (10 core currencies enabling 90+ dynamically blended pairs). */
+/** Currency flag vectors (35+ currencies enabling hundreds of dynamically blended pairs). */
 export const CURRENCY_FLAGS: Record<string, string> = {
   USD: `${ICON_BASE}/flags/usd.svg`,
   EUR: `${ICON_BASE}/flags/eur.svg`,
@@ -27,6 +46,9 @@ export const CURRENCY_FLAGS: Record<string, string> = {
   NZD: `${ICON_BASE}/flags/nzd.svg`,
   BRL: `${ICON_BASE}/flags/brl.svg`,
   CNY: `${ICON_BASE}/flags/cny.svg`,
+  ...Object.fromEntries(
+    Object.entries(tvManifest.flags || {}).map(([currency, data]) => [currency, data.icon]),
+  ),
 };
 
 /** Dedicated branded vector SVGs for indices, commodities, and crypto assets. */
@@ -113,7 +135,10 @@ export const SINGLE_ASSETS: Record<string, { icon: string; color: string }> = {
 };
 
 /** Crypto base assets that can pair with fiat or stablecoin quotes. */
-const CRYPTO_BASES: Record<string, string> = {
+export const CRYPTO_BASES: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.entries(tvManifest.crypto || {}).map(([coin, data]) => [coin, data.icon]),
+  ),
   BTC: `${ICON_BASE}/crypto/bitcoin.svg`,
   ETH: `${ICON_BASE}/crypto/ethereum.svg`,
   SOL: `${ICON_BASE}/crypto/solana.svg`,
@@ -287,6 +312,22 @@ export function getAssetIconConfig(rawSymbol: string): AssetIconConfig {
       type: "single",
       symbol,
       color: SINGLE_ASSETS[symbol].color,
+    };
+  }
+
+  // Tier 1B: TradingView ingested catalog match (stocks, funds, commodities, crypto, indices)
+  const manifestMatch =
+    tvManifest.stocks?.[symbol] ||
+    tvManifest.funds?.[symbol] ||
+    tvManifest.indices?.[symbol] ||
+    tvManifest.commodities?.[symbol] ||
+    tvManifest.crypto?.[symbol];
+
+  if (manifestMatch) {
+    return {
+      icons: [manifestMatch.icon],
+      type: "single",
+      symbol,
     };
   }
 

@@ -1,0 +1,1424 @@
+{
+  "flags": {
+    "USD": {
+      "icon": "/assets/icons/flags/usd.svg",
+      "country": "US",
+      "logoid": "country/US"
+    },
+    "EUR": {
+      "icon": "/assets/icons/flags/eur.svg",
+      "country": "EU",
+      "logoid": "country/EU"
+    },
+    "GBP": {
+      "icon": "/assets/icons/flags/gbp.svg",
+      "country": "GB",
+      "logoid": "country/GB"
+    },
+    "JPY": {
+      "icon": "/assets/icons/flags/jpy.svg",
+      "country": "JP",
+      "logoid": "country/JP"
+    },
+    "AUD": {
+      "icon": "/assets/icons/flags/aud.svg",
+      "country": "AU",
+      "logoid": "country/AU"
+    },
+    "CAD": {
+      "icon": "/assets/icons/flags/cad.svg",
+      "country": "CA",
+      "logoid": "country/CA"
+    },
+    "CHF": {
+      "icon": "/assets/icons/flags/chf.svg",
+      "country": "CH",
+      "logoid": "country/CH"
+    },
+    "NZD": {
+      "icon": "/assets/icons/flags/nzd.svg",
+      "country": "NZ",
+      "logoid": "country/NZ"
+    },
+    "BRL": {
+      "icon": "/assets/icons/flags/brl.svg",
+      "country": "BR",
+      "logoid": "country/BR"
+    },
+    "CNY": {
+      "icon": "/assets/icons/flags/cny.svg",
+      "country": "CN",
+      "logoid": "country/CN"
+    },
+    "MXN": {
+      "icon": "/assets/icons/flags/mxn.svg",
+      "country": "MX",
+      "logoid": "country/MX"
+    },
+    "ZAR": {
+      "icon": "/assets/icons/flags/zar.svg",
+      "country": "ZA",
+      "logoid": "country/ZA"
+    },
+    "SGD": {
+      "icon": "/assets/icons/flags/sgd.svg",
+      "country": "SG",
+      "logoid": "country/SG"
+    },
+    "HKD": {
+      "icon": "/assets/icons/flags/hkd.svg",
+      "country": "HK",
+      "logoid": "country/HK"
+    },
+    "SEK": {
+      "icon": "/assets/icons/flags/sek.svg",
+      "country": "SE",
+      "logoid": "country/SE"
+    },
+    "NOK": {
+      "icon": "/assets/icons/flags/nok.svg",
+      "country": "NO",
+      "logoid": "country/NO"
+    },
+    "TRY": {
+      "icon": "/assets/icons/flags/try.svg",
+      "country": "TR",
+      "logoid": "country/TR"
+    },
+    "INR": {
+      "icon": "/assets/icons/flags/inr.svg",
+      "country": "IN",
+      "logoid": "country/IN"
+    },
+    "KRW": {
+      "icon": "/assets/icons/flags/krw.svg",
+      "country": "KR",
+      "logoid": "country/KR"
+    },
+    "PLN": {
+      "icon": "/assets/icons/flags/pln.svg",
+      "country": "PL",
+      "logoid": "country/PL"
+    },
+    "CZK": {
+      "icon": "/assets/icons/flags/czk.svg",
+      "country": "CZ",
+      "logoid": "country/CZ"
+    },
+    "HUF": {
+      "icon": "/assets/icons/flags/huf.svg",
+      "country": "HU",
+      "logoid": "country/HU"
+    },
+    "ILS": {
+      "icon": "/assets/icons/flags/ils.svg",
+      "country": "IL",
+      "logoid": "country/IL"
+    },
+    "THB": {
+      "icon": "/assets/icons/flags/thb.svg",
+      "country": "TH",
+      "logoid": "country/TH"
+    },
+    "IDR": {
+      "icon": "/assets/icons/flags/idr.svg",
+      "country": "ID",
+      "logoid": "country/ID"
+    },
+    "MYR": {
+      "icon": "/assets/icons/flags/myr.svg",
+      "country": "MY",
+      "logoid": "country/MY"
+    },
+    "PHP": {
+      "icon": "/assets/icons/flags/php.svg",
+      "country": "PH",
+      "logoid": "country/PH"
+    },
+    "TWD": {
+      "icon": "/assets/icons/flags/twd.svg",
+      "country": "TW",
+      "logoid": "country/TW"
+    },
+    "AED": {
+      "icon": "/assets/icons/flags/aed.svg",
+      "country": "AE",
+      "logoid": "country/AE"
+    },
+    "SAR": {
+      "icon": "/assets/icons/flags/sar.svg",
+      "country": "SA",
+      "logoid": "country/SA"
+    },
+    "DKK": {
+      "icon": "/assets/icons/flags/dkk.svg",
+      "country": "DK",
+      "logoid": "country/DK"
+    },
+    "CLP": {
+      "icon": "/assets/icons/flags/clp.svg",
+      "country": "CL",
+      "logoid": "country/CL"
+    },
+    "COP": {
+      "icon": "/assets/icons/flags/cop.svg",
+      "country": "CO",
+      "logoid": "country/CO"
+    },
+    "PEN": {
+      "icon": "/assets/icons/flags/pen.svg",
+      "country": "PE",
+      "logoid": "country/PE"
+    },
+    "ARS": {
+      "icon": "/assets/icons/flags/ars.svg",
+      "country": "AR",
+      "logoid": "country/AR"
+    }
+  },
+  "indices": {
+    "NQ": {
+      "icon": "/assets/icons/indices/nq.svg",
+      "name": "Nasdaq 100",
+      "logoid": "indices/nasdaq-100"
+    },
+    "MNQ": {
+      "icon": "/assets/icons/indices/nq.svg",
+      "name": "Nasdaq 100",
+      "logoid": "indices/nasdaq-100"
+    },
+    "US100": {
+      "icon": "/assets/icons/indices/nq.svg",
+      "name": "Nasdaq 100",
+      "logoid": "indices/nasdaq-100"
+    },
+    "NAS100": {
+      "icon": "/assets/icons/indices/nq.svg",
+      "name": "Nasdaq 100",
+      "logoid": "indices/nasdaq-100"
+    },
+    "USTEC": {
+      "icon": "/assets/icons/indices/nq.svg",
+      "name": "Nasdaq 100",
+      "logoid": "indices/nasdaq-100"
+    },
+    "NDX": {
+      "icon": "/assets/icons/indices/nq.svg",
+      "name": "Nasdaq 100",
+      "logoid": "indices/nasdaq-100"
+    },
+    "ES": {
+      "icon": "/assets/icons/indices/es.svg",
+      "name": "S&P 500",
+      "logoid": "indices/s-and-p-500"
+    },
+    "MES": {
+      "icon": "/assets/icons/indices/es.svg",
+      "name": "S&P 500",
+      "logoid": "indices/s-and-p-500"
+    },
+    "US500": {
+      "icon": "/assets/icons/indices/es.svg",
+      "name": "S&P 500",
+      "logoid": "indices/s-and-p-500"
+    },
+    "SPX": {
+      "icon": "/assets/icons/indices/es.svg",
+      "name": "S&P 500",
+      "logoid": "indices/s-and-p-500"
+    },
+    "SPX500": {
+      "icon": "/assets/icons/indices/es.svg",
+      "name": "S&P 500",
+      "logoid": "indices/s-and-p-500"
+    },
+    "YM": {
+      "icon": "/assets/icons/indices/ym.svg",
+      "name": "Dow Jones 30",
+      "logoid": "indices/dow-30"
+    },
+    "MYM": {
+      "icon": "/assets/icons/indices/ym.svg",
+      "name": "Dow Jones 30",
+      "logoid": "indices/dow-30"
+    },
+    "US30": {
+      "icon": "/assets/icons/indices/ym.svg",
+      "name": "Dow Jones 30",
+      "logoid": "indices/dow-30"
+    },
+    "DJ30": {
+      "icon": "/assets/icons/indices/ym.svg",
+      "name": "Dow Jones 30",
+      "logoid": "indices/dow-30"
+    },
+    "DJI": {
+      "icon": "/assets/icons/indices/ym.svg",
+      "name": "Dow Jones 30",
+      "logoid": "indices/dow-30"
+    },
+    "WALLSTREET": {
+      "icon": "/assets/icons/indices/ym.svg",
+      "name": "Dow Jones 30",
+      "logoid": "indices/dow-30"
+    },
+    "RTY": {
+      "icon": "/assets/icons/indices/rty.svg",
+      "name": "Russell 2000",
+      "logoid": "indices/russell-2000"
+    },
+    "M2K": {
+      "icon": "/assets/icons/indices/rty.svg",
+      "name": "Russell 2000",
+      "logoid": "indices/russell-2000"
+    },
+    "US2000": {
+      "icon": "/assets/icons/indices/rty.svg",
+      "name": "Russell 2000",
+      "logoid": "indices/russell-2000"
+    },
+    "RUSSELL": {
+      "icon": "/assets/icons/indices/rty.svg",
+      "name": "Russell 2000",
+      "logoid": "indices/russell-2000"
+    },
+    "DXY": {
+      "icon": "/assets/icons/indices/dx.svg",
+      "name": "US Dollar Index",
+      "logoid": "indices/u-s-dollar-index"
+    },
+    "USDX": {
+      "icon": "/assets/icons/indices/dx.svg",
+      "name": "US Dollar Index",
+      "logoid": "indices/u-s-dollar-index"
+    },
+    "DX": {
+      "icon": "/assets/icons/indices/dx.svg",
+      "name": "US Dollar Index",
+      "logoid": "indices/u-s-dollar-index"
+    },
+    "VIX": {
+      "icon": "/assets/icons/flags/usd.svg",
+      "name": "CBOE Volatility Index",
+      "logoid": "country/US"
+    },
+    "VOLATILITY": {
+      "icon": "/assets/icons/flags/usd.svg",
+      "name": "CBOE Volatility Index",
+      "logoid": "country/US"
+    },
+    "DAX": {
+      "icon": "/assets/icons/indices/dax.svg",
+      "name": "DAX 40 Germany",
+      "logoid": "indices/dax"
+    },
+    "GER40": {
+      "icon": "/assets/icons/indices/dax.svg",
+      "name": "DAX 40 Germany",
+      "logoid": "indices/dax"
+    },
+    "DE40": {
+      "icon": "/assets/icons/indices/dax.svg",
+      "name": "DAX 40 Germany",
+      "logoid": "indices/dax"
+    },
+    "UK100": {
+      "icon": "/assets/icons/indices/uk100.svg",
+      "name": "FTSE 100 UK",
+      "logoid": "indices/uk-100"
+    },
+    "FTSE": {
+      "icon": "/assets/icons/indices/uk100.svg",
+      "name": "FTSE 100 UK",
+      "logoid": "indices/uk-100"
+    },
+    "NI225": {
+      "icon": "/assets/icons/indices/ni225.svg",
+      "name": "Nikkei 225 Japan",
+      "logoid": "indices/nikkei-225"
+    },
+    "JP225": {
+      "icon": "/assets/icons/indices/ni225.svg",
+      "name": "Nikkei 225 Japan",
+      "logoid": "indices/nikkei-225"
+    },
+    "JPN225": {
+      "icon": "/assets/icons/indices/ni225.svg",
+      "name": "Nikkei 225 Japan",
+      "logoid": "indices/nikkei-225"
+    },
+    "NIKKEI": {
+      "icon": "/assets/icons/indices/ni225.svg",
+      "name": "Nikkei 225 Japan",
+      "logoid": "indices/nikkei-225"
+    },
+    "EU50": {
+      "icon": "/assets/icons/indices/sx5e.svg",
+      "name": "Euro Stoxx 50",
+      "logoid": "indices/euro-stoxx-50"
+    },
+    "STOXX50": {
+      "icon": "/assets/icons/indices/sx5e.svg",
+      "name": "Euro Stoxx 50",
+      "logoid": "indices/euro-stoxx-50"
+    },
+    "PX1": {
+      "icon": "/assets/icons/indices/px1.svg",
+      "name": "CAC 40 France",
+      "logoid": "indices/cac-40"
+    },
+    "CAC40": {
+      "icon": "/assets/icons/indices/px1.svg",
+      "name": "CAC 40 France",
+      "logoid": "indices/cac-40"
+    },
+    "FRA40": {
+      "icon": "/assets/icons/indices/px1.svg",
+      "name": "CAC 40 France",
+      "logoid": "indices/cac-40"
+    },
+    "IBEX": {
+      "icon": "/assets/icons/indices/ibex.svg",
+      "name": "IBEX 35 Spain",
+      "logoid": "indices/ibex-35"
+    },
+    "ESP35": {
+      "icon": "/assets/icons/indices/ibex.svg",
+      "name": "IBEX 35 Spain",
+      "logoid": "indices/ibex-35"
+    },
+    "IBEX35": {
+      "icon": "/assets/icons/indices/ibex.svg",
+      "name": "IBEX 35 Spain",
+      "logoid": "indices/ibex-35"
+    },
+    "AUS200": {
+      "icon": "/assets/icons/indices/aus200.svg",
+      "name": "ASX 200 Australia",
+      "logoid": "indices/asx-200"
+    },
+    "ASX200": {
+      "icon": "/assets/icons/indices/aus200.svg",
+      "name": "ASX 200 Australia",
+      "logoid": "indices/asx-200"
+    },
+    "HSI": {
+      "icon": "/assets/icons/indices/hsi.svg",
+      "name": "Hang Seng Hong Kong",
+      "logoid": "indices/hang-seng"
+    },
+    "HK50": {
+      "icon": "/assets/icons/indices/hsi.svg",
+      "name": "Hang Seng Hong Kong",
+      "logoid": "indices/hang-seng"
+    }
+  },
+  "commodities": {
+    "GC": {
+      "icon": "/assets/icons/commodities/gc.svg",
+      "name": "Gold",
+      "logoid": "metal/gold"
+    },
+    "MGC": {
+      "icon": "/assets/icons/commodities/gc.svg",
+      "name": "Gold",
+      "logoid": "metal/gold"
+    },
+    "GOLD": {
+      "icon": "/assets/icons/commodities/gc.svg",
+      "name": "Gold",
+      "logoid": "metal/gold"
+    },
+    "XAUUSD": {
+      "icon": "/assets/icons/commodities/gc.svg",
+      "name": "Gold",
+      "logoid": "metal/gold"
+    },
+    "SI": {
+      "icon": "/assets/icons/commodities/si.svg",
+      "name": "Silver",
+      "logoid": "metal/silver"
+    },
+    "MSI": {
+      "icon": "/assets/icons/commodities/si.svg",
+      "name": "Silver",
+      "logoid": "metal/silver"
+    },
+    "SILVER": {
+      "icon": "/assets/icons/commodities/si.svg",
+      "name": "Silver",
+      "logoid": "metal/silver"
+    },
+    "XAGUSD": {
+      "icon": "/assets/icons/commodities/si.svg",
+      "name": "Silver",
+      "logoid": "metal/silver"
+    },
+    "HG": {
+      "icon": "/assets/icons/commodities/hg.svg",
+      "name": "Copper",
+      "logoid": "metal/copper"
+    },
+    "COPPER": {
+      "icon": "/assets/icons/commodities/hg.svg",
+      "name": "Copper",
+      "logoid": "metal/copper"
+    },
+    "PL": {
+      "icon": "/assets/icons/commodities/pl.svg",
+      "name": "Platinum",
+      "logoid": "metal/platinum"
+    },
+    "PLATINUM": {
+      "icon": "/assets/icons/commodities/pl.svg",
+      "name": "Platinum",
+      "logoid": "metal/platinum"
+    },
+    "XPTUSD": {
+      "icon": "/assets/icons/commodities/pl.svg",
+      "name": "Platinum",
+      "logoid": "metal/platinum"
+    },
+    "PA": {
+      "icon": "/assets/icons/commodities/pa.svg",
+      "name": "Palladium",
+      "logoid": "metal/palladium"
+    },
+    "PALLADIUM": {
+      "icon": "/assets/icons/commodities/pa.svg",
+      "name": "Palladium",
+      "logoid": "metal/palladium"
+    },
+    "XPDUSD": {
+      "icon": "/assets/icons/commodities/pa.svg",
+      "name": "Palladium",
+      "logoid": "metal/palladium"
+    },
+    "CL": {
+      "icon": "/assets/icons/commodities/cl.svg",
+      "name": "Crude Oil WTI",
+      "logoid": "crude-oil"
+    },
+    "MCL": {
+      "icon": "/assets/icons/commodities/cl.svg",
+      "name": "Crude Oil WTI",
+      "logoid": "crude-oil"
+    },
+    "QM": {
+      "icon": "/assets/icons/commodities/cl.svg",
+      "name": "Crude Oil WTI",
+      "logoid": "crude-oil"
+    },
+    "USOIL": {
+      "icon": "/assets/icons/commodities/cl.svg",
+      "name": "Crude Oil WTI",
+      "logoid": "crude-oil"
+    },
+    "WTI": {
+      "icon": "/assets/icons/commodities/cl.svg",
+      "name": "Crude Oil WTI",
+      "logoid": "crude-oil"
+    },
+    "NG": {
+      "icon": "/assets/icons/commodities/ng.svg",
+      "name": "Natural Gas",
+      "logoid": "natural-gas"
+    },
+    "NATGAS": {
+      "icon": "/assets/icons/commodities/ng.svg",
+      "name": "Natural Gas",
+      "logoid": "natural-gas"
+    },
+    "KC": {
+      "icon": "/assets/icons/commodities/kc.svg",
+      "name": "Coffee",
+      "logoid": "commodity/coffee"
+    },
+    "COFFEE": {
+      "icon": "/assets/icons/commodities/kc.svg",
+      "name": "Coffee",
+      "logoid": "commodity/coffee"
+    },
+    "SB": {
+      "icon": "/assets/icons/commodities/sb.svg",
+      "name": "Sugar",
+      "logoid": "commodity/sugar"
+    },
+    "SUGAR": {
+      "icon": "/assets/icons/commodities/sb.svg",
+      "name": "Sugar",
+      "logoid": "commodity/sugar"
+    },
+    "CT": {
+      "icon": "/assets/icons/commodities/ct.svg",
+      "name": "Cotton",
+      "logoid": "commodity/cotton"
+    },
+    "COTTON": {
+      "icon": "/assets/icons/commodities/ct.svg",
+      "name": "Cotton",
+      "logoid": "commodity/cotton"
+    },
+    "CC": {
+      "icon": "/assets/icons/commodities/cc.svg",
+      "name": "Cocoa",
+      "logoid": "cocoa"
+    },
+    "COCOA": {
+      "icon": "/assets/icons/commodities/cc.svg",
+      "name": "Cocoa",
+      "logoid": "cocoa"
+    },
+    "ZC": {
+      "icon": "/assets/icons/commodities/zc.svg",
+      "name": "Corn",
+      "logoid": "commodity/corn"
+    },
+    "CORN": {
+      "icon": "/assets/icons/commodities/zc.svg",
+      "name": "Corn",
+      "logoid": "commodity/corn"
+    },
+    "ZW": {
+      "icon": "/assets/icons/commodities/zw.svg",
+      "name": "Wheat",
+      "logoid": "commodity/wheat"
+    },
+    "WHEAT": {
+      "icon": "/assets/icons/commodities/zw.svg",
+      "name": "Wheat",
+      "logoid": "commodity/wheat"
+    },
+    "ZS": {
+      "icon": "/assets/icons/commodities/zs.svg",
+      "name": "Soybeans",
+      "logoid": "commodity/soybean"
+    },
+    "SOYBEAN": {
+      "icon": "/assets/icons/commodities/zs.svg",
+      "name": "Soybeans",
+      "logoid": "commodity/soybean"
+    }
+  },
+  "crypto": {
+    "BTC": {
+      "icon": "/assets/icons/crypto/btc.svg",
+      "name": "BTC",
+      "logoid": "crypto/XTVCBTC"
+    },
+    "ETH": {
+      "icon": "/assets/icons/crypto/eth.svg",
+      "name": "ETH",
+      "logoid": "crypto/XTVCETH"
+    },
+    "SOL": {
+      "icon": "/assets/icons/crypto/sol.svg",
+      "name": "SOL",
+      "logoid": "crypto/XTVCSOL"
+    },
+    "XRP": {
+      "icon": "/assets/icons/crypto/xrp.svg",
+      "name": "XRP",
+      "logoid": "crypto/XTVCXRP"
+    },
+    "DOGE": {
+      "icon": "/assets/icons/crypto/doge.svg",
+      "name": "DOGE",
+      "logoid": "crypto/XTVCDOGE"
+    },
+    "ADA": {
+      "icon": "/assets/icons/crypto/ada.svg",
+      "name": "ADA",
+      "logoid": "crypto/XTVCADA"
+    },
+    "AVAX": {
+      "icon": "/assets/icons/crypto/avax.svg",
+      "name": "AVAX",
+      "logoid": "crypto/XTVCAVAX"
+    },
+    "LINK": {
+      "icon": "/assets/icons/crypto/link.svg",
+      "name": "LINK",
+      "logoid": "crypto/XTVCLINK"
+    },
+    "DOT": {
+      "icon": "/assets/icons/crypto/dot.svg",
+      "name": "DOT",
+      "logoid": "crypto/XTVCDOT"
+    },
+    "NEAR": {
+      "icon": "/assets/icons/crypto/near.svg",
+      "name": "NEAR",
+      "logoid": "crypto/XTVCNEAR"
+    },
+    "BNB": {
+      "icon": "/assets/icons/crypto/bnb.svg",
+      "name": "BNB",
+      "logoid": "crypto/XTVCBNB"
+    },
+    "SUI": {
+      "icon": "/assets/icons/crypto/sui.svg",
+      "name": "SUI",
+      "logoid": "crypto/XTVCSUI"
+    },
+    "PEPE": {
+      "icon": "/assets/icons/crypto/pepe.svg",
+      "name": "PEPE",
+      "logoid": "crypto/XTVCPEPE"
+    },
+    "SHIB": {
+      "icon": "/assets/icons/crypto/shib.svg",
+      "name": "SHIB",
+      "logoid": "crypto/XTVCSHIB"
+    },
+    "LTC": {
+      "icon": "/assets/icons/crypto/ltc.svg",
+      "name": "LTC",
+      "logoid": "crypto/XTVCLTC"
+    },
+    "BCH": {
+      "icon": "/assets/icons/crypto/bch.svg",
+      "name": "BCH",
+      "logoid": "crypto/XTVCBCH"
+    },
+    "UNI": {
+      "icon": "/assets/icons/crypto/uni.svg",
+      "name": "UNI",
+      "logoid": "crypto/XTVCUNI"
+    },
+    "POL": {
+      "icon": "/assets/icons/crypto/pol.svg",
+      "name": "POL",
+      "logoid": "crypto/XTVCPOL"
+    },
+    "TRX": {
+      "icon": "/assets/icons/crypto/trx.svg",
+      "name": "TRX",
+      "logoid": "crypto/XTVCTRX"
+    },
+    "TON": {
+      "icon": "/assets/icons/crypto/ton.svg",
+      "name": "TON",
+      "logoid": "crypto/XTVCTON"
+    },
+    "XLM": {
+      "icon": "/assets/icons/crypto/xlm.svg",
+      "name": "XLM",
+      "logoid": "crypto/XTVCXLM"
+    },
+    "ICP": {
+      "icon": "/assets/icons/crypto/icp.svg",
+      "name": "ICP",
+      "logoid": "crypto/XTVCICP"
+    },
+    "ETC": {
+      "icon": "/assets/icons/crypto/etc.svg",
+      "name": "ETC",
+      "logoid": "crypto/XTVCETC"
+    },
+    "FIL": {
+      "icon": "/assets/icons/crypto/fil.svg",
+      "name": "FIL",
+      "logoid": "crypto/XTVCFIL"
+    },
+    "HBAR": {
+      "icon": "/assets/icons/crypto/hbar.svg",
+      "name": "HBAR",
+      "logoid": "crypto/XTVCHBAR"
+    },
+    "APT": {
+      "icon": "/assets/icons/crypto/apt.svg",
+      "name": "APT",
+      "logoid": "crypto/XTVCAPT"
+    },
+    "RENDER": {
+      "icon": "/assets/icons/crypto/render.svg",
+      "name": "RENDER",
+      "logoid": "crypto/XTVCRENDER"
+    },
+    "TAO": {
+      "icon": "/assets/icons/crypto/tao.svg",
+      "name": "TAO",
+      "logoid": "crypto/XTVCTAO"
+    },
+    "INJ": {
+      "icon": "/assets/icons/crypto/inj.svg",
+      "name": "INJ",
+      "logoid": "crypto/XTVCINJ"
+    },
+    "ATOM": {
+      "icon": "/assets/icons/crypto/atom.svg",
+      "name": "ATOM",
+      "logoid": "crypto/XTVCATOM"
+    },
+    "FET": {
+      "icon": "/assets/icons/crypto/fet.svg",
+      "name": "FET",
+      "logoid": "crypto/XTVCFET"
+    },
+    "TIA": {
+      "icon": "/assets/icons/crypto/tia.svg",
+      "name": "TIA",
+      "logoid": "crypto/XTVCTIA"
+    },
+    "OP": {
+      "icon": "/assets/icons/crypto/op.svg",
+      "name": "OP",
+      "logoid": "crypto/XTVCOP"
+    },
+    "ARB": {
+      "icon": "/assets/icons/crypto/arb.svg",
+      "name": "ARB",
+      "logoid": "crypto/XTVCARB"
+    },
+    "RUNE": {
+      "icon": "/assets/icons/crypto/rune.svg",
+      "name": "RUNE",
+      "logoid": "crypto/XTVCRUNE"
+    },
+    "AAVE": {
+      "icon": "/assets/icons/crypto/aave.svg",
+      "name": "AAVE",
+      "logoid": "crypto/XTVCAAVE"
+    },
+    "MKR": {
+      "icon": "/assets/icons/crypto/mkr.svg",
+      "name": "MKR",
+      "logoid": "crypto/XTVCMKR"
+    },
+    "PENDLE": {
+      "icon": "/assets/icons/crypto/pendle.svg",
+      "name": "PENDLE",
+      "logoid": "crypto/XTVCPENDLE"
+    },
+    "FTM": {
+      "icon": "/assets/icons/crypto/ftm.svg",
+      "name": "FTM",
+      "logoid": "crypto/XTVCFTM"
+    },
+    "ALGO": {
+      "icon": "/assets/icons/crypto/algo.svg",
+      "name": "ALGO",
+      "logoid": "crypto/XTVCALGO"
+    },
+    "KAS": {
+      "icon": "/assets/icons/crypto/kas.svg",
+      "name": "KAS",
+      "logoid": "crypto/XTVCKAS"
+    },
+    "USDT": {
+      "icon": "/assets/icons/crypto/usdt.svg",
+      "name": "USDT",
+      "logoid": "crypto/XTVCUSDT"
+    },
+    "USDC": {
+      "icon": "/assets/icons/crypto/usdc.svg",
+      "name": "USDC",
+      "logoid": "crypto/XTVCUSDC"
+    },
+    "DAI": {
+      "icon": "/assets/icons/crypto/dai.svg",
+      "name": "DAI",
+      "logoid": "crypto/XTVCDAI"
+    },
+    "BTC.D": {
+      "icon": "/assets/icons/crypto/btc.d.svg",
+      "name": "BTC.D",
+      "logoid": "crypto/XTVCBTC.D"
+    },
+    "ZEC": {
+      "icon": "/assets/icons/crypto/zec.svg",
+      "name": "ZEC",
+      "logoid": "crypto/XTVCZEC"
+    },
+    "BNT": {
+      "icon": "/assets/icons/crypto/bnt.svg",
+      "name": "BNT",
+      "logoid": "crypto/XTVCBNT"
+    },
+    "XAU": {
+      "icon": "/assets/icons/commodities/gc.svg",
+      "name": "XAU",
+      "logoid": "crypto/XTVCXAU"
+    },
+    "ART": {
+      "icon": "/assets/icons/crypto/art.svg",
+      "name": "ART",
+      "logoid": "crypto/XTVCART"
+    },
+    "HYPE": {
+      "icon": "/assets/icons/crypto/hype.svg",
+      "name": "HYPE",
+      "logoid": "crypto/XTVCHYPE"
+    },
+    "ENA": {
+      "icon": "/assets/icons/crypto/ena.svg",
+      "name": "ENA",
+      "logoid": "crypto/XTVCENA"
+    },
+    "WLD": {
+      "icon": "/assets/icons/crypto/wld.svg",
+      "name": "WLD",
+      "logoid": "crypto/XTVCWLD"
+    },
+    "ONDO": {
+      "icon": "/assets/icons/crypto/ondo.svg",
+      "name": "ONDO",
+      "logoid": "crypto/XTVCONDO"
+    },
+    "ONE": {
+      "icon": "/assets/icons/crypto/one.svg",
+      "name": "ONE",
+      "logoid": "crypto/XTVCONE"
+    },
+    "AKE": {
+      "icon": "/assets/icons/crypto/ake.svg",
+      "name": "AKE",
+      "logoid": "crypto/XTVCAKE"
+    },
+    "PENGU": {
+      "icon": "/assets/icons/crypto/pengu.svg",
+      "name": "PENGU",
+      "logoid": "crypto/XTVCPENGU"
+    },
+    "SEI": {
+      "icon": "/assets/icons/crypto/sei.svg",
+      "name": "SEI",
+      "logoid": "crypto/XTVCSEI"
+    },
+    "SHIT": {
+      "icon": "/assets/icons/crypto/shit.svg",
+      "name": "SHIT",
+      "logoid": "crypto/XTVCSHIT"
+    },
+    "PUMP": {
+      "icon": "/assets/icons/crypto/pump.svg",
+      "name": "PUMP",
+      "logoid": "crypto/XTVCPUMP"
+    }
+  },
+  "stocks": {
+    "AAPL": {
+      "icon": "/assets/icons/stocks/aapl.svg",
+      "name": "Apple Inc.",
+      "logoid": "apple"
+    },
+    "MSFT": {
+      "icon": "/assets/icons/stocks/msft.svg",
+      "name": "Microsoft Corporation",
+      "logoid": "microsoft"
+    },
+    "NVDA": {
+      "icon": "/assets/icons/stocks/nvda.svg",
+      "name": "NVIDIA Corporation",
+      "logoid": "nvidia"
+    },
+    "AMZN": {
+      "icon": "/assets/icons/stocks/amzn.svg",
+      "name": "Amazon.com, Inc.",
+      "logoid": "amazon"
+    },
+    "GOOGL": {
+      "icon": "/assets/icons/stocks/googl.svg",
+      "name": "Alphabet Inc.",
+      "logoid": "alphabet"
+    },
+    "GOOG": {
+      "icon": "/assets/icons/stocks/googl.svg",
+      "name": "Alphabet Inc.",
+      "logoid": "alphabet"
+    },
+    "META": {
+      "icon": "/assets/icons/stocks/meta.svg",
+      "name": "<em>Meta</em> Platforms, Inc.",
+      "logoid": "meta-platforms"
+    },
+    "TSLA": {
+      "icon": "/assets/icons/stocks/tsla.svg",
+      "name": "Tesla, Inc.",
+      "logoid": "tesla"
+    },
+    "BRK.B": {
+      "icon": "/assets/icons/stocks/brk-b.svg",
+      "name": "Berkshire Hathaway Inc. New",
+      "logoid": "berkshire-hathaway"
+    },
+    "LLY": {
+      "icon": "/assets/icons/stocks/lly.svg",
+      "name": "Eli Lilly and Company",
+      "logoid": "eli-lilly"
+    },
+    "AVGO": {
+      "icon": "/assets/icons/stocks/avgo.svg",
+      "name": "Broadcom Inc.",
+      "logoid": "broadcom"
+    },
+    "JPM": {
+      "icon": "/assets/icons/stocks/jpm.svg",
+      "name": "JP Morgan Chase & Co.",
+      "logoid": "jpmorgan-chase"
+    },
+    "UNH": {
+      "icon": "/assets/icons/stocks/unh.svg",
+      "name": "UnitedHealth Group Incorporated",
+      "logoid": "unitedhealth"
+    },
+    "V": {
+      "icon": "/assets/icons/stocks/v.svg",
+      "name": "Visa Inc.",
+      "logoid": "visa"
+    },
+    "XOM": {
+      "icon": "/assets/icons/stocks/xom.svg",
+      "name": "ExxonMobil Holdings Corporation",
+      "logoid": "exxon"
+    },
+    "MA": {
+      "icon": "/assets/icons/stocks/ma.svg",
+      "name": "<em>Mastercard</em> Incorporated",
+      "logoid": "mastercard"
+    },
+    "JNJ": {
+      "icon": "/assets/icons/stocks/jnj.svg",
+      "name": "Johnson & Johnson",
+      "logoid": "johnson-and-johnson"
+    },
+    "HD": {
+      "icon": "/assets/icons/stocks/hd.svg",
+      "name": "Home Depot, Inc. (The)",
+      "logoid": "home-depot"
+    },
+    "PG": {
+      "icon": "/assets/icons/stocks/pg.svg",
+      "name": "Procter & Gamble Company (The)",
+      "logoid": "procter-and-gamble"
+    },
+    "COST": {
+      "icon": "/assets/icons/stocks/cost.svg",
+      "name": "<em>Costco</em> Wholesale Corporation",
+      "logoid": "costco-wholesale"
+    },
+    "ABBV": {
+      "icon": "/assets/icons/stocks/abbv.svg",
+      "name": "<em>AbbVie</em> Inc.",
+      "logoid": "abbvie"
+    },
+    "MRK": {
+      "icon": "/assets/icons/stocks/mrk.svg",
+      "name": "Merck & Company, Inc.",
+      "logoid": "merck-and-co"
+    },
+    "CRM": {
+      "icon": "/assets/icons/stocks/crm.svg",
+      "name": "Salesforce, Inc.",
+      "logoid": "salesforce"
+    },
+    "WMT": {
+      "icon": "/assets/icons/stocks/wmt.svg",
+      "name": "Walmart Inc.",
+      "logoid": "walmart"
+    },
+    "BAC": {
+      "icon": "/assets/icons/stocks/bac.svg",
+      "name": "Bank of America Corporation",
+      "logoid": "bank-of-america"
+    },
+    "AMD": {
+      "icon": "/assets/icons/stocks/amd.svg",
+      "name": "Advanced Micro Devices, Inc.",
+      "logoid": "advanced-micro-devices"
+    },
+    "NFLX": {
+      "icon": "/assets/icons/stocks/nflx.svg",
+      "name": "Netflix, Inc.",
+      "logoid": "netflix"
+    },
+    "PEP": {
+      "icon": "/assets/icons/stocks/pep.svg",
+      "name": "<em>PepsiCo</em>, Inc.",
+      "logoid": "pepsico"
+    },
+    "KO": {
+      "icon": "/assets/icons/stocks/ko.svg",
+      "name": "Coca-Cola Company (The)",
+      "logoid": "coca-cola"
+    },
+    "TMO": {
+      "icon": "/assets/icons/stocks/tmo.svg",
+      "name": "Thermo Fisher Scientific Inc",
+      "logoid": "thermo-fisher-scientific"
+    },
+    "LIN": {
+      "icon": "/assets/icons/stocks/lin.svg",
+      "name": "<em>Linde</em> plc",
+      "logoid": "linde"
+    },
+    "WFC": {
+      "icon": "/assets/icons/stocks/wfc.svg",
+      "name": "Wells Fargo & Company",
+      "logoid": "wells-fargo"
+    },
+    "ORCL": {
+      "icon": "/assets/icons/stocks/orcl.svg",
+      "name": "Oracle Corporation",
+      "logoid": "oracle"
+    },
+    "ADBE": {
+      "icon": "/assets/icons/stocks/adbe.svg",
+      "name": "Adobe Inc.",
+      "logoid": "adobe"
+    },
+    "MCD": {
+      "icon": "/assets/icons/stocks/mcd.svg",
+      "name": "<em>McDonald's</em> Corporation",
+      "logoid": "mcdonalds"
+    },
+    "CSCO": {
+      "icon": "/assets/icons/stocks/csco.svg",
+      "name": "Cisco Systems, Inc.",
+      "logoid": "cisco"
+    },
+    "INTC": {
+      "icon": "/assets/icons/stocks/intc.svg",
+      "name": "Intel Corporation",
+      "logoid": "intel"
+    },
+    "QCOM": {
+      "icon": "/assets/icons/stocks/qcom.svg",
+      "name": "QUALCOMM Incorporated",
+      "logoid": "qualcomm"
+    },
+    "TXN": {
+      "icon": "/assets/icons/stocks/txn.svg",
+      "name": "Texas Instruments Incorporated",
+      "logoid": "texas-instruments"
+    },
+    "AMAT": {
+      "icon": "/assets/icons/stocks/amat.svg",
+      "name": "Applied Materials, Inc.",
+      "logoid": "applied-materials"
+    },
+    "IBM": {
+      "icon": "/assets/icons/stocks/ibm.svg",
+      "name": "International Business Machines Corporation",
+      "logoid": "international-bus-mach"
+    },
+    "NOW": {
+      "icon": "/assets/icons/stocks/now.svg",
+      "name": "ServiceNow, Inc.",
+      "logoid": "servicenow"
+    },
+    "GE": {
+      "icon": "/assets/icons/stocks/ge.svg",
+      "name": "<em>GE</em> Aerospace",
+      "logoid": "ge-aerospace"
+    },
+    "CAT": {
+      "icon": "/assets/icons/stocks/cat.svg",
+      "name": "<em>Caterpillar</em>, Inc.",
+      "logoid": "caterpillar"
+    },
+    "UBER": {
+      "icon": "/assets/icons/stocks/uber.svg",
+      "name": "<em>Uber</em> Technologies, Inc.",
+      "logoid": "uber"
+    },
+    "DIS": {
+      "icon": "/assets/icons/stocks/dis.svg",
+      "name": "Walt <em>Disney</em> Company (The)",
+      "logoid": "walt-disney"
+    },
+    "PLTR": {
+      "icon": "/assets/icons/stocks/pltr.svg",
+      "name": "Palantir Technologies Inc.",
+      "logoid": "palantir"
+    },
+    "COIN": {
+      "icon": "/assets/icons/stocks/coin.svg",
+      "name": "<em>Coinbase</em> Global, Inc.",
+      "logoid": "coinbase"
+    },
+    "SMCI": {
+      "icon": "/assets/icons/stocks/smci.svg",
+      "name": "Super Micro Computer, Inc.",
+      "logoid": "super-micro-computer"
+    },
+    "ARM": {
+      "icon": "/assets/icons/stocks/arm.svg",
+      "name": "<em>Arm</em> Holdings plc",
+      "logoid": "arm"
+    },
+    "BABA": {
+      "icon": "/assets/icons/stocks/baba.svg",
+      "name": "Alibaba Group Holding Limited",
+      "logoid": "alibaba"
+    },
+    "PYPL": {
+      "icon": "/assets/icons/stocks/pypl.svg",
+      "name": "PayPal Holdings, Inc.",
+      "logoid": "paypal"
+    },
+    "SQ": {
+      "icon": "/assets/icons/stocks/sq.svg",
+      "name": "Sahakol Equipment Public Company Ltd",
+      "logoid": "sahakol-equipment-pcl"
+    },
+    "SHOP": {
+      "icon": "/assets/icons/stocks/shop.svg",
+      "name": "<em>Shopify</em> Inc.",
+      "logoid": "shopify"
+    },
+    "SNOW": {
+      "icon": "/assets/icons/stocks/snow.svg",
+      "name": "<em>Snowflake</em> Inc.",
+      "logoid": "snowflake"
+    },
+    "PANW": {
+      "icon": "/assets/icons/stocks/panw.svg",
+      "name": "Palo Alto Networks, Inc.",
+      "logoid": "palo-alto-networks"
+    },
+    "CRWD": {
+      "icon": "/assets/icons/stocks/crwd.svg",
+      "name": "CrowdStrike Holdings, Inc.",
+      "logoid": "crowdstrike"
+    },
+    "MSTR": {
+      "icon": "/assets/icons/stocks/mstr.svg",
+      "name": "Strategy Inc",
+      "logoid": "strategy-cad-hedged-cibc-cdr"
+    },
+    "RIVN": {
+      "icon": "/assets/icons/stocks/rivn.svg",
+      "name": "Rivian Automotive, Inc.",
+      "logoid": "rivian"
+    },
+    "LCID": {
+      "icon": "/assets/icons/stocks/lcid.svg",
+      "name": "Lucid Group, Inc.",
+      "logoid": "lucid-group"
+    },
+    "NIO": {
+      "icon": "/assets/icons/stocks/nio.svg",
+      "name": "<em>NIO</em> Inc.",
+      "logoid": "nio"
+    },
+    "HOOD": {
+      "icon": "/assets/icons/stocks/hood.svg",
+      "name": "Robinhood Markets, Inc.",
+      "logoid": "robinhood"
+    },
+    "MARA": {
+      "icon": "/assets/icons/stocks/mara.svg",
+      "name": "<em>MARA</em> Holdings, Inc.",
+      "logoid": "marathon-digital-holdings"
+    },
+    "RIOT": {
+      "icon": "/assets/icons/stocks/riot.svg",
+      "name": "<em>Riot</em> Platforms, Inc.",
+      "logoid": "riot-blockchain"
+    },
+    "CLSK": {
+      "icon": "/assets/icons/stocks/clsk.svg",
+      "name": "CleanSpark, Inc.",
+      "logoid": "cleanspark"
+    },
+    "SOFI": {
+      "icon": "/assets/icons/stocks/sofi.svg",
+      "name": "<em>SoFi</em> Technologies, Inc.",
+      "logoid": "sofi"
+    },
+    "PFE": {
+      "icon": "/assets/icons/stocks/pfe.svg",
+      "name": "Pfizer, Inc.",
+      "logoid": "pfizer"
+    },
+    "NKE": {
+      "icon": "/assets/icons/stocks/nke.svg",
+      "name": "Nike, Inc.",
+      "logoid": "nike"
+    },
+    "SBUX": {
+      "icon": "/assets/icons/stocks/sbux.svg",
+      "name": "Starbucks Corporation",
+      "logoid": "starbucks"
+    },
+    "BA": {
+      "icon": "/assets/icons/stocks/ba.svg",
+      "name": "Boeing Company (The)",
+      "logoid": "boeing"
+    }
+  },
+  "funds": {
+    "SPY": {
+      "icon": "/assets/icons/funds/spy.svg",
+      "name": "SPDR S&P 500 ETF TRUST",
+      "logoid": "spdr-sandp500-etf-tr"
+    },
+    "QQQ": {
+      "icon": "/assets/icons/funds/qqq.svg",
+      "name": "Invesco <em>QQQ</em> Trust, Series 1",
+      "logoid": "invesco"
+    },
+    "IWM": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares Russell 2000 Index Fund",
+      "logoid": "ishares"
+    },
+    "DIA": {
+      "icon": "/assets/icons/funds/spy.svg",
+      "name": "State Street SPDR Dow Jones Industrial Average ETF Trust",
+      "logoid": "spdr-sandp500-etf-tr"
+    },
+    "VOO": {
+      "icon": "/assets/icons/funds/voo.svg",
+      "name": "Vanguard S&P 500 ETF",
+      "logoid": "vanguard"
+    },
+    "VTI": {
+      "icon": "/assets/icons/funds/voo.svg",
+      "name": "Vanguard Morningstar Total Stock Market ETF",
+      "logoid": "vanguard"
+    },
+    "TLT": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares 20+ Year Treasury Bond ETF",
+      "logoid": "ishares"
+    },
+    "GLD": {
+      "icon": "/assets/icons/funds/spy.svg",
+      "name": "SPDR Gold Shares",
+      "logoid": "spdr-sandp500-etf-tr"
+    },
+    "SLV": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares Silver Trust",
+      "logoid": "ishares"
+    },
+    "USO": {
+      "icon": "/assets/icons/funds/uso.svg",
+      "name": "United States Oil Fund",
+      "logoid": "uscf-fund"
+    },
+    "UNG": {
+      "icon": "/assets/icons/funds/uso.svg",
+      "name": "United States Natural Gas Fund LP",
+      "logoid": "uscf-fund"
+    },
+    "TQQQ": {
+      "icon": "/assets/icons/funds/tqqq.svg",
+      "name": "ProShares UltraPro QQQ",
+      "logoid": "proshares"
+    },
+    "SQQQ": {
+      "icon": "/assets/icons/funds/tqqq.svg",
+      "name": "ProShares UltraPro Short QQQ",
+      "logoid": "proshares"
+    },
+    "SOXX": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares PHLX SOX Semiconductor Sector Index Fund",
+      "logoid": "ishares"
+    },
+    "SOXL": {
+      "icon": "/assets/icons/funds/soxl.svg",
+      "name": "Direxion Daily Semiconductor Bull 3X ETF",
+      "logoid": "direxion"
+    },
+    "SMH": {
+      "icon": "/assets/icons/funds/smh.svg",
+      "name": "VanEck Semiconductor ETF",
+      "logoid": "vaneck"
+    },
+    "XLE": {
+      "icon": "/assets/icons/funds/xle.svg",
+      "name": "State Street Energy Select Sector SPDR ETF",
+      "logoid": "sector/energy"
+    },
+    "XLF": {
+      "icon": "/assets/icons/funds/xlf.svg",
+      "name": "State Street Financial Select Sector SPDR ETF",
+      "logoid": "sector/financial"
+    },
+    "XLK": {
+      "icon": "/assets/icons/funds/xlk.svg",
+      "name": "State Street Technology Select Sector SPDR ETF",
+      "logoid": "sector/technology"
+    },
+    "XLV": {
+      "icon": "/assets/icons/funds/xlv.svg",
+      "name": "State Street Health Care Select Sector SPDR ETF",
+      "logoid": "sector/health-care"
+    },
+    "XLI": {
+      "icon": "/assets/icons/funds/xli.svg",
+      "name": "State Street Industrial Select Sector SPDR ETF",
+      "logoid": "sector/industrial"
+    },
+    "XLP": {
+      "icon": "/assets/icons/funds/xlp.svg",
+      "name": "State Street Consumer Staples Select Sector SPDR ETF",
+      "logoid": "sector/consumer-staples"
+    },
+    "XLU": {
+      "icon": "/assets/icons/funds/xlu.svg",
+      "name": "State Street Utilities Select Sector SPDR ETF",
+      "logoid": "sector/utilities"
+    },
+    "XLB": {
+      "icon": "/assets/icons/funds/xlb.svg",
+      "name": "State Street Materials Select Sector SPDR ETF",
+      "logoid": "sector/materials"
+    },
+    "XLRE": {
+      "icon": "/assets/icons/funds/xlre.svg",
+      "name": "State Street Real Estate Select Sector SPDR ETF",
+      "logoid": "sector/real-estate"
+    },
+    "XLC": {
+      "icon": "/assets/icons/funds/xlc.svg",
+      "name": "State Street Communication Services Select Sector SPDR ETF",
+      "logoid": "communication-services"
+    },
+    "ARKK": {
+      "icon": "/assets/icons/funds/arkk.svg",
+      "name": "ARK Innovation ETF",
+      "logoid": "ark-etf-tr"
+    },
+    "HYG": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares iBoxx $ High Yield Corporate Bond ETF",
+      "logoid": "ishares"
+    },
+    "LQD": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares iBoxx $ Investment Grade Corporate Bond ETF",
+      "logoid": "ishares"
+    },
+    "EEM": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares MSCI Emerging Index Fund",
+      "logoid": "ishares"
+    },
+    "EFA": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares MSCI EAFE ETF",
+      "logoid": "ishares"
+    },
+    "FXI": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares China Large-Cap ETF",
+      "logoid": "ishares"
+    },
+    "EWZ": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares MSCI Brazil ETF",
+      "logoid": "ishares"
+    },
+    "EWJ": {
+      "icon": "/assets/icons/funds/iwm.svg",
+      "name": "iShares MSCI Japan Index Fund",
+      "logoid": "ishares"
+    }
+  }
+}
