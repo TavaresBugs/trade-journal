@@ -25,6 +25,10 @@ export interface SymbolSpec {
 }
 
 /** Pre-indexed dictionary of symbol specifications. */
+/**
+ * Pre-indexed dictionary of symbol specifications.
+ * Every instrument has its explicit pointValue, tickSize, tickValue, and currency declared.
+ */
 export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
   // --- US Futures Indices (CME / CBOT) ---
   NQ: {
@@ -168,16 +172,96 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     aliases: ["DOL1!"],
   },
 
-  // --- Global Indices (CFD Spot) ---
-  US100: { symbol: "US100", name: "Nasdaq 100 (CFD Spot)", category: "indices", aliases: ["NAS100", "USTEC"] },
-  US500: { symbol: "US500", name: "S&P 500 (CFD Spot)", category: "indices", aliases: ["SPX500"] },
-  US30: { symbol: "US30", name: "Dow Jones 30 (CFD Spot)", category: "indices", aliases: ["DJ30", "WALLSTREET"] },
-  US2000: { symbol: "US2000", name: "Russell 2000 (CFD Spot)", category: "indices", aliases: ["RUSSELL2000"] },
-  DXY: { symbol: "DXY", name: "US Dollar Index", category: "indices", aliases: ["USDX", "DOLAR_INDEX"] },
-  GER40: { symbol: "GER40", name: "DAX 40 (Germany)", category: "indices", aliases: ["DAX", "DE40"] },
-  UK100: { symbol: "UK100", name: "FTSE 100 (United Kingdom)", category: "indices", aliases: ["FTSE"] },
-  JP225: { symbol: "JP225", name: "Nikkei 225 (Japan)", category: "indices", aliases: ["NIKKEI", "JPN225"] },
-  EU50: { symbol: "EU50", name: "Euro Stoxx 50", category: "indices" },
+  // --- Global Indices (CFD Spot & Futures) ---
+  US100: {
+    symbol: "US100",
+    name: "Nasdaq 100 (CFD Spot)",
+    category: "indices",
+    pointValue: 20,
+    tickSize: 0.25,
+    tickValue: 5.0,
+    currency: "USD",
+    aliases: ["NAS100", "USTEC"],
+  },
+  US500: {
+    symbol: "US500",
+    name: "S&P 500 (CFD Spot)",
+    category: "indices",
+    pointValue: 50,
+    tickSize: 0.25,
+    tickValue: 12.5,
+    currency: "USD",
+    aliases: ["SPX500"],
+  },
+  US30: {
+    symbol: "US30",
+    name: "Dow Jones 30 (CFD Spot)",
+    category: "indices",
+    pointValue: 5,
+    tickSize: 1.0,
+    tickValue: 5.0,
+    currency: "USD",
+    aliases: ["DJ30", "WALLSTREET"],
+  },
+  US2000: {
+    symbol: "US2000",
+    name: "Russell 2000 (CFD Spot)",
+    category: "indices",
+    pointValue: 50,
+    tickSize: 0.1,
+    tickValue: 5.0,
+    currency: "USD",
+    aliases: ["RUSSELL2000"],
+  },
+  GER40: {
+    symbol: "GER40",
+    name: "DAX 40 (Germany)",
+    category: "indices",
+    pointValue: 25,
+    tickSize: 0.5,
+    tickValue: 12.5,
+    currency: "EUR",
+    aliases: ["DAX", "DE40"],
+  },
+  UK100: {
+    symbol: "UK100",
+    name: "FTSE 100 (United Kingdom)",
+    category: "indices",
+    pointValue: 10,
+    tickSize: 0.5,
+    tickValue: 5.0,
+    currency: "USD",
+    aliases: ["FTSE"],
+  },
+  JP225: {
+    symbol: "JP225",
+    name: "Nikkei 225 (Japan)",
+    category: "indices",
+    pointValue: 5,
+    tickSize: 5.0,
+    tickValue: 5.0,
+    currency: "USD",
+    aliases: ["NIKKEI", "JPN225"],
+  },
+  EU50: {
+    symbol: "EU50",
+    name: "Euro Stoxx 50",
+    category: "indices",
+    pointValue: 10,
+    tickSize: 1.0,
+    tickValue: 10.0,
+    currency: "EUR",
+  },
+  DXY: {
+    symbol: "DXY",
+    name: "US Dollar Index",
+    category: "indices",
+    pointValue: 1000,
+    tickSize: 0.005,
+    tickValue: 5.0,
+    currency: "USD",
+    aliases: ["USDX", "DOLAR_INDEX"],
+  },
 
   // --- Commodities & Metals ---
   GC: {
@@ -203,7 +287,16 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     exchange: "COMEX",
     aliases: ["MGC1!"],
   },
-  XAUUSD: { symbol: "XAUUSD", name: "Gold Spot / USD", category: "commodities", aliases: ["GOLD", "OURO"] },
+  XAUUSD: {
+    symbol: "XAUUSD",
+    name: "Gold Spot / USD",
+    category: "commodities",
+    pointValue: 100,
+    tickSize: 0.01,
+    tickValue: 1.0,
+    currency: "USD",
+    aliases: ["GOLD", "OURO"],
+  },
   SI: {
     symbol: "SI",
     name: "Silver Futures",
@@ -227,7 +320,16 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     exchange: "COMEX",
     aliases: ["SIL1!", "MSI"],
   },
-  XAGUSD: { symbol: "XAGUSD", name: "Silver Spot / USD", category: "commodities", aliases: ["SILVER", "PRATA"] },
+  XAGUSD: {
+    symbol: "XAGUSD",
+    name: "Silver Spot / USD",
+    category: "commodities",
+    pointValue: 5000,
+    tickSize: 0.001,
+    tickValue: 5.0,
+    currency: "USD",
+    aliases: ["SILVER", "PRATA"],
+  },
   CL: {
     symbol: "CL",
     name: "Crude Oil (WTI)",
@@ -305,7 +407,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickValue: 4.2,
     currency: "USD",
     exchange: "NYMEX",
-    aliases: ["RB1!"],
+    aliases: ["GASOLINE", "RB1!"],
   },
   HO: {
     symbol: "HO",
@@ -316,7 +418,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickValue: 4.2,
     currency: "USD",
     exchange: "NYMEX",
-    aliases: ["HO1!"],
+    aliases: ["HEATINGOIL", "HO1!"],
   },
 
   // --- Bonds & Rates ---
@@ -469,26 +571,188 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
   },
 
   // --- Forex (Spot Currencies) ---
-  EURUSD: { symbol: "EURUSD", name: "Euro / US Dollar", category: "forex", aliases: ["EUR/USD"] },
-  GBPUSD: { symbol: "GBPUSD", name: "British Pound / US Dollar", category: "forex", aliases: ["GBP/USD", "CABLE"] },
-  USDJPY: { symbol: "USDJPY", name: "US Dollar / Japanese Yen", category: "forex", aliases: ["USD/JPY", "YEN"] },
-  AUDUSD: { symbol: "AUDUSD", name: "Australian Dollar / US Dollar", category: "forex", aliases: ["AUD/USD", "AUSSIE"] },
-  USDCAD: { symbol: "USDCAD", name: "US Dollar / Canadian Dollar", category: "forex", aliases: ["USD/CAD", "LOONIE"] },
-  USDCHF: { symbol: "USDCHF", name: "US Dollar / Swiss Franc", category: "forex", aliases: ["USD/CHF", "SWISSIE"] },
-  NZDUSD: { symbol: "NZDUSD", name: "New Zealand Dollar / US Dollar", category: "forex", aliases: ["NZD/USD", "KIWI"] },
-  EURGBP: { symbol: "EURGBP", name: "Euro / British Pound", category: "forex", aliases: ["EUR/GBP"] },
-  EURJPY: { symbol: "EURJPY", name: "Euro / Japanese Yen", category: "forex", aliases: ["EUR/JPY"] },
-  GBPJPY: { symbol: "GBPJPY", name: "British Pound / Japanese Yen", category: "forex", aliases: ["GBP/JPY", "GUFFY"] },
+  EURUSD: {
+    symbol: "EURUSD",
+    name: "Euro / US Dollar",
+    category: "forex",
+    pointValue: 100000,
+    tickSize: 0.00001,
+    tickValue: 1.0,
+    currency: "USD",
+    aliases: ["EUR/USD"],
+  },
+  GBPUSD: {
+    symbol: "GBPUSD",
+    name: "British Pound / US Dollar",
+    category: "forex",
+    pointValue: 100000,
+    tickSize: 0.00001,
+    tickValue: 1.0,
+    currency: "USD",
+    aliases: ["GBP/USD", "CABLE"],
+  },
+  USDJPY: {
+    symbol: "USDJPY",
+    name: "US Dollar / Japanese Yen",
+    category: "forex",
+    pointValue: 100000,
+    tickSize: 0.001,
+    tickValue: 0.67,
+    currency: "USD",
+    aliases: ["USD/JPY", "YEN"],
+  },
+  AUDUSD: {
+    symbol: "AUDUSD",
+    name: "Australian Dollar / US Dollar",
+    category: "forex",
+    pointValue: 100000,
+    tickSize: 0.00001,
+    tickValue: 1.0,
+    currency: "USD",
+    aliases: ["AUD/USD", "AUSSIE"],
+  },
+  USDCAD: {
+    symbol: "USDCAD",
+    name: "US Dollar / Canadian Dollar",
+    category: "forex",
+    pointValue: 100000,
+    tickSize: 0.00001,
+    tickValue: 0.73,
+    currency: "USD",
+    aliases: ["USD/CAD", "LOONIE"],
+  },
+  USDCHF: {
+    symbol: "USDCHF",
+    name: "US Dollar / Swiss Franc",
+    category: "forex",
+    pointValue: 100000,
+    tickSize: 0.00001,
+    tickValue: 1.15,
+    currency: "USD",
+    aliases: ["USD/CHF", "SWISSIE"],
+  },
+  NZDUSD: {
+    symbol: "NZDUSD",
+    name: "New Zealand Dollar / US Dollar",
+    category: "forex",
+    pointValue: 100000,
+    tickSize: 0.00001,
+    tickValue: 1.0,
+    currency: "USD",
+    aliases: ["NZD/USD", "KIWI"],
+  },
+  EURGBP: {
+    symbol: "EURGBP",
+    name: "Euro / British Pound",
+    category: "forex",
+    pointValue: 100000,
+    tickSize: 0.00001,
+    tickValue: 1.30,
+    currency: "USD",
+    aliases: ["EUR/GBP"],
+  },
+  EURJPY: {
+    symbol: "EURJPY",
+    name: "Euro / Japanese Yen",
+    category: "forex",
+    pointValue: 100000,
+    tickSize: 0.001,
+    tickValue: 0.67,
+    currency: "USD",
+    aliases: ["EUR/JPY"],
+  },
+  GBPJPY: {
+    symbol: "GBPJPY",
+    name: "British Pound / Japanese Yen",
+    category: "forex",
+    pointValue: 100000,
+    tickSize: 0.001,
+    tickValue: 0.67,
+    currency: "USD",
+    aliases: ["GBP/JPY", "GUFFY"],
+  },
 
-  // --- Crypto ---
-  BTCUSD: { symbol: "BTCUSD", name: "Bitcoin / USD", category: "crypto", aliases: ["BTC", "BTCUSDT", "BITCOIN"] },
-  ETHUSD: { symbol: "ETHUSD", name: "Ethereum / USD", category: "crypto", aliases: ["ETH", "ETHUSDT", "ETHEREUM"] },
-  SOLUSD: { symbol: "SOLUSD", name: "Solana / USD", category: "crypto", aliases: ["SOL", "SOLUSDT", "SOLANA"] },
-  XRPUSD: { symbol: "XRPUSD", name: "Ripple / USD", category: "crypto", aliases: ["XRP", "RIPPLE"] },
-  ADAUSD: { symbol: "ADAUSD", name: "Cardano / USD", category: "crypto", aliases: ["ADA", "CARDANO"] },
-  DOGEUSD: { symbol: "DOGEUSD", name: "Dogecoin / USD", category: "crypto", aliases: ["DOGE", "DOGEUSDT"] },
-  BNBUSD: { symbol: "BNBUSD", name: "BNB / USD", category: "crypto", aliases: ["BNB", "BNBUSDT"] },
-  AVAXUSD: { symbol: "AVAXUSD", name: "Avalanche / USD", category: "crypto", aliases: ["AVAX", "AVAXUSDT"] },
+  // --- Crypto Spot ---
+  BTCUSD: {
+    symbol: "BTCUSD",
+    name: "Bitcoin / USD",
+    category: "crypto",
+    pointValue: 1,
+    tickSize: 0.01,
+    tickValue: 0.01,
+    currency: "USD",
+    aliases: ["BTC", "BTCUSDT", "BITCOIN"],
+  },
+  ETHUSD: {
+    symbol: "ETHUSD",
+    name: "Ethereum / USD",
+    category: "crypto",
+    pointValue: 1,
+    tickSize: 0.01,
+    tickValue: 0.01,
+    currency: "USD",
+    aliases: ["ETH", "ETHUSDT", "ETHEREUM"],
+  },
+  SOLUSD: {
+    symbol: "SOLUSD",
+    name: "Solana / USD",
+    category: "crypto",
+    pointValue: 1,
+    tickSize: 0.01,
+    tickValue: 0.01,
+    currency: "USD",
+    aliases: ["SOL", "SOLUSDT", "SOLANA"],
+  },
+  XRPUSD: {
+    symbol: "XRPUSD",
+    name: "Ripple / USD",
+    category: "crypto",
+    pointValue: 1,
+    tickSize: 0.0001,
+    tickValue: 0.0001,
+    currency: "USD",
+    aliases: ["XRP", "RIPPLE"],
+  },
+  ADAUSD: {
+    symbol: "ADAUSD",
+    name: "Cardano / USD",
+    category: "crypto",
+    pointValue: 1,
+    tickSize: 0.0001,
+    tickValue: 0.0001,
+    currency: "USD",
+    aliases: ["ADA", "CARDANO"],
+  },
+  DOGEUSD: {
+    symbol: "DOGEUSD",
+    name: "Dogecoin / USD",
+    category: "crypto",
+    pointValue: 1,
+    tickSize: 0.00001,
+    tickValue: 0.00001,
+    currency: "USD",
+    aliases: ["DOGE", "DOGEUSDT"],
+  },
+  BNBUSD: {
+    symbol: "BNBUSD",
+    name: "BNB / USD",
+    category: "crypto",
+    pointValue: 1,
+    tickSize: 0.01,
+    tickValue: 0.01,
+    currency: "USD",
+    aliases: ["BNB", "BNBUSDT"],
+  },
+  AVAXUSD: {
+    symbol: "AVAXUSD",
+    name: "Avalanche / USD",
+    category: "crypto",
+    pointValue: 1,
+    tickSize: 0.01,
+    tickValue: 0.01,
+    currency: "USD",
+    aliases: ["AVAX", "AVAXUSDT"],
+  },
 
   // --- CME Crypto Futures ---
   BTC: {
@@ -603,6 +867,9 @@ export function getPointValue(rawSymbol: string): number | null {
 
 /** Format a sleek compact badge representing the contract/asset specification. */
 export function formatSpecBadge(spec: SymbolSpec): string | null {
+  if (spec.category === "forex") {
+    return null;
+  }
   if (spec.category === "b3" && spec.currency === "BRL" && spec.pointValue !== undefined) {
     const ptStr = spec.pointValue < 1 ? spec.pointValue.toFixed(2) : String(spec.pointValue);
     const tickStr = spec.tickValue !== undefined ? ` • tick R$${spec.tickValue.toFixed(2)}` : "";
@@ -616,9 +883,6 @@ export function formatSpecBadge(spec: SymbolSpec): string | null {
   }
   if (spec.category === "stocks") {
     return "$1/share";
-  }
-  if (spec.category === "forex") {
-    return null;
   }
   if (spec.category === "crypto") {
     return "Spot $1";

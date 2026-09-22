@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BookOpen, Check, ChevronDown, Search, X } from "lucide-react";
 import {
   DropdownMenu,
@@ -12,158 +12,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { normalizeSymbol } from "@/lib/assets/symbol-utils";
-import { tvManifest } from "@/lib/assets/asset-icons";
 import {
-  SYMBOL_SPECS,
   formatSpecBadge,
   getSymbolSpec,
   isCalculableSymbol,
 } from "@/lib/assets/symbol-specs";
+import {
+  ASSET_CATALOG,
+  getAssetCatalog,
+  loadExtendedCatalog,
+  type AssetCategory,
+  type AssetMeta,
+} from "@/lib/assets/asset-catalog";
 import { cn } from "@/lib/utils";
 
-export type AssetCategory = "futures" | "stocks" | "forex" | "crypto";
-
-export interface AssetMeta {
-  symbol: string;
-  name: string;
-  category: AssetCategory;
-  aliases?: string[];
-  specBadge?: string | null;
-}
-
-function getAssetCategory(rawCat: string, symbol: string): AssetCategory {
-  if (rawCat === "forex") return "forex";
-  if (rawCat === "crypto") return "crypto";
-  if (rawCat === "stocks" || rawCat === "funds") return "stocks";
-  if (rawCat === "b3") {
-    // WIN, WDO, IND, DOL are Brazilian Futures contracts
-    if (["WIN", "WDO", "IND", "DOL"].includes(symbol)) return "futures";
-    return "stocks";
-  }
-  // indices, commodities, bonds, currencies, futures
-  return "futures";
-}
-
-function buildAssetCatalog(): AssetMeta[] {
-  const list: AssetMeta[] = [];
-  const seen = new Set<string>();
-
-  // 1. Curated symbols with official names and specifications
-  for (const spec of Object.values(SYMBOL_SPECS)) {
-    const sym = spec.symbol.toUpperCase();
-    seen.add(sym);
-    list.push({
-      symbol: sym,
-      name: spec.name,
-      category: getAssetCategory(spec.category, sym),
-      aliases: spec.aliases,
-      specBadge: formatSpecBadge(spec),
-    });
-  }
-
-  // 2. Ingest B3 stocks/ETFs from TV manifest (Stocks category)
-  for (const [sym, data] of Object.entries(tvManifest.b3 || {})) {
-    const s = sym.toUpperCase();
-    if (!seen.has(s)) {
-      seen.add(s);
-      list.push({
-        symbol: s,
-        name: data.name || s,
-        category: getAssetCategory("b3", s),
-        specBadge: "R$1/share",
-      });
-    }
-  }
-
-  // 3. Ingest US Stocks & ETFs from TV manifest (Stocks category)
-  for (const [sym, data] of Object.entries(tvManifest.stocks || {})) {
-    const s = sym.toUpperCase();
-    if (!seen.has(s)) {
-      seen.add(s);
-      list.push({
-        symbol: s,
-        name: data.name || s,
-        category: "stocks",
-        specBadge: "$1/share",
-      });
-    }
-  }
-
-  // 4. Ingest Crypto from TV manifest (Crypto category)
-  for (const [sym, data] of Object.entries(tvManifest.crypto || {})) {
-    const s = sym.toUpperCase();
-    if (!seen.has(s)) {
-      seen.add(s);
-      list.push({
-        symbol: s,
-        name: data.name || s,
-        category: "crypto",
-        specBadge: "Spot $1",
-      });
-    }
-  }
-
-  // 5. Ingest Funds / ETFs from TV manifest (Stocks category)
-  for (const [sym, data] of Object.entries(tvManifest.funds || {})) {
-    const s = sym.toUpperCase();
-    if (!seen.has(s)) {
-      seen.add(s);
-      list.push({
-        symbol: s,
-        name: data.name || s,
-        category: "stocks",
-        specBadge: "$1/share",
-      });
-    }
-  }
-
-  // 6. Major Forex pairs (Forex category)
-  const majorForex = [
-    { symbol: "EURUSD", name: "Euro / US Dollar" },
-    { symbol: "GBPUSD", name: "British Pound / US Dollar" },
-    { symbol: "USDJPY", name: "US Dollar / Japanese Yen" },
-    { symbol: "USDCHF", name: "US Dollar / Swiss Franc" },
-    { symbol: "AUDUSD", name: "Australian Dollar / US Dollar" },
-    { symbol: "USDCAD", name: "US Dollar / Canadian Dollar" },
-    { symbol: "NZDUSD", name: "New Zealand Dollar / US Dollar" },
-    { symbol: "EURGBP", name: "Euro / British Pound" },
-    { symbol: "EURJPY", name: "Euro / Japanese Yen" },
-    { symbol: "GBPJPY", name: "British Pound / Japanese Yen" },
-    { symbol: "AUDJPY", name: "Australian Dollar / Japanese Yen" },
-    { symbol: "EURAUD", name: "Euro / Australian Dollar" },
-    { symbol: "USDBRL", name: "US Dollar / Brazilian Real" },
-    { symbol: "EURBRL", name: "Euro / Brazilian Real" },
-  ];
-  for (const fx of majorForex) {
-    if (!seen.has(fx.symbol)) {
-      seen.add(fx.symbol);
-      list.push({
-        symbol: fx.symbol,
-        name: fx.name,
-        category: "forex",
-        specBadge: null,
-      });
-    }
-  }
-
-  return list;
-}
-
-let _cachedCatalog: AssetMeta[] | null = null;
-
-export function getAssetCatalog(): AssetMeta[] {
-  if (!_cachedCatalog) {
-    _cachedCatalog = buildAssetCatalog();
-  }
-  return _cachedCatalog;
-}
-
-export const ASSET_CATALOG: AssetMeta[] = new Proxy([] as AssetMeta[], {
-  get(target, prop, receiver) {
-    const catalog = getAssetCatalog();
-    return Reflect.get(catalog, prop, receiver);
-  },
-});
+export { ASSET_CATALOG, getAssetCatalog };
+export type { AssetCategory, AssetMeta };
 
 const CATEGORY_TABS = [
   { id: "all", label: "All" },
@@ -210,6 +74,15 @@ export function JournalAssetDropdown({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [catalog, setCatalog] = useState<AssetMeta[]>(() => getAssetCatalog());
+
+  useEffect(() => {
+    if (open || search) {
+      loadExtendedCatalog().then((full) => {
+        setCatalog(full);
+      });
+    }
+  }, [open, search]);
 
   const todaySymbols = useMemo(() => {
     return Array.from(new Set(todayTrades.map((t) => normalizeSymbol(t.symbol)).filter(Boolean)));
@@ -226,7 +99,7 @@ export function JournalAssetDropdown({
     const normQ = q ? normalizeSymbol(q).toLowerCase() : "";
 
     const catalogMap = new Map<string, AssetMeta>();
-    for (const item of ASSET_CATALOG) {
+    for (const item of catalog) {
       catalogMap.set(item.symbol.toUpperCase(), item);
     }
 
@@ -258,7 +131,7 @@ export function JournalAssetDropdown({
       }
     }
     return list;
-  }, [activeTab, userHistorySymbols, search, onlyCalculable]);
+  }, [activeTab, userHistorySymbols, search, onlyCalculable, catalog]);
 
   // Today trades items (when on Today tab)
   const todayAssetItems = useMemo(() => {
@@ -267,7 +140,7 @@ export function JournalAssetDropdown({
     const normQ = q ? normalizeSymbol(q).toLowerCase() : "";
 
     const catalogMap = new Map<string, AssetMeta>();
-    for (const item of ASSET_CATALOG) {
+    for (const item of catalog) {
       catalogMap.set(item.symbol.toUpperCase(), item);
     }
 
@@ -299,7 +172,7 @@ export function JournalAssetDropdown({
       }
     }
     return list;
-  }, [activeTab, todaySymbols, search, onlyCalculable]);
+  }, [activeTab, todaySymbols, search, onlyCalculable, catalog]);
 
   // Filtered catalog assets (excluding user traded items in "All" to avoid duplicates)
   const filteredCatalog = useMemo(() => {
@@ -307,7 +180,7 @@ export function JournalAssetDropdown({
     const normQ = q ? normalizeSymbol(q).toLowerCase() : "";
     const userSymbolsSet = new Set(userHistorySymbols.map((s) => s.toUpperCase()));
 
-    const matched = ASSET_CATALOG.filter((item) => {
+    const matched = catalog.filter((item) => {
       // In onlyCalculable mode (e.g. Points Calculator), only allow assets with quantified futures specs
       if (onlyCalculable && !isCalculableSymbol(item.symbol)) {
         return false;
@@ -340,7 +213,7 @@ export function JournalAssetDropdown({
       return matched.slice(0, 60);
     }
     return matched;
-  }, [search, activeTab, userHistorySymbols, onlyCalculable]);
+  }, [search, activeTab, userHistorySymbols, onlyCalculable, catalog]);
 
   const hasExactMatch = useMemo(() => {
     const q = search.trim().toUpperCase();
@@ -350,7 +223,7 @@ export function JournalAssetDropdown({
       return isCalculableSymbol(q) || isCalculableSymbol(normQ);
     }
     return (
-      ASSET_CATALOG.some(
+      catalog.some(
         (a) =>
           a.symbol.toUpperCase() === q ||
           a.symbol.toUpperCase() === normQ ||
@@ -359,7 +232,7 @@ export function JournalAssetDropdown({
       userHistorySymbols.includes(normQ) ||
       todaySymbols.includes(normQ)
     );
-  }, [search, userHistorySymbols, todaySymbols, onlyCalculable]);
+  }, [search, userHistorySymbols, todaySymbols, onlyCalculable, catalog]);
 
   const handleSelect = (sym: string | null) => {
     const normalized = sym ? normalizeSymbol(sym) : null;

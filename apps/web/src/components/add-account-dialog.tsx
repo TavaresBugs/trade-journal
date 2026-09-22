@@ -38,193 +38,17 @@ import { cn } from "@/lib/utils";
 import { dayKeyOf } from "@luxalgo/journal-core";
 import type { AccountRow } from "@/types/accounts";
 import type {
-  BrokerCatalogItem,
   BrokerSdkInfo,
   PreviewTotals,
   PreviewResponse,
 } from "@/types/import";
 
+import { BROKER_CATALOG, type BrokerCatalogItem } from "@/lib/brokers/broker-catalog";
+import { BrokerIcon } from "@/components/ui/broker-icon";
+
+export { BROKER_CATALOG };
 export type { BrokerCatalogItem };
 
-export const BROKER_CATALOG: BrokerCatalogItem[] = [
-  // Crypto
-  {
-    id: "hyperliquid",
-    name: "Hyperliquid",
-    category: "crypto",
-    icon: "hyperliquid.png",
-    status: "active",
-    subtitle: "Perpetual DEX",
-  },
-  {
-    id: "binance",
-    name: "Binance",
-    category: "crypto",
-    icon: "binance.svg",
-    status: "active",
-    subtitle: "Spot & Futures API",
-  },
-  {
-    id: "kraken",
-    name: "Kraken",
-    category: "crypto",
-    icon: "kraken.svg",
-    status: "active",
-    subtitle: "Spot & Margin API",
-  },
-  {
-    id: "bybit",
-    name: "Bybit",
-    category: "crypto",
-    icon: "bybit.svg",
-    status: "active",
-    subtitle: "Unified Account API",
-    invertInDark: true,
-  },
-  {
-    id: "okx",
-    name: "OKX",
-    category: "crypto",
-    icon: "okx.svg",
-    status: "active",
-    subtitle: "API v5 Sync",
-    invertInDark: true,
-  },
-  {
-    id: "crypto-com",
-    name: "Crypto.com",
-    category: "crypto",
-    icon: "cryptocom.svg",
-    status: "active",
-    subtitle: "Exchange API",
-  },
-
-  // Stocks & Options
-  {
-    id: "alpaca",
-    name: "Alpaca",
-    category: "stocks",
-    icon: "alpaca.svg",
-    status: "active",
-    subtitle: "Commission-free API",
-  },
-  {
-    id: "public",
-    name: "Public",
-    category: "stocks",
-    icon: "public.svg",
-    status: "active",
-    subtitle: "Stocks & ETFs",
-  },
-  {
-    id: "webull",
-    name: "Webull",
-    category: "stocks",
-    icon: "webull.svg",
-    status: "active",
-    subtitle: "Open API Sync",
-  },
-  {
-    id: "tradier",
-    name: "Tradier",
-    category: "stocks",
-    icon: "tradier.svg",
-    status: "active",
-    subtitle: "Equities & Options API",
-  },
-  {
-    id: "questrade",
-    name: "Questrade",
-    category: "stocks",
-    icon: "questrade.svg",
-    status: "active",
-    subtitle: "API Sync",
-    invertInDark: true,
-  },
-  {
-    id: "trading212",
-    name: "Trading 212",
-    category: "stocks",
-    icon: "trading212.png",
-    status: "active",
-    subtitle: "Zero-Commission Investing",
-  },
-  {
-    id: "ibkr-flex",
-    name: "Interactive Brokers",
-    category: "stocks",
-    icon: "ibkr.svg",
-    status: "active",
-    subtitle: "Flex Query & Web API",
-  },
-  {
-    id: "etrade",
-    name: "E*TRADE",
-    category: "stocks",
-    icon: "etrade.png",
-    status: "soon",
-    subtitle: "Soon · CSV import today",
-  },
-  {
-    id: "tastytrade",
-    name: "tastytrade",
-    category: "stocks",
-    icon: "tastytrade.svg",
-    status: "soon",
-    subtitle: "Soon · CSV import today",
-  },
-  {
-    id: "tradestation",
-    name: "TradeStation",
-    category: "stocks",
-    icon: "tradestation.svg",
-    status: "soon",
-    subtitle: "Soon · CSV import today",
-  },
-  {
-    id: "schwab",
-    name: "Charles Schwab",
-    category: "stocks",
-    icon: "schwab.png",
-    status: "soon",
-    subtitle: "Soon · CSV import today",
-  },
-
-  // Futures & Prop Trading
-  {
-    id: "ftmo",
-    name: "FTMO",
-    category: "futures",
-    icon: "ftmo.png",
-    status: "active",
-    subtitle: "MetaTrader & cTrader",
-    invertInDark: true,
-  },
-  {
-    id: "topstep",
-    name: "Topstep",
-    category: "futures",
-    icon: "topstep.jpg",
-    status: "active",
-    subtitle: "TopstepX API sync",
-  },
-  {
-    id: "tradovate",
-    name: "Tradovate",
-    category: "futures",
-    icon: "tradovate.svg",
-    status: "soon",
-    subtitle: "Soon · CSV import today",
-  },
-  {
-    id: "ninjatrader",
-    name: "NinjaTrader",
-    category: "futures",
-    icon: "ninjatrader.svg",
-    status: "soon",
-    subtitle: "Soon · CSV import today",
-  },
-];
 
 export interface AddAccountDialogProps {
   open: boolean;
@@ -501,13 +325,10 @@ export function AddAccountDialog({
                           }}
                           className="group flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/40 p-2.5 text-left transition-all hover:bg-muted/50 hover:border-border active:scale-[0.98] cursor-pointer"
                         >
-                          <img
-                            src={`/assets/brokers/${broker.icon}`}
-                            alt=""
-                            className={cn(
-                              "size-8 shrink-0 rounded-md object-contain",
-                              broker.invertInDark && "dark:invert",
-                            )}
+                          <BrokerIcon
+                            icon={broker.icon}
+                            name={broker.name}
+                            invertInDark={broker.invertInDark}
                           />
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
@@ -549,13 +370,10 @@ export function AddAccountDialog({
                               : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
                           )}
                         >
-                          <img
-                            src={`/assets/brokers/${broker.icon}`}
-                            alt=""
-                            className={cn(
-                              "size-8 shrink-0 rounded-md object-contain",
-                              broker.invertInDark && "dark:invert",
-                            )}
+                          <BrokerIcon
+                            icon={broker.icon}
+                            name={broker.name}
+                            invertInDark={broker.invertInDark}
                           />
                           <span className="min-w-0 flex-1">
                             <span
@@ -606,13 +424,10 @@ export function AddAccountDialog({
                               : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
                           )}
                         >
-                          <img
-                            src={`/assets/brokers/${broker.icon}`}
-                            alt=""
-                            className={cn(
-                              "size-8 shrink-0 rounded-md object-contain",
-                              broker.invertInDark && "dark:invert",
-                            )}
+                          <BrokerIcon
+                            icon={broker.icon}
+                            name={broker.name}
+                            invertInDark={broker.invertInDark}
                           />
                           <span className="min-w-0 flex-1">
                             <span
@@ -679,13 +494,11 @@ export function AddAccountDialog({
                 </button>
 
                 <div className="flex items-center gap-3 border-b border-border/60 pb-3">
-                  <img
-                    src={`/assets/brokers/${selectedBroker.icon}`}
-                    alt=""
-                    className={cn(
-                      "size-9 shrink-0 rounded-lg object-contain",
-                      selectedBroker.invertInDark && "dark:invert",
-                    )}
+                  <BrokerIcon
+                    icon={selectedBroker.icon}
+                    name={selectedBroker.name}
+                    invertInDark={selectedBroker.invertInDark}
+                    className="size-9 rounded-lg"
                   />
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">

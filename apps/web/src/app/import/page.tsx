@@ -16,7 +16,8 @@ import {
 import { AccountPicker } from "@/components/account-picker";
 import { ManualTradeEntry } from "@/components/manual-trade-entry";
 import { FilterBar } from "@/components/filter-bar";
-import { BROKER_CATALOG } from "@/components/add-account-dialog";
+import { BROKER_CATALOG } from "@/lib/brokers/broker-catalog";
+import { BrokerIcon } from "@/components/ui/broker-icon";
 import type {
   BrokerCatalogItem,
   BrokerSdkInfo,
@@ -741,13 +742,10 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
                     }}
                     className="group flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/40 p-2.5 text-left transition-all hover:bg-muted/50 hover:border-border active:scale-[0.98] cursor-pointer"
                   >
-                    <img
-                      src={`/assets/brokers/${broker.icon}`}
-                      alt=""
-                      className={cn(
-                        "size-8 shrink-0 rounded-md object-contain",
-                        broker.invertInDark && "dark:invert",
-                      )}
+                    <BrokerIcon
+                      icon={broker.icon}
+                      name={broker.name}
+                      invertInDark={broker.invertInDark}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
@@ -789,13 +787,10 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
                         : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
                     )}
                   >
-                    <img
-                      src={`/assets/brokers/${broker.icon}`}
-                      alt=""
-                      className={cn(
-                        "size-8 shrink-0 rounded-md object-contain",
-                        broker.invertInDark && "dark:invert",
-                      )}
+                    <BrokerIcon
+                      icon={broker.icon}
+                      name={broker.name}
+                      invertInDark={broker.invertInDark}
                     />
                     <span className="min-w-0 flex-1">
                       <span
@@ -846,13 +841,10 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
                         : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
                     )}
                   >
-                    <img
-                      src={`/assets/brokers/${broker.icon}`}
-                      alt=""
-                      className={cn(
-                        "size-8 shrink-0 rounded-md object-contain",
-                        broker.invertInDark && "dark:invert",
-                      )}
+                    <BrokerIcon
+                      icon={broker.icon}
+                      name={broker.name}
+                      invertInDark={broker.invertInDark}
                     />
                     <span className="min-w-0 flex-1">
                       <span
@@ -914,13 +906,11 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
           </button>
 
           <div className="flex items-center gap-3 border-b border-border/60 pb-3">
-            <img
-              src={`/assets/brokers/${selectedBroker.icon}`}
-              alt=""
-              className={cn(
-                "size-9 shrink-0 rounded-lg object-contain",
-                selectedBroker.invertInDark && "dark:invert",
-              )}
+            <BrokerIcon
+              icon={selectedBroker.icon}
+              name={selectedBroker.name}
+              invertInDark={selectedBroker.invertInDark}
+              className="size-9 rounded-lg"
             />
             <div>
               <h3 className="text-sm font-semibold text-foreground">
