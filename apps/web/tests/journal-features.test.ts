@@ -1,4 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, it, expect } from "vitest";
+
+const scratch = mkdtempSync(join(tmpdir(), "journal-features-test-"));
+process.env.JOURNAL_DATA_DIR = scratch;
+
+afterAll(() => {
+  try {
+    rmSync(scratch, { recursive: true, force: true });
+  } catch {}
+});
 import {
   defaultFee,
   defaultRisk,

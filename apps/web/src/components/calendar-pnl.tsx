@@ -214,12 +214,12 @@ export function CalendarPnl({
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((weekday) => (
           <div
             key={weekday}
-            className="px-1 pb-1 text-muted-foreground font-mono text-[10px] sm:text-xs"
+            className="flex h-6 items-center justify-center rounded-md bg-muted/30 text-[9px] font-medium text-muted-foreground uppercase"
           >
             {weekday}
           </div>
         ))}
-        <div className="journal-calendar-week-heading px-1 pb-1 text-right text-muted-foreground font-mono text-[10px] sm:text-xs">
+        <div className="journal-calendar-week-heading h-6 items-center justify-center rounded-md bg-muted/30 text-[9px] font-medium text-muted-foreground uppercase">
           Week
         </div>
         {calendar.weeks.map((week, weekIndex) => (
@@ -238,7 +238,7 @@ export function CalendarPnl({
 
       {/* Mobile-only Weekly Breakdown */}
       <div className="sm:hidden mb-3">
-        <div className="text-[9px] font-semibold tracking-[0.1em] text-muted-foreground uppercase mb-2 px-0.5">
+        <div className="flex h-6 items-center justify-center rounded-md bg-muted/30 text-[9px] font-medium text-muted-foreground uppercase mb-2">
           Weekly summary
         </div>
         <div className="grid grid-cols-2 gap-1.5">

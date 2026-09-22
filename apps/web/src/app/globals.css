@@ -836,9 +836,11 @@ html {
     aspect-ratio: auto;
     min-height: 64px;
   }
-  .journal-calendar-full,
-  .journal-calendar-week-heading {
+  .journal-calendar-full {
     display: block;
+  }
+  .journal-calendar-week-heading {
+    display: flex;
   }
   .journal-calendar-compact,
   .journal-calendar-week-label {
