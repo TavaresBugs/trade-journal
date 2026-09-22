@@ -351,14 +351,14 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
               </span>
             </div>
             <div>
-              <span className="block text-[11px] text-muted-foreground">Eval attempts</span>
-              <span className="font-mono font-semibold text-foreground">
+              <span className="block text-[11px] text-muted-foreground">Attempts simulated</span>
+              <span className="font-mono font-semibold text-foreground tnum">
                 {numAttempts} {numAttempts === 1 ? "eval" : "evals"}
               </span>
             </div>
             <div>
               <span className="block text-[11px] text-muted-foreground">Average payout</span>
-              <span className="font-mono font-semibold text-profit">
+              <span className="font-mono font-semibold text-profit tnum">
                 <MonetaryValue>+${simResults.avgPayout.toLocaleString("en-US")}</MonetaryValue>
               </span>
             </div>

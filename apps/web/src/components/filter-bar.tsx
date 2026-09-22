@@ -97,15 +97,18 @@ export function FilterDialogButton({
         <Button
           variant={variant}
           size={size}
-          className={className}
+          className={cn(
+            "h-8 gap-1.5 border-border bg-background hover:bg-muted/60 text-foreground text-xs font-medium px-3 cursor-pointer",
+            className,
+          )}
           title="Filter by dates, symbols, strategy, outcome, and more. All selected conditions must match."
           onClick={() => {
             setDraft(filters.values);
             setOpen(true);
           }}
         >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          Filters{count > 0 ? ` · ${count}` : ""}
+          <SlidersHorizontal className="size-3.5 text-muted-foreground" />
+          <span>Filters{count > 0 ? ` · ${count}` : ""}</span>
         </Button>
       )}
       <Dialog open={open} onOpenChange={setOpen}>
@@ -174,7 +177,7 @@ export function FilterBar({
           {hideRangeButtons !== true && (
             <div
               className={cn(
-                "max-w-full shrink-0 items-center rounded-md border p-0.5",
+                "h-8 max-w-full shrink-0 items-center rounded-md border border-border bg-background p-0.5",
                 hideRangeButtons === "mobile" ? "hidden sm:flex" : "flex",
               )}
             >
@@ -183,7 +186,7 @@ export function FilterBar({
                   key={range}
                   variant={filters.range === range ? "secondary" : "ghost"}
                   size="sm"
-                  className="h-7 px-2 text-xs"
+                  className="h-full px-2 text-xs"
                   onClick={() => {
                     const next = new URLSearchParams(params.toString());
                     next.set("range", range);

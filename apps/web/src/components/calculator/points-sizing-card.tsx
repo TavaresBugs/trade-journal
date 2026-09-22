@@ -38,7 +38,12 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
   }, [instrumentId]);
 
   const microName = instrument.microId ?? null;
-  const microRatio = instrument.id === "BTC" ? 50 : 10;
+  const microRatio = useMemo(() => {
+    if (instrument.id === "BTC") return 50;
+    if (instrument.id === "ETH") return 500;
+    if (instrument.id === "SI") return 5;
+    return 10;
+  }, [instrument.id]);
 
   // 1. Point value: fixed multiplier per instrument (e.g. $20/pt for NQ)
   const pointValue = instrument.multiplier;
@@ -214,11 +219,32 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
                     </SelectItem>
                   ))}
 
-                  {/* Commodities */}
+                  {/* Commodities & Metals */}
                   <div className="mt-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-t border-border/40">
-                    Commodities
+                    Commodities & Metals
                   </div>
                   {QUANT_INSTRUMENTS.filter((i) => i.category === "commodities").map((inst) => (
+                    <SelectItem key={inst.id} value={inst.id} className="text-xs py-1.5">
+                      <div className="flex items-center justify-between w-full gap-3">
+                        <div className="flex items-center gap-2 truncate">
+                          <AssetIcon symbol={inst.id} size="xs" />
+                          <span className="font-mono font-bold text-foreground">{inst.id}</span>
+                          <span className="text-[11px] text-muted-foreground truncate">
+                            {inst.assetTitle}
+                          </span>
+                        </div>
+                        <span className="font-mono text-[10px] text-muted-foreground shrink-0 bg-muted/60 px-1 py-0.5 rounded border border-border/40">
+                          ${inst.multiplier}/pt
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+
+                  {/* Bonds & Rates */}
+                  <div className="mt-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-t border-border/40">
+                    Bonds & Rates
+                  </div>
+                  {QUANT_INSTRUMENTS.filter((i) => i.category === "bonds").map((inst) => (
                     <SelectItem key={inst.id} value={inst.id} className="text-xs py-1.5">
                       <div className="flex items-center justify-between w-full gap-3">
                         <div className="flex items-center gap-2 truncate">
@@ -402,8 +428,8 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
           {/* RISK & TARGET SUMMARY */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
             <div>
-              <span className="block text-[11px] text-muted-foreground">Max loss</span>
-              <span className="font-mono font-semibold text-loss">
+              <span className="block text-[11px] text-muted-foreground">Loss at stop</span>
+              <span className="font-mono font-semibold text-loss tnum">
                 <MonetaryValue>-${sizing.actualRiskDollars.toLocaleString("en-US")}</MonetaryValue>
               </span>
             </div>
@@ -414,7 +440,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
                   <span className="text-[10px] text-muted-foreground">(2:1)</span>
                 )}
               </span>
-              <span className="font-mono font-semibold text-profit">
+              <span className="font-mono font-semibold text-profit tnum">
                 <MonetaryValue>
                   +${(sizing.targetDollars ?? 0).toLocaleString("en-US")}
                 </MonetaryValue>
@@ -422,7 +448,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             </div>
             <div>
               <span className="block text-[11px] text-muted-foreground">Risk : Reward</span>
-              <span className="font-mono font-semibold text-foreground">
+              <span className="font-mono font-semibold text-foreground tnum">
                 1 : {sizing.riskRewardRatio ?? (isDefaultTarget && stopPoints > 0 ? "2.00" : "0")}
               </span>
             </div>

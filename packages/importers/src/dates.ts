@@ -26,7 +26,15 @@ const wallClockAsUtc = (utcMs: number, timeZone: string): number => {
   const parts = offsetFormatter(timeZone).formatToParts(new Date(utcMs));
   const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
   const hour = get("hour") === 24 ? 0 : get("hour");
-  return Date.UTC(get("year"), get("month") - 1, get("day"), hour, get("minute"), get("second"));
+  return Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    hour,
+    get("minute"),
+    get("second"),
+    new Date(utcMs).getUTCMilliseconds(),
+  );
 };
 
 /** Interpret a naive wall-clock timestamp (UTC-ms encoding) as a moment in `timeZone`. */
@@ -60,9 +68,10 @@ interface NaiveParts {
   hour: number;
   minute: number;
   second: number;
+  millisecond: number;
 }
 
-const toNaive = (value: string, dateOrder?: "mdy" | "dmy"): NaiveParts | null => {
+const toNaive = (value: string): NaiveParts | null => {
   const text = value.trim();
 
   // IBKR Flex Query: "20260105;093100"
@@ -75,12 +84,13 @@ const toNaive = (value: string, dateOrder?: "mdy" | "dmy"): NaiveParts | null =>
       hour: Number(flexMatch[4]),
       minute: Number(flexMatch[5]),
       second: Number(flexMatch[6]),
+      millisecond: 0,
     };
   }
 
   // ISO-ish: 2026-01-05 14:30:00 / 2026.01.05 14:30 / 2026-01-05T14:30:00
   let match = text.match(
-    /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
+    /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T ,]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?)?$/,
   );
   if (match) {
     return {
@@ -90,41 +100,42 @@ const toNaive = (value: string, dateOrder?: "mdy" | "dmy"): NaiveParts | null =>
       hour: Number(match[4] ?? 0),
       minute: Number(match[5] ?? 0),
       second: Number(match[6] ?? 0),
+      millisecond: Number((match[7] ?? "").padEnd(3, "0")),
     };
   }
 
-  // US / European: 01/05/2026 2:30:00 PM  (also 1/5/26)
+  // US: 01/05/2026 2:30:00 PM  (also 1/5/26)
   match = text.match(
-    /^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})(?:[, ]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?)?/,
+    /^(\d{1,2})[-/](\d{1,2})[-/](\d{2}|\d{4})(?:[, ]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?\s*(AM|PM|am|pm)?)?$/,
   );
   if (match) {
     let hour = Number(match[4] ?? 0);
-    const meridiem = match[7]?.toUpperCase();
+    const meridiem = match[8]?.toUpperCase();
+    if (meridiem && (hour < 1 || hour > 12)) return null;
     if (meridiem === "PM" && hour < 12) hour += 12;
     if (meridiem === "AM" && hour === 12) hour = 0;
     const year = Number(match[3]!.length === 2 ? `20${match[3]}` : match[3]);
-    const p1 = Number(match[1]);
-    const p2 = Number(match[2]);
-    const isDmy = dateOrder === "dmy" || (p1 > 12 && p2 <= 12);
     return {
       year,
-      month: isDmy ? p2 : p1,
-      day: isDmy ? p1 : p2,
+      month: Number(match[1]),
+      day: Number(match[2]),
       hour,
       minute: Number(match[5] ?? 0),
       second: Number(match[6] ?? 0),
+      millisecond: Number((match[7] ?? "").padEnd(3, "0")),
     };
   }
 
   // "Jan 5, 2026 14:30"
   match = text.match(
-    /^([A-Za-z]{3,})\.?\s+(\d{1,2}),?\s+(\d{4})(?:[, ]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?)?/,
+    /^([A-Za-z]{3,})\.?\s+(\d{1,2}),?\s+(\d{4})(?:[, ]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?\s*(AM|PM|am|pm)?)?$/,
   );
   if (match) {
     const month = MONTHS[match[1]!.slice(0, 3).toLowerCase()];
     if (!month) return null;
     let hour = Number(match[4] ?? 0);
-    const meridiem = match[7]?.toUpperCase();
+    const meridiem = match[8]?.toUpperCase();
+    if (meridiem && (hour < 1 || hour > 12)) return null;
     if (meridiem === "PM" && hour < 12) hour += 12;
     if (meridiem === "AM" && hour === 12) hour = 0;
     return {
@@ -134,6 +145,7 @@ const toNaive = (value: string, dateOrder?: "mdy" | "dmy"): NaiveParts | null =>
       hour,
       minute: Number(match[5] ?? 0),
       second: Number(match[6] ?? 0),
+      millisecond: Number((match[7] ?? "").padEnd(3, "0")),
     };
   }
 
@@ -145,11 +157,7 @@ const toNaive = (value: string, dateOrder?: "mdy" | "dmy"): NaiveParts | null =>
  * A trailing offset/Z is honored; otherwise the timestamp is interpreted in `timeZone`.
  * Returns null when the value cannot be parsed.
  */
-export const parseTimestamp = (
-  value: string | undefined,
-  timeZone = "UTC",
-  dateOrder?: "mdy" | "dmy",
-): string | null => {
+export const parseTimestamp = (value: string | undefined, timeZone = "UTC"): string | null => {
   if (!value) return null;
   // Some journal exports (TradeZella) append a timezone abbreviation to time
   // fields ("09:31:00 EST"). Abbreviations are ambiguous, so we strip them and
@@ -162,7 +170,7 @@ export const parseTimestamp = (
     return Number.isNaN(ms) ? null : new Date(ms).toISOString();
   }
 
-  const naive = toNaive(text, dateOrder);
+  const naive = toNaive(text);
   if (!naive) return null;
   const naiveUtcMs = Date.UTC(
     naive.year,
@@ -171,8 +179,19 @@ export const parseTimestamp = (
     naive.hour,
     naive.minute,
     naive.second,
+    naive.millisecond,
   );
   if (Number.isNaN(naiveUtcMs)) return null;
+  const normalized = new Date(naiveUtcMs);
+  if (
+    normalized.getUTCFullYear() !== naive.year ||
+    normalized.getUTCMonth() !== naive.month - 1 ||
+    normalized.getUTCDate() !== naive.day ||
+    normalized.getUTCHours() !== naive.hour ||
+    normalized.getUTCMinutes() !== naive.minute ||
+    normalized.getUTCSeconds() !== naive.second
+  )
+    return null;
   const utcMs = timeZone === "UTC" ? naiveUtcMs : naiveToUtc(naiveUtcMs, timeZone);
   return new Date(utcMs).toISOString();
 };
@@ -182,5 +201,4 @@ export const parseDateAndTime = (
   date: string | undefined,
   time: string | undefined,
   timeZone = "UTC",
-  dateOrder?: "mdy" | "dmy",
-): string | null => parseTimestamp([date, time].filter(Boolean).join(" "), timeZone, dateOrder);
+): string | null => parseTimestamp([date, time].filter(Boolean).join(" "), timeZone);

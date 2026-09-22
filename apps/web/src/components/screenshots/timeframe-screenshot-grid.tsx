@@ -205,7 +205,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
             </div>
           </div>
 
-          {/* Category Tabs: Pre-market vs Post-market (executions) */}
+          {/* Category Tabs: Pre-market vs Post-market */}
           <div className="flex items-center rounded-lg bg-muted/60 p-1 text-xs border border-border/40">
             <button
               type="button"
@@ -235,7 +235,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
               }`}
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>Post-market (executions)</span>
+              <span>Post-market</span>
               {postTotalCount > 0 && (
                 <span className="rounded-full bg-primary/15 px-1.5 py-0.2 text-[10px] font-semibold text-primary">
                   {postTotalCount}

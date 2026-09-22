@@ -149,6 +149,34 @@
     0 1px 2px rgb(0 0 0 / 0.25);
 }
 
+/* Sleek micro-scrollbar utility for compact UI components */
+.scrollbar-mini {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted-foreground, #888) 30%, transparent) transparent;
+}
+.scrollbar-mini::-webkit-scrollbar {
+  width: 4px;
+  height: 3px;
+}
+.scrollbar-mini::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-mini::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted-foreground, #888) 30%, transparent);
+  border-radius: 9999px;
+}
+.scrollbar-mini::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted-foreground, #888) 55%, transparent);
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* The shell keeps navigation and privacy within reach at every window size. */
 .journal-shell {
   --journal-header-offset: 56px;
@@ -433,14 +461,15 @@ body.dashboard-is-dragging .journal-hover-card {
   font-weight: 500;
 }
 .journal-filter-fields input:not([type="checkbox"]),
-.journal-filter-fields [role="combobox"] {
-  height: 38px;
+.journal-filter-fields [role="combobox"],
+.journal-filter-fields .journal-filter-trigger {
+  height: 36px;
   padding-inline: 11px;
-  border-radius: 7px;
-  border-color: var(--input);
-  background-color: color-mix(in srgb, var(--background) 65%, var(--card));
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--background) 70%, var(--card));
   color: var(--foreground);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
   outline: none;
   transition:
@@ -449,21 +478,64 @@ body.dashboard-is-dragging .journal-hover-card {
     background-color 150ms ease;
   color-scheme: light;
 }
-.dark .journal-filter-fields input,
-.dark .journal-filter-fields [role="combobox"] {
+.dark .journal-filter-fields input:not([type="checkbox"]),
+.dark .journal-filter-fields [role="combobox"],
+.dark .journal-filter-fields .journal-filter-trigger {
+  background-color: color-mix(in srgb, var(--card) 60%, var(--background));
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
   color-scheme: dark;
 }
 .journal-filter-fields input.journal-date-input {
   padding-right: 40px;
 }
 .journal-filter-fields input:not([type="checkbox"]):hover,
-.journal-filter-fields [role="combobox"]:hover {
-  border-color: color-mix(in srgb, var(--muted-foreground) 40%, var(--border));
+.journal-filter-fields [role="combobox"]:hover,
+.journal-filter-fields .journal-filter-trigger:hover {
+  border-color: color-mix(in srgb, var(--muted-foreground) 50%, var(--border));
+  background-color: color-mix(in srgb, var(--card) 85%, var(--background));
 }
 .journal-filter-fields input:not([type="checkbox"]):focus-visible,
-.journal-filter-fields [role="combobox"]:focus-visible {
+.journal-filter-fields [role="combobox"]:focus-visible,
+.journal-filter-fields .journal-filter-trigger:focus-visible {
   border-color: var(--ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 16%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 20%, transparent);
+}
+/* Minimalist number inputs: hidden by default to maximize text space, revealed on hover/focus */
+.journal-filter-fields input[type="number"],
+.journal-filter-dialog input[type="number"],
+input[type="number"].clean-number {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.journal-filter-fields input[type="number"]::-webkit-inner-spin-button,
+.journal-filter-fields input[type="number"]::-webkit-outer-spin-button,
+.journal-filter-dialog input[type="number"]::-webkit-inner-spin-button,
+.journal-filter-dialog input[type="number"]::-webkit-outer-spin-button,
+input[type="number"].clean-number::-webkit-inner-spin-button,
+input[type="number"].clean-number::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.journal-filter-fields input[type="number"]:hover,
+.journal-filter-fields input[type="number"]:focus,
+.journal-filter-dialog input[type="number"]:hover,
+.journal-filter-dialog input[type="number"]:focus {
+  -moz-appearance: number-input;
+  appearance: auto;
+}
+
+.journal-filter-fields input[type="number"]:hover::-webkit-inner-spin-button,
+.journal-filter-fields input[type="number"]:hover::-webkit-outer-spin-button,
+.journal-filter-fields input[type="number"]:focus::-webkit-inner-spin-button,
+.journal-filter-fields input[type="number"]:focus::-webkit-outer-spin-button,
+.journal-filter-dialog input[type="number"]:hover::-webkit-inner-spin-button,
+.journal-filter-dialog input[type="number"]:hover::-webkit-outer-spin-button,
+.journal-filter-dialog input[type="number"]:focus::-webkit-inner-spin-button,
+.journal-filter-dialog input[type="number"]:focus::-webkit-outer-spin-button {
+  -webkit-appearance: inner-spin-button;
+  opacity: 0.6;
 }
 .journal-filter-accounts legend {
   padding-inline: 6px;

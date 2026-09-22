@@ -100,6 +100,10 @@ export const insertExecutions = (
     "Account not found.",
   );
   const { usable, skipped, skippedReasons } = partitionExecutions(rows, source);
+  requireValue(
+    !usable.some((row) => row.ninjaTrader || row.importMetadata?.group?.startsWith("ninjatrader")),
+    "NinjaTrader fills require the reviewed import endpoint.",
+  );
   let inserted = 0;
   let duplicates = 0;
   const createdAt = nowIso();
@@ -107,6 +111,29 @@ export const insertExecutions = (
   const note = manualNotes?.trim() ? manualNotes : undefined;
 
   db.transaction((tx) => {
+    if (source === "import") {
+      const existingHashes = new Set(
+        tx
+          .select({ hash: executions.contentHash })
+          .from(executions)
+          .where(and(eq(executions.accountId, accountId), eq(executions.source, "import")))
+          .all()
+          .map((row) => row.hash),
+      );
+      for (const row of usable) {
+        if (existingHashes.has(executionHash(row))) continue;
+        const candidates = [row.legacyExecutedAt, row.executedAt.replace(/\.\d{3}Z$/, ".000Z")];
+        requireValue(
+          !candidates.some(
+            (executedAt) =>
+              executedAt &&
+              executedAt !== row.executedAt &&
+              existingHashes.has(executionHash({ ...row, executedAt })),
+          ),
+          "Matching imported fills have timestamps from an older parser or indistinguishable whole-second executions. Import the complete corrected history into a new journal account and compare it before retiring the old account; nothing was saved.",
+        );
+      }
+    }
     const noteExecutionIds = new Set<string>();
     for (const row of usable) {
       const id = newId();
@@ -181,19 +208,42 @@ export const insertExecutions = (
 
 export const deleteExecutionsForTrades = (accountId: string, executionIds: string[]): void => {
   if (executionIds.length === 0) return;
-  db.delete(executions)
-    .where(and(eq(executions.accountId, accountId), inArray(executions.id, executionIds)))
-    .run();
+  db.transaction((tx) => {
+    for (let i = 0; i < executionIds.length; i += 500) {
+      tx.delete(executions)
+        .where(
+          and(
+            eq(executions.accountId, accountId),
+            inArray(executions.id, executionIds.slice(i, i + 500)),
+          ),
+        )
+        .run();
+    }
+  });
   rebuildAccount(accountId);
 };
 
 export const listExecutions = (accountId: string, ids?: string[]) => {
   if (ids && ids.length > 0) {
-    return db
-      .select()
-      .from(executions)
-      .where(and(eq(executions.accountId, accountId), inArray(executions.id, ids)))
-      .all();
+    if (ids.length <= 500) {
+      return db
+        .select()
+        .from(executions)
+        .where(and(eq(executions.accountId, accountId), inArray(executions.id, ids)))
+        .all();
+    }
+    const results: (typeof executions.$inferSelect)[] = [];
+    for (let i = 0; i < ids.length; i += 500) {
+      const chunk = db
+        .select()
+        .from(executions)
+        .where(
+          and(eq(executions.accountId, accountId), inArray(executions.id, ids.slice(i, i + 500))),
+        )
+        .all();
+      results.push(...chunk);
+    }
+    return results;
   }
   return db.select().from(executions).where(eq(executions.accountId, accountId)).all();
 };

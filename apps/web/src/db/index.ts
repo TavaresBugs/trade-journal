@@ -29,6 +29,9 @@ const createDb = () => {
   }
   // Additive upgrade: journal_days table gains review metadata columns.
   const journalDayColumns = sqlite.pragma("table_info(journal_days)") as { name: string }[];
+  if (!journalDayColumns.some((column) => column.name === "symbol")) {
+    sqlite.exec("ALTER TABLE journal_days ADD COLUMN symbol TEXT");
+  }
   if (!journalDayColumns.some((column) => column.name === "rating")) {
     sqlite.exec("ALTER TABLE journal_days ADD COLUMN rating INTEGER");
   }

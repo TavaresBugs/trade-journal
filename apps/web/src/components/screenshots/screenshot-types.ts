@@ -14,7 +14,7 @@ export interface TimeframeConfig {
 
 /**
  * 8 standard multi-timeframe analysis slots (Monthly down to M3/M1).
- * Both Pre-market and Post-market (executions) modes share the identical 4x2 slot grid.
+ * Both Pre-market and Post-market modes share the identical 4x2 slot grid.
  */
 export const TIMEFRAME_CONFIG = [
   { key: "tfM", label: "Monthly", description: "Macro context & secular trend" },

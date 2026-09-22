@@ -30,8 +30,27 @@ describe("quant module (packages/core)", () => {
   });
 
   it("exports standard instruments and presets", () => {
-    expect(QUANT_INSTRUMENTS.length).toBeGreaterThanOrEqual(4);
+    expect(QUANT_INSTRUMENTS.length).toBeGreaterThanOrEqual(14);
     expect(PROP_FIRM_PRESETS.length).toBeGreaterThanOrEqual(5);
+
+    // Verify key commodity and rates futures
+    const silver = QUANT_INSTRUMENTS.find((i) => i.id === "SI");
+    expect(silver?.multiplier).toBe(5000);
+    expect(silver?.microId).toBe("SIL");
+
+    const copper = QUANT_INSTRUMENTS.find((i) => i.id === "HG");
+    expect(copper?.multiplier).toBe(250);
+    expect(copper?.microId).toBe("MHG");
+
+    const natgas = QUANT_INSTRUMENTS.find((i) => i.id === "NG");
+    expect(natgas?.multiplier).toBe(10000);
+
+    const eth = QUANT_INSTRUMENTS.find((i) => i.id === "ETH");
+    expect(eth?.multiplier).toBe(50);
+    expect(eth?.microId).toBe("MET");
+
+    const tnote = QUANT_INSTRUMENTS.find((i) => i.id === "ZN");
+    expect(tnote?.multiplier).toBe(1000);
   });
 
   describe("calculateExpectedValue", () => {

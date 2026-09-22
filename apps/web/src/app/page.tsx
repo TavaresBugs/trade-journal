@@ -455,20 +455,20 @@ function DashboardContent({
             layoutGroup: "detail",
             content: (
               <Card className="h-full">
-                <CardHeader>
-                  <CardTitle>Activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="recent">
-                    <TabsList className="h-8">
-                      <TabsTrigger value="recent" className="text-xs">
+                <Tabs defaultValue="recent" className="flex flex-col h-full">
+                  <CardHeader className="flex-row items-center justify-between space-y-0 pb-2.5">
+                    <CardTitle>Activity</CardTitle>
+                    <TabsList className="h-7 p-0.5">
+                      <TabsTrigger value="recent" className="text-xs px-2.5 h-6">
                         Recent trades
                       </TabsTrigger>
-                      <TabsTrigger value="open" className="text-xs">
+                      <TabsTrigger value="open" className="text-xs px-2.5 h-6">
                         Open positions
                       </TabsTrigger>
                     </TabsList>
-                    <TabsContent value="recent" className="space-y-1 mt-2">
+                  </CardHeader>
+                  <CardContent className="pt-0 flex-1">
+                    <TabsContent value="recent" className="mt-0 space-y-1">
                       {data.recentTrades.length === 0 && <Empty label="No closed trades yet" />}
                       {data.recentTrades.map((trade) => {
                         const canonical = normalizeSymbol(trade.symbol);
@@ -476,24 +476,23 @@ function DashboardContent({
                           <Link
                             key={trade.key}
                             href={`/trades/${encodeURIComponent(trade.key)}?${query}`}
-                            className="group flex items-center justify-between gap-2.5 sm:gap-4 rounded-lg px-2.5 py-2 text-sm transition-[background-color,transform] duration-150 ease-out hover:bg-muted/40 active:scale-[0.995]"
+                            className="group grid grid-cols-[minmax(0,1.4fr)_auto_minmax(0,1fr)_auto] items-center gap-2.5 sm:gap-3 rounded-lg px-2.5 py-2 text-sm transition-[background-color,transform] duration-150 ease-out hover:bg-muted/40 active:scale-[0.995]"
                           >
-                            {/* Left cluster: Asset Icon & Ticker + Direction badge */}
-                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                              <div className="flex items-center gap-2 w-24 sm:w-28 shrink-0 min-w-0">
-                                <AssetIcon symbol={trade.symbol} size="sm" />
-                                <span
-                                  className="font-semibold text-sm text-foreground tracking-tight truncate"
-                                  title={
-                                    trade.symbol !== canonical
-                                      ? `Broker: ${trade.symbol}`
-                                      : undefined
-                                  }
-                                >
-                                  {canonical}
-                                </span>
-                              </div>
+                            {/* Column 1: Asset Icon & Ticker */}
+                            <div className="flex items-center gap-2 min-w-0">
+                              <AssetIcon symbol={trade.symbol} size="sm" />
+                              <span
+                                className="font-semibold text-sm text-foreground tracking-tight truncate"
+                                title={
+                                  trade.symbol !== canonical ? `Broker: ${trade.symbol}` : undefined
+                                }
+                              >
+                                {canonical}
+                              </span>
+                            </div>
 
+                            {/* Column 2: Direction badge */}
+                            <div className="flex items-center justify-start shrink-0">
                               <DirectionBadge
                                 direction={trade.direction}
                                 size="xs"
@@ -501,20 +500,20 @@ function DashboardContent({
                               />
                             </div>
 
-                            {/* Right cluster: Date + P&L */}
-                            <div className="flex items-center gap-3 sm:gap-4 ml-auto shrink-0">
-                              <span className="text-xs text-muted-foreground tnum font-medium">
-                                {trade.closedAt && dayKeyOf(trade.closedAt, data.timeZone)}
-                              </span>
-                              <div className="w-20 text-right shrink-0">
-                                <Pnl value={trade.netPnl} className="text-sm font-semibold tnum" />
-                              </div>
+                            {/* Column 3: Date */}
+                            <span className="text-xs text-muted-foreground tnum font-medium text-right sm:text-center truncate">
+                              {trade.closedAt && dayKeyOf(trade.closedAt, data.timeZone)}
+                            </span>
+
+                            {/* Column 4: P&L */}
+                            <div className="w-20 text-right shrink-0">
+                              <Pnl value={trade.netPnl} className="text-sm font-semibold tnum" />
                             </div>
                           </Link>
                         );
                       })}
                     </TabsContent>
-                    <TabsContent value="open" className="space-y-1 mt-2">
+                    <TabsContent value="open" className="mt-0 space-y-1">
                       {data.openPositions.length === 0 && (
                         <Empty label="Flat — no open positions" />
                       )}
@@ -523,38 +522,45 @@ function DashboardContent({
                         return (
                           <div
                             key={position.key}
-                            className="flex items-center justify-between gap-2.5 sm:gap-4 rounded-lg px-2.5 py-2 text-sm"
+                            className="grid grid-cols-[minmax(0,1.4fr)_auto_minmax(0,1fr)_auto] items-center gap-2.5 sm:gap-3 rounded-lg px-2.5 py-2 text-sm"
                           >
-                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                              <div className="flex items-center gap-2 w-24 sm:w-28 shrink-0 min-w-0">
-                                <AssetIcon symbol={position.symbol} size="sm" />
-                                <span
-                                  className="font-semibold text-sm text-foreground tracking-tight truncate"
-                                  title={
-                                    position.symbol !== canonical
-                                      ? `Broker: ${position.symbol}`
-                                      : undefined
-                                  }
-                                >
-                                  {canonical}
-                                </span>
-                              </div>
+                            {/* Column 1: Asset Icon & Ticker */}
+                            <div className="flex items-center gap-2 min-w-0">
+                              <AssetIcon symbol={position.symbol} size="sm" />
+                              <span
+                                className="font-semibold text-sm text-foreground tracking-tight truncate"
+                                title={
+                                  position.symbol !== canonical
+                                    ? `Broker: ${position.symbol}`
+                                    : undefined
+                                }
+                              >
+                                {canonical}
+                              </span>
+                            </div>
+
+                            {/* Column 2: Direction badge */}
+                            <div className="flex items-center justify-start shrink-0">
                               <DirectionBadge
                                 direction={position.direction}
                                 size="xs"
                                 className="shrink-0"
                               />
                             </div>
-                            <span className="tnum text-xs text-muted-foreground ml-auto font-medium">
-                              {fmtNumber(position.quantity, 4)} @{" "}
-                              <MonetaryValue>{fmtNumber(position.avgEntry)}</MonetaryValue>
-                            </span>
+
+                            {/* Columns 3 & 4: Quantity and Avg Entry */}
+                            <div className="col-span-2 text-right">
+                              <span className="tnum text-xs text-muted-foreground font-medium">
+                                {fmtNumber(position.quantity, 4)} @{" "}
+                                <MonetaryValue>{fmtNumber(position.avgEntry)}</MonetaryValue>
+                              </span>
+                            </div>
                           </div>
                         );
                       })}
                     </TabsContent>
-                  </Tabs>
-                </CardContent>
+                  </CardContent>
+                </Tabs>
               </Card>
             ),
           },

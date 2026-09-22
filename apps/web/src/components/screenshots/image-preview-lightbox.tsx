@@ -188,7 +188,7 @@ export function ImagePreviewLightbox({
           type="button"
           aria-label="Delete"
           title="Delete screenshot (Del)"
-          className="absolute top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-red-400 border border-white/10 backdrop-blur-sm transition-colors hover:bg-red-500/20 hover:text-red-300"
+          className="absolute top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-loss border border-white/10 backdrop-blur-sm transition-colors hover:bg-loss/20 hover:text-loss"
           onClick={handleDelete}
         >
           <Trash2 className="h-5 w-5" />
@@ -346,11 +346,11 @@ export function ImagePreviewLightbox({
                   <span
                     id={zoomIndicatorId}
                     aria-hidden="true"
-                    className={`min-w-14 text-center font-mono text-sm ${
+                    className={`min-w-14 text-center font-mono tnum text-sm ${
                       zoomScale < 0.99
                         ? "text-yellow-300"
                         : zoomScale > 1.01
-                          ? "text-green-300"
+                          ? "text-profit"
                           : "text-white"
                     }`}
                   >

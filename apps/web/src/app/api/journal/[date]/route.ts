@@ -1,11 +1,12 @@
 import { readFilters } from "@luxalgo/journal-core";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { computeMetrics, dayKeyOf, intradayCurve } from "@luxalgo/journal-core";
-import { db, executions, journalDays } from "@/db";
+import { attachments, db, executions, journalDays, trades as tradesTable } from "@/db";
 import { bad, handler, ok } from "@/server/api";
 import { nowIso } from "@/server/ids";
 import { getTimeZone } from "@/server/settings";
 import { queryTrades } from "@/server/trades-query";
+import { normalizeSymbol } from "@/lib/assets/asset-icons";
 
 type Params = { params: Promise<{ date: string }> };
 
@@ -25,39 +26,79 @@ export const GET = handler(async (request: Request, { params }: Params) => {
   const times = new Map<string, string>();
   const neededExecIds = Array.from(new Set(dayTrades.flatMap((trade) => trade.executionIds ?? [])));
   if (neededExecIds.length > 0) {
-    const fills = db
-      .select({ id: executions.id, executedAt: executions.executedAt })
-      .from(executions)
-      .where(inArray(executions.id, neededExecIds))
-      .all();
-    for (const fill of fills) times.set(fill.id, fill.executedAt);
+    for (let i = 0; i < neededExecIds.length; i += 500) {
+      const chunk = neededExecIds.slice(i, i + 500);
+      const fills = db
+        .select({ id: executions.id, executedAt: executions.executedAt })
+        .from(executions)
+        .where(inArray(executions.id, chunk))
+        .all();
+      for (const fill of fills) times.set(fill.id, fill.executedAt);
+    }
   }
 
   const dayRecord = db.select().from(journalDays).where(eq(journalDays.date, date)).get();
+  const dayAttachmentsCount =
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(attachments)
+      .where(and(eq(attachments.ownerType, "day"), eq(attachments.ownerId, date)))
+      .get()?.count ?? 0;
+
+  const hasDayJournal = Boolean(
+    dayRecord?.note?.trim() ||
+    dayRecord?.symbol ||
+    dayRecord?.rating != null ||
+    dayAttachmentsCount > 0,
+  );
+
+  const allTradedSymbols = Array.from(
+    new Set(
+      db
+        .selectDistinct({ symbol: tradesTable.symbol })
+        .from(tradesTable)
+        .all()
+        .map((r) => normalizeSymbol(r.symbol))
+        .filter(Boolean),
+    ),
+  );
+
   return ok({
     date,
     metrics: computeMetrics(dayTrades, { timeZone }),
     trades: dayTradeIndexes.map(({ index }) => rows[index]),
     intraday: intradayCurve(dayTrades, times, date, timeZone),
     note: dayRecord?.note ?? "",
+    symbol: dayRecord?.symbol ?? null,
+    allTradedSymbols,
     rating: dayRecord?.rating ?? null,
     reviewedAt: dayRecord?.reviewedAt ?? null,
     tagsJson: dayRecord?.tagsJson ?? null,
     mistakesJson: dayRecord?.mistakesJson ?? null,
+    attachmentsCount: dayAttachmentsCount,
+    hasDayJournal,
   });
 });
 
 const saveJournalDay = async (request: Request, date: string) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return bad("date must be YYYY-MM-DD");
-  const body = (await request.json()) as {
+
+  let body: {
     note?: string;
     notes?: string;
+    symbol?: string | null;
     rating?: number | null;
     reviewed?: boolean;
     reviewedAt?: string | null;
     tags?: string[] | string;
     mistakes?: string[] | string;
   };
+
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return bad("Invalid JSON request body");
+  }
 
   if (body.rating !== undefined) {
     if (
@@ -97,6 +138,7 @@ const saveJournalDay = async (request: Request, date: string) => {
   };
 
   if (noteContent !== undefined) patch.note = noteContent;
+  if (body.symbol !== undefined) patch.symbol = body.symbol ? normalizeSymbol(body.symbol) : null;
   if (body.rating !== undefined) patch.rating = body.rating;
   if (body.reviewed !== undefined) patch.reviewedAt = body.reviewed ? nowIso() : null;
   else if (body.reviewedAt !== undefined) patch.reviewedAt = body.reviewedAt;
@@ -107,6 +149,7 @@ const saveJournalDay = async (request: Request, date: string) => {
     .values({
       date,
       note: noteContent ?? existing?.note ?? "",
+      symbol: patch.symbol !== undefined ? patch.symbol : (existing?.symbol ?? null),
       rating: patch.rating !== undefined ? patch.rating : (existing?.rating ?? null),
       reviewedAt:
         patch.reviewedAt !== undefined ? patch.reviewedAt : (existing?.reviewedAt ?? null),

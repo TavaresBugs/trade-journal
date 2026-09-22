@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { HoverHint } from "./ui/tooltip";
 
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { cn, fmtMoney } from "@/lib/utils";
 import { Pnl } from "./pnl";
 import { MonetaryValue, usePrivacy } from "./privacy";
 import { useFilters } from "./filter-bar";
+import { DayJournalsDialog } from "./day-journals-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,6 +81,7 @@ export function CalendarPnl({
   className?: string;
 }) {
   const { timeZone } = useFilters();
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const today = propToday ?? dayKeyOf(new Date().toISOString(), timeZone);
   const allTradedDays = useMemo(() => {
     return calendar.weeks
@@ -149,7 +151,9 @@ export function CalendarPnl({
                       "text-xs font-medium cursor-pointer",
                       idx + 1 === calendar.month && "bg-accent font-bold text-accent-foreground",
                     )}
-                    onSelect={() => onMonthChange({ year: calendar.year, month: idx + 1 })}
+                    onClick={() => {
+                      onMonthChange({ year: calendar.year, month: idx + 1 });
+                    }}
                   >
                     {name}
                   </DropdownMenuItem>
@@ -168,17 +172,19 @@ export function CalendarPnl({
                   <ChevronDown className="size-3 text-muted-foreground opacity-70" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="min-w-28">
-                {YEARS.map((y) => (
+              <DropdownMenuContent className="min-w-24 max-h-60 overflow-y-auto">
+                {YEARS.map((yr) => (
                   <DropdownMenuItem
-                    key={y}
+                    key={yr}
                     className={cn(
                       "text-xs font-medium cursor-pointer",
-                      y === calendar.year && "bg-accent font-bold text-accent-foreground",
+                      yr === calendar.year && "bg-accent font-bold text-accent-foreground",
                     )}
-                    onSelect={() => onMonthChange({ year: y, month: calendar.month })}
+                    onClick={() => {
+                      onMonthChange({ year: yr, month: calendar.month });
+                    }}
                   >
-                    {y}
+                    {yr}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -225,6 +231,7 @@ export function CalendarPnl({
             monetary={monetary}
             today={today}
             journalDays={journalDays}
+            onSelectDay={setSelectedDay}
           />
         ))}
       </div>
@@ -330,6 +337,13 @@ export function CalendarPnl({
           </span>
         </div>
       </div>
+      {/* Day Journals subwindow modal (media_1790076754434.png) */}
+      <DayJournalsDialog
+        date={selectedDay}
+        open={Boolean(selectedDay)}
+        onOpenChange={(open) => !open && setSelectedDay(null)}
+        currency={currency}
+      />
     </div>
   );
 }
@@ -341,6 +355,7 @@ function CalendarWeekRow({
   monetary,
   today,
   journalDays,
+  onSelectDay,
 }: {
   week: CalendarMonth["weeks"][number];
   maxAbs: number;
@@ -348,6 +363,7 @@ function CalendarWeekRow({
   monetary: boolean;
   today: string;
   journalDays?: string[];
+  onSelectDay: (date: string) => void;
 }) {
   const search = useSearchParams();
   const privacy = usePrivacy();
@@ -397,13 +413,14 @@ function CalendarWeekRow({
             heading={isToday ? `${day.date} (Today)` : day.date}
             content={tooltipContent}
           >
-            <Link
+            <button
+              type="button"
               key={day.date}
-              href={`/journal/${day.date}?${search}`}
+              onClick={() => onSelectDay(day.date)}
               aria-label={ariaLabel}
               data-today={isToday ? "true" : undefined}
               className={cn(
-                "journal-calendar-day journal-calendar-day-link flex flex-col min-w-0 rounded-md border",
+                "journal-calendar-day journal-calendar-day-link flex flex-col min-w-0 rounded-md border text-left cursor-pointer transition-transform active:scale-[0.98]",
                 !traded
                   ? hasJournal
                     ? "border-brand/40 hover:border-brand/70"
@@ -470,7 +487,7 @@ function CalendarWeekRow({
                   <span className="truncate">Journaled</span>
                 </div>
               )}
-            </Link>
+            </button>
           </HoverHint>
         );
       })}

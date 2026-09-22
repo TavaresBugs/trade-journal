@@ -83,12 +83,17 @@ export const queryTrades = (
     ?.split(",")
     .map((id) => id.trim())
     .filter(Boolean);
+  const symbols = effective.symbol
+    ?.split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
   const all = db
     .select()
     .from(trades)
     .where(
       and(
         accountIds?.length ? inArray(trades.accountId, accountIds) : undefined,
+        symbols?.length && symbols.length <= 500 ? inArray(trades.symbol, symbols) : undefined,
         effective.playbookId ? eq(trades.playbookId, effective.playbookId) : undefined,
         effective.direction
           ? eq(trades.direction, effective.direction as "long" | "short")

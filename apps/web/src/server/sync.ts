@@ -5,6 +5,7 @@ import { accounts, db } from "@/db";
 import { decryptJson, encryptJson } from "./crypto";
 import { nowIso } from "./ids";
 import { insertExecutions, type InsertResult } from "./executions";
+import { NotFoundError, ValidationError } from "./api";
 
 /** All broker connectivity goes through @luxalgo/broker-sdk, never direct API code. */
 export { listBrokers };
@@ -18,9 +19,9 @@ export interface SyncOutcome extends InsertResult {
 
 export const syncAccount = async (accountId: string): Promise<SyncOutcome> => {
   const account = db.select().from(accounts).where(eq(accounts.id, accountId)).get();
-  if (!account) throw new Error("Account not found");
+  if (!account) throw new NotFoundError("Account not found");
   if (account.kind !== "sync" || !account.credentialsEnc) {
-    throw new Error("Account is not broker-connected");
+    throw new ValidationError("Account is not broker-connected");
   }
 
   const credentials = decryptJson<Record<string, string>>(account.credentialsEnc);

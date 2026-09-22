@@ -2,9 +2,17 @@
 
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { FlaskConical, WalletCards } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
+import { Check, ChevronDown, FlaskConical, Plus, RefreshCw, SlidersHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AddAccountDialog } from "@/components/add-account-dialog";
 import { postJson, useApi } from "@/lib/use-api";
+import { cn } from "@/lib/utils";
 
 interface AccountOption {
   id: string;
@@ -13,14 +21,21 @@ interface AccountOption {
   archivedAt: string | null;
 }
 
-/** Quick account switching; the full Filters panel still supports multiple accounts. */
+/**
+ * Institutional account switcher dropdown matching LuxAlgo Quant standards.
+ * Features inline sync button, active checkmarks, Add Account modal, and Manage Accounts navigation.
+ */
 export function AccountSelector() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const { data, error, refresh } = useApi<{ accounts: AccountOption[] }>("/api/accounts?summary=1");
+
+  const [addAccountOpen, setAddAccountOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [demoError, setDemoError] = useState("");
+
   const selected = params.get("accounts")?.split(",").filter(Boolean) ?? [];
   const accounts = data?.accounts.filter((a) => !a.archivedAt || selected.includes(a.id)) ?? [];
   const demo = accounts.find((a) => a.broker === "demo");
@@ -38,9 +53,18 @@ export function AccountSelector() {
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
   }
 
-  async function select(value: string) {
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      refresh();
+      await new Promise((r) => setTimeout(r, 600));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleLoadDemo = async () => {
     setDemoError("");
-    if (value !== "load-demo") return selectAccount(value);
     setLoadingDemo(true);
     try {
       const result = await postJson<{ accountId: string }>("/api/demo", {});
@@ -51,53 +75,149 @@ export function AccountSelector() {
     } finally {
       setLoadingDemo(false);
     }
-  }
+  };
 
   return (
-    <div className="relative min-w-0 max-w-full">
-      <Select value={value} onValueChange={(value) => void select(value)} disabled={loadingDemo}>
-        <SelectTrigger
-          aria-label="Select account"
-          className="h-8 w-44 max-w-full rounded-lg text-xs"
+    <>
+      <div className="flex items-center gap-1.5 min-w-0">
+        {/* Sync / Refresh Button */}
+        <button
+          type="button"
+          aria-label="Sync journal"
+          title="Refresh accounts"
+          onClick={handleSync}
+          disabled={syncing}
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.96] disabled:opacity-50 cursor-pointer"
         >
-          <WalletCards className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 flex-1 truncate text-left">
-            {loadingDemo ? "Loading demo…" : label}
-          </span>
-        </SelectTrigger>
-        <SelectContent className="rounded-2xl border-white/10 p-1 shadow-2xl" align="end">
-          <SelectItem value="all" className="rounded-lg text-xs">
-            All accounts
-          </SelectItem>
-          {selected.length > 1 && (
-            <SelectItem value="multiple" disabled className="text-xs">
-              {label}
-            </SelectItem>
-          )}
-          {accounts
-            .filter((a) => a.broker !== "demo")
-            .map((account) => (
-              <SelectItem key={account.id} value={account.id} className="rounded-lg text-xs">
-                <span className="block max-w-64 truncate">
-                  {account.name}
-                  {account.archivedAt ? " (archived)" : ""}
+          <RefreshCw className={cn("size-3.5", syncing && "animate-spin text-foreground")} />
+        </button>
+
+        {/* Account Selector Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Switch journal account"
+              className="flex h-8 min-w-0 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-left text-xs font-medium text-foreground transition-[background-color,transform] duration-150 hover:bg-muted/60 active:scale-[0.98] max-w-40 sm:max-w-48 cursor-pointer select-none"
+            >
+              <span className="min-w-0 truncate">{loadingDemo ? "Loading demo…" : label}</span>
+              <ChevronDown className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            align="end"
+            className="w-52 rounded-xl p-1 shadow-xl border border-border/70"
+          >
+            {/* All accounts option */}
+            <DropdownMenuItem
+              onClick={() => selectAccount("all")}
+              className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium"
+            >
+              <span>All accounts</span>
+              {value === "all" && <Check className="size-3.5 shrink-0 text-foreground" />}
+            </DropdownMenuItem>
+
+            {/* Multiple accounts selection indicator */}
+            {selected.length > 1 && (
+              <DropdownMenuItem
+                disabled
+                className="flex items-center justify-between text-xs rounded-lg text-muted-foreground"
+              >
+                <span>{label}</span>
+                <Check className="size-3.5 shrink-0 text-foreground" />
+              </DropdownMenuItem>
+            )}
+
+            {/* List of user accounts */}
+            {accounts
+              .filter((a) => a.broker !== "demo")
+              .map((account) => {
+                const isSelected = selected.length === 1 && selected[0] === account.id;
+                return (
+                  <DropdownMenuItem
+                    key={account.id}
+                    onClick={() => selectAccount(account.id)}
+                    className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium"
+                  >
+                    <span className="truncate">
+                      {account.name}
+                      {account.archivedAt ? " (archived)" : ""}
+                    </span>
+                    {isSelected && <Check className="size-3.5 shrink-0 text-foreground" />}
+                  </DropdownMenuItem>
+                );
+              })}
+
+            <DropdownMenuSeparator />
+
+            {/* Add account action */}
+            <DropdownMenuItem
+              onClick={() => setAddAccountOpen(true)}
+              className="flex items-center gap-2 cursor-pointer py-1.5 px-2.5 text-xs rounded-lg text-foreground hover:bg-muted"
+            >
+              <Plus className="size-3.5 text-muted-foreground" />
+              <span className="font-medium">Add account</span>
+            </DropdownMenuItem>
+
+            {/* Manage accounts action */}
+            <DropdownMenuItem
+              onClick={() => router.push("/accounts")}
+              className="flex items-center gap-2 cursor-pointer py-1.5 px-2.5 text-xs rounded-lg text-foreground hover:bg-muted"
+            >
+              <SlidersHorizontal className="size-3.5 text-muted-foreground" />
+              <span className="font-medium">Manage accounts</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            {/* Demo data account option or Load demo data button (at the bottom) */}
+            {demo ? (
+              <DropdownMenuItem
+                onClick={() => selectAccount(demo.id)}
+                className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium text-muted-foreground"
+              >
+                <span className="flex items-center gap-1.5 truncate">
+                  <FlaskConical className="size-3.5 shrink-0" />
+                  {demo.name}
                 </span>
-              </SelectItem>
-            ))}
-          <div className="my-1 border-t" />
-          <SelectItem value={demo?.id ?? "load-demo"} className="rounded-lg text-xs">
-            <span className="flex items-center gap-2">
-              <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
-              {demo?.name ?? "Load demo data"}
-            </span>
-          </SelectItem>
-        </SelectContent>
-      </Select>
-      {(demoError || error) && (
-        <p role="alert" className="max-w-64 pt-1 text-xs text-destructive">
-          {demoError || error}
-        </p>
-      )}
-    </div>
+                {selected.length === 1 && selected[0] === demo.id && (
+                  <Check className="size-3.5 shrink-0 text-foreground" />
+                )}
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                onClick={handleLoadDemo}
+                disabled={loadingDemo}
+                className="flex items-center gap-1.5 cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium text-muted-foreground"
+              >
+                <FlaskConical className="size-3.5 shrink-0" />
+                <span>{loadingDemo ? "Loading demo…" : "Load demo data"}</span>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {(demoError || error) && (
+          <p
+            role="alert"
+            className="max-w-48 truncate text-[11px] text-destructive"
+            title={(demoError || error) ?? undefined}
+          >
+            {demoError || error}
+          </p>
+        )}
+      </div>
+
+      {/* Add Account Modal */}
+      <AddAccountDialog
+        open={addAccountOpen}
+        onOpenChange={setAddAccountOpen}
+        onAccountCreated={(id) => {
+          refresh();
+          selectAccount(id);
+        }}
+      />
+    </>
   );
 }

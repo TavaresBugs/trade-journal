@@ -27,15 +27,17 @@ export const POST = handler(async (request: Request) => {
     case "tag":
     case "untag": {
       if (!body.tag) return bad("tag is required");
-      for (const row of rows) {
-        const tags = new Set<string>(row.tagsJson ? (JSON.parse(row.tagsJson) as string[]) : []);
-        if (body.action === "tag") tags.add(body.tag);
-        else tags.delete(body.tag);
-        db.update(trades)
-          .set({ tagsJson: JSON.stringify([...tags]) })
-          .where(eq(trades.key, row.key))
-          .run();
-      }
+      db.transaction((tx) => {
+        for (const row of rows) {
+          const tags = new Set<string>(row.tagsJson ? (JSON.parse(row.tagsJson) as string[]) : []);
+          if (body.action === "tag") tags.add(body.tag!);
+          else tags.delete(body.tag!);
+          tx.update(trades)
+            .set({ tagsJson: JSON.stringify([...tags]) })
+            .where(eq(trades.key, row.key))
+            .run();
+        }
+      });
       return ok({ updated: rows.length });
     }
     case "playbook":

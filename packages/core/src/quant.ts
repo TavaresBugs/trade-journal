@@ -5,7 +5,7 @@ export interface QuantInstrument {
   name: string;
   multiplier: number;
   tickSize: number;
-  category?: "indices" | "micros" | "commodities" | "crypto";
+  category?: "indices" | "micros" | "commodities" | "crypto" | "energy" | "metals" | "bonds";
   microId?: string;
   assetTitle?: string;
 }
@@ -83,7 +83,7 @@ export const QUANT_INSTRUMENTS: readonly QuantInstrument[] = [
     assetTitle: "Micro Dow Jones",
   },
 
-  // --- Commodities ---
+  // --- Commodities & Metals ---
   {
     id: "GC",
     name: "GC ($100/pt)",
@@ -91,15 +91,32 @@ export const QUANT_INSTRUMENTS: readonly QuantInstrument[] = [
     tickSize: 0.1,
     category: "commodities",
     microId: "MGC",
-    assetTitle: "Gold (Ouro)",
+    assetTitle: "Gold Futures",
   },
   {
     id: "MGC",
     name: "MGC ($10/pt)",
     multiplier: 10,
     tickSize: 0.1,
-    category: "commodities",
+    category: "micros",
     assetTitle: "Micro Gold",
+  },
+  {
+    id: "SI",
+    name: "SI ($5,000/pt)",
+    multiplier: 5000,
+    tickSize: 0.005,
+    category: "commodities",
+    microId: "SIL",
+    assetTitle: "Silver Futures",
+  },
+  {
+    id: "SIL",
+    name: "SIL ($1,000/pt)",
+    multiplier: 1000,
+    tickSize: 0.005,
+    category: "micros",
+    assetTitle: "Micro Silver",
   },
   {
     id: "CL",
@@ -108,15 +125,50 @@ export const QUANT_INSTRUMENTS: readonly QuantInstrument[] = [
     tickSize: 0.01,
     category: "commodities",
     microId: "MCL",
-    assetTitle: "Crude Oil (Petróleo)",
+    assetTitle: "Crude Oil Futures",
   },
   {
     id: "MCL",
     name: "MCL ($100/pt)",
     multiplier: 100,
     tickSize: 0.01,
-    category: "commodities",
+    category: "micros",
     assetTitle: "Micro Crude Oil",
+  },
+  {
+    id: "HG",
+    name: "HG ($250/pt)",
+    multiplier: 250,
+    tickSize: 0.0005,
+    category: "commodities",
+    microId: "MHG",
+    assetTitle: "Copper Futures",
+  },
+  {
+    id: "MHG",
+    name: "MHG ($25/pt)",
+    multiplier: 25,
+    tickSize: 0.0005,
+    category: "micros",
+    assetTitle: "Micro Copper",
+  },
+  {
+    id: "NG",
+    name: "NG ($10,000/pt)",
+    multiplier: 10000,
+    tickSize: 0.001,
+    category: "commodities",
+    assetTitle: "Natural Gas Futures",
+  },
+
+  // --- Bonds & Rates ---
+  {
+    id: "ZN",
+    name: "ZN ($1,000/pt)",
+    multiplier: 1000,
+    tickSize: 0.015625,
+    category: "bonds",
+    assetTitle: "10-Year T-Note",
   },
 
   // --- Crypto Futures ---
@@ -134,8 +186,25 @@ export const QUANT_INSTRUMENTS: readonly QuantInstrument[] = [
     name: "MBT ($0.10/pt)",
     multiplier: 0.1,
     tickSize: 5.0,
-    category: "crypto",
+    category: "micros",
     assetTitle: "Micro Bitcoin",
+  },
+  {
+    id: "ETH",
+    name: "ETH ($50/pt)",
+    multiplier: 50,
+    tickSize: 0.25,
+    category: "crypto",
+    microId: "MET",
+    assetTitle: "Ethereum Futures",
+  },
+  {
+    id: "MET",
+    name: "MET ($0.10/pt)",
+    multiplier: 0.1,
+    tickSize: 0.25,
+    category: "micros",
+    assetTitle: "Micro Ether",
   },
 ] as const;
 

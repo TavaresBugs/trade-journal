@@ -17,21 +17,7 @@ import {
 import { postJson, useApi } from "@/lib/use-api";
 import { fmtMoney } from "@/lib/utils";
 import { MonetaryValue, MonetaryField } from "@/components/privacy";
-
-interface AccountRow {
-  id: string;
-  name: string;
-  broker: string;
-  kind: "sync" | "import" | "manual";
-  currency: string;
-  initialBalance: number;
-  profitCalcMethod: "fifo" | "lifo" | "wavg";
-  autoSync: boolean;
-  lastSyncAt: string | null;
-  archivedAt: string | null;
-  connected: boolean;
-  snapshot: { equity: number; positions: unknown[] } | null;
-}
+import type { AccountRow } from "@/types/accounts";
 
 export default function AccountsPage() {
   return (

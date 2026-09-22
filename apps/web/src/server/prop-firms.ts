@@ -17,7 +17,13 @@ import {
   type PropReceipt,
   type PropData,
 } from "@/lib/prop-firms";
-export class PropConflict extends RequestError {}
+
+export class PropConflict extends RequestError {
+  constructor(message: string) {
+    super(message, 409);
+    this.name = "PropConflict";
+  }
+}
 export const propToday = () =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: getTimeZone(),

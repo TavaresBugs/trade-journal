@@ -31,6 +31,56 @@ export const accounts = sqliteTable("accounts", {
   createdAt: text("created_at").notNull(),
 });
 
+export const importSources = sqliteTable("import_sources", {
+  id: text("id").primaryKey(),
+  accountId: text("account_id")
+    .notNull()
+    .references(() => accounts.id, { onDelete: "cascade" }),
+  format: text("format").notNull(),
+  name: text("name").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const importSourceAliases = sqliteTable(
+  "import_source_aliases",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    format: text("format").notNull(),
+    aliasKey: text("alias_key").notNull(),
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => importSources.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    uniqueIndex("import_source_alias_unique").on(table.accountId, table.format, table.aliasKey),
+  ],
+);
+
+export const importBatches = sqliteTable(
+  "import_batches",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    format: text("format").notNull(),
+    fingerprint: text("fingerprint").notNull(),
+    rawHash: text("raw_hash").notNull(),
+    timeZone: text("time_zone").notNull(),
+    sourceIdsJson: text("source_ids_json").notNull(),
+    fromTime: text("from_time").notNull(),
+    toTime: text("to_time").notNull(),
+    snapshotJson: text("snapshot_json").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("import_batch_unique").on(table.accountId, table.format, table.fingerprint),
+  ],
+);
+
 export const executions = sqliteTable(
   "executions",
   {
@@ -104,6 +154,7 @@ export const journalDays = sqliteTable("journal_days", {
   /** "YYYY-MM-DD" in the journal's display timezone. */
   date: text("date").primaryKey(),
   note: text("note").notNull().default(""),
+  symbol: text("symbol"),
   rating: integer("rating"),
   reviewedAt: text("reviewed_at"),
   tagsJson: text("tags_json"),
@@ -171,13 +222,17 @@ export const noteTemplates = sqliteTable("note_templates", {
   name: text("name").notNull(),
   content: text("content").notNull(),
 });
-export const tradeRuleChecks = sqliteTable("trade_rule_checks", {
-  id: text("id").primaryKey(),
-  tradeKey: text("trade_key").notNull(),
-  playbookId: text("playbook_id").notNull(),
-  rule: text("rule").notNull(),
-  followed: integer("followed", { mode: "boolean" }).notNull(),
-});
+export const tradeRuleChecks = sqliteTable(
+  "trade_rule_checks",
+  {
+    id: text("id").primaryKey(),
+    tradeKey: text("trade_key").notNull(),
+    playbookId: text("playbook_id").notNull(),
+    rule: text("rule").notNull(),
+    followed: integer("followed", { mode: "boolean" }).notNull(),
+  },
+  (table) => [index("trade_rule_checks_trade").on(table.tradeKey)],
+);
 export const progressRules = sqliteTable("progress_rules", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
@@ -186,12 +241,16 @@ export const progressRules = sqliteTable("progress_rules", {
   createdAt: text("created_at").notNull(),
   archivedAt: text("archived_at"),
 });
-export const progressChecks = sqliteTable("progress_checks", {
-  id: text("id").primaryKey(),
-  ruleId: text("rule_id").notNull(),
-  date: text("date").notNull(),
-  done: integer("done", { mode: "boolean" }).notNull(),
-});
+export const progressChecks = sqliteTable(
+  "progress_checks",
+  {
+    id: text("id").primaryKey(),
+    ruleId: text("rule_id").notNull(),
+    date: text("date").notNull(),
+    done: integer("done", { mode: "boolean" }).notNull(),
+  },
+  (table) => [index("progress_checks_date").on(table.date)],
+);
 export const missedTrades = sqliteTable("missed_trades", {
   id: text("id").primaryKey(),
   symbol: text("symbol").notNull(),
@@ -220,19 +279,23 @@ export const tradeExcursions = sqliteTable("trade_excursions", {
 });
 
 /** User-supplied market candles, separate from execution imports and journal exports. */
-export const marketCsvDatasets = sqliteTable("market_csv_datasets", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  symbol: text("symbol").notNull(),
-  resolution: text("resolution").notNull(),
-  currency: text("currency").notNull(),
-  priceBasis: text("price_basis").notNull(),
-  barsJson: text("bars_json").notNull(),
-  barCount: integer("bar_count").notNull(),
-  firstTime: integer("first_time").notNull(),
-  lastTime: integer("last_time").notNull(),
-  importedAt: text("imported_at").notNull(),
-});
+export const marketCsvDatasets = sqliteTable(
+  "market_csv_datasets",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    symbol: text("symbol").notNull(),
+    resolution: text("resolution").notNull(),
+    currency: text("currency").notNull(),
+    priceBasis: text("price_basis").notNull(),
+    barsJson: text("bars_json").notNull(),
+    barCount: integer("bar_count").notNull(),
+    firstTime: integer("first_time").notNull(),
+    lastTime: integer("last_time").notNull(),
+    importedAt: text("imported_at").notNull(),
+  },
+  (table) => [index("market_csv_symbol_resolution").on(table.symbol, table.resolution)],
+);
 
 /** User-maintained prop account attempts and actual cash flows, never journal P&L. */
 export const propAccounts = sqliteTable("prop_accounts", {

@@ -1,8 +1,8 @@
-import { and, eq, like, sql } from "drizzle-orm";
+import { and, eq, isNotNull, like, or, sql } from "drizzle-orm";
 import { attachments, db, journalDays } from "@/db";
 
 /**
- * Returns an array of YYYY-MM-DD dates in the given month that have a written note or day attachments.
+ * Returns an array of YYYY-MM-DD dates in the given month that have a written note, symbol, rating, or day attachments.
  */
 export const getJournaledDatesForMonth = (year: number, month: number): string[] => {
   const monthPrefix = `${year}-${String(month).padStart(2, "0")}`;
@@ -10,7 +10,14 @@ export const getJournaledDatesForMonth = (year: number, month: number): string[]
     .select({ date: journalDays.date })
     .from(journalDays)
     .where(
-      and(like(journalDays.date, `${monthPrefix}-%`), sql`length(trim(${journalDays.note})) > 0`),
+      and(
+        like(journalDays.date, `${monthPrefix}-%`),
+        or(
+          sql`length(trim(${journalDays.note})) > 0`,
+          isNotNull(journalDays.symbol),
+          isNotNull(journalDays.rating),
+        ),
+      ),
     )
     .all();
 

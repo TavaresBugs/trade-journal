@@ -123,4 +123,36 @@ describe("journal day review fields and persistence", () => {
     // Clean up
     db.delete(journalDays).where(eq(journalDays.date, testDate)).run();
   });
+
+  it("detects day attachments and returns hasDayJournal = true even without text notes", async () => {
+    const { GET } = await import("../src/app/api/journal/[date]/route");
+    const { db, attachments } = await import("../src/db");
+    const { eq } = await import("drizzle-orm");
+    const testDate = "2026-09-17";
+    const attachmentId = "test_screenshot_att_1";
+
+    db.insert(attachments)
+      .values({
+        id: attachmentId,
+        ownerType: "day",
+        ownerId: testDate,
+        name: "test.webp",
+        mime: "image/webp",
+        size: 1024,
+        data: Buffer.from("test"),
+        slot: "pre_tfM15",
+        createdAt: new Date().toISOString(),
+      })
+      .run();
+
+    const getReq = new Request(`http://localhost/api/journal/${testDate}`);
+    const getRes = await GET(getReq, { params: Promise.resolve({ date: testDate }) });
+    expect(getRes.status).toBe(200);
+    const body = await getRes.json();
+    expect(body.hasDayJournal).toBe(true);
+    expect(body.attachmentsCount).toBeGreaterThanOrEqual(1);
+
+    // Clean up
+    db.delete(attachments).where(eq(attachments.id, attachmentId)).run();
+  });
 });
