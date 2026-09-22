@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getAssetIconConfig, normalizeSymbol } from "../src/lib/assets/asset-icons";
+import {
+  getAssetIconConfig,
+  normalizeSymbol,
+  getBrokerIcon,
+  getExchangeIcon,
+} from "../src/lib/assets/asset-icons";
 
 describe("asset-icons normalization and dynamic resolver", () => {
   describe("normalizeSymbol", () => {
@@ -164,6 +169,25 @@ describe("asset-icons normalization and dynamic resolver", () => {
       expect(getAssetIconConfig("QQQ").icons[0]).toContain("funds/qqq.svg");
     });
 
+    it("resolves Brazilian B3 equities and ETFs", () => {
+      expect(getAssetIconConfig("PETR4").icons[0]).toContain("b3/petr4.svg");
+      expect(getAssetIconConfig("VALE3").icons[0]).toContain("b3/vale3.svg");
+      expect(getAssetIconConfig("ITUB4").icons[0]).toContain("b3/itub4.svg");
+      expect(getAssetIconConfig("BBAS3").icons[0]).toContain("b3/bbas3.svg");
+      expect(getAssetIconConfig("BOVA11").icons[0]).toContain("bova11.svg");
+    });
+
+    it("resolves expanded crypto assets and dynamic blends", () => {
+      expect(getAssetIconConfig("SUI").icons[0]).toContain("crypto/sui.svg");
+      expect(getAssetIconConfig("PEPE").icons[0]).toContain("crypto/pepe.svg");
+      expect(getAssetIconConfig("NEAR").icons[0]).toContain("crypto/near.svg");
+
+      const suiusdt = getAssetIconConfig("SUIUSDT");
+      expect(suiusdt.type).toBe("pair");
+      expect(suiusdt.icons[0]).toContain("crypto/sui.svg");
+      expect(suiusdt.icons[1]).toContain("crypto/tether.svg");
+    });
+
     it("resolves extended commodities and forex pairs from TradingView ingestion", () => {
       expect(getAssetIconConfig("COFFEE").icons[0]).toContain("commodities/kc.svg");
       expect(getAssetIconConfig("CORN").icons[0]).toContain("commodities/zc.svg");
@@ -172,12 +196,47 @@ describe("asset-icons normalization and dynamic resolver", () => {
       expect(usdmxn.type).toBe("pair");
       expect(usdmxn.icons[0]).toContain("flags/usd.svg");
       expect(usdmxn.icons[1]).toContain("flags/mxn.svg");
+
+      const usdzar = getAssetIconConfig("USDZAR");
+      expect(usdzar.type).toBe("pair");
+      expect(usdzar.icons[0]).toContain("flags/usd.svg");
+      expect(usdzar.icons[1]).toContain("flags/zar.svg");
     });
 
     it("returns fallback for unmapped custom symbols", () => {
       const fallback = getAssetIconConfig("RANDOM_CUSTOM_TICKER");
       expect(fallback.type).toBe("single");
       expect(fallback.icons[0]).toContain("fallback.svg");
+    });
+  });
+
+  describe("getBrokerIcon", () => {
+    it("resolves official TradingView brokers and prop firms", () => {
+      expect(getBrokerIcon("Interactive Brokers")).toContain("brokers/");
+      expect(getBrokerIcon("NinjaTrader")).toContain("brokers/");
+      expect(getBrokerIcon("AMP Futures")).toContain("brokers/");
+      expect(getBrokerIcon("TradeStation")).toContain("brokers/");
+      expect(getBrokerIcon("Tradovate")).toContain("brokers/tradovate.svg");
+      expect(getBrokerIcon("Genial Investimentos")).toContain("brokers/");
+      expect(getBrokerIcon("Binance")).toContain("brokers/");
+    });
+
+    it("returns null for unknown broker", () => {
+      expect(getBrokerIcon("UNKNOWN_BROKER_XYZ")).toBeNull();
+    });
+  });
+
+  describe("getExchangeIcon", () => {
+    it("resolves major execution venues and exchanges", () => {
+      expect(getExchangeIcon("CME")).toContain("exchanges/cme.svg");
+      expect(getExchangeIcon("NASDAQ")).toContain("exchanges/nasdaq.svg");
+      expect(getExchangeIcon("NYSE")).toContain("exchanges/nyse.svg");
+      expect(getExchangeIcon("B3")).toContain("exchanges/b3.svg");
+      expect(getExchangeIcon("BMFBOVESPA")).toContain("exchanges/bmfbovespa.svg");
+    });
+
+    it("returns null for unknown exchange", () => {
+      expect(getExchangeIcon("XYZ_EXCHANGE")).toBeNull();
     });
   });
 });

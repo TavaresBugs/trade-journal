@@ -26,7 +26,10 @@ interface TvManifest {
   commodities: Record<string, TvManifestEntry>;
   crypto: Record<string, TvManifestEntry>;
   stocks: Record<string, TvManifestEntry>;
+  b3?: Record<string, TvManifestEntry>;
   funds: Record<string, TvManifestEntry>;
+  brokers?: Record<string, TvManifestEntry>;
+  exchanges?: Record<string, TvManifestEntry>;
 }
 
 export const tvManifest = tvManifestRaw as unknown as TvManifest;
@@ -265,31 +268,49 @@ export function normalizeSymbol(raw: string): string {
   if (clean.includes("NATGAS")) return "NATGAS";
   if (clean.includes("COPPER")) return "COPPER";
 
-  // 5. Forex Pairs Canonical Matching (matches any base + quote from core currencies)
-  for (const base of Object.keys(CURRENCY_FLAGS)) {
+  // Exact match for known single assets (GC, SI, CL, NQ, ES, YM, RTY, BTC, ETH, etc.)
+  if (SINGLE_ASSETS[clean]) {
+    return clean;
+  }
+
+  // Exact matches in manifest categories before attempting pair splitting
+  if (tvManifest.funds?.[clean]) return clean;
+  if (tvManifest.stocks?.[clean]) return clean;
+  if (tvManifest.b3?.[clean]) return clean;
+  if (tvManifest.commodities?.[clean]) return clean;
+  if (tvManifest.indices?.[clean]) return clean;
+
+  // 5. Forex Pairs Canonical Matching (matches any 3-letter currency pair)
+  const currencyCodes = Object.keys(CURRENCY_FLAGS).filter((c) => c.length === 3);
+  for (const base of currencyCodes) {
     if (clean.startsWith(base)) {
       const remainder = clean.slice(base.length);
-      for (const quote of Object.keys(CURRENCY_FLAGS)) {
-        if (remainder.startsWith(quote)) {
+      for (const quote of currencyCodes) {
+        if (remainder === quote) {
           return `${base}${quote}`;
         }
       }
     }
   }
 
-  // 6. Crypto Pairs Canonical Matching
-  for (const crypto of Object.keys(CRYPTO_BASES)) {
+  // 6. Crypto Pairs Canonical Matching (sort longest first, only match valid quote suffixes)
+  const sortedCryptoBases = Object.keys(CRYPTO_BASES).sort((a, b) => b.length - a.length);
+  for (const crypto of sortedCryptoBases) {
+    if (clean === crypto) return crypto;
     if (clean.startsWith(crypto)) {
       const remainder = clean.slice(crypto.length);
-      if (remainder.startsWith("USDT")) return `${crypto}USDT`;
-      if (remainder.startsWith("USD")) return `${crypto}USD`;
-      return crypto;
+      if (
+        remainder === "USDT" ||
+        remainder === "USD" ||
+        remainder === "BUSD" ||
+        remainder === "USDC"
+      ) {
+        return `${crypto}${remainder}`;
+      }
+      if (currencyCodes.includes(remainder)) {
+        return `${crypto}${remainder}`;
+      }
     }
-  }
-
-  // 7. Known single asset direct match
-  if (SINGLE_ASSETS[clean]) {
-    return clean;
   }
 
   return clean || s;
@@ -315,13 +336,13 @@ export function getAssetIconConfig(rawSymbol: string): AssetIconConfig {
     };
   }
 
-  // Tier 1B: TradingView ingested catalog match (stocks, funds, commodities, crypto, indices)
+  // Tier 1B: TradingView ingested catalog match (funds, stocks, b3, commodities, indices)
   const manifestMatch =
-    tvManifest.stocks?.[symbol] ||
     tvManifest.funds?.[symbol] ||
+    tvManifest.stocks?.[symbol] ||
+    tvManifest.b3?.[symbol] ||
     tvManifest.indices?.[symbol] ||
-    tvManifest.commodities?.[symbol] ||
-    tvManifest.crypto?.[symbol];
+    tvManifest.commodities?.[symbol];
 
   if (manifestMatch) {
     return {
@@ -346,7 +367,7 @@ export function getAssetIconConfig(rawSymbol: string): AssetIconConfig {
     }
   }
 
-  // Tier 2B: Crypto / Stablecoin or Fiat blend (e.g. BTCUSDT, ETHUSD, SOLUSDT, XRPUSDT)
+  // Tier 2B: Crypto / Stablecoin or Fiat blend (e.g. BTCUSDT, ETHUSD, SOLUSDT, XRPUSDT, SUIUSDT)
   for (const [crypto, icon] of Object.entries(CRYPTO_BASES)) {
     if (symbol.startsWith(crypto)) {
       const quote = symbol.slice(crypto.length);
@@ -371,10 +392,38 @@ export function getAssetIconConfig(rawSymbol: string): AssetIconConfig {
     }
   }
 
+  // Tier 2C: Standalone crypto in manifest
+  if (tvManifest.crypto?.[symbol]) {
+    return {
+      icons: [tvManifest.crypto[symbol].icon],
+      type: "single",
+      symbol,
+    };
+  }
+
   // Fallback: graceful generic icon
   return {
     icons: [FALLBACK_ICON],
     type: "single",
     symbol,
   };
+}
+
+/**
+ * Resolves a broker or prop firm name / slug to its official vector SVG icon.
+ */
+export function getBrokerIcon(nameOrSlug: string): string | null {
+  if (!nameOrSlug) return null;
+  const clean = nameOrSlug.trim();
+  const upper = clean.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return tvManifest.brokers?.[clean]?.icon || tvManifest.brokers?.[upper]?.icon || null;
+}
+
+/**
+ * Resolves an exchange or execution venue code to its official vector SVG icon.
+ */
+export function getExchangeIcon(exchangeCode: string): string | null {
+  if (!exchangeCode) return null;
+  const clean = exchangeCode.trim().toUpperCase();
+  return tvManifest.exchanges?.[clean]?.icon || null;
 }
