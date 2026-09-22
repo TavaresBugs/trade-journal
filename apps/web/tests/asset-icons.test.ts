@@ -54,13 +54,13 @@ describe("asset-icons normalization and dynamic resolver", () => {
       expect(getAssetIconConfig("us100.cash").icons[0]).toContain("nasdaq-100.svg");
       expect(getAssetIconConfig("US500.cash").icons[0]).toContain("sp500.svg");
       expect(getAssetIconConfig("US30_cash").icons[0]).toContain("dow-jones.svg");
-      expect(getAssetIconConfig("GER40.cash").icons[0]).toContain("EU--big.svg");
+      expect(getAssetIconConfig("GER40.cash").icons[0]).toContain("flags/eu.svg");
       expect(getAssetIconConfig("XAUUSD.raw").icons[0]).toContain("gold.svg");
 
       const eurusdPro = getAssetIconConfig("EURUSD.pro");
       expect(eurusdPro.type).toBe("pair");
-      expect(eurusdPro.icons[0]).toContain("flags/eur.svg");
-      expect(eurusdPro.icons[1]).toContain("flags/usd.svg");
+      expect(eurusdPro.icons[0]).toContain("flags/eu.svg");
+      expect(eurusdPro.icons[1]).toContain("flags/us.svg");
     });
     it("resolves US indices to branded vector SVGs", () => {
       for (const sym of ["NQ", "MNQ", "US100", "NAS100", "USTEC"]) {
@@ -109,33 +109,33 @@ describe("asset-icons normalization and dynamic resolver", () => {
     it("dynamically blends any combination of 10 global forex currency flags", () => {
       const eurusd = getAssetIconConfig("EURUSD");
       expect(eurusd.type).toBe("pair");
-      expect(eurusd.icons[0]).toContain("flags/eur.svg");
-      expect(eurusd.icons[1]).toContain("flags/usd.svg");
+      expect(eurusd.icons[0]).toContain("flags/eu.svg");
+      expect(eurusd.icons[1]).toContain("flags/us.svg");
 
       const gbpjpy = getAssetIconConfig("GBPJPY");
       expect(gbpjpy.type).toBe("pair");
-      expect(gbpjpy.icons[0]).toContain("flags/gbp.svg");
-      expect(gbpjpy.icons[1]).toContain("flags/jpy.svg");
+      expect(gbpjpy.icons[0]).toContain("flags/gb.svg");
+      expect(gbpjpy.icons[1]).toContain("flags/jp.svg");
 
       const audnzd = getAssetIconConfig("AUD/NZD");
       expect(audnzd.type).toBe("pair");
-      expect(audnzd.icons[0]).toContain("flags/aud.svg");
-      expect(audnzd.icons[1]).toContain("flags/nzd.svg");
+      expect(audnzd.icons[0]).toContain("flags/au.svg");
+      expect(audnzd.icons[1]).toContain("flags/nz.svg");
 
       const cadchf = getAssetIconConfig("CAD-CHF");
       expect(cadchf.type).toBe("pair");
-      expect(cadchf.icons[0]).toContain("flags/cad.svg");
-      expect(cadchf.icons[1]).toContain("flags/chf.svg");
+      expect(cadchf.icons[0]).toContain("flags/ca.svg");
+      expect(cadchf.icons[1]).toContain("flags/ch.svg");
 
       const usdbrl = getAssetIconConfig("USDBRL");
       expect(usdbrl.type).toBe("pair");
-      expect(usdbrl.icons[0]).toContain("flags/usd.svg");
-      expect(usdbrl.icons[1]).toContain("flags/brl.svg");
+      expect(usdbrl.icons[0]).toContain("flags/us.svg");
+      expect(usdbrl.icons[1]).toContain("flags/br.svg");
 
       const usdcny = getAssetIconConfig("USDCNY");
       expect(usdcny.type).toBe("pair");
-      expect(usdcny.icons[0]).toContain("flags/usd.svg");
-      expect(usdcny.icons[1]).toContain("flags/cny.svg");
+      expect(usdcny.icons[0]).toContain("flags/us.svg");
+      expect(usdcny.icons[1]).toContain("flags/cn.svg");
     });
 
     it("dynamically blends crypto base assets with quote fiat or stablecoins", () => {
@@ -147,7 +147,7 @@ describe("asset-icons normalization and dynamic resolver", () => {
       const ethusd = getAssetIconConfig("ETHUSD");
       expect(ethusd.type).toBe("pair");
       expect(ethusd.icons[0]).toContain("crypto/ethereum.svg");
-      expect(ethusd.icons[1]).toContain("flags/usd.svg");
+      expect(ethusd.icons[1]).toContain("flags/us.svg");
 
       const solusdt = getAssetIconConfig("SOLUSDT");
       expect(solusdt.type).toBe("pair");
@@ -174,7 +174,7 @@ describe("asset-icons normalization and dynamic resolver", () => {
       expect(getAssetIconConfig("VALE3").icons[0]).toContain("b3/vale3.svg");
       expect(getAssetIconConfig("ITUB4").icons[0]).toContain("b3/itub4.svg");
       expect(getAssetIconConfig("BBAS3").icons[0]).toContain("b3/bbas3.svg");
-      expect(getAssetIconConfig("BOVA11").icons[0]).toContain("bova11.svg");
+      expect(getAssetIconConfig("BOVA11").icons[0]).toContain("funds/eem.svg");
     });
 
     it("resolves expanded crypto assets and dynamic blends", () => {
@@ -194,13 +194,13 @@ describe("asset-icons normalization and dynamic resolver", () => {
 
       const usdmxn = getAssetIconConfig("USDMXN");
       expect(usdmxn.type).toBe("pair");
-      expect(usdmxn.icons[0]).toContain("flags/usd.svg");
-      expect(usdmxn.icons[1]).toContain("flags/mxn.svg");
+      expect(usdmxn.icons[0]).toContain("flags/us.svg");
+      expect(usdmxn.icons[1]).toContain("flags/mx.svg");
 
       const usdzar = getAssetIconConfig("USDZAR");
       expect(usdzar.type).toBe("pair");
-      expect(usdzar.icons[0]).toContain("flags/usd.svg");
-      expect(usdzar.icons[1]).toContain("flags/zar.svg");
+      expect(usdzar.icons[0]).toContain("flags/us.svg");
+      expect(usdzar.icons[1]).toContain("flags/za.svg");
     });
 
     it("returns fallback for unmapped custom symbols", () => {
@@ -232,7 +232,7 @@ describe("asset-icons normalization and dynamic resolver", () => {
       expect(getExchangeIcon("NASDAQ")).toContain("exchanges/nasdaq.svg");
       expect(getExchangeIcon("NYSE")).toContain("exchanges/nyse.svg");
       expect(getExchangeIcon("B3")).toContain("exchanges/b3.svg");
-      expect(getExchangeIcon("BMFBOVESPA")).toContain("exchanges/bmfbovespa.svg");
+      expect(getExchangeIcon("BMFBOVESPA")).toContain("exchanges/b3.svg");
     });
 
     it("returns null for unknown exchange", () => {

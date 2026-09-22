@@ -126,7 +126,7 @@
       "logoid": "country/BJ"
     },
     "BL": {
-      "icon": "/assets/icons/flags/bl.svg",
+      "icon": "/assets/icons/flags/fr.svg",
       "country": "BL",
       "logoid": "country/BL"
     },
@@ -166,7 +166,7 @@
       "logoid": "country/BT"
     },
     "BV": {
-      "icon": "/assets/icons/flags/bv.svg",
+      "icon": "/assets/icons/flags/no.svg",
       "country": "BV",
       "logoid": "country/BV"
     },
@@ -706,7 +706,7 @@
       "logoid": "country/ME"
     },
     "MF": {
-      "icon": "/assets/icons/flags/mf.svg",
+      "icon": "/assets/icons/flags/fr.svg",
       "country": "MF",
       "logoid": "country/MF"
     },
@@ -741,7 +741,7 @@
       "logoid": "country/MN"
     },
     "MO": {
-      "icon": "/assets/icons/flags/mo.svg",
+      "icon": "/assets/icons/flags/hk.svg",
       "country": "MO",
       "logoid": "country/MO"
     },
@@ -751,7 +751,7 @@
       "logoid": "country/MP"
     },
     "MQ": {
-      "icon": "/assets/icons/flags/mq.svg",
+      "icon": "/assets/icons/flags/fr.svg",
       "country": "MQ",
       "logoid": "country/MQ"
     },
@@ -901,7 +901,7 @@
       "logoid": "country/PL"
     },
     "PM": {
-      "icon": "/assets/icons/flags/pm.svg",
+      "icon": "/assets/icons/flags/fr.svg",
       "country": "PM",
       "logoid": "country/PM"
     },
@@ -1141,7 +1141,7 @@
       "logoid": "country/TV"
     },
     "TW": {
-      "icon": "/assets/icons/flags/tw.svg",
+      "icon": "/assets/icons/flags/hk.svg",
       "country": "TW",
       "logoid": "country/TW"
     },
@@ -1231,7 +1231,7 @@
       "logoid": "country/YE"
     },
     "YT": {
-      "icon": "/assets/icons/flags/yt.svg",
+      "icon": "/assets/icons/flags/fr.svg",
       "country": "YT",
       "logoid": "country/YT"
     },
@@ -1251,422 +1251,422 @@
       "logoid": "country/ZW"
     },
     "USD": {
-      "icon": "/assets/icons/flags/usd.svg",
+      "icon": "/assets/icons/flags/us.svg",
       "country": "US",
       "logoid": "country/US"
     },
     "EUR": {
-      "icon": "/assets/icons/flags/eur.svg",
+      "icon": "/assets/icons/flags/eu.svg",
       "country": "EU",
       "logoid": "country/EU"
     },
     "GBP": {
-      "icon": "/assets/icons/flags/gbp.svg",
+      "icon": "/assets/icons/flags/gb.svg",
       "country": "GB",
       "logoid": "country/GB"
     },
     "JPY": {
-      "icon": "/assets/icons/flags/jpy.svg",
+      "icon": "/assets/icons/flags/jp.svg",
       "country": "JP",
       "logoid": "country/JP"
     },
     "AUD": {
-      "icon": "/assets/icons/flags/aud.svg",
+      "icon": "/assets/icons/flags/au.svg",
       "country": "AU",
       "logoid": "country/AU"
     },
     "CAD": {
-      "icon": "/assets/icons/flags/cad.svg",
+      "icon": "/assets/icons/flags/ca.svg",
       "country": "CA",
       "logoid": "country/CA"
     },
     "CHF": {
-      "icon": "/assets/icons/flags/chf.svg",
+      "icon": "/assets/icons/flags/ch.svg",
       "country": "CH",
       "logoid": "country/CH"
     },
     "NZD": {
-      "icon": "/assets/icons/flags/nzd.svg",
+      "icon": "/assets/icons/flags/nz.svg",
       "country": "NZ",
       "logoid": "country/NZ"
     },
     "BRL": {
-      "icon": "/assets/icons/flags/brl.svg",
+      "icon": "/assets/icons/flags/br.svg",
       "country": "BR",
       "logoid": "country/BR"
     },
     "CNY": {
-      "icon": "/assets/icons/flags/cny.svg",
+      "icon": "/assets/icons/flags/cn.svg",
       "country": "CN",
       "logoid": "country/CN"
     },
     "MXN": {
-      "icon": "/assets/icons/flags/mxn.svg",
+      "icon": "/assets/icons/flags/mx.svg",
       "country": "MX",
       "logoid": "country/MX"
     },
     "ZAR": {
-      "icon": "/assets/icons/flags/zar.svg",
+      "icon": "/assets/icons/flags/za.svg",
       "country": "ZA",
       "logoid": "country/ZA"
     },
     "SGD": {
-      "icon": "/assets/icons/flags/sgd.svg",
+      "icon": "/assets/icons/flags/sg.svg",
       "country": "SG",
       "logoid": "country/SG"
     },
     "HKD": {
-      "icon": "/assets/icons/flags/hkd.svg",
+      "icon": "/assets/icons/flags/hk.svg",
       "country": "HK",
       "logoid": "country/HK"
     },
     "SEK": {
-      "icon": "/assets/icons/flags/sek.svg",
+      "icon": "/assets/icons/flags/se.svg",
       "country": "SE",
       "logoid": "country/SE"
     },
     "NOK": {
-      "icon": "/assets/icons/flags/nok.svg",
+      "icon": "/assets/icons/flags/no.svg",
       "country": "NO",
       "logoid": "country/NO"
     },
     "TRY": {
-      "icon": "/assets/icons/flags/try.svg",
+      "icon": "/assets/icons/flags/tr.svg",
       "country": "TR",
       "logoid": "country/TR"
     },
     "INR": {
-      "icon": "/assets/icons/flags/inr.svg",
+      "icon": "/assets/icons/flags/in.svg",
       "country": "IN",
       "logoid": "country/IN"
     },
     "KRW": {
-      "icon": "/assets/icons/flags/krw.svg",
+      "icon": "/assets/icons/flags/kr.svg",
       "country": "KR",
       "logoid": "country/KR"
     },
     "PLN": {
-      "icon": "/assets/icons/flags/pln.svg",
+      "icon": "/assets/icons/flags/pl.svg",
       "country": "PL",
       "logoid": "country/PL"
     },
     "CZK": {
-      "icon": "/assets/icons/flags/czk.svg",
+      "icon": "/assets/icons/flags/cz.svg",
       "country": "CZ",
       "logoid": "country/CZ"
     },
     "HUF": {
-      "icon": "/assets/icons/flags/huf.svg",
+      "icon": "/assets/icons/flags/hu.svg",
       "country": "HU",
       "logoid": "country/HU"
     },
     "ILS": {
-      "icon": "/assets/icons/flags/ils.svg",
+      "icon": "/assets/icons/flags/il.svg",
       "country": "IL",
       "logoid": "country/IL"
     },
     "THB": {
-      "icon": "/assets/icons/flags/thb.svg",
+      "icon": "/assets/icons/flags/th.svg",
       "country": "TH",
       "logoid": "country/TH"
     },
     "IDR": {
-      "icon": "/assets/icons/flags/idr.svg",
+      "icon": "/assets/icons/flags/id.svg",
       "country": "ID",
       "logoid": "country/ID"
     },
     "MYR": {
-      "icon": "/assets/icons/flags/myr.svg",
+      "icon": "/assets/icons/flags/my.svg",
       "country": "MY",
       "logoid": "country/MY"
     },
     "PHP": {
-      "icon": "/assets/icons/flags/php.svg",
+      "icon": "/assets/icons/flags/ph.svg",
       "country": "PH",
       "logoid": "country/PH"
     },
     "TWD": {
-      "icon": "/assets/icons/flags/twd.svg",
+      "icon": "/assets/icons/flags/hk.svg",
       "country": "TW",
       "logoid": "country/TW"
     },
     "AED": {
-      "icon": "/assets/icons/flags/aed.svg",
+      "icon": "/assets/icons/flags/ae.svg",
       "country": "AE",
       "logoid": "country/AE"
     },
     "SAR": {
-      "icon": "/assets/icons/flags/sar.svg",
+      "icon": "/assets/icons/flags/sa.svg",
       "country": "SA",
       "logoid": "country/SA"
     },
     "DKK": {
-      "icon": "/assets/icons/flags/dkk.svg",
+      "icon": "/assets/icons/flags/dk.svg",
       "country": "DK",
       "logoid": "country/DK"
     },
     "CLP": {
-      "icon": "/assets/icons/flags/clp.svg",
+      "icon": "/assets/icons/flags/cl.svg",
       "country": "CL",
       "logoid": "country/CL"
     },
     "COP": {
-      "icon": "/assets/icons/flags/cop.svg",
+      "icon": "/assets/icons/flags/co.svg",
       "country": "CO",
       "logoid": "country/CO"
     },
     "PEN": {
-      "icon": "/assets/icons/flags/pen.svg",
+      "icon": "/assets/icons/flags/pe.svg",
       "country": "PE",
       "logoid": "country/PE"
     },
     "ARS": {
-      "icon": "/assets/icons/flags/ars.svg",
+      "icon": "/assets/icons/flags/ar.svg",
       "country": "AR",
       "logoid": "country/AR"
     },
     "UYU": {
-      "icon": "/assets/icons/flags/uyu.svg",
+      "icon": "/assets/icons/flags/uy.svg",
       "country": "UY",
       "logoid": "country/UY"
     },
     "PYG": {
-      "icon": "/assets/icons/flags/pyg.svg",
+      "icon": "/assets/icons/flags/py.svg",
       "country": "PY",
       "logoid": "country/PY"
     },
     "BOB": {
-      "icon": "/assets/icons/flags/bob.svg",
+      "icon": "/assets/icons/flags/bo.svg",
       "country": "BO",
       "logoid": "country/BO"
     },
     "CRC": {
-      "icon": "/assets/icons/flags/crc.svg",
+      "icon": "/assets/icons/flags/cr.svg",
       "country": "CR",
       "logoid": "country/CR"
     },
     "DOP": {
-      "icon": "/assets/icons/flags/dop.svg",
+      "icon": "/assets/icons/flags/do.svg",
       "country": "DO",
       "logoid": "country/DO"
     },
     "GTQ": {
-      "icon": "/assets/icons/flags/gtq.svg",
+      "icon": "/assets/icons/flags/gt.svg",
       "country": "GT",
       "logoid": "country/GT"
     },
     "HNL": {
-      "icon": "/assets/icons/flags/hnl.svg",
+      "icon": "/assets/icons/flags/hn.svg",
       "country": "HN",
       "logoid": "country/HN"
     },
     "NIO": {
-      "icon": "/assets/icons/flags/nio.svg",
+      "icon": "/assets/icons/flags/ni.svg",
       "country": "NI",
       "logoid": "country/NI"
     },
     "PAB": {
-      "icon": "/assets/icons/flags/pab.svg",
+      "icon": "/assets/icons/flags/pa.svg",
       "country": "PA",
       "logoid": "country/PA"
     },
     "JMD": {
-      "icon": "/assets/icons/flags/jmd.svg",
+      "icon": "/assets/icons/flags/jm.svg",
       "country": "JM",
       "logoid": "country/JM"
     },
     "TTD": {
-      "icon": "/assets/icons/flags/ttd.svg",
+      "icon": "/assets/icons/flags/tt.svg",
       "country": "TT",
       "logoid": "country/TT"
     },
     "BBD": {
-      "icon": "/assets/icons/flags/bbd.svg",
+      "icon": "/assets/icons/flags/bb.svg",
       "country": "BB",
       "logoid": "country/BB"
     },
     "BSD": {
-      "icon": "/assets/icons/flags/bsd.svg",
+      "icon": "/assets/icons/flags/bs.svg",
       "country": "BS",
       "logoid": "country/BS"
     },
     "BZD": {
-      "icon": "/assets/icons/flags/bzd.svg",
+      "icon": "/assets/icons/flags/bz.svg",
       "country": "BZ",
       "logoid": "country/BZ"
     },
     "XCD": {
-      "icon": "/assets/icons/flags/xcd.svg",
+      "icon": "/assets/icons/flags/ag.svg",
       "country": "AG",
       "logoid": "country/AG"
     },
     "QAR": {
-      "icon": "/assets/icons/flags/qar.svg",
+      "icon": "/assets/icons/flags/qa.svg",
       "country": "QA",
       "logoid": "country/QA"
     },
     "KWD": {
-      "icon": "/assets/icons/flags/kwd.svg",
+      "icon": "/assets/icons/flags/kw.svg",
       "country": "KW",
       "logoid": "country/KW"
     },
     "BHD": {
-      "icon": "/assets/icons/flags/bhd.svg",
+      "icon": "/assets/icons/flags/bh.svg",
       "country": "BH",
       "logoid": "country/BH"
     },
     "OMR": {
-      "icon": "/assets/icons/flags/omr.svg",
+      "icon": "/assets/icons/flags/om.svg",
       "country": "OM",
       "logoid": "country/OM"
     },
     "JOD": {
-      "icon": "/assets/icons/flags/jod.svg",
+      "icon": "/assets/icons/flags/jo.svg",
       "country": "JO",
       "logoid": "country/JO"
     },
     "EGP": {
-      "icon": "/assets/icons/flags/egp.svg",
+      "icon": "/assets/icons/flags/eg.svg",
       "country": "EG",
       "logoid": "country/EG"
     },
     "MAD": {
-      "icon": "/assets/icons/flags/mad.svg",
+      "icon": "/assets/icons/flags/ma.svg",
       "country": "MA",
       "logoid": "country/MA"
     },
     "DZD": {
-      "icon": "/assets/icons/flags/dzd.svg",
+      "icon": "/assets/icons/flags/dz.svg",
       "country": "DZ",
       "logoid": "country/DZ"
     },
     "TND": {
-      "icon": "/assets/icons/flags/tnd.svg",
+      "icon": "/assets/icons/flags/tn.svg",
       "country": "TN",
       "logoid": "country/TN"
     },
     "NGN": {
-      "icon": "/assets/icons/flags/ngn.svg",
+      "icon": "/assets/icons/flags/ng.svg",
       "country": "NG",
       "logoid": "country/NG"
     },
     "KES": {
-      "icon": "/assets/icons/flags/kes.svg",
+      "icon": "/assets/icons/flags/ke.svg",
       "country": "KE",
       "logoid": "country/KE"
     },
     "GHS": {
-      "icon": "/assets/icons/flags/ghs.svg",
+      "icon": "/assets/icons/flags/gh.svg",
       "country": "GH",
       "logoid": "country/GH"
     },
     "UGX": {
-      "icon": "/assets/icons/flags/ugx.svg",
+      "icon": "/assets/icons/flags/ug.svg",
       "country": "UG",
       "logoid": "country/UG"
     },
     "TZS": {
-      "icon": "/assets/icons/flags/tzs.svg",
+      "icon": "/assets/icons/flags/tz.svg",
       "country": "TZ",
       "logoid": "country/TZ"
     },
     "ZMW": {
-      "icon": "/assets/icons/flags/zmw.svg",
+      "icon": "/assets/icons/flags/zm.svg",
       "country": "ZM",
       "logoid": "country/ZM"
     },
     "BWP": {
-      "icon": "/assets/icons/flags/bwp.svg",
+      "icon": "/assets/icons/flags/bw.svg",
       "country": "BW",
       "logoid": "country/BW"
     },
     "NAD": {
-      "icon": "/assets/icons/flags/nad.svg",
+      "icon": "/assets/icons/flags/na.svg",
       "country": "NA",
       "logoid": "country/NA"
     },
     "MUR": {
-      "icon": "/assets/icons/flags/mur.svg",
+      "icon": "/assets/icons/flags/mu.svg",
       "country": "MU",
       "logoid": "country/MU"
     },
     "ISK": {
-      "icon": "/assets/icons/flags/isk.svg",
+      "icon": "/assets/icons/flags/is.svg",
       "country": "IS",
       "logoid": "country/IS"
     },
     "RSD": {
-      "icon": "/assets/icons/flags/rsd.svg",
+      "icon": "/assets/icons/flags/rs.svg",
       "country": "RS",
       "logoid": "country/RS"
     },
     "BGN": {
-      "icon": "/assets/icons/flags/bgn.svg",
+      "icon": "/assets/icons/flags/bg.svg",
       "country": "BG",
       "logoid": "country/BG"
     },
     "RON": {
-      "icon": "/assets/icons/flags/ron.svg",
+      "icon": "/assets/icons/flags/ro.svg",
       "country": "RO",
       "logoid": "country/RO"
     },
     "BAM": {
-      "icon": "/assets/icons/flags/bam.svg",
+      "icon": "/assets/icons/flags/ba.svg",
       "country": "BA",
       "logoid": "country/BA"
     },
     "GEL": {
-      "icon": "/assets/icons/flags/gel.svg",
+      "icon": "/assets/icons/flags/ge.svg",
       "country": "GE",
       "logoid": "country/GE"
     },
     "KZT": {
-      "icon": "/assets/icons/flags/kzt.svg",
+      "icon": "/assets/icons/flags/kz.svg",
       "country": "KZ",
       "logoid": "country/KZ"
     },
     "UAH": {
-      "icon": "/assets/icons/flags/uah.svg",
+      "icon": "/assets/icons/flags/ua.svg",
       "country": "UA",
       "logoid": "country/UA"
     },
     "PKR": {
-      "icon": "/assets/icons/flags/pkr.svg",
+      "icon": "/assets/icons/flags/pk.svg",
       "country": "PK",
       "logoid": "country/PK"
     },
     "BDT": {
-      "icon": "/assets/icons/flags/bdt.svg",
+      "icon": "/assets/icons/flags/bd.svg",
       "country": "BD",
       "logoid": "country/BD"
     },
     "LKR": {
-      "icon": "/assets/icons/flags/lkr.svg",
+      "icon": "/assets/icons/flags/lk.svg",
       "country": "LK",
       "logoid": "country/LK"
     },
     "VND": {
-      "icon": "/assets/icons/flags/vnd.svg",
+      "icon": "/assets/icons/flags/vn.svg",
       "country": "VN",
       "logoid": "country/VN"
     },
     "KHR": {
-      "icon": "/assets/icons/flags/khr.svg",
+      "icon": "/assets/icons/flags/kh.svg",
       "country": "KH",
       "logoid": "country/KH"
     },
     "MNT": {
-      "icon": "/assets/icons/flags/mnt.svg",
+      "icon": "/assets/icons/flags/mn.svg",
       "country": "MN",
       "logoid": "country/MN"
     },
     "NPR": {
-      "icon": "/assets/icons/flags/npr.svg",
+      "icon": "/assets/icons/flags/np.svg",
       "country": "NP",
       "logoid": "country/NP"
     },
     "MVR": {
-      "icon": "/assets/icons/flags/mvr.svg",
+      "icon": "/assets/icons/flags/mv.svg",
       "country": "MV",
       "logoid": "country/MV"
     }
@@ -1793,12 +1793,12 @@
       "logoid": "indices/u-s-dollar-index"
     },
     "VIX": {
-      "icon": "/assets/icons/indices/vix.svg",
+      "icon": "/assets/icons/flags/us.svg",
       "name": "CBOE Volatility Index",
       "logoid": "country/US"
     },
     "VOLATILITY": {
-      "icon": "/assets/icons/indices/vix.svg",
+      "icon": "/assets/icons/flags/us.svg",
       "name": "CBOE Volatility Index",
       "logoid": "country/US"
     },
@@ -2117,7 +2117,7 @@
   },
   "crypto": {
     "BTC": {
-      "icon": "/assets/icons/crypto/btc.svg",
+      "icon": "/assets/icons/crypto/bip.svg",
       "name": "BTC",
       "logoid": "crypto/XTVCBTC"
     },
@@ -2167,7 +2167,7 @@
       "logoid": "crypto/XTVCNEAR"
     },
     "BNB": {
-      "icon": "/assets/icons/crypto/bnb.svg",
+      "icon": "/assets/icons/crypto/bn.svg",
       "name": "BNB",
       "logoid": "crypto/XTVCBNB"
     },
@@ -2182,7 +2182,7 @@
       "logoid": "crypto/XTVCPEPE"
     },
     "SHIB": {
-      "icon": "/assets/icons/crypto/shib.svg",
+      "icon": "/assets/icons/crypto/shi.svg",
       "name": "SHIB",
       "logoid": "crypto/XTVCSHIB"
     },
@@ -2247,7 +2247,7 @@
       "logoid": "crypto/XTVCAPT"
     },
     "RENDER": {
-      "icon": "/assets/icons/crypto/render.svg",
+      "icon": "/assets/icons/crypto/rndr.svg",
       "name": "RENDER",
       "logoid": "crypto/XTVCRENDER"
     },
@@ -2327,7 +2327,7 @@
       "logoid": "crypto/XTVCUSDT"
     },
     "USDC": {
-      "icon": "/assets/icons/crypto/usdc.svg",
+      "icon": "/assets/icons/crypto/c-d.svg",
       "name": "USDC",
       "logoid": "crypto/XTVCUSDC"
     },
@@ -2426,11 +2426,6 @@
       "name": "Binance Coin / TetherUS",
       "logoid": "crypto/XTVCBNB"
     },
-    "XAU": {
-      "icon": "/assets/icons/crypto/xau.svg",
-      "name": "GOLD / US DOLLAR",
-      "logoid": "metal/gold"
-    },
     "ART": {
       "icon": "/assets/icons/crypto/art.svg",
       "name": "ARB / TetherUS",
@@ -2440,16 +2435,6 @@
       "icon": "/assets/icons/crypto/hype.svg",
       "name": "HYPE / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCHYPEH"
-    },
-    "ETH.P": {
-      "icon": "/assets/icons/crypto/eth-p.svg",
-      "name": "Ethereum Perpetual futures, quoted, settled & margined in US Dollar",
-      "logoid": "crypto/XTVCETH"
-    },
-    "BNT.P": {
-      "icon": "/assets/icons/crypto/bnt-p.svg",
-      "name": "Binance Coin / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCBNB"
     },
     "ONE": {
       "icon": "/assets/icons/crypto/one.svg",
@@ -2481,25 +2466,10 @@
       "name": "Dash / TetherUS",
       "logoid": "crypto/XTVCDASH"
     },
-    "XAUT.P": {
-      "icon": "/assets/icons/crypto/xaut-p.svg",
-      "name": "Tether Gold Token perpetual future quoted in USD",
-      "logoid": "crypto/XTVCXAUT"
-    },
     "CRV": {
       "icon": "/assets/icons/crypto/crv.svg",
       "name": "CRV / TetherUS",
       "logoid": "crypto/XTVCCRV"
-    },
-    "TOTAL2": {
-      "icon": "/assets/icons/crypto/total2.svg",
-      "name": "Crypto Total Market Cap Excluding BTC, $",
-      "logoid": "crypto-total-market-cap"
-    },
-    "1000PEPE": {
-      "icon": "/assets/icons/crypto/1000pepe.svg",
-      "name": "1000PEPE / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVC1000PEPE"
     },
     "USELESS": {
       "icon": "/assets/icons/crypto/useless.svg",
@@ -2511,18 +2481,13 @@
       "name": "FARTCOIN / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCFARTCOIN"
     },
-    "ART.P": {
-      "icon": "/assets/icons/crypto/art-p.svg",
-      "name": "ARB / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCARBI"
-    },
     "MUBARAK": {
       "icon": "/assets/icons/crypto/mubarak.svg",
       "name": "MUBARAK / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCMUBARAK"
     },
     "OTHERS.D": {
-      "icon": "/assets/icons/crypto/others-d.svg",
+      "icon": "/assets/icons/crypto/total.svg",
       "name": "Crypto Total Market Cap Excluding Top 10 Dominance, %",
       "logoid": "crypto-total-market-cap"
     },
@@ -2566,11 +2531,6 @@
       "name": "STRK / TetherUS",
       "logoid": "crypto/XTVCSTRKS"
     },
-    "ZETA": {
-      "icon": "/assets/icons/crypto/zeta.svg",
-      "name": "ZETA / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCZETAC"
-    },
     "LDO": {
       "icon": "/assets/icons/crypto/ldo.svg",
       "name": "LDO / TetherUS",
@@ -2601,13 +2561,8 @@
       "name": "RAY / TetherUS",
       "logoid": "crypto/XTVCRAY"
     },
-    "CL": {
-      "icon": "/assets/icons/crypto/cl.svg",
-      "name": "CL / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crude-oil"
-    },
     "JPY": {
-      "icon": "/assets/icons/crypto/jpy.svg",
+      "icon": "/assets/icons/crypto/bip.svg",
       "name": "Bitcoin / Yen",
       "logoid": "crypto/XTVCBTC"
     },
@@ -2621,25 +2576,15 @@
       "name": "ZRO / TetherUS",
       "logoid": "crypto/XTVCZROL"
     },
-    "C.P": {
-      "icon": "/assets/icons/crypto/c-p.svg",
-      "name": "Bitcoin / USD Coin PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCBTC"
-    },
     "MARSCOIN": {
       "icon": "/assets/icons/crypto/marscoin.svg",
       "name": "MARSCOIN / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCMARSCOIN6"
     },
     "HYPEH": {
-      "icon": "/assets/icons/crypto/hypeh.svg",
+      "icon": "/assets/icons/crypto/hype.svg",
       "name": "Hyperliquid",
       "logoid": "crypto/XTVCHYPEH"
-    },
-    "SNDK": {
-      "icon": "/assets/icons/crypto/sndk.svg",
-      "name": "SNDK / TetherUS PERPETUAL CONTRACT",
-      "logoid": "sandisk"
     },
     "MINA": {
       "icon": "/assets/icons/crypto/mina.svg",
@@ -2655,11 +2600,6 @@
       "icon": "/assets/icons/crypto/paxg.svg",
       "name": "PAX Gold / TetherUS",
       "logoid": "crypto/XTVCPAXG"
-    },
-    "XAG": {
-      "icon": "/assets/icons/crypto/xag.svg",
-      "name": "XAG / TetherUS PERPETUAL CONTRACT",
-      "logoid": "metal/silver"
     },
     "CHZ": {
       "icon": "/assets/icons/crypto/chz.svg",
@@ -2691,20 +2631,10 @@
       "name": "EGLD / TetherUS",
       "logoid": "crypto/XTVCEGLD"
     },
-    "SOL.P": {
-      "icon": "/assets/icons/crypto/sol-p.svg",
-      "name": "Solana perpetual future quoted in USD",
-      "logoid": "crypto/XTVCSOL"
-    },
     "THB": {
-      "icon": "/assets/icons/crypto/thb.svg",
+      "icon": "/assets/icons/crypto/bip.svg",
       "name": "Bitcoin",
       "logoid": "crypto/XTVCBTC"
-    },
-    "PTT.P": {
-      "icon": "/assets/icons/crypto/ptt-p.svg",
-      "name": "PTB / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCPTB"
     },
     "GRAM": {
       "icon": "/assets/icons/crypto/gram.svg",
@@ -2717,14 +2647,9 @@
       "logoid": "crypto/XTVCZAMA"
     },
     "ETH.D": {
-      "icon": "/assets/icons/crypto/eth-d.svg",
+      "icon": "/assets/icons/crypto/eth.svg",
       "name": "Market Cap ETH Dominance, %",
       "logoid": "crypto/XTVCETH"
-    },
-    "PAXG.P": {
-      "icon": "/assets/icons/crypto/paxg-p.svg",
-      "name": "PAX Gold Token perpetual future quoted in USD",
-      "logoid": "crypto/XTVCPAXG"
     },
     "BTW": {
       "icon": "/assets/icons/crypto/btw.svg",
@@ -2772,14 +2697,9 @@
       "logoid": "crypto/XTVCDYDXN"
     },
     "PUMPFUN": {
-      "icon": "/assets/icons/crypto/pumpfun.svg",
+      "icon": "/assets/icons/crypto/pump.svg",
       "name": "PUMPFUNUSDT Perpetual Contract",
       "logoid": "crypto/XTVCPUMPF"
-    },
-    "SOXL": {
-      "icon": "/assets/icons/crypto/soxl.svg",
-      "name": "SOXL / TetherUS PERPETUAL CONTRACT",
-      "logoid": "direxion"
     },
     "THETA": {
       "icon": "/assets/icons/crypto/theta.svg",
@@ -2821,18 +2741,13 @@
       "name": "QNT / TetherUS",
       "logoid": "crypto/XTVCQNT"
     },
-    "SPCX": {
-      "icon": "/assets/icons/crypto/spcx.svg",
-      "name": "SPCX / TetherUS PERPETUAL CONTRACT",
-      "logoid": "spacex"
-    },
     "GOLDXAU": {
-      "icon": "/assets/icons/crypto/goldxau.svg",
+      "icon": "/assets/icons/commodities/gc.svg",
       "name": "GOLD(XAU)/USDT Perpetual Contract",
       "logoid": "metal/gold"
     },
     "ETHC": {
-      "icon": "/assets/icons/crypto/ethc.svg",
+      "icon": "/assets/icons/crypto/eth.svg",
       "name": "Ethereum / USD Coin",
       "logoid": "crypto/XTVCETH"
     },
@@ -2845,11 +2760,6 @@
       "icon": "/assets/icons/crypto/celr.svg",
       "name": "Celer Network / TetherUS",
       "logoid": "crypto/XTVCCELR"
-    },
-    "LAT.P": {
-      "icon": "/assets/icons/crypto/lat-p.svg",
-      "name": "LAB / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCLAB2"
     },
     "ARKM": {
       "icon": "/assets/icons/crypto/arkm.svg",
@@ -2896,16 +2806,6 @@
       "name": "NOT / TetherUS",
       "logoid": "crypto/XTVCNOT"
     },
-    "TOTAL3ES": {
-      "icon": "/assets/icons/crypto/total3es.svg",
-      "name": "Crypto Total Market Cap Excluding BTC, ETH and Stablecoins, $",
-      "logoid": "crypto-total-market-cap"
-    },
-    "SKHYNIX": {
-      "icon": "/assets/icons/crypto/skhynix.svg",
-      "name": "SKHYNIX / TetherUS PERPETUAL CONTRACT",
-      "logoid": "sk-telecom"
-    },
     "BOME": {
       "icon": "/assets/icons/crypto/bome.svg",
       "name": "BOME / TetherUS",
@@ -2921,11 +2821,6 @@
       "name": "TUT / TetherUS",
       "logoid": "crypto/XTVCTUTO"
     },
-    "FORM": {
-      "icon": "/assets/icons/crypto/form.svg",
-      "name": "FORM / TetherUS",
-      "logoid": "crypto/XTVCFORMF"
-    },
     "ZK": {
       "icon": "/assets/icons/crypto/zk.svg",
       "name": "ZK / TetherUS",
@@ -2937,14 +2832,9 @@
       "logoid": "crypto/XTVCPI3"
     },
     "NASDAQ100": {
-      "icon": "/assets/icons/crypto/nasdaq100.svg",
+      "icon": "/assets/icons/indices/nq.svg",
       "name": "NASDAQ100/USDT Perpetual Contract",
       "logoid": "indices/nasdaq-100"
-    },
-    "1000BONK": {
-      "icon": "/assets/icons/crypto/1000bonk.svg",
-      "name": "1000BONK / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVC1000BONK"
     },
     "BEAT": {
       "icon": "/assets/icons/crypto/beat.svg",
@@ -2962,7 +2852,7 @@
       "logoid": "crypto/XTVCDEXE"
     },
     "SOLC": {
-      "icon": "/assets/icons/crypto/solc.svg",
+      "icon": "/assets/icons/crypto/sol.svg",
       "name": "SOL / USD Coin",
       "logoid": "crypto/XTVCSOL"
     },
@@ -2972,7 +2862,7 @@
       "logoid": "crypto/XTVCLUNA"
     },
     "HYPEC": {
-      "icon": "/assets/icons/crypto/hypec.svg",
+      "icon": "/assets/icons/crypto/hype.svg",
       "name": "Hyperliquid / USDC",
       "logoid": "crypto/XTVCHYPEH"
     },
@@ -2987,7 +2877,7 @@
       "logoid": "crypto/XTVCXTZ"
     },
     "KRW": {
-      "icon": "/assets/icons/crypto/krw.svg",
+      "icon": "/assets/icons/crypto/bip.svg",
       "name": "Bitcoin / KRW",
       "logoid": "crypto/XTVCBTC"
     },
@@ -3012,7 +2902,7 @@
       "logoid": "crypto/XTVCCRO"
     },
     "BZ": {
-      "icon": "/assets/icons/crypto/bz.svg",
+      "icon": "/assets/icons/commodities/cl.svg",
       "name": "BZ / TetherUS PERPETUAL CONTRACT",
       "logoid": "crude-oil"
     },
@@ -3030,11 +2920,6 @@
       "icon": "/assets/icons/crypto/ordi.svg",
       "name": "ORDI / TetherUS",
       "logoid": "crypto/XTVCORDI"
-    },
-    "MU": {
-      "icon": "/assets/icons/crypto/mu.svg",
-      "name": "MU / TetherUS PERPETUAL CONTRACT",
-      "logoid": "micron-technology"
     },
     "EVAA": {
       "icon": "/assets/icons/crypto/evaa.svg",
@@ -3062,12 +2947,12 @@
       "logoid": "crypto/XTVCBANKLO"
     },
     "LONGS": {
-      "icon": "/assets/icons/crypto/longs.svg",
+      "icon": "/assets/icons/crypto/bip.svg",
       "name": "BTCUSD Longs",
       "logoid": "crypto/XTVCBTC"
     },
     "XRPC": {
-      "icon": "/assets/icons/crypto/xrpc.svg",
+      "icon": "/assets/icons/crypto/xrp.svg",
       "name": "XRP / USD Coin",
       "logoid": "crypto/XTVCXRP"
     },
@@ -3121,11 +3006,6 @@
       "name": "FLOW / TetherUS",
       "logoid": "crypto/XTVCFLOW"
     },
-    "ETHC.P": {
-      "icon": "/assets/icons/crypto/ethc-p.svg",
-      "name": "Ethereum / USD Coin PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCETH"
-    },
     "NPC": {
       "icon": "/assets/icons/crypto/npc.svg",
       "name": "Non-Playable Coin / USDT",
@@ -3151,11 +3031,6 @@
       "name": "TWT / TetherUS",
       "logoid": "crypto/XTVCTWT"
     },
-    "LTC.P": {
-      "icon": "/assets/icons/crypto/ltc-p.svg",
-      "name": "LTC Perpetual Futures Contract",
-      "logoid": "crypto/XTVCLTC"
-    },
     "AIOZ": {
       "icon": "/assets/icons/crypto/aioz.svg",
       "name": "AIOZ Network / US Dollar",
@@ -3165,11 +3040,6 @@
       "icon": "/assets/icons/crypto/flock.svg",
       "name": "FLOCK / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCFLOCK"
-    },
-    "HYPEC.P": {
-      "icon": "/assets/icons/crypto/hypec-p.svg",
-      "name": "Hyperliquid Perpetual Contract",
-      "logoid": "crypto/XTVCHYPEH"
     },
     "XCN": {
       "icon": "/assets/icons/crypto/xcn.svg",
@@ -3186,11 +3056,6 @@
       "name": "AVA / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCAVA"
     },
-    "UT.P": {
-      "icon": "/assets/icons/crypto/ut-p.svg",
-      "name": "UB / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCUBUN"
-    },
     "ENS": {
       "icon": "/assets/icons/crypto/ens.svg",
       "name": "ENS / TetherUS",
@@ -3202,12 +3067,12 @@
       "logoid": "crypto/XTVCCYSI"
     },
     "OILWTI": {
-      "icon": "/assets/icons/crypto/oilwti.svg",
+      "icon": "/assets/icons/commodities/cl.svg",
       "name": "Oil WTI/USDT Perpetual Contract",
       "logoid": "crude-oil"
     },
     "XRPKRW": {
-      "icon": "/assets/icons/crypto/xrpkrw.svg",
+      "icon": "/assets/icons/crypto/xrp.svg",
       "name": "XRP / KRW",
       "logoid": "crypto/XTVCXRP"
     },
@@ -3231,11 +3096,6 @@
       "name": "BICO / TetherUS",
       "logoid": "crypto/XTVCBICO"
     },
-    "MSTR": {
-      "icon": "/assets/icons/crypto/mstr.svg",
-      "name": "MSTR / TetherUS PERPETUAL CONTRACT",
-      "logoid": "strategy-cad-hedged-cibc-cdr"
-    },
     "BIO": {
       "icon": "/assets/icons/crypto/bio.svg",
       "name": "BIO / TetherUS",
@@ -3251,11 +3111,6 @@
       "name": "CHR / TetherUS",
       "logoid": "crypto/XTVCCHR"
     },
-    "USOIL": {
-      "icon": "/assets/icons/crypto/usoil.svg",
-      "name": "USOIL / Tether PERPETUAL FUTURES",
-      "logoid": "crude-oil"
-    },
     "IO": {
       "icon": "/assets/icons/crypto/io.svg",
       "name": "IO / TetherUS",
@@ -3265,11 +3120,6 @@
       "icon": "/assets/icons/crypto/syrup.svg",
       "name": "SYRUP / TetherUS",
       "logoid": "crypto/XTVCSYRUP"
-    },
-    "BCH.P": {
-      "icon": "/assets/icons/crypto/bch-p.svg",
-      "name": "BCH Perpetual Futures Contract",
-      "logoid": "crypto/XTVCBCH"
     },
     "DUSK": {
       "icon": "/assets/icons/crypto/dusk.svg",
@@ -3296,11 +3146,6 @@
       "name": "PIEVERSE / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCPIEVERSE"
     },
-    "CRCL": {
-      "icon": "/assets/icons/crypto/crcl.svg",
-      "name": "CRCL / TetherUS PERPETUAL CONTRACT",
-      "logoid": "circle-internet-group-inc"
-    },
     "TEL": {
       "icon": "/assets/icons/crypto/tel.svg",
       "name": "Telcoin / Tether",
@@ -3317,22 +3162,17 @@
       "logoid": "crypto/XTVCCHIPUS"
     },
     "BRL": {
-      "icon": "/assets/icons/crypto/brl.svg",
+      "icon": "/assets/icons/crypto/bip.svg",
       "name": "Bitcoin / BRL",
       "logoid": "crypto/XTVCBTC"
     },
-    "XRP.P": {
-      "icon": "/assets/icons/crypto/xrp-p.svg",
-      "name": "Ripple perpetual future quoted in USD",
-      "logoid": "crypto/XTVCXRP"
-    },
     "DOGETHB": {
-      "icon": "/assets/icons/crypto/dogethb.svg",
+      "icon": "/assets/icons/crypto/doge.svg",
       "name": "Dogecoin",
       "logoid": "crypto/XTVCDOGE"
     },
     "XRPTHB": {
-      "icon": "/assets/icons/crypto/xrpthb.svg",
+      "icon": "/assets/icons/crypto/xrp.svg",
       "name": "XRP",
       "logoid": "crypto/XTVCXRP"
     },
@@ -3352,7 +3192,7 @@
       "logoid": "crypto/XTVCMANTA"
     },
     "ETHKRW": {
-      "icon": "/assets/icons/crypto/ethkrw.svg",
+      "icon": "/assets/icons/crypto/eth.svg",
       "name": "Ethereum / KRW",
       "logoid": "crypto/XTVCETH"
     },
@@ -3360,11 +3200,6 @@
       "icon": "/assets/icons/crypto/iost.svg",
       "name": "IOST / TetherUS",
       "logoid": "crypto/XTVCIOST"
-    },
-    "QQQ": {
-      "icon": "/assets/icons/crypto/qqq.svg",
-      "name": "QQQ / TetherUS PERPETUAL CONTRACT",
-      "logoid": "invesco"
     },
     "VTHO": {
       "icon": "/assets/icons/crypto/vtho.svg",
@@ -3377,12 +3212,12 @@
       "logoid": "crypto/XTVCFTT"
     },
     "SOLETH": {
-      "icon": "/assets/icons/crypto/soleth.svg",
+      "icon": "/assets/icons/crypto/sol.svg",
       "name": "SOL / Ethereum",
       "logoid": "crypto/XTVCSOL"
     },
     "STABLE.C.D": {
-      "icon": "/assets/icons/crypto/stable-c-d.svg",
+      "icon": "/assets/icons/crypto/total.svg",
       "name": "Crypto Stablecoins Dominance, %",
       "logoid": "crypto-total-market-cap"
     },
@@ -3390,11 +3225,6 @@
       "icon": "/assets/icons/crypto/power.svg",
       "name": "POWER / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCPOWERP"
-    },
-    "TOTALES": {
-      "icon": "/assets/icons/crypto/totales.svg",
-      "name": "Crypto Total Market Cap Excluding Stablecoins, $",
-      "logoid": "crypto-total-market-cap"
     },
     "LPT": {
       "icon": "/assets/icons/crypto/lpt.svg",
@@ -3407,7 +3237,7 @@
       "logoid": "crypto/XTVCMOODENG"
     },
     "RAYSOL": {
-      "icon": "/assets/icons/crypto/raysol.svg",
+      "icon": "/assets/icons/crypto/ray.svg",
       "name": "RAYSOL / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCRAY"
     },
@@ -3415,11 +3245,6 @@
       "icon": "/assets/icons/crypto/plume.svg",
       "name": "PLUME / TetherUS",
       "logoid": "crypto/XTVCPLUME"
-    },
-    "TRT.P": {
-      "icon": "/assets/icons/crypto/trt-p.svg",
-      "name": "TRB / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCTRB"
     },
     "MET": {
       "icon": "/assets/icons/crypto/met.svg",
@@ -3462,7 +3287,7 @@
       "logoid": "crypto/XTVCAVNT"
     },
     "GBP": {
-      "icon": "/assets/icons/crypto/gbp.svg",
+      "icon": "/assets/icons/crypto/bip.svg",
       "name": "Bitcoin / British Pound",
       "logoid": "crypto/XTVCBTC"
     },
@@ -3471,13 +3296,8 @@
       "name": "PORTAL / TetherUS",
       "logoid": "crypto/XTVCPORTAL3"
     },
-    "KORU": {
-      "icon": "/assets/icons/crypto/koru.svg",
-      "name": "KORU / TetherUS PERPETUAL CONTRACT",
-      "logoid": "direxion"
-    },
     "ETHTHB": {
-      "icon": "/assets/icons/crypto/eththb.svg",
+      "icon": "/assets/icons/crypto/eth.svg",
       "name": "Ethereum",
       "logoid": "crypto/XTVCETH"
     },
@@ -3487,7 +3307,7 @@
       "logoid": "crypto/XTVCCHILLGUY"
     },
     "OILBRENT": {
-      "icon": "/assets/icons/crypto/oilbrent.svg",
+      "icon": "/assets/icons/commodities/cl.svg",
       "name": "Oil Brent/USDT Perpetual Contract",
       "logoid": "crude-oil"
     },
@@ -3507,7 +3327,7 @@
       "logoid": "crypto/XTVCSKYAI2"
     },
     "ETH.UM": {
-      "icon": "/assets/icons/crypto/eth-um.svg",
+      "icon": "/assets/icons/crypto/eth.svg",
       "name": "ETHUSD UM X-Perp Contract",
       "logoid": "crypto/XTVCETH"
     },
@@ -3562,12 +3382,12 @@
       "logoid": "crypto/XTVCSTG"
     },
     "NEARTHB": {
-      "icon": "/assets/icons/crypto/nearthb.svg",
+      "icon": "/assets/icons/crypto/near.svg",
       "name": "NEAR Protocol",
       "logoid": "crypto/XTVCNEAR"
     },
     "GOL": {
-      "icon": "/assets/icons/crypto/gol.svg",
+      "icon": "/assets/icons/commodities/gc.svg",
       "name": "Gold Futures",
       "logoid": "metal/gold"
     },
@@ -3597,7 +3417,7 @@
       "logoid": "crypto/XTVCBPBAC"
     },
     "XRPJPY": {
-      "icon": "/assets/icons/crypto/xrpjpy.svg",
+      "icon": "/assets/icons/crypto/xrp.svg",
       "name": "XRP_JPY",
       "logoid": "crypto/XTVCXRP"
     },
@@ -3611,20 +3431,10 @@
       "name": "Akash Network / Tether",
       "logoid": "crypto/XTVCAKT"
     },
-    "XTI": {
-      "icon": "/assets/icons/crypto/xti.svg",
-      "name": "XTI / Tether USD PERPETUAL CONTRACT",
-      "logoid": "crude-oil"
-    },
     "B2": {
       "icon": "/assets/icons/crypto/b2.svg",
       "name": "B2 / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCB2"
-    },
-    "CVX": {
-      "icon": "/assets/icons/crypto/cvx.svg",
-      "name": "CVX / TetherUS",
-      "logoid": "crypto/XTVCCVXCONVEXFINANCE"
     },
     "IOTX": {
       "icon": "/assets/icons/crypto/iotx.svg",
@@ -3635,11 +3445,6 @@
       "icon": "/assets/icons/crypto/velo.svg",
       "name": "VELO / Tether",
       "logoid": "crypto/XTVCVELO"
-    },
-    "SOLC.P": {
-      "icon": "/assets/icons/crypto/solc-p.svg",
-      "name": "SOL / USD Coin PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCSOL"
     },
     "XVG": {
       "icon": "/assets/icons/crypto/xvg.svg",
@@ -3671,13 +3476,8 @@
       "name": "BTR / TetherUS PERPETUAL CONTRACT",
       "logoid": "crypto/XTVCBTRBIT"
     },
-    "CC": {
-      "icon": "/assets/icons/crypto/cc.svg",
-      "name": "CC / TetherUS PERPETUAL CONTRACT",
-      "logoid": "crypto/XTVCCCCA"
-    },
     "BIT": {
-      "icon": "/assets/icons/crypto/bit.svg",
+      "icon": "/assets/icons/crypto/bip.svg",
       "name": "nano Bitcoin Futures",
       "logoid": "crypto/XTVCBTC"
     },
@@ -3697,7 +3497,7 @@
       "logoid": "crypto/XTVCC98"
     },
     "ETHJPY": {
-      "icon": "/assets/icons/crypto/ethjpy.svg",
+      "icon": "/assets/icons/crypto/eth.svg",
       "name": "ETH_JPY",
       "logoid": "crypto/XTVCETH"
     },
@@ -3727,7 +3527,7 @@
       "logoid": "crypto/XTVCAPEX"
     },
     "XRPTRY": {
-      "icon": "/assets/icons/crypto/xrptry.svg",
+      "icon": "/assets/icons/crypto/xrp.svg",
       "name": "XRP / Turkish Lira",
       "logoid": "crypto/XTVCXRP"
     },
@@ -3794,12 +3594,12 @@
   },
   "stocks": {
     "SPY": {
-      "icon": "/assets/icons/stocks/spy.svg",
+      "icon": "/assets/icons/funds/spy.svg",
       "name": "SPDR S&P 500 ETF TRUST",
       "logoid": "spdr-sandp500-etf-tr"
     },
     "QQQ": {
-      "icon": "/assets/icons/stocks/qqq.svg",
+      "icon": "/assets/icons/funds/qqq.svg",
       "name": "Invesco QQQ Trust, Series 1",
       "logoid": "invesco"
     },
@@ -3864,7 +3664,7 @@
       "logoid": "sandisk"
     },
     "GOOGL": {
-      "icon": "/assets/icons/stocks/googl.svg",
+      "icon": "/assets/icons/stocks/goog.svg",
       "name": "Alphabet Inc.",
       "logoid": "alphabet"
     },
@@ -3904,7 +3704,7 @@
       "logoid": "nebius-group-nv"
     },
     "IWM": {
-      "icon": "/assets/icons/stocks/iwm.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Russell 2000 Index Fund",
       "logoid": "ishares"
     },
@@ -3919,7 +3719,7 @@
       "logoid": "marvell-tech"
     },
     "SOXL": {
-      "icon": "/assets/icons/stocks/soxl.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily Semiconductor Bull 3X ETF",
       "logoid": "direxion"
     },
@@ -3974,7 +3774,7 @@
       "logoid": "sofi"
     },
     "SMH": {
-      "icon": "/assets/icons/stocks/smh.svg",
+      "icon": "/assets/icons/funds/smh.svg",
       "name": "VanEck Semiconductor ETF",
       "logoid": "vaneck"
     },
@@ -3999,7 +3799,7 @@
       "logoid": "gamestop"
     },
     "GLD": {
-      "icon": "/assets/icons/stocks/gld.svg",
+      "icon": "/assets/icons/funds/spy.svg",
       "name": "SPDR Gold Shares",
       "logoid": "spdr-sandp500-etf-tr"
     },
@@ -4014,12 +3814,12 @@
       "logoid": "alibaba"
     },
     "SOXX": {
-      "icon": "/assets/icons/stocks/soxx.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares PHLX SOX Semiconductor Sector Index Fund",
       "logoid": "ishares"
     },
     "TQQQ": {
-      "icon": "/assets/icons/stocks/tqqq.svg",
+      "icon": "/assets/icons/funds/tqqq.svg",
       "name": "ProShares UltraPro QQQ",
       "logoid": "proshares"
     },
@@ -4039,7 +3839,7 @@
       "logoid": "nike"
     },
     "DRAM": {
-      "icon": "/assets/icons/stocks/dram.svg",
+      "icon": "/assets/icons/stocks/ram.svg",
       "name": "Roundhill Memory ETF",
       "logoid": "roundhmetave-aeoa"
     },
@@ -4059,7 +3859,7 @@
       "logoid": "marathon-digital-holdings"
     },
     "IBIT": {
-      "icon": "/assets/icons/stocks/ibit.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Bitcoin Trust",
       "logoid": "ishares"
     },
@@ -4144,7 +3944,7 @@
       "logoid": "altc"
     },
     "VOO": {
-      "icon": "/assets/icons/stocks/voo.svg",
+      "icon": "/assets/icons/funds/voo.svg",
       "name": "Vanguard S&P 500 ETF",
       "logoid": "vanguard"
     },
@@ -4194,12 +3994,12 @@
       "logoid": "bank-of-america"
     },
     "XLE": {
-      "icon": "/assets/icons/stocks/xle.svg",
+      "icon": "/assets/icons/funds/xle.svg",
       "name": "State Street Energy Select Sector SPDR ETF",
       "logoid": "sector/energy"
     },
     "TLT": {
-      "icon": "/assets/icons/stocks/tlt.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares 20+ Year Treasury Bond ETF",
       "logoid": "ishares"
     },
@@ -4214,17 +4014,17 @@
       "logoid": "asml"
     },
     "SLV": {
-      "icon": "/assets/icons/stocks/slv.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Silver Trust",
       "logoid": "ishares"
     },
     "XLK": {
-      "icon": "/assets/icons/stocks/xlk.svg",
+      "icon": "/assets/icons/funds/xlk.svg",
       "name": "State Street Technology Select Sector SPDR ETF",
       "logoid": "sector/technology"
     },
     "USO": {
-      "icon": "/assets/icons/stocks/uso.svg",
+      "icon": "/assets/icons/funds/uso.svg",
       "name": "United States Oil Fund",
       "logoid": "uscf-fund"
     },
@@ -4284,7 +4084,7 @@
       "logoid": "shopify"
     },
     "XLF": {
-      "icon": "/assets/icons/stocks/xlf.svg",
+      "icon": "/assets/icons/funds/xlf.svg",
       "name": "State Street Financial Select Sector SPDR ETF",
       "logoid": "sector/financial"
     },
@@ -4294,7 +4094,7 @@
       "logoid": "rigetti-computing-redeemable"
     },
     "IGV": {
-      "icon": "/assets/icons/stocks/igv.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Expanded Tech-Software Sector ETF",
       "logoid": "ishares"
     },
@@ -4359,7 +4159,7 @@
       "logoid": "take-two-interactive-software"
     },
     "GDX": {
-      "icon": "/assets/icons/stocks/gdx.svg",
+      "icon": "/assets/icons/funds/smh.svg",
       "name": "VanEck Gold Miners ETF",
       "logoid": "vaneck"
     },
@@ -4394,7 +4194,7 @@
       "logoid": "visa"
     },
     "SOXS": {
-      "icon": "/assets/icons/stocks/soxs.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily Semiconductor Bear 3X ETF",
       "logoid": "direxion"
     },
@@ -4419,12 +4219,12 @@
       "logoid": "pepsico"
     },
     "XLV": {
-      "icon": "/assets/icons/stocks/xlv.svg",
+      "icon": "/assets/icons/funds/xlv.svg",
       "name": "State Street Health Care Select Sector SPDR ETF",
       "logoid": "sector/health-care"
     },
     "MAGS": {
-      "icon": "/assets/icons/stocks/mags.svg",
+      "icon": "/assets/icons/stocks/ram.svg",
       "name": "Roundhill Magnificent Seven ETF",
       "logoid": "roundhmetave-aeoa"
     },
@@ -4494,7 +4294,7 @@
       "logoid": "redwire"
     },
     "XLP": {
-      "icon": "/assets/icons/stocks/xlp.svg",
+      "icon": "/assets/icons/funds/xlp.svg",
       "name": "State Street Consumer Staples Select Sector SPDR ETF",
       "logoid": "sector/consumer-staples"
     },
@@ -4504,7 +4304,7 @@
       "logoid": "nu-holdings"
     },
     "XLU": {
-      "icon": "/assets/icons/stocks/xlu.svg",
+      "icon": "/assets/icons/funds/xlu.svg",
       "name": "State Street Utilities Select Sector SPDR ETF",
       "logoid": "sector/utilities"
     },
@@ -4519,7 +4319,7 @@
       "logoid": "constellation-energy-cad-hedged-cibc-cdr"
     },
     "XLI": {
-      "icon": "/assets/icons/stocks/xli.svg",
+      "icon": "/assets/icons/funds/xli.svg",
       "name": "State Street Industrial Select Sector SPDR ETF",
       "logoid": "sector/industrial"
     },
@@ -4559,7 +4359,7 @@
       "logoid": "johnson-and-johnson"
     },
     "RSP": {
-      "icon": "/assets/icons/stocks/rsp.svg",
+      "icon": "/assets/icons/funds/qqq.svg",
       "name": "Invesco S&P 500 Equal Weight ETF",
       "logoid": "invesco"
     },
@@ -4569,7 +4369,7 @@
       "logoid": "golden-sachs-etf-trust-goldman"
     },
     "SQQQ": {
-      "icon": "/assets/icons/stocks/sqqq.svg",
+      "icon": "/assets/icons/funds/tqqq.svg",
       "name": "ProShares UltraPro Short QQQ",
       "logoid": "proshares"
     },
@@ -4604,7 +4404,7 @@
       "logoid": "nio"
     },
     "TSLL": {
-      "icon": "/assets/icons/stocks/tsll.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily TSLA Bull 2X ETF",
       "logoid": "direxion"
     },
@@ -4659,7 +4459,7 @@
       "logoid": "viking-therapeutics"
     },
     "XLC": {
-      "icon": "/assets/icons/stocks/xlc.svg",
+      "icon": "/assets/icons/funds/xlc.svg",
       "name": "State Street Communication Services Select Sector SPDR ETF",
       "logoid": "communication-services"
     },
@@ -4739,7 +4539,7 @@
       "logoid": "celsius-holdings"
     },
     "ETHA": {
-      "icon": "/assets/icons/stocks/etha.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Ethereum Trust ETF",
       "logoid": "ishares"
     },
@@ -4749,7 +4549,7 @@
       "logoid": "decoy-therapeutics"
     },
     "XLB": {
-      "icon": "/assets/icons/stocks/xlb.svg",
+      "icon": "/assets/icons/funds/xlb.svg",
       "name": "State Street Materials Select Sector SPDR ETF",
       "logoid": "sector/materials"
     },
@@ -4774,7 +4574,7 @@
       "logoid": "ciena"
     },
     "QQQM": {
-      "icon": "/assets/icons/stocks/qqqm.svg",
+      "icon": "/assets/icons/funds/qqq.svg",
       "name": "Invesco NASDAQ 100 ETF",
       "logoid": "invesco"
     },
@@ -4799,7 +4599,7 @@
       "logoid": "planet-labs"
     },
     "STRC": {
-      "icon": "/assets/icons/stocks/strc.svg",
+      "icon": "/assets/icons/stocks/mstr.svg",
       "name": "Strategy Inc - Variable Rate Series A Perpetual Stretch Preferred Stock",
       "logoid": "strategy-cad-hedged-cibc-cdr"
     },
@@ -4889,7 +4689,7 @@
       "logoid": "enphase-energy"
     },
     "EWZ": {
-      "icon": "/assets/icons/stocks/ewz.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares MSCI Brazil ETF",
       "logoid": "ishares"
     },
@@ -4929,7 +4729,7 @@
       "logoid": "oscar-health"
     },
     "XLRE": {
-      "icon": "/assets/icons/stocks/xlre.svg",
+      "icon": "/assets/icons/funds/xlre.svg",
       "name": "State Street Real Estate Select Sector SPDR ETF",
       "logoid": "sector/real-estate"
     },
@@ -4944,7 +4744,7 @@
       "logoid": "newmont"
     },
     "URA": {
-      "icon": "/assets/icons/stocks/ura.svg",
+      "icon": "/assets/icons/stocks/sil.svg",
       "name": "Global X Uranium ETF",
       "logoid": "global-x"
     },
@@ -4974,7 +4774,7 @@
       "logoid": "fastly-inc"
     },
     "MUU": {
-      "icon": "/assets/icons/stocks/muu.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily MU Bull 2X ETF",
       "logoid": "direxion"
     },
@@ -5004,7 +4804,7 @@
       "logoid": "duolingo"
     },
     "HYG": {
-      "icon": "/assets/icons/stocks/hyg.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares iBoxx $ High Yield Corporate Bond ETF",
       "logoid": "ishares"
     },
@@ -5059,7 +4859,7 @@
       "logoid": "netapp"
     },
     "EWY": {
-      "icon": "/assets/icons/stocks/ewy.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares MSCI South Korea ETF",
       "logoid": "ishares"
     },
@@ -5079,7 +4879,7 @@
       "logoid": "galaxy-digital"
     },
     "VTI": {
-      "icon": "/assets/icons/stocks/vti.svg",
+      "icon": "/assets/icons/funds/voo.svg",
       "name": "Vanguard Morningstar Total Stock Market ETF",
       "logoid": "vanguard"
     },
@@ -5089,7 +4889,7 @@
       "logoid": "unity"
     },
     "COPX": {
-      "icon": "/assets/icons/stocks/copx.svg",
+      "icon": "/assets/icons/stocks/sil.svg",
       "name": "Global X Copper Miners ETF",
       "logoid": "global-x"
     },
@@ -5184,7 +4984,7 @@
       "logoid": "bigbear-ai"
     },
     "CONL": {
-      "icon": "/assets/icons/stocks/conl.svg",
+      "icon": "/assets/icons/stocks/amdl.svg",
       "name": "GraniteShares 2x Long COIN Daily ETF",
       "logoid": "graniteshares"
     },
@@ -5199,7 +4999,7 @@
       "logoid": "vicor"
     },
     "UVXY": {
-      "icon": "/assets/icons/stocks/uvxy.svg",
+      "icon": "/assets/icons/funds/sqqq.svg",
       "name": "ProShares Ultra VIX Short Term Futures ETF",
       "logoid": "proshares"
     },
@@ -5334,7 +5134,7 @@
       "logoid": "uranium-energy"
     },
     "KORU": {
-      "icon": "/assets/icons/stocks/koru.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily South Korea Bull 3X ETF",
       "logoid": "direxion"
     },
@@ -5364,7 +5164,7 @@
       "logoid": "draftkings"
     },
     "ARKK": {
-      "icon": "/assets/icons/stocks/arkk.svg",
+      "icon": "/assets/icons/funds/arkk.svg",
       "name": "ARK Innovation ETF",
       "logoid": "ark-etf-tr"
     },
@@ -5444,7 +5244,7 @@
       "logoid": "first-trust"
     },
     "SPXL": {
-      "icon": "/assets/icons/stocks/spxl.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily S&P 500 Bull 3X ETF",
       "logoid": "direxion"
     },
@@ -5479,7 +5279,7 @@
       "logoid": "zoom-video-communications"
     },
     "VT": {
-      "icon": "/assets/icons/stocks/vt.svg",
+      "icon": "/assets/icons/funds/voo.svg",
       "name": "Vanguard Total World Stock Index ETF",
       "logoid": "vanguard"
     },
@@ -5514,7 +5314,7 @@
       "logoid": "doordash"
     },
     "VGT": {
-      "icon": "/assets/icons/stocks/vgt.svg",
+      "icon": "/assets/icons/funds/voo.svg",
       "name": "Vanguard Information Tech ETF",
       "logoid": "vanguard"
     },
@@ -5559,7 +5359,7 @@
       "logoid": "smart-global"
     },
     "ETHU": {
-      "icon": "/assets/icons/stocks/ethu.svg",
+      "icon": "/assets/icons/stocks/bitx.svg",
       "name": "2x Ether ETF",
       "logoid": "volatility-shares-trust-2x-bitcoin-strategy-etf"
     },
@@ -5614,7 +5414,7 @@
       "logoid": "wellgistics-health"
     },
     "NVDL": {
-      "icon": "/assets/icons/stocks/nvdl.svg",
+      "icon": "/assets/icons/stocks/amdl.svg",
       "name": "GraniteShares 2x Long NVDA Daily ETF",
       "logoid": "graniteshares"
     },
@@ -5709,7 +5509,7 @@
       "logoid": "grail"
     },
     "SPMO": {
-      "icon": "/assets/icons/stocks/spmo.svg",
+      "icon": "/assets/icons/funds/qqq.svg",
       "name": "Invesco S&P 500 Momentum ETF",
       "logoid": "invesco"
     },
@@ -5764,7 +5564,7 @@
       "logoid": "quantum"
     },
     "SCHW": {
-      "icon": "/assets/icons/stocks/schw.svg",
+      "icon": "/assets/icons/stocks/schd.svg",
       "name": "Charles Schwab Corporation (The)",
       "logoid": "schwab"
     },
@@ -5809,7 +5609,7 @@
       "logoid": "whitefiber"
     },
     "PBR": {
-      "icon": "/assets/icons/stocks/pbr.svg",
+      "icon": "/assets/icons/b3/petr4.svg",
       "name": "Petroleo Brasileiro S.A. Petrobras",
       "logoid": "brasileiro-petrobras"
     },
@@ -5834,7 +5634,7 @@
       "logoid": "illumina"
     },
     "EEM": {
-      "icon": "/assets/icons/stocks/eem.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares MSCI Emerging Index Fund",
       "logoid": "ishares"
     },
@@ -5854,7 +5654,7 @@
       "logoid": "sterling-construction"
     },
     "QLD": {
-      "icon": "/assets/icons/stocks/qld.svg",
+      "icon": "/assets/icons/funds/tqqq.svg",
       "name": "ProShares Ultra QQQ",
       "logoid": "proshares"
     },
@@ -5914,7 +5714,7 @@
       "logoid": "jfrog"
     },
     "METU": {
-      "icon": "/assets/icons/stocks/metu.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily META Bull 2X ETF",
       "logoid": "direxion"
     },
@@ -5954,7 +5754,7 @@
       "logoid": "barrick-gold"
     },
     "IAU": {
-      "icon": "/assets/icons/stocks/iau.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Gold Trust Shares",
       "logoid": "ishares"
     },
@@ -6004,17 +5804,17 @@
       "logoid": "cf-industries"
     },
     "ARKG": {
-      "icon": "/assets/icons/stocks/arkg.svg",
+      "icon": "/assets/icons/funds/arkk.svg",
       "name": "ARK Genomic Revolution ETF",
       "logoid": "ark-etf-tr"
     },
     "XOP": {
-      "icon": "/assets/icons/stocks/xop.svg",
+      "icon": "/assets/icons/funds/spy.svg",
       "name": "State Street SPDR S&P Oil & Gas Exploration & Production ETF",
       "logoid": "spdr-sandp500-etf-tr"
     },
     "UNG": {
-      "icon": "/assets/icons/stocks/ung.svg",
+      "icon": "/assets/icons/funds/uso.svg",
       "name": "United States Natural Gas Fund LP",
       "logoid": "uscf-fund"
     },
@@ -6049,7 +5849,7 @@
       "logoid": "aurora-innovation"
     },
     "SILJ": {
-      "icon": "/assets/icons/stocks/silj.svg",
+      "icon": "/assets/icons/stocks/bwet.svg",
       "name": "Amplify Junior Silver Miners ETF",
       "logoid": "amplify"
     },
@@ -6109,7 +5909,7 @@
       "logoid": "danaher"
     },
     "TNA": {
-      "icon": "/assets/icons/stocks/tna.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Small Cap Bull 3X ETF",
       "logoid": "direxion"
     },
@@ -6134,7 +5934,7 @@
       "logoid": "rocket-companies"
     },
     "TECL": {
-      "icon": "/assets/icons/stocks/tecl.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily Technology Bull 3X ETF",
       "logoid": "direxion"
     },
@@ -6179,12 +5979,12 @@
       "logoid": "figure-technologies"
     },
     "GGLL": {
-      "icon": "/assets/icons/stocks/ggll.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily GOOGL Bull 2X ETF",
       "logoid": "direxion"
     },
     "REMX": {
-      "icon": "/assets/icons/stocks/remx.svg",
+      "icon": "/assets/icons/funds/smh.svg",
       "name": "VanEck Rare Earth and Strategic Metals ETF",
       "logoid": "vaneck"
     },
@@ -6204,17 +6004,17 @@
       "logoid": "apa-corporation"
     },
     "GDXJ": {
-      "icon": "/assets/icons/stocks/gdxj.svg",
+      "icon": "/assets/icons/funds/smh.svg",
       "name": "VanEck Junior Gold Miners ETF",
       "logoid": "vaneck"
     },
     "IBB": {
-      "icon": "/assets/icons/stocks/ibb.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Biotechnology ETF",
       "logoid": "ishares"
     },
     "KRE": {
-      "icon": "/assets/icons/stocks/kre.svg",
+      "icon": "/assets/icons/stocks/dia.svg",
       "name": "State Street SPDR S&P Regional Banking ETF",
       "logoid": "spdr-sandp500-etf-tr"
     },
@@ -6284,12 +6084,12 @@
       "logoid": "agilent-technologies"
     },
     "VXUS": {
-      "icon": "/assets/icons/stocks/vxus.svg",
+      "icon": "/assets/icons/funds/voo.svg",
       "name": "Vanguard Total International Stock ETF",
       "logoid": "vanguard"
     },
     "VALE": {
-      "icon": "/assets/icons/stocks/vale.svg",
+      "icon": "/assets/icons/b3/vale3.svg",
       "name": "VALE S.A.",
       "logoid": "vale"
     },
@@ -6304,7 +6104,7 @@
       "logoid": "wheaton-precious-metals"
     },
     "IEF": {
-      "icon": "/assets/icons/stocks/ief.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares 7-10 Year Treasury Bond ETF",
       "logoid": "ishares"
     },
@@ -6314,12 +6114,12 @@
       "logoid": "estee-lauder"
     },
     "ITA": {
-      "icon": "/assets/icons/stocks/ita.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares U.S. Aerospace & Defense ETF",
       "logoid": "ishares"
     },
     "UPRO": {
-      "icon": "/assets/icons/stocks/upro.svg",
+      "icon": "/assets/icons/funds/tqqq.svg",
       "name": "ProShares UltraPro S&P 500",
       "logoid": "proshares"
     },
@@ -6334,7 +6134,7 @@
       "logoid": "hf-sinclair"
     },
     "LQD": {
-      "icon": "/assets/icons/stocks/lqd.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares iBoxx $ Investment Grade Corporate Bond ETF",
       "logoid": "ishares"
     },
@@ -6364,7 +6164,7 @@
       "logoid": "philip-morris"
     },
     "BITO": {
-      "icon": "/assets/icons/stocks/bito.svg",
+      "icon": "/assets/icons/funds/tqqq.svg",
       "name": "ProShares Bitcoin ETF",
       "logoid": "proshares"
     },
@@ -6374,7 +6174,7 @@
       "logoid": "xanadu-quantum-technologies-limited-class-b"
     },
     "QTUM": {
-      "icon": "/assets/icons/stocks/qtum.svg",
+      "icon": "/assets/icons/stocks/mstx.svg",
       "name": "Defiance Quantum ETF",
       "logoid": "differential-series-solutions"
     },
@@ -6399,7 +6199,7 @@
       "logoid": "fair-isaac"
     },
     "GLDM": {
-      "icon": "/assets/icons/stocks/gldm.svg",
+      "icon": "/assets/icons/stocks/dia.svg",
       "name": "SPDR Gold MiniShares Trust",
       "logoid": "spdr-sandp500-etf-tr"
     },
@@ -6414,7 +6214,7 @@
       "logoid": "ambarella"
     },
     "SPYM": {
-      "icon": "/assets/icons/stocks/spym.svg",
+      "icon": "/assets/icons/stocks/dia.svg",
       "name": "State Street SPDR Portfolio S&P 500 ETF",
       "logoid": "spdr-sandp500-etf-tr"
     },
@@ -6424,7 +6224,7 @@
       "logoid": "automatic-data-processing"
     },
     "TMF": {
-      "icon": "/assets/icons/stocks/tmf.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily 20-Yr Treasury Bull 3x Shrs",
       "logoid": "direxion"
     },
@@ -6479,7 +6279,7 @@
       "logoid": "the-metals-company"
     },
     "IVV": {
-      "icon": "/assets/icons/stocks/ivv.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Core S&P 500 ETF",
       "logoid": "ishares"
     },
@@ -6514,7 +6314,7 @@
       "logoid": "general-mills"
     },
     "AGQ": {
-      "icon": "/assets/icons/stocks/agq.svg",
+      "icon": "/assets/icons/funds/tqqq.svg",
       "name": "ProShares Ultra Silver",
       "logoid": "proshares"
     },
@@ -6574,7 +6374,7 @@
       "logoid": "qxo"
     },
     "MSTZ": {
-      "icon": "/assets/icons/stocks/mstz.svg",
+      "icon": "/assets/icons/stocks/mstu.svg",
       "name": "T-Rex 2X Inverse MSTR Daily Target ETF",
       "logoid": "t-rex"
     },
@@ -6604,7 +6404,7 @@
       "logoid": "general-dynamics"
     },
     "ACWI": {
-      "icon": "/assets/icons/stocks/acwi.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares MSCI ACWI ETF",
       "logoid": "ishares"
     },
@@ -6624,7 +6424,7 @@
       "logoid": "yieldmax-tsla-option-income-strategy-etf"
     },
     "CPER": {
-      "icon": "/assets/icons/stocks/cper.svg",
+      "icon": "/assets/icons/funds/uso.svg",
       "name": "United States Copper Index Fund ETV",
       "logoid": "uscf-fund"
     },
@@ -6634,7 +6434,7 @@
       "logoid": "churchill-capital-xi"
     },
     "TAN": {
-      "icon": "/assets/icons/stocks/tan.svg",
+      "icon": "/assets/icons/funds/qqq.svg",
       "name": "Invesco Solar ETF",
       "logoid": "invesco"
     },
@@ -6644,7 +6444,7 @@
       "logoid": "flex"
     },
     "LABU": {
-      "icon": "/assets/icons/stocks/labu.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion Daily S&P Biotech Bull 3X ETF",
       "logoid": "direxion"
     },
@@ -6809,7 +6609,7 @@
       "logoid": "biogen"
     },
     "XME": {
-      "icon": "/assets/icons/stocks/xme.svg",
+      "icon": "/assets/icons/stocks/dia.svg",
       "name": "State Street SPDR S&P Metals & Mining ETF",
       "logoid": "spdr-sandp500-etf-tr"
     },
@@ -6819,7 +6619,7 @@
       "logoid": "acm-research"
     },
     "QQQE": {
-      "icon": "/assets/icons/stocks/qqqe.svg",
+      "icon": "/assets/icons/funds/soxl.svg",
       "name": "Direxion NASDAQ-100 Equal Weighted Index ETF",
       "logoid": "direxion"
     },
@@ -6834,7 +6634,7 @@
       "logoid": "caredx"
     },
     "SCO": {
-      "icon": "/assets/icons/stocks/sco.svg",
+      "icon": "/assets/icons/funds/tqqq.svg",
       "name": "ProShares UltraShort Bloomberg Crude Oil",
       "logoid": "proshares"
     },
@@ -6924,12 +6724,12 @@
       "logoid": "cue-biopharma"
     },
     "INTW": {
-      "icon": "/assets/icons/stocks/intw.svg",
+      "icon": "/assets/icons/stocks/amdl.svg",
       "name": "GraniteShares 2x Long INTC Daily ETF",
       "logoid": "graniteshares"
     },
     "BOIL": {
-      "icon": "/assets/icons/stocks/boil.svg",
+      "icon": "/assets/icons/funds/tqqq.svg",
       "name": "ProShares Ultra Bloomberg Natural Gas",
       "logoid": "proshares"
     },
@@ -6959,22 +6759,22 @@
       "logoid": "itau-unibanco"
     },
     "BOVA11": {
-      "icon": "/assets/icons/b3/bova11.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Ibovespa Fundo de Indice",
       "logoid": "ishares"
     },
     "BBDC4": {
-      "icon": "/assets/icons/b3/bbdc4.svg",
+      "icon": "/assets/icons/b3/bbdc3.svg",
       "name": "Banco Bradesco SA Pfd",
       "logoid": "bradesco"
     },
     "BBSE3": {
-      "icon": "/assets/icons/b3/bbse3.svg",
+      "icon": "/assets/icons/b3/bbas3.svg",
       "name": "BB Seguridade Participacoes SA",
       "logoid": "banco-do-brasil"
     },
     "ITSA4": {
-      "icon": "/assets/icons/b3/itsa4.svg",
+      "icon": "/assets/icons/b3/itsa3.svg",
       "name": "Itausa SA Non-Cum Perp Pfd Registered Shs",
       "logoid": "itausa"
     },
@@ -7024,12 +6824,12 @@
       "logoid": "aura-360-dr3"
     },
     "TASA4": {
-      "icon": "/assets/icons/b3/tasa4.svg",
+      "icon": "/assets/icons/b3/tasa3.svg",
       "name": "Taurus Armas S.A. Pfd",
       "logoid": "taurus-armas"
     },
     "POMO4": {
-      "icon": "/assets/icons/b3/pomo4.svg",
+      "icon": "/assets/icons/b3/pomo3.svg",
       "name": "Marcopolo SA Pfd",
       "logoid": "marcopolo"
     },
@@ -7064,7 +6864,7 @@
       "logoid": "csn-mineracao"
     },
     "PETR3": {
-      "icon": "/assets/icons/b3/petr3.svg",
+      "icon": "/assets/icons/b3/petr4.svg",
       "name": "Petroleo Brasileiro SA",
       "logoid": "brasileiro-petrobras"
     },
@@ -7094,12 +6894,12 @@
       "logoid": "suzano"
     },
     "XPML11": {
-      "icon": "/assets/icons/b3/xpml11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "XP Malls Fundo Investimento Imobiliario Investor",
       "logoid": "fii"
     },
     "IVVB11": {
-      "icon": "/assets/icons/b3/ivvb11.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares S&P 500 Fundo de Investimento em Cotas de Fundo de Indice - Investimento no Exterior",
       "logoid": "ishares"
     },
@@ -7119,7 +6919,7 @@
       "logoid": "porto-seguro"
     },
     "TSMC34": {
-      "icon": "/assets/icons/b3/tsmc34.svg",
+      "icon": "/assets/icons/stocks/tsm.svg",
       "name": "Taiwan Semiconductor Manufacturing Co., Ltd. ADR Unsponsored Brazilian Depository Receipt Repr 0.125 ADR",
       "logoid": "taiwan-semiconductor"
     },
@@ -7184,7 +6984,7 @@
       "logoid": "telefonica"
     },
     "MXRF11": {
-      "icon": "/assets/icons/b3/mxrf11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Maxi Renda Fundo de Investimento Imobiliario Cotas",
       "logoid": "fii"
     },
@@ -7229,7 +7029,7 @@
       "logoid": "fleury-on-nm"
     },
     "HASH11": {
-      "icon": "/assets/icons/b3/hash11.svg",
+      "icon": "/assets/icons/funds/hash11.svg",
       "name": "Hashdex Nasdaq Crypto Index Fundo de Indice",
       "logoid": "hashdex"
     },
@@ -7254,7 +7054,7 @@
       "logoid": "hapvida"
     },
     "SMAL11": {
-      "icon": "/assets/icons/b3/smal11.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares BM&FBOVESPA Small Cap Index Fund",
       "logoid": "ishares"
     },
@@ -7289,12 +7089,12 @@
       "logoid": "localiza"
     },
     "M2ST34": {
-      "icon": "/assets/icons/b3/m2st34.svg",
+      "icon": "/assets/icons/stocks/mstr.svg",
       "name": "Strategy Inc -A- Unsponsored BDR",
       "logoid": "strategy-cad-hedged-cibc-cdr"
     },
     "HGLG11": {
-      "icon": "/assets/icons/b3/hglg11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Patria Log - Fundo de Investimento Imobiliario - Responsabilidade Limitada Cotas",
       "logoid": "fii"
     },
@@ -7334,7 +7134,7 @@
       "logoid": "slc-agricola"
     },
     "BTLG11": {
-      "icon": "/assets/icons/b3/btlg11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "BTG Pactual Logistica Fundo de Investimento Imobiliario Responsabilidade Limitada",
       "logoid": "fii"
     },
@@ -7364,7 +7164,7 @@
       "logoid": "auren-on-nm"
     },
     "GGRC11": {
-      "icon": "/assets/icons/b3/ggrc11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Zagros Renda Imobiliaria Fundo de Investimento Imobiliario - Responsabilidade Limitada",
       "logoid": "fii"
     },
@@ -7394,12 +7194,12 @@
       "logoid": "movida-on-nm"
     },
     "SAPR11": {
-      "icon": "/assets/icons/b3/sapr11.svg",
+      "icon": "/assets/icons/b3/sapr4.svg",
       "name": "Companhia de Saneamento do Parana - Sanepar Units Cons of 1 Sh + 4 Pfd Shs",
       "logoid": "sanepar"
     },
     "SPCX34": {
-      "icon": "/assets/icons/b3/spcx34.svg",
+      "icon": "/assets/icons/stocks/spcx.svg",
       "name": "Space Exploration Technologies Corp. Shs Unsponsored Brazilian Depositary Receipt Repr 0.66667 Sh",
       "logoid": "spacex"
     },
@@ -7449,7 +7249,7 @@
       "logoid": "petrorecsa-on-nm"
     },
     "KLBN11": {
-      "icon": "/assets/icons/b3/klbn11.svg",
+      "icon": "/assets/icons/b3/klbn4.svg",
       "name": "Klabin SA Ctf de Deposito de Acoes Cons of 1 Sh + 4 Pfd Shs",
       "logoid": "klabin"
     },
@@ -7459,17 +7259,17 @@
       "logoid": "assai-on-nm"
     },
     "GOAU4": {
-      "icon": "/assets/icons/b3/goau4.svg",
+      "icon": "/assets/icons/b3/ggbr4.svg",
       "name": "Metalurgica Gerdau SA Pfd",
       "logoid": "gerdau"
     },
     "NVDC34": {
-      "icon": "/assets/icons/b3/nvdc34.svg",
+      "icon": "/assets/icons/stocks/nvda.svg",
       "name": "NVIDIA Corporation Shs Unsponsored Brazilian Depository Receipt Repr 0.02083 Sh",
       "logoid": "nvidia"
     },
     "KNCR11": {
-      "icon": "/assets/icons/b3/kncr11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Kinea Rendimentos Imobiliarios Fundo de Investimento Imobiliario - FII Cotas",
       "logoid": "fii"
     },
@@ -7479,7 +7279,7 @@
       "logoid": "santander"
     },
     "TAEE4": {
-      "icon": "/assets/icons/b3/taee4.svg",
+      "icon": "/assets/icons/b3/taee11.svg",
       "name": "Transmissora Alianca De Energia Eletrica S.A. Pfd",
       "logoid": "taesa"
     },
@@ -7489,7 +7289,7 @@
       "logoid": "celul-irani"
     },
     "ITUB3": {
-      "icon": "/assets/icons/b3/itub3.svg",
+      "icon": "/assets/icons/b3/itub4.svg",
       "name": "Itau Unibanco Holding S.A.",
       "logoid": "itau-unibanco"
     },
@@ -7539,7 +7339,7 @@
       "logoid": "oncoclinicason-nm"
     },
     "ROXO34": {
-      "icon": "/assets/icons/b3/roxo34.svg",
+      "icon": "/assets/icons/stocks/nu.svg",
       "name": "Nu Holdings Ltd. Shs -A- Sponsored Brazilian Depositary Receipt Repr 0.16667 Sh -A-",
       "logoid": "nu-holdings"
     },
@@ -7554,7 +7354,7 @@
       "logoid": "unipar"
     },
     "DIVO11": {
-      "icon": "/assets/icons/b3/divo11.svg",
+      "icon": "/assets/icons/b3/itub4.svg",
       "name": "IT NOW IDIV Fundo de Indice Cotas",
       "logoid": "itau-unibanco"
     },
@@ -7569,7 +7369,7 @@
       "logoid": "grendene"
     },
     "HGRU11": {
-      "icon": "/assets/icons/b3/hgru11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Patria Renda Urbana Fundo de Investimento Imobiliario Responsabilidade Limitada",
       "logoid": "fii"
     },
@@ -7609,7 +7409,7 @@
       "logoid": "pague-menos-on-nm"
     },
     "MELI34": {
-      "icon": "/assets/icons/b3/meli34.svg",
+      "icon": "/assets/icons/stocks/meli.svg",
       "name": "MercadoLibre, Inc. Shs Unsponsored Brazilian Depository Receipt Repr 0.00833 Sh",
       "logoid": "mercadolibre"
     },
@@ -7639,7 +7439,7 @@
       "logoid": "boa-safra-on-nm"
     },
     "BITH11": {
-      "icon": "/assets/icons/b3/bith11.svg",
+      "icon": "/assets/icons/funds/hash11.svg",
       "name": "Hashdex Nasdaq Bitcoin Reference Rate Fundo de Indice",
       "logoid": "hashdex"
     },
@@ -7664,7 +7464,7 @@
       "logoid": "multiplan-on-n2"
     },
     "TSLA34": {
-      "icon": "/assets/icons/b3/tsla34.svg",
+      "icon": "/assets/icons/stocks/tsla.svg",
       "name": "Tesla, Inc. Unsponsored Brazilian Depositary Receipt Repr 0.03125 Sh",
       "logoid": "tesla"
     },
@@ -7684,7 +7484,7 @@
       "logoid": "br-partners-unt-n2"
     },
     "NASD11": {
-      "icon": "/assets/icons/b3/nasd11.svg",
+      "icon": "/assets/icons/b3/gold11.svg",
       "name": "Trend ETF Nasdaq 100 Fundo de Indice",
       "logoid": "firf-xp-ie-fidc"
     },
@@ -7704,12 +7504,12 @@
       "logoid": "wiz-s-a"
     },
     "XPLG11": {
-      "icon": "/assets/icons/b3/xplg11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "XP Log Fundo Investimento Imobiliario FII",
       "logoid": "fii"
     },
     "WRLD11": {
-      "icon": "/assets/icons/b3/wrld11.svg",
+      "icon": "/assets/icons/b3/lftb11.svg",
       "name": "Investo FTSE Global Equities ETF",
       "logoid": "investo"
     },
@@ -7719,7 +7519,7 @@
       "logoid": "unifique-on-nm"
     },
     "GOGL34": {
-      "icon": "/assets/icons/b3/gogl34.svg",
+      "icon": "/assets/icons/stocks/goog.svg",
       "name": "Alphabet Inc Shs A Unsponsored Brazilian Depository Receipt Repr 0.08333 Sh -",
       "logoid": "alphabet"
     },
@@ -7754,12 +7554,12 @@
       "logoid": "natura-and-co"
     },
     "BBAS3F": {
-      "icon": "/assets/icons/b3/bbas3f.svg",
+      "icon": "/assets/icons/b3/bbas3.svg",
       "name": "Banco do Brasil S.A.",
       "logoid": "banco-do-brasil"
     },
     "M1TA34": {
-      "icon": "/assets/icons/b3/m1ta34.svg",
+      "icon": "/assets/icons/stocks/meta.svg",
       "name": "Meta Platforms Inc Shs Unsponsored Brazilian Depository Receipts Repr 0.03571 Sh",
       "logoid": "meta-platforms"
     },
@@ -7769,12 +7569,12 @@
       "logoid": "randon"
     },
     "AAPL34": {
-      "icon": "/assets/icons/b3/aapl34.svg",
+      "icon": "/assets/icons/stocks/aapl.svg",
       "name": "Apple Inc. Shs Unsponsored Brazilian Depository Receipt Repr 0.05 Sh",
       "logoid": "apple"
     },
     "CPTS11": {
-      "icon": "/assets/icons/b3/cpts11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Capitania Securities II Fundo de Investimento Imobiliario Cotas",
       "logoid": "fii"
     },
@@ -7784,7 +7584,7 @@
       "logoid": "anima"
     },
     "MUTC34": {
-      "icon": "/assets/icons/b3/mutc34.svg",
+      "icon": "/assets/icons/stocks/mu.svg",
       "name": "Micron Technology Inc Shs Unsponsored Brazilian Depository Receipt Repr 0.1666667 Sh",
       "logoid": "micron-technology"
     },
@@ -7794,7 +7594,7 @@
       "logoid": "fii"
     },
     "KNRI11": {
-      "icon": "/assets/icons/b3/knri11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Kinea Renda Imobiliaria Fundo de Investimento Imobiliario - FII Cotas",
       "logoid": "fii"
     },
@@ -7804,7 +7604,7 @@
       "logoid": "positivo-tecon"
     },
     "KNSC11": {
-      "icon": "/assets/icons/b3/knsc11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Kinea Securities Fundo de Investimento Imobiliario",
       "logoid": "fii"
     },
@@ -7819,7 +7619,7 @@
       "logoid": "motiva-sa-on-nm"
     },
     "HGBS11": {
-      "icon": "/assets/icons/b3/hgbs11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "CSHG Brasil Shopping Fundo de Investimento Imobiliario Cotas",
       "logoid": "fii"
     },
@@ -7879,7 +7679,7 @@
       "logoid": "ambipar"
     },
     "MSFT34": {
-      "icon": "/assets/icons/b3/msft34.svg",
+      "icon": "/assets/icons/stocks/msft.svg",
       "name": "Microsoft Corp Shs Unsponsored Brazilian Depository Receipt Repr 0.04167 Sh",
       "logoid": "microsoft"
     },
@@ -7894,7 +7694,7 @@
       "logoid": "uniao-pet-participacoes-sa"
     },
     "TAEE3": {
-      "icon": "/assets/icons/b3/taee3.svg",
+      "icon": "/assets/icons/b3/taee11.svg",
       "name": "Transmissora Alianca De Energia Eletrica S.A.",
       "logoid": "taesa"
     },
@@ -7904,7 +7704,7 @@
       "logoid": "fii-tg-ativoci-er"
     },
     "ITLC34": {
-      "icon": "/assets/icons/b3/itlc34.svg",
+      "icon": "/assets/icons/stocks/intc.svg",
       "name": "Intel Corporation Shs Unsponsored Brazilian Depository Receipt Repr 0.1667 Sh",
       "logoid": "intel"
     },
@@ -7919,7 +7719,7 @@
       "logoid": "azevedo-on"
     },
     "BTHF11": {
-      "icon": "/assets/icons/b3/bthf11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "BTG Pactual Real Estate Hedge Fund FII Fundo de Investimento Imobiliario Responsabilidade Limitada",
       "logoid": "fii"
     },
@@ -7929,12 +7729,12 @@
       "logoid": "multilaser-on-ed-nm"
     },
     "KLBN3": {
-      "icon": "/assets/icons/b3/klbn3.svg",
+      "icon": "/assets/icons/b3/klbn4.svg",
       "name": "Klabin SA",
       "logoid": "klabin"
     },
     "PVBI11": {
-      "icon": "/assets/icons/b3/pvbi11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Patria - VBI Asset Management Ltda",
       "logoid": "fii"
     }
@@ -7961,22 +7761,22 @@
       "logoid": "itau-unibanco"
     },
     "BOVA11": {
-      "icon": "/assets/icons/b3/bova11.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Ibovespa Fundo de Indice",
       "logoid": "ishares"
     },
     "BBDC4": {
-      "icon": "/assets/icons/b3/bbdc4.svg",
+      "icon": "/assets/icons/b3/bbdc3.svg",
       "name": "Banco Bradesco SA Pfd",
       "logoid": "bradesco"
     },
     "BBSE3": {
-      "icon": "/assets/icons/b3/bbse3.svg",
+      "icon": "/assets/icons/b3/bbas3.svg",
       "name": "BB Seguridade Participacoes SA",
       "logoid": "banco-do-brasil"
     },
     "ITSA4": {
-      "icon": "/assets/icons/b3/itsa4.svg",
+      "icon": "/assets/icons/b3/itsa3.svg",
       "name": "Itausa SA Non-Cum Perp Pfd Registered Shs",
       "logoid": "itausa"
     },
@@ -8026,12 +7826,12 @@
       "logoid": "aura-360-dr3"
     },
     "TASA4": {
-      "icon": "/assets/icons/b3/tasa4.svg",
+      "icon": "/assets/icons/b3/tasa3.svg",
       "name": "Taurus Armas S.A. Pfd",
       "logoid": "taurus-armas"
     },
     "POMO4": {
-      "icon": "/assets/icons/b3/pomo4.svg",
+      "icon": "/assets/icons/b3/pomo3.svg",
       "name": "Marcopolo SA Pfd",
       "logoid": "marcopolo"
     },
@@ -8066,7 +7866,7 @@
       "logoid": "csn-mineracao"
     },
     "PETR3": {
-      "icon": "/assets/icons/b3/petr3.svg",
+      "icon": "/assets/icons/b3/petr4.svg",
       "name": "Petroleo Brasileiro SA",
       "logoid": "brasileiro-petrobras"
     },
@@ -8096,12 +7896,12 @@
       "logoid": "suzano"
     },
     "XPML11": {
-      "icon": "/assets/icons/b3/xpml11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "XP Malls Fundo Investimento Imobiliario Investor",
       "logoid": "fii"
     },
     "IVVB11": {
-      "icon": "/assets/icons/b3/ivvb11.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares S&P 500 Fundo de Investimento em Cotas de Fundo de Indice - Investimento no Exterior",
       "logoid": "ishares"
     },
@@ -8121,7 +7921,7 @@
       "logoid": "porto-seguro"
     },
     "TSMC34": {
-      "icon": "/assets/icons/b3/tsmc34.svg",
+      "icon": "/assets/icons/stocks/tsm.svg",
       "name": "Taiwan Semiconductor Manufacturing Co., Ltd. ADR Unsponsored Brazilian Depository Receipt Repr 0.125 ADR",
       "logoid": "taiwan-semiconductor"
     },
@@ -8186,7 +7986,7 @@
       "logoid": "telefonica"
     },
     "MXRF11": {
-      "icon": "/assets/icons/b3/mxrf11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Maxi Renda Fundo de Investimento Imobiliario Cotas",
       "logoid": "fii"
     },
@@ -8231,7 +8031,7 @@
       "logoid": "fleury-on-nm"
     },
     "HASH11": {
-      "icon": "/assets/icons/b3/hash11.svg",
+      "icon": "/assets/icons/funds/hash11.svg",
       "name": "Hashdex Nasdaq Crypto Index Fundo de Indice",
       "logoid": "hashdex"
     },
@@ -8256,7 +8056,7 @@
       "logoid": "hapvida"
     },
     "SMAL11": {
-      "icon": "/assets/icons/b3/smal11.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares BM&FBOVESPA Small Cap Index Fund",
       "logoid": "ishares"
     },
@@ -8291,12 +8091,12 @@
       "logoid": "localiza"
     },
     "M2ST34": {
-      "icon": "/assets/icons/b3/m2st34.svg",
+      "icon": "/assets/icons/stocks/mstr.svg",
       "name": "Strategy Inc -A- Unsponsored BDR",
       "logoid": "strategy-cad-hedged-cibc-cdr"
     },
     "HGLG11": {
-      "icon": "/assets/icons/b3/hglg11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Patria Log - Fundo de Investimento Imobiliario - Responsabilidade Limitada Cotas",
       "logoid": "fii"
     },
@@ -8336,7 +8136,7 @@
       "logoid": "slc-agricola"
     },
     "BTLG11": {
-      "icon": "/assets/icons/b3/btlg11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "BTG Pactual Logistica Fundo de Investimento Imobiliario Responsabilidade Limitada",
       "logoid": "fii"
     },
@@ -8366,7 +8166,7 @@
       "logoid": "auren-on-nm"
     },
     "GGRC11": {
-      "icon": "/assets/icons/b3/ggrc11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Zagros Renda Imobiliaria Fundo de Investimento Imobiliario - Responsabilidade Limitada",
       "logoid": "fii"
     },
@@ -8396,12 +8196,12 @@
       "logoid": "movida-on-nm"
     },
     "SAPR11": {
-      "icon": "/assets/icons/b3/sapr11.svg",
+      "icon": "/assets/icons/b3/sapr4.svg",
       "name": "Companhia de Saneamento do Parana - Sanepar Units Cons of 1 Sh + 4 Pfd Shs",
       "logoid": "sanepar"
     },
     "SPCX34": {
-      "icon": "/assets/icons/b3/spcx34.svg",
+      "icon": "/assets/icons/stocks/spcx.svg",
       "name": "Space Exploration Technologies Corp. Shs Unsponsored Brazilian Depositary Receipt Repr 0.66667 Sh",
       "logoid": "spacex"
     },
@@ -8451,7 +8251,7 @@
       "logoid": "petrorecsa-on-nm"
     },
     "KLBN11": {
-      "icon": "/assets/icons/b3/klbn11.svg",
+      "icon": "/assets/icons/b3/klbn4.svg",
       "name": "Klabin SA Ctf de Deposito de Acoes Cons of 1 Sh + 4 Pfd Shs",
       "logoid": "klabin"
     },
@@ -8461,17 +8261,17 @@
       "logoid": "assai-on-nm"
     },
     "GOAU4": {
-      "icon": "/assets/icons/b3/goau4.svg",
+      "icon": "/assets/icons/b3/ggbr4.svg",
       "name": "Metalurgica Gerdau SA Pfd",
       "logoid": "gerdau"
     },
     "NVDC34": {
-      "icon": "/assets/icons/b3/nvdc34.svg",
+      "icon": "/assets/icons/stocks/nvda.svg",
       "name": "NVIDIA Corporation Shs Unsponsored Brazilian Depository Receipt Repr 0.02083 Sh",
       "logoid": "nvidia"
     },
     "KNCR11": {
-      "icon": "/assets/icons/b3/kncr11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Kinea Rendimentos Imobiliarios Fundo de Investimento Imobiliario - FII Cotas",
       "logoid": "fii"
     },
@@ -8481,7 +8281,7 @@
       "logoid": "santander"
     },
     "TAEE4": {
-      "icon": "/assets/icons/b3/taee4.svg",
+      "icon": "/assets/icons/b3/taee11.svg",
       "name": "Transmissora Alianca De Energia Eletrica S.A. Pfd",
       "logoid": "taesa"
     },
@@ -8491,7 +8291,7 @@
       "logoid": "celul-irani"
     },
     "ITUB3": {
-      "icon": "/assets/icons/b3/itub3.svg",
+      "icon": "/assets/icons/b3/itub4.svg",
       "name": "Itau Unibanco Holding S.A.",
       "logoid": "itau-unibanco"
     },
@@ -8541,7 +8341,7 @@
       "logoid": "oncoclinicason-nm"
     },
     "ROXO34": {
-      "icon": "/assets/icons/b3/roxo34.svg",
+      "icon": "/assets/icons/stocks/nu.svg",
       "name": "Nu Holdings Ltd. Shs -A- Sponsored Brazilian Depositary Receipt Repr 0.16667 Sh -A-",
       "logoid": "nu-holdings"
     },
@@ -8556,7 +8356,7 @@
       "logoid": "unipar"
     },
     "DIVO11": {
-      "icon": "/assets/icons/b3/divo11.svg",
+      "icon": "/assets/icons/b3/itub4.svg",
       "name": "IT NOW IDIV Fundo de Indice Cotas",
       "logoid": "itau-unibanco"
     },
@@ -8571,7 +8371,7 @@
       "logoid": "grendene"
     },
     "HGRU11": {
-      "icon": "/assets/icons/b3/hgru11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Patria Renda Urbana Fundo de Investimento Imobiliario Responsabilidade Limitada",
       "logoid": "fii"
     },
@@ -8611,7 +8411,7 @@
       "logoid": "pague-menos-on-nm"
     },
     "MELI34": {
-      "icon": "/assets/icons/b3/meli34.svg",
+      "icon": "/assets/icons/stocks/meli.svg",
       "name": "MercadoLibre, Inc. Shs Unsponsored Brazilian Depository Receipt Repr 0.00833 Sh",
       "logoid": "mercadolibre"
     },
@@ -8641,7 +8441,7 @@
       "logoid": "boa-safra-on-nm"
     },
     "BITH11": {
-      "icon": "/assets/icons/b3/bith11.svg",
+      "icon": "/assets/icons/funds/hash11.svg",
       "name": "Hashdex Nasdaq Bitcoin Reference Rate Fundo de Indice",
       "logoid": "hashdex"
     },
@@ -8666,7 +8466,7 @@
       "logoid": "multiplan-on-n2"
     },
     "TSLA34": {
-      "icon": "/assets/icons/b3/tsla34.svg",
+      "icon": "/assets/icons/stocks/tsla.svg",
       "name": "Tesla, Inc. Unsponsored Brazilian Depositary Receipt Repr 0.03125 Sh",
       "logoid": "tesla"
     },
@@ -8686,7 +8486,7 @@
       "logoid": "br-partners-unt-n2"
     },
     "NASD11": {
-      "icon": "/assets/icons/b3/nasd11.svg",
+      "icon": "/assets/icons/b3/gold11.svg",
       "name": "Trend ETF Nasdaq 100 Fundo de Indice",
       "logoid": "firf-xp-ie-fidc"
     },
@@ -8706,12 +8506,12 @@
       "logoid": "wiz-s-a"
     },
     "XPLG11": {
-      "icon": "/assets/icons/b3/xplg11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "XP Log Fundo Investimento Imobiliario FII",
       "logoid": "fii"
     },
     "WRLD11": {
-      "icon": "/assets/icons/b3/wrld11.svg",
+      "icon": "/assets/icons/b3/lftb11.svg",
       "name": "Investo FTSE Global Equities ETF",
       "logoid": "investo"
     },
@@ -8721,7 +8521,7 @@
       "logoid": "unifique-on-nm"
     },
     "GOGL34": {
-      "icon": "/assets/icons/b3/gogl34.svg",
+      "icon": "/assets/icons/stocks/goog.svg",
       "name": "Alphabet Inc Shs A Unsponsored Brazilian Depository Receipt Repr 0.08333 Sh -",
       "logoid": "alphabet"
     },
@@ -8756,12 +8556,12 @@
       "logoid": "natura-and-co"
     },
     "BBAS3F": {
-      "icon": "/assets/icons/b3/bbas3f.svg",
+      "icon": "/assets/icons/b3/bbas3.svg",
       "name": "Banco do Brasil S.A.",
       "logoid": "banco-do-brasil"
     },
     "M1TA34": {
-      "icon": "/assets/icons/b3/m1ta34.svg",
+      "icon": "/assets/icons/stocks/meta.svg",
       "name": "Meta Platforms Inc Shs Unsponsored Brazilian Depository Receipts Repr 0.03571 Sh",
       "logoid": "meta-platforms"
     },
@@ -8771,12 +8571,12 @@
       "logoid": "randon"
     },
     "AAPL34": {
-      "icon": "/assets/icons/b3/aapl34.svg",
+      "icon": "/assets/icons/stocks/aapl.svg",
       "name": "Apple Inc. Shs Unsponsored Brazilian Depository Receipt Repr 0.05 Sh",
       "logoid": "apple"
     },
     "CPTS11": {
-      "icon": "/assets/icons/b3/cpts11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Capitania Securities II Fundo de Investimento Imobiliario Cotas",
       "logoid": "fii"
     },
@@ -8786,7 +8586,7 @@
       "logoid": "anima"
     },
     "MUTC34": {
-      "icon": "/assets/icons/b3/mutc34.svg",
+      "icon": "/assets/icons/stocks/mu.svg",
       "name": "Micron Technology Inc Shs Unsponsored Brazilian Depository Receipt Repr 0.1666667 Sh",
       "logoid": "micron-technology"
     },
@@ -8796,7 +8596,7 @@
       "logoid": "fii"
     },
     "KNRI11": {
-      "icon": "/assets/icons/b3/knri11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Kinea Renda Imobiliaria Fundo de Investimento Imobiliario - FII Cotas",
       "logoid": "fii"
     },
@@ -8806,7 +8606,7 @@
       "logoid": "positivo-tecon"
     },
     "KNSC11": {
-      "icon": "/assets/icons/b3/knsc11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Kinea Securities Fundo de Investimento Imobiliario",
       "logoid": "fii"
     },
@@ -8821,7 +8621,7 @@
       "logoid": "motiva-sa-on-nm"
     },
     "HGBS11": {
-      "icon": "/assets/icons/b3/hgbs11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "CSHG Brasil Shopping Fundo de Investimento Imobiliario Cotas",
       "logoid": "fii"
     },
@@ -8881,7 +8681,7 @@
       "logoid": "ambipar"
     },
     "MSFT34": {
-      "icon": "/assets/icons/b3/msft34.svg",
+      "icon": "/assets/icons/stocks/msft.svg",
       "name": "Microsoft Corp Shs Unsponsored Brazilian Depository Receipt Repr 0.04167 Sh",
       "logoid": "microsoft"
     },
@@ -8896,7 +8696,7 @@
       "logoid": "uniao-pet-participacoes-sa"
     },
     "TAEE3": {
-      "icon": "/assets/icons/b3/taee3.svg",
+      "icon": "/assets/icons/b3/taee11.svg",
       "name": "Transmissora Alianca De Energia Eletrica S.A.",
       "logoid": "taesa"
     },
@@ -8906,7 +8706,7 @@
       "logoid": "fii-tg-ativoci-er"
     },
     "ITLC34": {
-      "icon": "/assets/icons/b3/itlc34.svg",
+      "icon": "/assets/icons/stocks/intc.svg",
       "name": "Intel Corporation Shs Unsponsored Brazilian Depository Receipt Repr 0.1667 Sh",
       "logoid": "intel"
     },
@@ -8921,7 +8721,7 @@
       "logoid": "azevedo-on"
     },
     "BTHF11": {
-      "icon": "/assets/icons/b3/bthf11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "BTG Pactual Real Estate Hedge Fund FII Fundo de Investimento Imobiliario Responsabilidade Limitada",
       "logoid": "fii"
     },
@@ -8931,12 +8731,12 @@
       "logoid": "multilaser-on-ed-nm"
     },
     "KLBN3": {
-      "icon": "/assets/icons/b3/klbn3.svg",
+      "icon": "/assets/icons/b3/klbn4.svg",
       "name": "Klabin SA",
       "logoid": "klabin"
     },
     "PVBI11": {
-      "icon": "/assets/icons/b3/pvbi11.svg",
+      "icon": "/assets/icons/b3/alzr11.svg",
       "name": "Patria - VBI Asset Management Ltda",
       "logoid": "fii"
     }
@@ -8953,12 +8753,12 @@
       "logoid": "invesco"
     },
     "IWM": {
-      "icon": "/assets/icons/funds/iwm.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Russell 2000 Index Fund",
       "logoid": "ishares"
     },
     "DIA": {
-      "icon": "/assets/icons/funds/dia.svg",
+      "icon": "/assets/icons/funds/spy.svg",
       "name": "State Street SPDR Dow Jones Industrial Average ETF Trust",
       "logoid": "spdr-sandp500-etf-tr"
     },
@@ -8968,22 +8768,22 @@
       "logoid": "vanguard"
     },
     "VTI": {
-      "icon": "/assets/icons/funds/vti.svg",
+      "icon": "/assets/icons/funds/voo.svg",
       "name": "Vanguard Morningstar Total Stock Market ETF",
       "logoid": "vanguard"
     },
     "TLT": {
-      "icon": "/assets/icons/funds/tlt.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares 20+ Year Treasury Bond ETF",
       "logoid": "ishares"
     },
     "GLD": {
-      "icon": "/assets/icons/funds/gld.svg",
+      "icon": "/assets/icons/funds/spy.svg",
       "name": "SPDR Gold Shares",
       "logoid": "spdr-sandp500-etf-tr"
     },
     "SLV": {
-      "icon": "/assets/icons/funds/slv.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Silver Trust",
       "logoid": "ishares"
     },
@@ -8993,7 +8793,7 @@
       "logoid": "uscf-fund"
     },
     "UNG": {
-      "icon": "/assets/icons/funds/ung.svg",
+      "icon": "/assets/icons/funds/uso.svg",
       "name": "United States Natural Gas Fund LP",
       "logoid": "uscf-fund"
     },
@@ -9008,7 +8808,7 @@
       "logoid": "proshares"
     },
     "SOXX": {
-      "icon": "/assets/icons/funds/soxx.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares PHLX SOX Semiconductor Sector Index Fund",
       "logoid": "ishares"
     },
@@ -9078,12 +8878,12 @@
       "logoid": "ark-etf-tr"
     },
     "HYG": {
-      "icon": "/assets/icons/funds/hyg.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares iBoxx $ High Yield Corporate Bond ETF",
       "logoid": "ishares"
     },
     "LQD": {
-      "icon": "/assets/icons/funds/lqd.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares iBoxx $ Investment Grade Corporate Bond ETF",
       "logoid": "ishares"
     },
@@ -9093,37 +8893,37 @@
       "logoid": "ishares"
     },
     "EFA": {
-      "icon": "/assets/icons/funds/efa.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares MSCI EAFE ETF",
       "logoid": "ishares"
     },
     "FXI": {
-      "icon": "/assets/icons/funds/fxi.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares China Large-Cap ETF",
       "logoid": "ishares"
     },
     "EWZ": {
-      "icon": "/assets/icons/funds/ewz.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares MSCI Brazil ETF",
       "logoid": "ishares"
     },
     "EWJ": {
-      "icon": "/assets/icons/funds/ewj.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares MSCI Japan Index Fund",
       "logoid": "ishares"
     },
     "BOVA11": {
-      "icon": "/assets/icons/funds/bova11.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares Ibovespa Fundo de Indice",
       "logoid": "ishares"
     },
     "SMAL11": {
-      "icon": "/assets/icons/funds/smal11.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares BM&FBOVESPA Small Cap Index Fund",
       "logoid": "ishares"
     },
     "IVVB11": {
-      "icon": "/assets/icons/funds/ivvb11.svg",
+      "icon": "/assets/icons/funds/eem.svg",
       "name": "iShares S&P 500 Fundo de Investimento em Cotas de Fundo de Indice - Investimento no Exterior",
       "logoid": "ishares"
     },
@@ -9433,19 +9233,19 @@
       "name": "OANDA"
     },
     "Charles Schwab": {
-      "icon": "/assets/icons/brokers/charles-schwab.svg",
+      "icon": "/assets/icons/stocks/schd.svg",
       "name": "Charles Schwab"
     },
     "CHARLESSCHWAB": {
-      "icon": "/assets/icons/brokers/charles-schwab.svg",
+      "icon": "/assets/icons/stocks/schd.svg",
       "name": "Charles Schwab"
     },
     "Robinhood": {
-      "icon": "/assets/icons/brokers/robinhood.svg",
+      "icon": "/assets/icons/stocks/hood.svg",
       "name": "Robinhood"
     },
     "ROBINHOOD": {
-      "icon": "/assets/icons/brokers/robinhood.svg",
+      "icon": "/assets/icons/stocks/hood.svg",
       "name": "Robinhood"
     },
     "Fidelity": {
@@ -9484,12 +9284,12 @@
       "logoid": "source/CME"
     },
     "NYMEX": {
-      "icon": "/assets/icons/exchanges/nymex.svg",
+      "icon": "/assets/icons/exchanges/cbot.svg",
       "name": "New York Mercantile Exchange",
       "logoid": "source/NYMEX"
     },
     "COMEX": {
-      "icon": "/assets/icons/exchanges/comex.svg",
+      "icon": "/assets/icons/exchanges/cbot.svg",
       "name": "Commodity Exchange",
       "logoid": "source/COMEX"
     },
@@ -9509,7 +9309,7 @@
       "logoid": "source/NYSE"
     },
     "BMFBOVESPA": {
-      "icon": "/assets/icons/exchanges/bmfbovespa.svg",
+      "icon": "/assets/icons/exchanges/b3.svg",
       "name": "B3 - Brasil Bolsa Balcão",
       "logoid": "source/BMFBOVESPA"
     },

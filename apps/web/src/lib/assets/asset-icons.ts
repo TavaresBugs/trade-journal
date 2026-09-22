@@ -39,16 +39,16 @@ const FALLBACK_ICON = `${ICON_BASE}/fallback.svg`;
 
 /** Currency flag vectors (35+ currencies enabling hundreds of dynamically blended pairs). */
 export const CURRENCY_FLAGS: Record<string, string> = {
-  USD: `${ICON_BASE}/flags/usd.svg`,
-  EUR: `${ICON_BASE}/flags/eur.svg`,
-  GBP: `${ICON_BASE}/flags/gbp.svg`,
-  JPY: `${ICON_BASE}/flags/jpy.svg`,
-  AUD: `${ICON_BASE}/flags/aud.svg`,
-  CAD: `${ICON_BASE}/flags/cad.svg`,
-  CHF: `${ICON_BASE}/flags/chf.svg`,
-  NZD: `${ICON_BASE}/flags/nzd.svg`,
-  BRL: `${ICON_BASE}/flags/brl.svg`,
-  CNY: `${ICON_BASE}/flags/cny.svg`,
+  USD: `${ICON_BASE}/flags/us.svg`,
+  EUR: `${ICON_BASE}/flags/eu.svg`,
+  GBP: `${ICON_BASE}/flags/gb.svg`,
+  JPY: `${ICON_BASE}/flags/jp.svg`,
+  AUD: `${ICON_BASE}/flags/au.svg`,
+  CAD: `${ICON_BASE}/flags/ca.svg`,
+  CHF: `${ICON_BASE}/flags/ch.svg`,
+  NZD: `${ICON_BASE}/flags/nz.svg`,
+  BRL: `${ICON_BASE}/flags/br.svg`,
+  CNY: `${ICON_BASE}/flags/cn.svg`,
   ...Object.fromEntries(
     Object.entries(tvManifest.flags || {}).map(([currency, data]) => [currency, data.icon]),
   ),
@@ -82,15 +82,15 @@ export const SINGLE_ASSETS: Record<string, { icon: string; color: string }> = {
   USDX: { icon: `${ICON_BASE}/indices/us-dollar-index.svg`, color: "#059669" },
 
   // --- European & Asian Indices (CFD Popular) ---
-  GER40: { icon: `${ICON_BASE}/default/EU--big.svg`, color: "#0052B4" },
-  DE40: { icon: `${ICON_BASE}/default/EU--big.svg`, color: "#0052B4" },
-  DAX: { icon: `${ICON_BASE}/default/EU--big.svg`, color: "#0052B4" },
-  EU50: { icon: `${ICON_BASE}/default/EU--big.svg`, color: "#0052B4" },
-  UK100: { icon: `${ICON_BASE}/default/GB--big.svg`, color: "#C8102E" },
-  FTSE: { icon: `${ICON_BASE}/default/GB--big.svg`, color: "#C8102E" },
-  JP225: { icon: `${ICON_BASE}/default/JP--big.svg`, color: "#BC002D" },
-  JPN225: { icon: `${ICON_BASE}/default/JP--big.svg`, color: "#BC002D" },
-  NIKKEI: { icon: `${ICON_BASE}/default/JP--big.svg`, color: "#BC002D" },
+  GER40: { icon: `${ICON_BASE}/flags/eu.svg`, color: "#0052B4" },
+  DE40: { icon: `${ICON_BASE}/flags/eu.svg`, color: "#0052B4" },
+  DAX: { icon: `${ICON_BASE}/flags/eu.svg`, color: "#0052B4" },
+  EU50: { icon: `${ICON_BASE}/flags/eu.svg`, color: "#0052B4" },
+  UK100: { icon: `${ICON_BASE}/flags/gb.svg`, color: "#C8102E" },
+  FTSE: { icon: `${ICON_BASE}/flags/gb.svg`, color: "#C8102E" },
+  JP225: { icon: `${ICON_BASE}/flags/jp.svg`, color: "#BC002D" },
+  JPN225: { icon: `${ICON_BASE}/flags/jp.svg`, color: "#BC002D" },
+  NIKKEI: { icon: `${ICON_BASE}/flags/jp.svg`, color: "#BC002D" },
 
   // --- Commodities ---
   GC: { icon: `${ICON_BASE}/commodities/gold.svg`, color: "#EAB308" },
