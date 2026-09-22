@@ -88,3 +88,39 @@ describe("journal calendar queries", () => {
     db.delete(journalDays).where(eq(journalDays.date, testDate)).run();
   });
 });
+
+describe("journal day review fields and persistence", () => {
+  it("persists rating, reviewedAt, tags, and mistakes via PATCH and retrieves via GET", async () => {
+    const { GET, PATCH } = await import("../src/app/api/journal/[date]/route");
+    const { db, journalDays } = await import("../src/db");
+    const { eq } = await import("drizzle-orm");
+    const testDate = "2026-07-20";
+
+    const patchReq = new Request(`http://localhost/api/journal/${testDate}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rating: 5,
+        reviewed: true,
+        tags: ["trend day", "discipline"],
+        mistakes: ["none"],
+        note: "Great trading day!",
+      }),
+    });
+    const patchRes = await PATCH(patchReq, { params: Promise.resolve({ date: testDate }) });
+    expect(patchRes.status).toBe(200);
+
+    const getReq = new Request(`http://localhost/api/journal/${testDate}`);
+    const getRes = await GET(getReq, { params: Promise.resolve({ date: testDate }) });
+    expect(getRes.status).toBe(200);
+    const body = await getRes.json();
+    expect(body.rating).toBe(5);
+    expect(body.reviewedAt).toBeTruthy();
+    expect(body.tagsJson).toBe(JSON.stringify(["trend day", "discipline"]));
+    expect(body.mistakesJson).toBe(JSON.stringify(["none"]));
+    expect(body.note).toBe("Great trading day!");
+
+    // Clean up
+    db.delete(journalDays).where(eq(journalDays.date, testDate)).run();
+  });
+});

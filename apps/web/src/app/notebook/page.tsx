@@ -342,6 +342,8 @@ function NoteEditor({ note, onChanged }: { note: NoteRow; onChanged: () => void 
         <NoteFooter
           type="note"
           id={note.id}
+          mode={mode}
+          onModeChange={setMode}
           document={{ title: title || "Journal note", lines: [content] }}
           onSave={() => void flush()}
           savingStatus={status}

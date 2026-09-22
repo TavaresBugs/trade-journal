@@ -96,6 +96,10 @@ CREATE TABLE IF NOT EXISTS trade_excursions (
 CREATE TABLE IF NOT EXISTS journal_days (
   date TEXT PRIMARY KEY,
   note TEXT NOT NULL DEFAULT '',
+  rating INTEGER,
+  reviewed_at TEXT,
+  tags_json TEXT,
+  mistakes_json TEXT,
   updated_at TEXT NOT NULL
 );
 

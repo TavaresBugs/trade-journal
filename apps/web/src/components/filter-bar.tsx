@@ -14,6 +14,8 @@ import {
 import { FilterFields } from "./filter-fields";
 import { SlidersHorizontal } from "lucide-react";
 import { AccountSelector } from "./account-selector";
+import { cn } from "@/lib/utils";
+
 export const useFilters = () => {
   const params = useSearchParams();
   const { data } = useApi<{ timeZone: string }>("/api/settings");
@@ -43,20 +45,22 @@ export const useFilters = () => {
   }, [params, range, timeZone]);
 };
 export type Filters = ReturnType<typeof useFilters>;
-export function FilterBar({
-  title,
-  actions,
+
+export function FilterDialogButton({
+  variant = "outline",
+  size = "sm",
+  className,
+  asSeamless = false,
 }: {
-  title: React.ReactNode;
-  actions?: React.ReactNode;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  size?: "default" | "sm" | "lg" | "icon";
+  className?: string;
+  asSeamless?: boolean;
 }) {
   const router = useRouter(),
     pathname = usePathname(),
     params = useSearchParams();
   const filters = useFilters();
-  const showFilters =
-    ["/", "/reports", "/trades", "/calendar", "/journal", "/playbooks"].includes(pathname) ||
-    pathname.startsWith("/journal/");
   const [open, setOpen] = useState(false),
     [draft, setDraft] = useState<AnalysisFilters>({});
   const filterTitle = useRef<HTMLHeadingElement>(null);
@@ -69,52 +73,41 @@ export function FilterBar({
     router.replace(`${pathname}?${next}`);
     setOpen(false);
   };
+
   return (
     <>
-      <div className="journal-filter-bar sticky z-10 flex min-h-14 min-w-0 flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
-        <h1 className="mr-auto min-w-0 text-base font-semibold tracking-tight">{title}</h1>
-        {showFilters && (
-          <>
-            <AccountSelector />
-            <div className="flex max-w-full shrink-0 items-center rounded-md border p-0.5">
-              {["7d", "30d", "90d", "ytd", "all"].map((range) => (
-                <Button
-                  key={range}
-                  variant={filters.range === range ? "secondary" : "ghost"}
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  onClick={() => {
-                    const next = new URLSearchParams(params.toString());
-                    next.set("range", range);
-                    next.delete("from");
-                    next.delete("to");
-                    router.replace(`${pathname}?${next}`);
-                  }}
-                >
-                  {range === "all" ? "All" : range.toUpperCase()}
-                </Button>
-              ))}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              title="Filter by dates, symbols, strategy, outcome, and more. All selected conditions must match."
-              onClick={() => {
-                setDraft(filters.values);
-                setOpen(true);
-              }}
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filters{count > 0 ? ` · ${count}` : ""}
-            </Button>
-          </>
-        )}
-        {actions && (
-          <div className="journal-header-actions flex min-w-0 max-w-full flex-wrap items-center gap-2">
-            {actions}
-          </div>
-        )}
-      </div>
+      {asSeamless ? (
+        <button
+          type="button"
+          className={cn(
+            "inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs sm:text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.98]",
+            count > 0 && "text-foreground font-bold",
+            className,
+          )}
+          title="Filter by dates, symbols, strategy, outcome, and more. All selected conditions must match."
+          onClick={() => {
+            setDraft(filters.values);
+            setOpen(true);
+          }}
+        >
+          <SlidersHorizontal className="size-3.5 opacity-70" />
+          <span>Filters{count > 0 ? ` · ${count}` : ""}</span>
+        </button>
+      ) : (
+        <Button
+          variant={variant}
+          size={size}
+          className={className}
+          title="Filter by dates, symbols, strategy, outcome, and more. All selected conditions must match."
+          onClick={() => {
+            setDraft(filters.values);
+            setOpen(true);
+          }}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Filters{count > 0 ? ` · ${count}` : ""}
+        </Button>
+      )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           className="journal-filter-dialog sm:max-w-3xl"
@@ -150,5 +143,72 @@ export function FilterBar({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+export function FilterBar({
+  title,
+  actions,
+  hideFilterButton = false,
+  hideRangeButtons = false,
+}: {
+  title: React.ReactNode;
+  actions?: React.ReactNode;
+  hideFilterButton?: boolean | "mobile";
+  hideRangeButtons?: boolean | "mobile";
+}) {
+  const pathname = usePathname(),
+    params = useSearchParams(),
+    router = useRouter();
+  const filters = useFilters();
+  const showFilters =
+    ["/", "/reports", "/trades", "/calendar", "/journal", "/playbooks"].includes(pathname) ||
+    pathname.startsWith("/journal/");
+
+  return (
+    <div className="journal-filter-bar sticky z-10 flex min-h-14 min-w-0 flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
+      <h1 className="mr-auto min-w-0 text-base font-semibold tracking-tight">{title}</h1>
+      {showFilters && (
+        <>
+          <AccountSelector />
+          {hideRangeButtons !== true && (
+            <div
+              className={cn(
+                "max-w-full shrink-0 items-center rounded-md border p-0.5",
+                hideRangeButtons === "mobile" ? "hidden sm:flex" : "flex",
+              )}
+            >
+              {["7d", "30d", "90d", "ytd", "all"].map((range) => (
+                <Button
+                  key={range}
+                  variant={filters.range === range ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => {
+                    const next = new URLSearchParams(params.toString());
+                    next.set("range", range);
+                    next.delete("from");
+                    next.delete("to");
+                    router.replace(`${pathname}?${next}`);
+                  }}
+                >
+                  {range === "all" ? "All" : range.toUpperCase()}
+                </Button>
+              ))}
+            </div>
+          )}
+          {hideFilterButton !== true && (
+            <div className={hideFilterButton === "mobile" ? "hidden sm:block" : undefined}>
+              <FilterDialogButton />
+            </div>
+          )}
+        </>
+      )}
+      {actions && (
+        <div className="journal-header-actions flex min-w-0 max-w-full flex-wrap items-center gap-2">
+          {actions}
+        </div>
+      )}
+    </div>
   );
 }

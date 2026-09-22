@@ -27,6 +27,20 @@ const createDb = () => {
   if (!attachmentColumns.some((column) => column.name === "slot")) {
     sqlite.exec("ALTER TABLE attachments ADD COLUMN slot TEXT");
   }
+  // Additive upgrade: journal_days table gains review metadata columns.
+  const journalDayColumns = sqlite.pragma("table_info(journal_days)") as { name: string }[];
+  if (!journalDayColumns.some((column) => column.name === "rating")) {
+    sqlite.exec("ALTER TABLE journal_days ADD COLUMN rating INTEGER");
+  }
+  if (!journalDayColumns.some((column) => column.name === "reviewed_at")) {
+    sqlite.exec("ALTER TABLE journal_days ADD COLUMN reviewed_at TEXT");
+  }
+  if (!journalDayColumns.some((column) => column.name === "tags_json")) {
+    sqlite.exec("ALTER TABLE journal_days ADD COLUMN tags_json TEXT");
+  }
+  if (!journalDayColumns.some((column) => column.name === "mistakes_json")) {
+    sqlite.exec("ALTER TABLE journal_days ADD COLUMN mistakes_json TEXT");
+  }
   // Materialize CSV bounds once so connection and range lookups never scan candle JSON.
   const csvColumns = sqlite.pragma("table_info(market_csv_datasets)") as { name: string }[];
   sqlite.transaction(() => {

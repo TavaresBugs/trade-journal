@@ -3,19 +3,12 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import {
-  ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
-  LayoutGrid,
-  List,
-  NotebookPen,
-} from "lucide-react";
+import { ArrowUpRight, LayoutGrid, List, NotebookPen } from "lucide-react";
 import { dayKeyOf, type DayStats } from "@luxalgo/journal-core";
 import { CalendarPnl } from "@/components/calendar-pnl";
 import { CalendarPerformance } from "@/components/calendar-insights";
 import type { CalendarResponse } from "@/lib/calendar-insights";
-import { FilterBar, useFilters } from "@/components/filter-bar";
+import { FilterBar, FilterDialogButton, useFilters } from "@/components/filter-bar";
 import { Pnl } from "@/components/pnl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -86,66 +79,40 @@ function CalendarView() {
   };
 
   const [selection, setMonth] = useState<{ year: number; month: number } | null>(null);
-  const { data, error, refresh } = useApi<CalendarResponse>(
+  const { data, error, loading, refresh } = useApi<CalendarResponse>(
     `/api/calendar?${query}${selection ? `&calYear=${selection.year}&calMonth=${selection.month}` : ""}`,
   );
-  const today = dayKeyOf(new Date().toISOString(), timeZone);
-  const month = selection ??
-    data?.calendar ?? { year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) };
+  const [cachedData, setCachedData] = useState<CalendarResponse | null>(null);
 
-  const shift = (delta: number) => {
-    const next = new Date(Date.UTC(month.year, month.month - 1 + delta, 1));
-    setMonth({ year: next.getUTCFullYear(), month: next.getUTCMonth() + 1 });
-  };
+  useEffect(() => {
+    if (data) {
+      setCachedData(data);
+    }
+  }, [data]);
+
+  const activeData = data ?? cachedData;
+  const today = dayKeyOf(new Date().toISOString(), timeZone);
 
   return (
     <div>
       <FilterBar
         title="Calendar"
+        hideFilterButton={true}
+        hideRangeButtons={true}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {viewMode === "grid" && (
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 active:scale-[0.97]"
-                  onClick={() => shift(-1)}
-                  aria-label="Previous month"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="w-32 text-center text-xs font-semibold select-none sm:w-36 sm:text-sm tnum">
-                  {new Date(Date.UTC(month.year, month.month - 1)).toLocaleString("en-US", {
-                    month: "long",
-                    year: "numeric",
-                    timeZone: "UTC",
-                  })}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 active:scale-[0.97]"
-                  onClick={() => shift(1)}
-                  aria-label="Next month"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-
             {/* View Mode Toggle: Grid vs List */}
             <div
               role="group"
               aria-label="Layout view mode"
-              className="flex items-center rounded-lg border bg-muted/40 p-0.5 text-xs"
+              className="flex h-8 items-center rounded-lg border border-input bg-muted/30 p-0.5 text-xs shadow-xs"
             >
               <button
                 type="button"
                 onClick={() => handleViewChange("grid")}
                 aria-pressed={viewMode === "grid"}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium transition-[color,background-color,box-shadow,transform] duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:scale-[0.98]",
+                  "flex h-full items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-[color,background-color,box-shadow,transform] duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:scale-[0.98]",
                   viewMode === "grid"
                     ? "bg-background text-foreground shadow-xs font-semibold"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
@@ -159,7 +126,7 @@ function CalendarView() {
                 onClick={() => handleViewChange("list")}
                 aria-pressed={viewMode === "list"}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 font-medium transition-[color,background-color,box-shadow,transform] duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:scale-[0.98]",
+                  "flex h-full items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-[color,background-color,box-shadow,transform] duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:scale-[0.98]",
                   viewMode === "list"
                     ? "bg-background text-foreground shadow-xs font-semibold"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
@@ -169,10 +136,6 @@ function CalendarView() {
                 <span>List</span>
               </button>
             </div>
-
-            <Button asChild size="sm">
-              <Link href={`/journal/${today}?${query}`}>View today</Link>
-            </Button>
           </div>
         }
       />
@@ -181,22 +144,31 @@ function CalendarView() {
         {viewMode === "grid" ? (
           <>
             <Card>
-              <CardContent className="pt-4">
-                {error ? (
+              <CardContent className="p-3 sm:p-5">
+                {error && !activeData ? (
                   <div role="alert" className="space-y-3 py-6 text-sm">
                     <p className="text-destructive">{error}</p>
                     <Button variant="outline" onClick={refresh}>
                       Try again
                     </Button>
                   </div>
-                ) : data ? (
-                  <CalendarPnl
-                    calendar={data.calendar}
-                    currency={data.currencies[0] ?? "USD"}
-                    monetary={data.currencies.length <= 1}
-                    today={today}
-                    journalDays={data.journalDays}
-                  />
+                ) : activeData ? (
+                  <div
+                    className={cn(
+                      "transition-opacity duration-150",
+                      loading && "opacity-50 pointer-events-none",
+                    )}
+                  >
+                    <CalendarPnl
+                      calendar={activeData.calendar}
+                      currency={activeData.currencies[0] ?? "USD"}
+                      monetary={activeData.currencies.length <= 1}
+                      today={today}
+                      journalDays={activeData.journalDays}
+                      onMonthChange={setMonth}
+                      headerRight={<FilterDialogButton asSeamless />}
+                    />
+                  </div>
                 ) : (
                   <div role="status" aria-label="Loading calendar">
                     <Skeleton className="h-96" />
@@ -204,14 +176,21 @@ function CalendarView() {
                 )}
               </CardContent>
             </Card>
-            {data && (
-              <CalendarPerformance
-                key={`${data.calendar.year}-${data.calendar.month}-${query}`}
-                data={data}
-                query={query}
-              />
+            {activeData && (
+              <div
+                className={cn(
+                  "transition-opacity duration-150",
+                  loading && "opacity-50 pointer-events-none",
+                )}
+              >
+                <CalendarPerformance
+                  key={`${activeData.calendar.year}-${activeData.calendar.month}-${query}`}
+                  data={activeData}
+                  query={query}
+                />
+              </div>
             )}
-            {!data && !error && (
+            {!activeData && !error && (
               <div
                 role="status"
                 aria-label="Loading performance insights"

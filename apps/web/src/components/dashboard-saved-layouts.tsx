@@ -30,7 +30,13 @@ export function DashboardSavedLayouts({
   const [saved, setSaved] = useState("");
   const titleId = useId();
   const listRef = useRef<HTMLDivElement>(null);
-  const names = Object.keys(layouts);
+
+  // Always include the Default layout preset
+  const allLayouts: Record<string, DashboardArrangement> = {
+    Default: normalizeArrangement(null, ids),
+    ...layouts,
+  };
+  const names = Object.keys(allLayouts);
   const matches = names.filter((name) =>
     name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
   );
@@ -65,7 +71,9 @@ export function DashboardSavedLayouts({
         >
           <div className="dashboard-customize-heading">
             <h2 id={titleId}>Saved layouts</h2>
-            <span className="dashboard-customize-count">{names.length} saved</span>
+            <span className="dashboard-customize-count">
+              {names.length} {names.length === 1 ? "layout" : "layouts"}
+            </span>
             <Popover.Close
               className="dashboard-customize-icon-button"
               aria-label="Close saved layouts"
@@ -107,7 +115,7 @@ export function DashboardSavedLayouts({
           >
             <div className="dashboard-customize-list">
               {matches.map((name, index) => {
-                const layout = normalizeArrangement(layouts[name], ids);
+                const layout = normalizeArrangement(allLayouts[name], ids);
                 const active = JSON.stringify(layout) === JSON.stringify(current);
                 return (
                   <button

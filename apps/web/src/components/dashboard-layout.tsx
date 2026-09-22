@@ -285,7 +285,12 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
               update(
                 (previous) => ({
                   ...previous,
-                  current: normalizeArrangement(previous.layouts[name], ids),
+                  current: normalizeArrangement(
+                    name === "Default"
+                      ? (previous.layouts["Default"] ?? initial)
+                      : (previous.layouts[name] ?? initial),
+                    ids,
+                  ),
                 }),
                 `${name} loaded`,
               )
@@ -303,9 +308,6 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
               )
             }
           />
-          <span className="text-xs text-muted-foreground">
-            {visible.length} of {widgets.length} cards
-          </span>
           <span role="status" className="sr-only">
             {feedback}
           </span>

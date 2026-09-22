@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import type {
   CalendarMonth,
   DayStats,
@@ -20,6 +20,7 @@ import { TimeHeatmap } from "@/components/charts/time-heatmap";
 import {
   ArrowUpDown,
   CalendarCheck2,
+  CalendarDays,
   CircleDollarSign,
   Flame,
   Scale,
@@ -29,6 +30,7 @@ import {
   TrendingDown,
   Trophy,
 } from "lucide-react";
+import type { CalendarResponse } from "@/lib/calendar-insights";
 import { FilterBar, useFilters } from "@/components/filter-bar";
 import { AddTradeDialog } from "@/components/add-trade-dialog";
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -37,7 +39,6 @@ import { Pnl } from "@/components/pnl";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { DirectionBadge } from "@/components/ui/direction-badge";
 import { normalizeSymbol } from "@/lib/assets/asset-icons";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -54,6 +55,7 @@ interface Bucket {
 
 interface StatsPayload {
   timeZone: string;
+  currencies: string[];
   metrics: TradeMetrics;
   initialBalance: number;
   edgeScore: EdgeScore;
@@ -438,25 +440,12 @@ function DashboardContent({
             size: "wide",
             layoutGroup: "detail",
             content: (
-              <Card className="h-full">
-                <CardHeader className="flex-row items-center justify-between">
-                  <CardTitle>
-                    {new Date(Date.UTC(data.calendar.year, data.calendar.month - 1)).toLocaleString(
-                      "en-US",
-                      { month: "long", year: "numeric", timeZone: "UTC" },
-                    )}
-                  </CardTitle>
-                  <Link
-                    href={`/calendar?${query}`}
-                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                  >
-                    Full calendar
-                  </Link>
-                </CardHeader>
-                <CardContent>
-                  <CalendarPnl calendar={data.calendar} journalDays={data.journalDays} />
-                </CardContent>
-              </Card>
+              <DashboardCalendarCard
+                initialCalendar={data.calendar}
+                initialJournalDays={data.journalDays}
+                currencies={data.currencies}
+                query={query}
+              />
             ),
           },
           {
@@ -489,22 +478,9 @@ function DashboardContent({
                             href={`/trades/${encodeURIComponent(trade.key)}?${query}`}
                             className="group flex items-center justify-between gap-2.5 sm:gap-4 rounded-lg px-2.5 py-2 text-sm transition-[background-color,transform] duration-150 ease-out hover:bg-muted/40 active:scale-[0.995]"
                           >
-                            {/* Left cluster: Outcome badge + Asset Icon & Ticker + Direction badge */}
+                            {/* Left cluster: Asset Icon & Ticker + Direction badge */}
                             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                              <Badge
-                                variant={
-                                  trade.status === "win"
-                                    ? "profit"
-                                    : trade.status === "loss"
-                                      ? "loss"
-                                      : "secondary"
-                                }
-                                className="w-12 justify-center text-[10px] font-bold tracking-wider py-0.5 shrink-0 select-none"
-                              >
-                                {trade.status.toUpperCase()}
-                              </Badge>
-
-                              <div className="flex items-center gap-2 w-28 sm:w-32 shrink-0 min-w-0">
+                              <div className="flex items-center gap-2 w-24 sm:w-28 shrink-0 min-w-0">
                                 <AssetIcon symbol={trade.symbol} size="sm" />
                                 <span
                                   className="font-semibold text-sm text-foreground tracking-tight truncate"
@@ -550,7 +526,7 @@ function DashboardContent({
                             className="flex items-center justify-between gap-2.5 sm:gap-4 rounded-lg px-2.5 py-2 text-sm"
                           >
                             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                              <div className="flex items-center gap-2 w-28 sm:w-32 shrink-0 min-w-0">
+                              <div className="flex items-center gap-2 w-24 sm:w-28 shrink-0 min-w-0">
                                 <AssetIcon symbol={position.symbol} size="sm" />
                                 <span
                                   className="font-semibold text-sm text-foreground tracking-tight truncate"
@@ -834,5 +810,64 @@ function DashboardSkeleton() {
         </div>
       </div>
     </div>
+  );
+}
+
+function DashboardCalendarCard({
+  initialCalendar,
+  initialJournalDays,
+  currencies,
+  query,
+}: {
+  initialCalendar: CalendarMonth;
+  initialJournalDays?: string[];
+  currencies: string[];
+  query: string;
+}) {
+  const [selection, setMonth] = useState<{ year: number; month: number } | null>(null);
+
+  useEffect(() => {
+    setMonth(null);
+  }, [query]);
+
+  const calUrl = selection
+    ? `/api/calendar?${query}&calYear=${selection.year}&calMonth=${selection.month}`
+    : "";
+  const { data: monthData, loading } = useApi<CalendarResponse>(calUrl);
+
+  const activeCalendar = monthData?.calendar ?? initialCalendar;
+  const activeJournalDays = monthData?.journalDays ?? initialJournalDays;
+
+  return (
+    <Card className="h-full flex flex-col">
+      <CardContent className="p-3 sm:p-5 flex-1 flex flex-col min-h-0">
+        <div
+          className={cn(
+            "transition-opacity duration-150 flex-1 flex flex-col min-h-0",
+            loading && "opacity-50 pointer-events-none",
+          )}
+        >
+          <CalendarPnl
+            calendar={activeCalendar}
+            currency={currencies[0] ?? "USD"}
+            monetary={currencies.length <= 1}
+            journalDays={activeJournalDays}
+            onMonthChange={setMonth}
+            headerLeft={<div className="w-6 sm:w-7" />}
+            headerRight={
+              <Link
+                href={`/calendar?${query}`}
+                title="Full calendar"
+                aria-label="Open full calendar"
+                className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color,transform] duration-150 hover:bg-muted hover:text-foreground active:scale-[0.96]"
+              >
+                <CalendarDays className="size-4" />
+              </Link>
+            }
+            className="h-full flex-1"
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }

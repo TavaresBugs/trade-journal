@@ -39,3 +39,15 @@ export function DropdownMenuSeparator({
 }: ComponentProps<typeof Menu.Separator>) {
   return <Menu.Separator className={cn("-mx-1 my-1 h-px bg-border", className)} {...props} />;
 }
+
+export function DropdownMenuLabel({ className, ...props }: ComponentProps<typeof Menu.Label>) {
+  return (
+    <Menu.Label
+      className={cn(
+        "px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground",
+        className,
+      )}
+      {...props}
+    />
+  );
+}

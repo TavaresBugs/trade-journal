@@ -154,6 +154,28 @@ export const POST = handler(async (request: Request, { params }: Context) => {
   return bad("Unknown resource", 404);
 });
 
+export const PATCH = handler(async (request: Request, { params }: Context) => {
+  const { resource } = await params;
+  const b = await request.json();
+  requireValue(text(b.id, 200), "Invalid id.");
+  if (resource === "templates") {
+    requireValue(
+      text(b.name, 100) && b.name.trim(),
+      "A template needs a name (up to 100 characters).",
+    );
+    const existing = db.select().from(noteTemplates).where(eq(noteTemplates.id, b.id)).get();
+    requireValue(existing, "Template not found.");
+    const updates: { name: string; content?: string } = { name: b.name.trim() };
+    if (b.content !== undefined) {
+      requireValue(text(b.content), "Content is too long (up to 100,000 characters).");
+      updates.content = b.content;
+    }
+    db.update(noteTemplates).set(updates).where(eq(noteTemplates.id, b.id)).run();
+    return ok({ updated: true });
+  }
+  return bad("Unknown resource", 404);
+});
+
 export const DELETE = handler(async (request: Request, { params }: Context) => {
   const { resource } = await params;
   const b = await request.json();

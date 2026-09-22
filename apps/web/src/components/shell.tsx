@@ -230,7 +230,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 </DialogPrimitive.Close>
               </div>
               {navigation()}
-              <div className="border-t p-3">
+              <div className="border-t p-3 space-y-1">
+                <ThemeToggle />
                 <PrivacyToggle />
               </div>
               {footer}
@@ -244,7 +245,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <LuxAlgoMark className="hidden h-4 w-[18px] shrink-0 min-[380px]:block" />
           <span className="truncate">Trade Journal</span>
         </Link>
-        <PrivacyToggle compact />
+        <PrivacyToggle iconOnly />
         <ThemeToggle iconOnly />
       </header>
       <aside

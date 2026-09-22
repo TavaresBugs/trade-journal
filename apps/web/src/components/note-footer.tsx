@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { Paperclip, Save, Check, Loader2, AlertCircle } from "lucide-react";
+import { Paperclip, Save, Check, Loader2, AlertCircle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReviewExport } from "@/components/review-export";
 import { AttachmentGrid, type AttachmentItem } from "@/components/attachments";
@@ -18,6 +18,8 @@ interface NoteFooterProps {
   saveDisabled?: boolean;
   containsFinancialData?: boolean;
   className?: string;
+  mode?: "preview" | "edit";
+  onModeChange?: (mode: "preview" | "edit") => void;
 }
 
 export function NoteFooter({
@@ -29,6 +31,8 @@ export function NoteFooter({
   saveDisabled = false,
   containsFinancialData = false,
   className,
+  mode,
+  onModeChange,
 }: NoteFooterProps) {
   const { data, error, refresh } = useApi<{
     attachments: AttachmentItem[];
@@ -110,6 +114,11 @@ export function NoteFooter({
     try {
       await onSave();
       triggerSavedFeedback();
+      if (onModeChange) {
+        setTimeout(() => {
+          onModeChange("preview");
+        }, 600);
+      }
     } catch {
       // Caught or reflected via savingStatus
     }
@@ -119,58 +128,75 @@ export function NoteFooter({
 
   return (
     <div className={cn("space-y-3", className)}>
-      <div className="flex flex-wrap items-center gap-2">
-        <ReviewExport
-          className="space-y-0"
-          containsFinancialData={containsFinancialData}
-          document={document}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
         <Button
           type="button"
           size="sm"
           variant="outline"
+          className="rounded-xl text-xs gap-1.5"
           disabled={busy}
           onClick={() => input.current?.click()}
           title="Upload attachments (images or PDF)"
         >
-          {busy ? <Loader2 className="animate-spin" /> : <Paperclip />}
+          {busy ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Paperclip className="size-3.5" />
+          )}
           {busy ? "Uploading…" : "Add attachment"}
         </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={isError ? "destructive" : "outline"}
-          disabled={saveDisabled || isSaving}
-          onClick={handleManualSave}
-          title={
-            isSaved
-              ? "Note is saved to local journal"
-              : isSaving
-                ? "Saving note…"
-                : isError
-                  ? "Click to retry saving"
-                  : "Save note (auto-saves while typing)"
-          }
-          className={cn(
-            "transition-all duration-200",
-            isSaved && "border-profit/40 text-profit bg-profit/10 hover:bg-profit/15",
-            isError &&
-              "border-destructive text-destructive bg-destructive/10 hover:bg-destructive/15",
-          )}
-        >
-          {isSaving ? (
-            <Loader2 className="animate-spin" />
-          ) : isSaved ? (
-            <Check className="text-profit animate-in zoom-in-50 duration-200" />
-          ) : isError ? (
-            <AlertCircle />
+
+        <div className="ml-auto flex items-center gap-2">
+          <ReviewExport
+            className="space-y-0"
+            containsFinancialData={containsFinancialData}
+            document={document}
+          />
+
+          {mode === "preview" ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onModeChange?.("edit")}
+              className="gap-1.5 rounded-xl px-4 py-2 text-xs font-medium border-border/70 hover:bg-muted/80 active:scale-[0.98] shadow-xs transition-all duration-200 shrink-0"
+              title="Edit note"
+            >
+              <Pencil className="size-3.5" />
+              <span>Edit note</span>
+            </Button>
           ) : (
-            <Save />
+            <Button
+              type="button"
+              size="sm"
+              disabled={saveDisabled || isSaving}
+              onClick={handleManualSave}
+              title={
+                isSaved
+                  ? "Note is saved to local journal"
+                  : isSaving
+                    ? "Saving note…"
+                    : isError
+                      ? "Click to retry saving"
+                      : "Save note (auto-saves while typing)"
+              }
+              className="gap-1.5 rounded-xl px-4 py-2 text-xs font-medium bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98] shadow-xs transition-all duration-200 shrink-0"
+            >
+              {isSaving ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : isSaved ? (
+                <Check className="size-3.5 animate-in zoom-in-50 duration-200" />
+              ) : isError ? (
+                <AlertCircle className="size-3.5" />
+              ) : (
+                <Save className="size-3.5" />
+              )}
+              <span>
+                {isSaving ? "Saving…" : isSaved ? "Saved" : isError ? "Retry save" : "Save note"}
+              </span>
+            </Button>
           )}
-          <span>
-            {isSaving ? "Saving…" : isSaved ? "Saved" : isError ? "Retry save" : "Save note"}
-          </span>
-        </Button>
+        </div>
       </div>
       {isError && (
         <p role="alert" className="text-xs text-destructive flex items-center gap-1.5">

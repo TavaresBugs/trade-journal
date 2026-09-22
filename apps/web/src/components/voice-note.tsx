@@ -5,14 +5,19 @@ import * as Popover from "@radix-ui/react-popover";
 import { Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createDictationSession, dictationError, type SpeechRecognizer } from "@/lib/dictation";
+import { cn } from "@/lib/utils";
 
 /** Browser speech recognition requires microphone permission and sometimes a network service. */
 export function VoiceNote({
   onText,
   onPrepare,
+  iconOnly = false,
+  className,
 }: {
   onText: (text: string) => void;
   onPrepare: () => void;
+  iconOnly?: boolean;
+  className?: string;
 }) {
   const [state, setState] = useState<"idle" | "starting" | "listening">("idle");
   const [error, setError] = useState("");
@@ -72,18 +77,28 @@ export function VoiceNote({
         <Popover.Anchor asChild>
           <Button
             type="button"
-            variant={state === "idle" ? "outline" : "destructive"}
-            size="sm"
+            variant={state === "idle" ? (iconOnly ? "ghost" : "outline") : "destructive"}
+            size={iconOnly ? "icon" : "sm"}
             onClick={toggle}
             aria-pressed={state !== "idle"}
+            aria-label={state === "idle" ? "Dictate your note" : "Stop dictation"}
             title={state === "idle" ? "Dictate your note" : "Stop dictation"}
+            className={cn(
+              iconOnly && "size-7 rounded-full text-muted-foreground hover:text-foreground",
+              className,
+            )}
           >
-            {state === "idle" ? <Mic /> : <MicOff />}
-            {state === "starting"
-              ? "Starting…"
-              : state === "listening"
-                ? "Listening · Stop"
-                : "Dictate"}
+            {state === "idle" ? (
+              <Mic className="size-4" />
+            ) : (
+              <MicOff className="size-4 animate-pulse text-destructive-foreground" />
+            )}
+            {!iconOnly &&
+              (state === "starting"
+                ? "Starting…"
+                : state === "listening"
+                  ? "Listening · Stop"
+                  : "Dictate")}
           </Button>
         </Popover.Anchor>
         <Popover.Portal>

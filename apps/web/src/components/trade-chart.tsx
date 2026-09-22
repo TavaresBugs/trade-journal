@@ -46,6 +46,7 @@ export function TradeChart(props: {
   trade: ChartTrade;
   executions: ChartExecution[];
   height?: number;
+  hideCaption?: boolean;
 }) {
   const privateMode = usePrivacy();
   if (!privateMode) return <PriceChart {...props} />;
@@ -68,10 +69,12 @@ export function TradeChart(props: {
       ) : (
         <p className="text-sm text-muted-foreground">No execution prices available.</p>
       )}
-      <figcaption className="mt-2 text-xs text-muted-foreground">
-        Recorded fills as a percentage of average entry. Privacy mode keeps prices and monetary P&L
-        hidden.
-      </figcaption>
+      {!props.hideCaption && (
+        <figcaption className="mt-2 text-xs text-muted-foreground">
+          Recorded fills as a percentage of average entry. Privacy mode keeps prices and monetary
+          P&L hidden.
+        </figcaption>
+      )}
     </figure>
   );
 }
@@ -80,10 +83,12 @@ function PriceChart({
   trade,
   executions,
   height = 420,
+  hideCaption = false,
 }: {
   trade: ChartTrade;
   executions: ChartExecution[];
   height?: number;
+  hideCaption?: boolean;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
 
@@ -251,11 +256,17 @@ function PriceChart({
 
   return (
     <figure>
-      <div ref={hostRef} style={{ height }} className="overflow-hidden rounded-lg border" />
-      <figcaption className="mt-1.5 px-1 text-xs text-muted-foreground">
-        Price path from recorded fills. To view market candles, choose a data source and load
-        history in Market data &amp; replay.
-      </figcaption>
+      <div
+        ref={hostRef}
+        style={{ height }}
+        className="overflow-hidden rounded-lg border border-border/40"
+      />
+      {!hideCaption && (
+        <figcaption className="mt-1.5 px-1 text-xs text-muted-foreground">
+          Price path from recorded fills. To view market candles, choose a data source and load
+          history in Market data &amp; replay.
+        </figcaption>
+      )}
     </figure>
   );
 }

@@ -3,7 +3,6 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { OptionSelect } from "@/components/ui/option-select";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { HoverHint } from "@/components/ui/tooltip";
 import { Suspense, useState } from "react";
 import { FilterBar } from "@/components/filter-bar";
 import { Field, fieldClass } from "@/components/filter-fields";
@@ -13,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ReviewExport } from "@/components/review-export";
 import { useApi, postJson } from "@/lib/use-api";
 import { scheduledRules, progressScore, type Routine, type RoutineCheck } from "@/lib/progress";
+import { CalendarProgress } from "@/components/calendar-progress";
 const STAGES = ["Before trading", "During trading", "After trading"];
 export default function ProgressPage() {
   return (
@@ -37,14 +37,6 @@ function Progress() {
   const selected = date || data?.today || "",
     rules = data ? scheduledRules(data.rules, selected) : [],
     score = data ? progressScore(data.rules, data.checks, selected) : null;
-  const days = data
-    ? Array.from({ length: 91 }, (_, i) => {
-        const d = new Date(`${data.today}T12:00:00Z`);
-        d.setUTCDate(d.getUTCDate() - 90 + i);
-        const key = d.toISOString().slice(0, 10);
-        return { date: key, ...progressScore(data.rules, data.checks, key) };
-      })
-    : [];
   async function act(body: unknown, method: "POST" | "DELETE" = "POST") {
     setBusy(true);
     try {
@@ -161,36 +153,14 @@ function Progress() {
           ))}
         </div>
         <Card>
-          <CardHeader>
-            <CardTitle>Last 13 weeks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto">
-              {days.map((d) => (
-                <HoverHint
-                  key={d.date}
-                  heading={d.date}
-                  content={`${d.completed} of ${d.total} routines completed`}
-                >
-                  <button
-                    key={d.date}
-                    aria-label={`${d.date}: ${d.completed}/${d.total} complete`}
-                    onClick={() => setDate(d.date)}
-                    className={`min-h-7 min-w-7 rounded border ${selected === d.date ? "border-foreground" : "border-transparent"}`}
-                    style={{
-                      background:
-                        d.score === null
-                          ? "var(--muted)"
-                          : `color-mix(in srgb, var(--brand) ${15 + d.score * 75}%, var(--card))`,
-                    }}
-                  />
-                </HoverHint>
-              ))}
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Brighter squares mean a higher completion rate. Grey means no scheduled routines.
-              Click a day to review it. New routines start today.
-            </p>
+          <CardContent className="p-4 sm:p-5">
+            <CalendarProgress
+              rules={data?.rules ?? []}
+              checks={data?.checks ?? []}
+              today={data?.today ?? ""}
+              selectedDate={selected}
+              onSelectDate={setDate}
+            />
           </CardContent>
         </Card>
         <Dialog open={open} onOpenChange={setOpen}>

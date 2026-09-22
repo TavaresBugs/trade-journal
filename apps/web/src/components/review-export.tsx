@@ -1,7 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Download, ImageIcon, Loader2 } from "lucide-react";
+import { ChevronDown, Download, ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { exportPdf, exportPng, type ReviewDocument } from "@/lib/export-review";
 import { usePrivacy } from "./privacy";
@@ -58,30 +64,50 @@ export function ReviewExport({
   const isBusy = busyType !== null;
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={isBusy || concealed}
-          onClick={() => void run(false)}
-          title="Export review as PDF document"
-        >
-          {busyType === "pdf" ? <Loader2 className="animate-spin" /> : <Download />}
-          {busyType === "pdf" ? "Exporting PDF…" : "Export PDF"}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={isBusy || concealed}
-          onClick={() => void run(true)}
-          title="Export review as PNG image"
-        >
-          {busyType === "png" ? <Loader2 className="animate-spin" /> : <ImageIcon />}
-          {busyType === "png" ? "Exporting PNG…" : "Export PNG"}
-        </Button>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isBusy || concealed}
+            className="rounded-xl text-xs gap-1.5 h-8 px-2.5 transition-colors"
+            title="Export review as PDF or PNG"
+          >
+            {isBusy ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Download className="size-3.5" />
+            )}
+            <span>
+              {busyType === "pdf"
+                ? "Exporting PDF…"
+                : busyType === "png"
+                  ? "Exporting PNG…"
+                  : "Export"}
+            </span>
+            <ChevronDown className="size-3 text-muted-foreground" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="rounded-xl min-w-[150px]">
+          <DropdownMenuItem
+            onClick={() => void run(false)}
+            disabled={isBusy || concealed}
+            className="gap-2 text-xs cursor-pointer"
+          >
+            <Download className="size-3.5 text-muted-foreground" />
+            <span>Export PDF</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => void run(true)}
+            disabled={isBusy || concealed}
+            className="gap-2 text-xs cursor-pointer"
+          >
+            <ImageIcon className="size-3.5 text-muted-foreground" />
+            <span>Export PNG image</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {concealed && (
         <p className="text-xs text-muted-foreground">
           Turn off privacy mode to export financial figures.

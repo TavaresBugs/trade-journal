@@ -60,33 +60,32 @@ export function PrivacyToggle({
   iconOnly?: boolean;
 }) {
   const { enabled, ready, error, toggle } = useContext(PrivacyContext);
+  const isIcon = iconOnly || compact;
   return (
-    <div className={compact ? "relative shrink-0" : "space-y-2"}>
+    <div className={isIcon ? "relative shrink-0" : "space-y-2"}>
       <Button
+        type="button"
+        variant="ghost"
+        size={isIcon ? "icon" : "sm"}
         className={
-          iconOnly
-            ? "h-9 w-9 rounded-lg p-0"
-            : compact
-              ? "h-9 gap-1.5 rounded-xl px-2.5 text-xs"
-              : "w-full justify-start gap-2"
+          isIcon
+            ? "h-9 w-9 shrink-0 rounded-lg"
+            : "w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
         }
-        size="sm"
-        variant={enabled ? "secondary" : "outline"}
         aria-label={`Privacy mode ${enabled ? "on" : "off"}`}
         aria-pressed={enabled}
         disabled={!ready}
         onClick={toggle}
-        title="Hide balances, P&L and trade prices across the journal"
+        title={isIcon ? `Privacy mode: ${enabled ? "On" : "Off"}` : undefined}
       >
-        {enabled ? <EyeOff /> : <Eye />}
-        {!iconOnly && (compact ? "Privacy" : "Privacy mode")}
-        {!iconOnly && <span className="ml-auto text-xs">{enabled ? "On" : "Off"}</span>}
+        {enabled ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+        {!isIcon && "Privacy mode"}
       </Button>
       {error && (
         <p
           role="alert"
           className={
-            compact
+            isIcon
               ? "absolute right-0 top-full mt-2 w-64 rounded-lg border bg-card p-3 text-xs text-destructive shadow-lg"
               : "text-xs text-destructive"
           }

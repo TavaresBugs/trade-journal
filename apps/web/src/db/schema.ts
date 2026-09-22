@@ -104,6 +104,10 @@ export const journalDays = sqliteTable("journal_days", {
   /** "YYYY-MM-DD" in the journal's display timezone. */
   date: text("date").primaryKey(),
   note: text("note").notNull().default(""),
+  rating: integer("rating"),
+  reviewedAt: text("reviewed_at"),
+  tagsJson: text("tags_json"),
+  mistakesJson: text("mistakes_json"),
   updatedAt: text("updated_at").notNull(),
 });
 
