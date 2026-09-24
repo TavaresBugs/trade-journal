@@ -6,20 +6,21 @@ import { cn } from "@/lib/utils";
 
 interface BrokerIconProps {
   icon: string;
+  iconDark?: string;
   name?: string;
   className?: string;
   invertInDark?: boolean;
 }
 
-export function BrokerIcon({
-  icon,
-  name,
-  className,
-  invertInDark,
-}: BrokerIconProps) {
+export function BrokerIcon({ icon, iconDark, name, className, invertInDark }: BrokerIconProps) {
   const [hasError, setHasError] = useState(false);
 
-  const src = icon.startsWith("/") ? icon : `/assets/brokers/${icon}`;
+  const lightSrc = icon.startsWith("/") ? icon : `/assets/brokers/${icon}`;
+  const darkSrc = iconDark
+    ? iconDark.startsWith("/")
+      ? iconDark
+      : `/assets/brokers/${iconDark}`
+    : null;
 
   if (hasError) {
     return (
@@ -35,9 +36,28 @@ export function BrokerIcon({
     );
   }
 
+  if (darkSrc) {
+    return (
+      <>
+        <img
+          src={lightSrc}
+          alt={name || ""}
+          onError={() => setHasError(true)}
+          className={cn("size-8 shrink-0 rounded-md object-contain dark:hidden", className)}
+        />
+        <img
+          src={darkSrc}
+          alt={name || ""}
+          onError={() => setHasError(true)}
+          className={cn("hidden size-8 shrink-0 rounded-md object-contain dark:block", className)}
+        />
+      </>
+    );
+  }
+
   return (
     <img
-      src={src}
+      src={lightSrc}
       alt={name || ""}
       onError={() => setHasError(true)}
       className={cn(

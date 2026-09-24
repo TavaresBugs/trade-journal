@@ -40,7 +40,7 @@ export const metatrader: ImportFormat = {
       const type = (cells[2] ?? "").toLowerCase();
       if (type !== "buy" && type !== "sell") continue;
 
-      const openedAt = parseTimestamp(cells[1], options.timeZone);
+      const openedAt = parseTimestamp(cells[1], options.timeZone, options.dateOrder);
       const quantity = parseQuantity(cells[3]);
       const symbol = (cells[4] ?? "").trim().toUpperCase();
       const entryPrice = parseMoney(cells[5]);
@@ -48,7 +48,7 @@ export const metatrader: ImportFormat = {
       // Find the close-time cell: first parseable timestamp after the entry price.
       let closeIndex = -1;
       for (let i = 6; i < cells.length; i++) {
-        if (parseTimestamp(cells[i], options.timeZone)) {
+        if (parseTimestamp(cells[i], options.timeZone, options.dateOrder)) {
           closeIndex = i;
           break;
         }
@@ -64,7 +64,7 @@ export const metatrader: ImportFormat = {
         skippedRows++;
         continue;
       }
-      const closedAt = parseTimestamp(cells[closeIndex], options.timeZone)!;
+      const closedAt = parseTimestamp(cells[closeIndex], options.timeZone, options.dateOrder)!;
       const exitPrice = parseMoney(cells[closeIndex + 1]);
       if (!Number.isFinite(exitPrice)) {
         skippedRows++;

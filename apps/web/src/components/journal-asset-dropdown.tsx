@@ -12,11 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { normalizeSymbol } from "@/lib/assets/symbol-utils";
-import {
-  formatSpecBadge,
-  getSymbolSpec,
-  isCalculableSymbol,
-} from "@/lib/assets/symbol-specs";
+import { formatSpecBadge, getSymbolSpec, isCalculableSymbol } from "@/lib/assets/symbol-specs";
 import {
   ASSET_CATALOG,
   getAssetCatalog,
@@ -257,9 +253,7 @@ export function JournalAssetDropdown({
         onClick={() => handleSelect(item.symbol)}
         className={cn(
           "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors group",
-          isSelected
-            ? "bg-accent font-semibold text-accent-foreground"
-            : "hover:bg-accent/50",
+          isSelected ? "bg-accent font-semibold text-accent-foreground" : "hover:bg-accent/50",
         )}
       >
         <div className="flex items-center gap-2.5 min-w-0">
@@ -302,7 +296,9 @@ export function JournalAssetDropdown({
             aria-label="Select symbol"
           >
             {currentAsset ? (
-              <div className={cn("flex items-center gap-2 truncate", alignCenter && "justify-center")}>
+              <div
+                className={cn("flex items-center gap-2 truncate", alignCenter && "justify-center")}
+              >
                 <AssetIcon symbol={currentAsset} size="xs" />
                 <span className="font-mono font-bold text-foreground">{currentAsset}</span>
               </div>
@@ -518,7 +514,9 @@ export function JournalAssetDropdown({
 
               {userAssetItems.length === 0 && filteredCatalog.length === 0 && (
                 <div className="py-6 text-center text-xs text-muted-foreground">
-                  {search.trim() ? "No matching assets found." : "No assets found in this category."}
+                  {search.trim()
+                    ? "No matching assets found."
+                    : "No assets found in this category."}
                 </div>
               )}
             </>

@@ -129,4 +129,20 @@ describe("NinjaTrader execution identity", () => {
     expect(parse(sample).executions.every((e) => e.assetClass === "futures")).toBe(true);
     expect(parse(sample).warnings.join(" ")).toContain("MNQZ6");
   });
+
+  it("imports NinjaTrader Portuguese / Brazilian exports with localized headers and sides", () => {
+    const ptbrCsv = [
+      "Ativo,Pos. mercado,Quantidade,Preço,Data/Hora,Corretagem,Conta,ID",
+      "WINV26,Compra,1,135000.00,25/01/2026 10:15:30,2.50,SIM101,exec_br_1",
+      "WINV26,Venda,1,135250.00,25/01/2026 10:45:00,2.50,SIM101,exec_br_2",
+    ].join("\n");
+    const result = parseAuto(ptbrCsv, { timeZone: "America/Sao_Paulo", dateOrder: "DMY" })!;
+    expect(result.format).toBe("ninjatrader");
+    expect(result.executions).toHaveLength(2);
+    expect(result.executions[0]?.symbol).toBe("WINV26");
+    expect(result.executions[0]?.side).toBe("buy");
+    expect(result.executions[1]?.side).toBe("sell");
+    expect(result.executions[0]?.fee).toBe(2.5);
+    expect(result.executions[0]?.importMetadata?.id).toBe("execution:exec_br_1");
+  });
 });

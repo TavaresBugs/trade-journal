@@ -8,6 +8,10 @@ type Params = { params: Promise<{ id: string }> };
 interface PatchBody {
   name?: string;
   broker?: string;
+  platform?: string | null;
+  accountNumber?: string | null;
+  maxDrawdown?: number | null;
+  timeZone?: string;
   currency?: string;
   initialBalance?: number;
   profitCalcMethod?: "fifo" | "lifo" | "wavg";
@@ -23,6 +27,15 @@ export const PATCH = handler(async (request: Request, { params }: Params) => {
   const patch: Partial<typeof accounts.$inferInsert> = {};
   if (body.name !== undefined) patch.name = body.name;
   if (body.broker !== undefined) patch.broker = body.broker;
+  if (body.platform !== undefined) patch.platform = body.platform;
+  if (body.accountNumber !== undefined)
+    patch.accountNumber = body.accountNumber?.trim() ? body.accountNumber.trim() : null;
+  if (body.maxDrawdown !== undefined)
+    patch.maxDrawdown =
+      typeof body.maxDrawdown === "number" && !Number.isNaN(body.maxDrawdown)
+        ? body.maxDrawdown
+        : null;
+  if (body.timeZone !== undefined) patch.timeZone = body.timeZone;
   if (body.currency !== undefined) patch.currency = body.currency;
   if (body.initialBalance !== undefined) patch.initialBalance = body.initialBalance;
   if (body.autoSync !== undefined) patch.autoSync = body.autoSync;

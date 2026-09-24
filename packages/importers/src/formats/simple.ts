@@ -37,29 +37,7 @@ export const tradingview = makeFillsFormat({
 
 export { ninjatrader } from "./ninjatrader";
 
-/**
- * Tradovate orders export. Real files (cross-checked against TradeNote's
- * community parser): orderId, Account, Date (M/D/YY), Fill Time, B/S, Contract,
- * Product, Filled Qty, Avg Fill Price, Status — only "Filled" rows are fills.
- */
-export const tradovate = makeFillsFormat({
-  id: "tradovate",
-  label: "Tradovate (orders export)",
-  required: [["contract"], ["bs"], ["filltime", "timestamp"]],
-  columns: {
-    // Prefer Product (the root symbol, "ES") over Contract ("ESU6").
-    symbol: ["product", "contract"],
-    side: ["bs", "side"],
-    quantity: ["filledqty", "fillqty", "qty"],
-    price: ["avgfillprice", "avgprice", "price"],
-    fees: [["commission"], ["fees"]],
-    timestamp: ["filltime", "timestamp"],
-    date: ["date"],
-    time: ["filltime"],
-  },
-  rowFilter: (row) => !("status" in row) || /filled/i.test(row["status"] ?? ""),
-  normalizeSymbol: (symbol) => symbol.trim().toUpperCase(),
-});
+export { tradovate } from "./tradovate";
 
 /**
  * TopstepX fills export. Real files (cross-checked against TradeNote's

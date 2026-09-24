@@ -19,6 +19,22 @@ export const fmtMoney = (value: number, currency = "USD"): string => {
   return formatter.format(value);
 };
 
+const amountFormatters = new Map<string, Intl.NumberFormat>();
+
+/** Unsigned money/balance — standard currency format with negative sign only if value < 0. */
+export const fmtAmount = (value: number, currency = "USD"): string => {
+  let formatter = amountFormatters.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      signDisplay: "auto",
+    });
+    amountFormatters.set(currency, formatter);
+  }
+  return formatter.format(value);
+};
+
 const numberFormatters = new Map<number, Intl.NumberFormat>();
 export const fmtNumber = (value: number, digits = 2): string => {
   let formatter = numberFormatters.get(digits);

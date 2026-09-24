@@ -30,16 +30,19 @@ export const parseSide = (value: string | undefined): "buy" | "sell" | null => {
   if (!value) return null;
   const text = value.trim().toLowerCase();
   // "bid"/"ask" per TopstepX fills exports: bid = buy interest, ask = sell.
+  // Also supports Portuguese/multilingual sides: compra, comprado, comprada, venda, vendido, vendida.
   if (
-    /^(buy|bot|bought|long|b|bid|btc|buytoopen|buytoclose|buy to open|buy to close)$/.test(text) ||
-    /^buy/.test(text)
+    /^(buy|bot|bought|long|b|bid|btc|buytoopen|buytoclose|buy to open|buy to close|compra|comprado|comprada)$/.test(
+      text,
+    ) ||
+    /^(buy|compra)/.test(text)
   )
     return "buy";
   if (
-    /^(sell|sld|sold|short|s|ask|stc|selltoopen|selltoclose|sell to open|sell to close)$/.test(
+    /^(sell|sld|sold|short|s|ask|stc|selltoopen|selltoclose|sell to open|sell to close|venda|vendido|vendida)$/.test(
       text,
     ) ||
-    /^sell/.test(text)
+    /^(sell|venda)/.test(text)
   )
     return "sell";
   return null;
@@ -66,13 +69,14 @@ export const rowsToFills = (
     // Try the single timestamp column first; fall back to separate date+time
     // columns (some exports put only a wall-clock time in their "time" field).
     let executedAt = columns.timestamp
-      ? parseTimestamp(pick(row, columns.timestamp), options.timeZone)
+      ? parseTimestamp(pick(row, columns.timestamp), options.timeZone, options.dateOrder)
       : null;
     if (!executedAt && (columns.date || columns.time)) {
       executedAt = parseDateAndTime(
         pick(row, columns.date ?? []),
         pick(row, columns.time ?? []),
         options.timeZone,
+        options.dateOrder,
       );
     }
 

@@ -15,6 +15,10 @@ export const accounts = sqliteTable("accounts", {
   name: text("name").notNull(),
   /** SDK broker id for sync accounts; free text label otherwise. */
   broker: text("broker").notNull().default(""),
+  platform: text("platform"),
+  accountNumber: text("account_number"),
+  maxDrawdown: real("max_drawdown"),
+  timeZone: text("time_zone").notNull().default("UTC"),
   kind: text("kind", { enum: ["sync", "import", "manual"] }).notNull(),
   currency: text("currency").notNull().default("USD"),
   initialBalance: real("initial_balance").notNull().default(0),

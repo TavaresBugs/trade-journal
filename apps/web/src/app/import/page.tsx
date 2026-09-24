@@ -1,22 +1,32 @@
 "use client";
 
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   FileSpreadsheet,
   FileUp,
+  HelpCircle,
   Landmark,
   Loader2,
   PencilLine,
+  Plus,
+  Sparkles,
   Upload,
 } from "lucide-react";
 import { AccountPicker } from "@/components/account-picker";
+import { AddAccountDialog } from "@/components/add-account-dialog";
 import { ManualTradeEntry } from "@/components/manual-trade-entry";
 import { FilterBar } from "@/components/filter-bar";
-import { BROKER_CATALOG } from "@/lib/brokers/broker-catalog";
+import {
+  BROKER_CATALOG,
+  EXPORT_INSTRUCTIONS,
+  getBrokerMetadata,
+  getPlatformOptionsForBroker,
+} from "@/lib/brokers/broker-catalog";
 import { BrokerIcon } from "@/components/ui/broker-icon";
 import type {
   BrokerCatalogItem,
@@ -24,6 +34,7 @@ import type {
   PreviewTotals,
   PreviewResponse,
 } from "@/types/import";
+import type { AccountRow } from "@/types/accounts";
 import { ImportReconciliation } from "@/components/import-reconciliation";
 import type { ImportReviewOptions } from "@/lib/import-review";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +67,7 @@ export default function ImportPage() {
 function ImportView() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"file" | "sync" | "manual">("file");
+  const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>();
 
   return (
     <div className="min-h-screen bg-background">
@@ -107,12 +119,17 @@ function ImportView() {
 
           {/* TAB 1: FILE IMPORT */}
           <TabsContent value="file" className="focus-visible:outline-none">
-            <FileImport />
+            <FileImport initialAccountId={selectedAccountId} />
           </TabsContent>
 
           {/* TAB 2: BROKER SYNC */}
           <TabsContent value="sync" className="focus-visible:outline-none">
-            <BrokerConnect onGoToFile={() => setActiveTab("file")} />
+            <BrokerConnect
+              onGoToFile={(newId) => {
+                if (newId) setSelectedAccountId(newId);
+                setActiveTab("file");
+              }}
+            />
           </TabsContent>
 
           {/* TAB 3: MANUAL ENTRY */}
@@ -133,9 +150,15 @@ function ImportView() {
   );
 }
 
-function FileImport() {
+function FileImport({ initialAccountId }: { initialAccountId?: string }) {
   const router = useRouter();
-  const [accountId, setAccountId] = useState("");
+  const [accountId, setAccountId] = useState(initialAccountId || "");
+
+  useEffect(() => {
+    if (initialAccountId) {
+      setAccountId(initialAccountId);
+    }
+  }, [initialAccountId]);
   const [reviewOptions, setReviewOptions] = useState<ImportReviewOptions>({});
   const changeReview = (options: ImportReviewOptions) => {
     setReviewOptions(options);
@@ -162,15 +185,66 @@ function FileImport() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: formatData } = useApi<{ formats: { id: string; label: string }[] }>("/api/import");
+  const { data: accountsData, refresh: refreshAccounts } = useApi<{ accounts: AccountRow[] }>(
+    "/api/accounts",
+  );
   const { data: settingsData, error: settingsError } = useApi<{
     timeZone: string;
     importTimeZone: string;
   }>("/api/settings");
 
   const [statementTimeZone, setStatementTimeZone] = useState<string | null>(null);
+  const [userOverrodeTz, setUserOverrodeTz] = useState(false);
+  const [tzPresetInfo, setTzPresetInfo] = useState<string | null>(null);
+  const [exportGuideOpen, setExportGuideOpen] = useState(false);
+  const [selectedExportGuide, setSelectedExportGuide] = useState<string>("tradovate");
+  const [createAccountOpen, setCreateAccountOpen] = useState(false);
+
   const timeZone = statementTimeZone ?? settingsData?.importTimeZone ?? "";
   const validTimeZone = isTimeZone(timeZone);
   const displayTimeZone = settingsData?.timeZone ?? "UTC";
+
+  const handleAccountSelect = (id: string, account?: AccountRow) => {
+    setAccountId(id);
+    setReviewOptions({});
+    let targetTz = statementTimeZone;
+    if (account) {
+      const brokerMeta = account.broker ? getBrokerMetadata(account.broker) : undefined;
+      const recTz = account.timeZone || brokerMeta?.defaultTimeZone;
+      if (recTz && isTimeZone(recTz) && !userOverrodeTz) {
+        targetTz = recTz;
+        setStatementTimeZone(recTz);
+        const brokerLabel = brokerMeta?.name ?? account.broker;
+        setTzPresetInfo(
+          brokerLabel
+            ? `Preset to ${recTz} from ${account.name} (${brokerLabel})`
+            : `Preset to ${recTz} from ${account.name}`,
+        );
+      }
+    }
+    if (content && validTimeZone) {
+      void postJson<PreviewResponse>("/api/import", {
+        mode: "preview",
+        content,
+        accountId: id || undefined,
+        review: {},
+        fileName,
+        symbol,
+        timeZone: targetTz && isTimeZone(targetTz) ? targetTz : timeZone,
+      })
+        .then((res) => {
+          setPreview(res);
+          if (res.errors && res.errors.length > 0 && !res.needsMapping && !res.needsSymbol) {
+            setError(res.errors[0] ?? null);
+          }
+        })
+        .catch((cause) => {
+          setError(cause instanceof Error ? cause.message : "Import preview failed");
+        });
+    } else {
+      setPreview((current) => (current ? { ...current, reconciliation: undefined } : null));
+    }
+  };
 
   const onFile = async (file: File) => {
     if (!validTimeZone) return;
@@ -196,6 +270,20 @@ function FileImport() {
         timeZone,
       });
       setPreview(res);
+
+      // Auto-match account if statement has detectedAccount and target isn't explicitly set yet
+      if (res.detectedAccount && accountsData?.accounts) {
+        const match = accountsData.accounts.find(
+          (a) =>
+            !a.archivedAt &&
+            a.accountNumber &&
+            a.accountNumber.trim().toLowerCase() === res.detectedAccount?.trim().toLowerCase(),
+        );
+        if (match) {
+          handleAccountSelect(match.id, match);
+        }
+      }
+
       if (res.errors && res.errors.length > 0 && !res.needsMapping && !res.needsSymbol) {
         setError(res.errors[0] ?? null);
       }
@@ -307,47 +395,65 @@ function FileImport() {
 
   return (
     <div className="rounded-2xl border border-border/70 bg-card/40 p-5 space-y-4 shadow-xs">
-      {/* Statement Timezone */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="statement-timezone" className="text-xs font-semibold text-foreground">
-            Statement Timezone
-          </Label>
-          <span className="text-[11px] text-muted-foreground">
-            Journal displays in{" "}
-            <span className="font-mono font-medium text-foreground">{displayTimeZone}</span>
-          </span>
+      {/* Account & Timezone Configuration */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <AccountPicker
+            value={accountId}
+            onChange={handleAccountSelect}
+            kind="import"
+            label="Target Account (recommended)"
+          />
+          <p className="text-[11px] text-muted-foreground" style={{ textWrap: "pretty" }}>
+            Select an account to automatically preset its broker timezone and format rules.
+          </p>
         </div>
-        <TimeZonePicker
-          id="statement-timezone"
-          label="Statement timezone"
-          value={timeZone}
-          disabled={busy || !settingsData}
-          describedBy="statement-timezone-help"
-          onValueChange={(zone) => {
-            setStatementTimeZone(zone);
-            setPreview(null);
-            setMappingApplied(false);
-          }}
-        />
-        <p
-          id="statement-timezone-help"
-          className="text-[11px] text-muted-foreground"
-          style={{ textWrap: "pretty" }}
-        >
-          Choose the timezone used by your broker&apos;s statement. Timestamps with an explicit
-          offset keep that offset.
-        </p>
-        {timeZone && !validTimeZone && (
-          <p role="alert" className="text-xs text-loss">
-            Enter a valid IANA timezone, such as Europe/Helsinki.
-          </p>
-        )}
-        {settingsError && (
-          <p role="alert" className="text-xs text-loss">
-            {settingsError}
-          </p>
-        )}
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="statement-timezone" className="text-xs font-semibold text-foreground">
+              Statement Timezone
+            </Label>
+            <span className="text-[11px] text-muted-foreground">
+              Displays in{" "}
+              <span className="font-mono font-medium text-foreground">{displayTimeZone}</span>
+            </span>
+          </div>
+          <TimeZonePicker
+            id="statement-timezone"
+            label="Statement timezone"
+            value={timeZone}
+            disabled={busy || !settingsData}
+            describedBy="statement-timezone-help"
+            onValueChange={(zone) => {
+              setStatementTimeZone(zone);
+              setUserOverrodeTz(true);
+              setTzPresetInfo(null);
+              setPreview(null);
+              setMappingApplied(false);
+            }}
+          />
+          <div className="flex items-center justify-between text-[11px]">
+            <p id="statement-timezone-help" className="text-muted-foreground">
+              Choose the timezone used by your broker&apos;s statement.
+            </p>
+            {tzPresetInfo && (
+              <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                ✓ {tzPresetInfo}
+              </span>
+            )}
+          </div>
+          {timeZone && !validTimeZone && (
+            <p role="alert" className="text-xs text-loss">
+              Enter a valid IANA timezone, such as Europe/Helsinki.
+            </p>
+          )}
+          {settingsError && (
+            <p role="alert" className="text-xs text-loss">
+              {settingsError}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Hidden File Input */}
@@ -362,6 +468,69 @@ function FileImport() {
           if (file) void onFile(file);
         }}
       />
+
+      {/* Collapsible Export Guide Accordion */}
+      <div className="rounded-xl border border-border/70 bg-card/30 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setExportGuideOpen(!exportGuideOpen)}
+          className="w-full flex items-center justify-between p-3 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <HelpCircle className="size-4 text-primary shrink-0" />
+            <span className="font-semibold">Need help exporting?</span>
+            <span className="text-muted-foreground hidden sm:inline">
+              Step-by-step export instructions for Tradovate, NinjaTrader, MT5 &amp; more
+            </span>
+          </div>
+          <ChevronDown
+            className={cn(
+              "size-4 text-muted-foreground transition-transform duration-200 shrink-0",
+              exportGuideOpen && "rotate-180",
+            )}
+          />
+        </button>
+        {exportGuideOpen && (
+          <div className="p-3 pt-1 border-t border-border/50 space-y-2.5 bg-muted/10">
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {Object.entries(EXPORT_INSTRUCTIONS).map(([key, instr]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSelectedExportGuide(key)}
+                  className={cn(
+                    "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-colors cursor-pointer",
+                    selectedExportGuide === key
+                      ? "border-primary bg-primary text-primary-foreground font-semibold shadow-xs"
+                      : "border-border/70 bg-card hover:bg-muted/50 text-muted-foreground",
+                  )}
+                >
+                  {instr.title
+                    .replace(" Statement Export", "")
+                    .replace(" Report Export", "")
+                    .replace(" Orders Export", "")
+                    .replace(" Executions Export", "")
+                    .replace(" Export", "")}
+                </button>
+              ))}
+            </div>
+            {EXPORT_INSTRUCTIONS[selectedExportGuide] && (
+              <div className="rounded-lg border border-border/60 bg-card/60 p-3 space-y-1.5 text-xs">
+                <span className="font-semibold text-foreground">
+                  {EXPORT_INSTRUCTIONS[selectedExportGuide].title}
+                </span>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground text-[11px] leading-relaxed">
+                  {EXPORT_INSTRUCTIONS[selectedExportGuide].steps.map((step, idx) => (
+                    <li key={idx}>
+                      <span className="text-foreground">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Sleek Reusable Dropzone */}
       {!preview ? (
@@ -437,6 +606,85 @@ function FileImport() {
               </Button>
             </div>
           </div>
+
+          {/* Account Auto-Matching Banner */}
+          {preview.detectedAccount &&
+            (() => {
+              const activeAccount = accountsData?.accounts.find((a) => a.id === accountId);
+              const matchedStatementAccount = accountsData?.accounts.find(
+                (a) =>
+                  !a.archivedAt &&
+                  a.accountNumber &&
+                  a.accountNumber.trim().toLowerCase() ===
+                    preview.detectedAccount?.trim().toLowerCase(),
+              );
+
+              if (
+                activeAccount?.accountNumber?.trim().toLowerCase() ===
+                preview.detectedAccount.trim().toLowerCase()
+              ) {
+                return (
+                  <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="size-4 shrink-0" />
+                    <span>
+                      Auto-matched to account: <strong>{activeAccount.name}</strong> (#
+                      {preview.detectedAccount}). Executions will import into this account.
+                    </span>
+                  </div>
+                );
+              }
+
+              if (matchedStatementAccount) {
+                return (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/10 p-2.5 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Sparkles className="size-4 shrink-0 text-primary" />
+                      <span className="truncate">
+                        Detected statement ID <strong>#{preview.detectedAccount}</strong> matching
+                        registered account <strong>{matchedStatementAccount.name}</strong>.
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[11px] px-2 font-medium shrink-0 cursor-pointer"
+                      onClick={() =>
+                        handleAccountSelect(matchedStatementAccount.id, matchedStatementAccount)
+                      }
+                    >
+                      Select {matchedStatementAccount.name}
+                    </Button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs">
+                  <div className="flex items-start sm:items-center gap-2 min-w-0">
+                    <AlertCircle className="size-4 shrink-0 text-amber-500 mt-0.5 sm:mt-0" />
+                    <div>
+                      <span className="font-semibold text-foreground">
+                        Statement Account ID: #{preview.detectedAccount}
+                      </span>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        No account has this ID registered yet. You can create a new account or
+                        import into an existing one.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-6 text-[11px] px-2.5 font-medium shrink-0 cursor-pointer"
+                    onClick={() => setCreateAccountOpen(true)}
+                  >
+                    <Plus className="size-3 mr-1" />
+                    Create Account #{preview.detectedAccount}
+                  </Button>
+                </div>
+              );
+            })()}
 
           {/* Quick Metrics Grid */}
           {preview.totals && (
@@ -597,19 +845,8 @@ function FileImport() {
 
           {/* Target Account Selection & Commit Action */}
           <div className="space-y-2 border-t border-border/40 pt-3">
-            <Label className="text-xs font-semibold text-foreground">Target Account</Label>
             <fieldset disabled={busy}>
-              <AccountPicker
-                value={accountId}
-                onChange={(id) => {
-                  setAccountId(id);
-                  setReviewOptions({});
-                  setPreview((current) =>
-                    current ? { ...current, reconciliation: undefined } : null,
-                  );
-                }}
-                kind="import"
-              />
+              <AccountPicker value={accountId} onChange={handleAccountSelect} kind="import" />
             </fieldset>
             {preview.detected === "ninjatrader" && accountId && (
               <ImportReconciliation
@@ -655,21 +892,43 @@ function FileImport() {
           <span>{error}</span>
         </div>
       )}
+
+      <AddAccountDialog
+        open={createAccountOpen}
+        onOpenChange={setCreateAccountOpen}
+        initialTab="prop"
+        initialAccountNumber={preview?.detectedAccount || undefined}
+        initialPlatform={preview?.detected || undefined}
+        initialName={
+          preview?.detectedAccount?.startsWith("LFE")
+            ? `Lucid ${preview.detectedAccount}`
+            : preview?.detected
+              ? `${preview.detected.toUpperCase()} Account`
+              : "New Account"
+        }
+        onAccountCreated={(newId) => {
+          refreshAccounts();
+          setAccountId(newId);
+          setCreateAccountOpen(false);
+        }}
+      />
     </div>
   );
 }
 
-function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
+function BrokerConnect({ onGoToFile }: { onGoToFile: (accountId?: string) => void }) {
   const router = useRouter();
   const { data: brokerData } = useApi<{ brokers: BrokerSdkInfo[] }>("/api/brokers");
   const { refresh: refreshAccounts } = useApi<{ accounts: unknown[] }>("/api/accounts?summary=1");
 
   const [selectedBroker, setSelectedBroker] = useState<BrokerCatalogItem | null>(null);
   const [brokerAccountName, setBrokerAccountName] = useState("");
+  const [brokerAccountNumber, setBrokerAccountNumber] = useState("");
   const [brokerCredentials, setBrokerCredentials] = useState<Record<string, string>>({});
-  const [ftmoPlatform, setFtmoPlatform] = useState("mt5");
-  const [ftmoBalance, setFtmoBalance] = useState("100000");
-  const [ftmoCurrency, setFtmoCurrency] = useState("USD");
+  const [propPlatform, setPropPlatform] = useState("auto");
+  const [propBalance, setPropBalance] = useState("50000");
+  const [propMaxDrawdown, setPropMaxDrawdown] = useState("2000");
+  const [propCurrency, setPropCurrency] = useState("USD");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -677,23 +936,71 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
     ? (brokerData?.brokers.find((b) => b.id === selectedBroker.id) ?? null)
     : null;
 
+  const handleSelectBroker = (broker: BrokerCatalogItem) => {
+    setSelectedBroker(broker);
+    setError(null);
+    if (broker.id === "ftmo") {
+      setBrokerAccountName("FTMO Challenge");
+      setPropPlatform("metatrader5");
+      setPropBalance("100000");
+      setPropMaxDrawdown("10000");
+    } else if (broker.id === "lucid") {
+      setBrokerAccountName("Lucid Trading");
+      setPropPlatform("tradovate");
+      setPropBalance("50000");
+      setPropMaxDrawdown("2000");
+    } else if (broker.id === "apex") {
+      setBrokerAccountName("Apex Trader Funding");
+      setPropPlatform("ninjatrader");
+      setPropBalance("50000");
+      setPropMaxDrawdown("2500");
+    } else if (broker.id === "topstep") {
+      setBrokerAccountName("Topstep Combine");
+      setPropPlatform("topstepx");
+      setPropBalance("50000");
+      setPropMaxDrawdown("2000");
+    } else if (broker.category === "prop-firm") {
+      setBrokerAccountName(`${broker.name} Account`);
+      setPropPlatform(broker.platform || "auto");
+      setPropBalance("50000");
+      setPropMaxDrawdown("2000");
+    } else {
+      setBrokerAccountName(broker.name);
+      setPropPlatform(broker.platform || "auto");
+      setPropBalance("10000");
+      setPropMaxDrawdown("");
+    }
+  };
+
   const handleConnect = async () => {
     if (!selectedBroker) return;
     setBusy(true);
     setError(null);
 
     try {
-      if (selectedBroker.id === "ftmo") {
-        await postJson("/api/accounts", {
-          name: brokerAccountName.trim() || `FTMO (${ftmoPlatform.toUpperCase()})`,
+      if (!matchedSdkBroker) {
+        // Prop firm or non-SDK platform: create journal account for statement import
+        const res = await postJson<{ id: string }>("/api/accounts", {
+          name: brokerAccountName.trim() || `${selectedBroker.name} Account`,
           kind: "manual",
-          broker: "ftmo",
-          currency: ftmoCurrency,
-          initialBalance: Number(ftmoBalance) || 100000,
+          broker: selectedBroker.id,
+          platform:
+            propPlatform === "auto"
+              ? selectedBroker.platform || null
+              : propPlatform === "mt5"
+                ? "metatrader5"
+                : propPlatform === "mt4"
+                  ? "metatrader4"
+                  : propPlatform,
+          accountNumber: brokerAccountNumber.trim() || null,
+          currency: propCurrency,
+          initialBalance: propBalance ? Number(propBalance) : 50000,
+          maxDrawdown: propMaxDrawdown ? Number(propMaxDrawdown) : null,
+          timeZone: selectedBroker.defaultTimeZone || "UTC",
           profitCalcMethod: "fifo",
         });
         refreshAccounts();
-        router.push("/");
+        onGoToFile(res.id);
         return;
       }
 
@@ -703,6 +1010,7 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
         kind: "sync",
         broker: selectedBroker.id,
         credentials: brokerCredentials,
+        timeZone: selectedBroker.defaultTimeZone || "UTC",
       });
       refreshAccounts();
       router.push("/");
@@ -726,135 +1034,171 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
           </div>
 
           <div className="space-y-4 pt-1">
-            {/* Crypto */}
+            {/* 1. Prop Firms */}
             <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                Crypto
+              <span className="text-[11px] font-semibold tracking-wider text-primary uppercase flex items-center gap-1.5">
+                <span>🏆</span>
+                <span>Prop Trading Firms</span>
+              </span>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {BROKER_CATALOG.filter((b) => b.category === "prop-firm").map((broker) => (
+                  <button
+                    key={broker.id}
+                    type="button"
+                    onClick={() => handleSelectBroker(broker)}
+                    className={cn(
+                      "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
+                      broker.status === "soon"
+                        ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
+                        : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
+                    )}
+                  >
+                    <BrokerIcon
+                      icon={broker.icon}
+                      iconDark={broker.iconDark}
+                      name={broker.name}
+                      invertInDark={broker.invertInDark}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className={cn(
+                          "block truncate text-xs font-semibold",
+                          broker.status === "soon"
+                            ? "text-muted-foreground"
+                            : "text-foreground group-hover:text-primary transition-colors",
+                        )}
+                      >
+                        {broker.name}
+                      </span>
+                      {broker.subtitle && (
+                        <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
+                          {broker.subtitle}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Execution Platforms */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+                <span>⚡</span>
+                <span>Execution Platforms &amp; Gateways</span>
+              </span>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {BROKER_CATALOG.filter((b) => b.category === "platform").map((broker) => (
+                  <button
+                    key={broker.id}
+                    type="button"
+                    onClick={() => handleSelectBroker(broker)}
+                    className={cn(
+                      "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
+                      broker.status === "soon"
+                        ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
+                        : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
+                    )}
+                  >
+                    <BrokerIcon
+                      icon={broker.icon}
+                      iconDark={broker.iconDark}
+                      name={broker.name}
+                      invertInDark={broker.invertInDark}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className={cn(
+                          "block truncate text-xs font-semibold",
+                          broker.status === "soon"
+                            ? "text-muted-foreground"
+                            : "text-foreground group-hover:text-primary transition-colors",
+                        )}
+                      >
+                        {broker.name}
+                      </span>
+                      {broker.subtitle && (
+                        <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
+                          {broker.subtitle}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Direct Brokers (Forex & Stocks) */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+                <span>🏛️</span>
+                <span>Direct Brokers (Forex, CFDs &amp; Stocks)</span>
+              </span>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {BROKER_CATALOG.filter(
+                  (b) => b.category === "forex-cfd" || b.category === "stocks",
+                ).map((broker) => (
+                  <button
+                    key={broker.id}
+                    type="button"
+                    onClick={() => handleSelectBroker(broker)}
+                    className={cn(
+                      "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
+                      broker.status === "soon"
+                        ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
+                        : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
+                    )}
+                  >
+                    <BrokerIcon
+                      icon={broker.icon}
+                      iconDark={broker.iconDark}
+                      name={broker.name}
+                      invertInDark={broker.invertInDark}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className={cn(
+                          "block truncate text-xs font-semibold",
+                          broker.status === "soon"
+                            ? "text-muted-foreground"
+                            : "text-foreground group-hover:text-primary transition-colors",
+                        )}
+                      >
+                        {broker.name}
+                      </span>
+                      {broker.subtitle && (
+                        <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
+                          {broker.subtitle}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Crypto */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+                <span>🪙</span>
+                <span>Crypto Exchanges</span>
               </span>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {BROKER_CATALOG.filter((b) => b.category === "crypto").map((broker) => (
                   <button
                     key={broker.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedBroker(broker);
-                      setBrokerAccountName(broker.name);
-                    }}
+                    onClick={() => handleSelectBroker(broker)}
                     className="group flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/40 p-2.5 text-left transition-all hover:bg-muted/50 hover:border-border active:scale-[0.98] cursor-pointer"
                   >
                     <BrokerIcon
                       icon={broker.icon}
+                      iconDark={broker.iconDark}
                       name={broker.name}
                       invertInDark={broker.invertInDark}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {broker.name}
-                      </span>
-                      {broker.subtitle && (
-                        <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
-                          {broker.subtitle}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Stocks & Options */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                Stocks &amp; options
-              </span>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {BROKER_CATALOG.filter((b) => b.category === "stocks").map((broker) => (
-                  <button
-                    key={broker.id}
-                    type="button"
-                    onClick={() => {
-                      if (broker.status === "active") {
-                        setSelectedBroker(broker);
-                        setBrokerAccountName(broker.name);
-                      } else {
-                        onGoToFile();
-                      }
-                    }}
-                    className={cn(
-                      "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
-                      broker.status === "soon"
-                        ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
-                        : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
-                    )}
-                  >
-                    <BrokerIcon
-                      icon={broker.icon}
-                      name={broker.name}
-                      invertInDark={broker.invertInDark}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span
-                        className={cn(
-                          "block truncate text-xs font-semibold",
-                          broker.status === "soon"
-                            ? "text-muted-foreground"
-                            : "text-foreground group-hover:text-primary transition-colors",
-                        )}
-                      >
-                        {broker.name}
-                      </span>
-                      {broker.subtitle && (
-                        <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
-                          {broker.subtitle}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Futures & Prop Trading (includes FTMO) */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                Futures &amp; prop trading
-              </span>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {BROKER_CATALOG.filter((b) => b.category === "futures").map((broker) => (
-                  <button
-                    key={broker.id}
-                    type="button"
-                    onClick={() => {
-                      if (broker.status === "active") {
-                        setSelectedBroker(broker);
-                        setBrokerAccountName(
-                          broker.id === "ftmo" ? "FTMO 100k Challenge" : broker.name,
-                        );
-                      } else {
-                        onGoToFile();
-                      }
-                    }}
-                    className={cn(
-                      "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
-                      broker.status === "soon"
-                        ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
-                        : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
-                    )}
-                  >
-                    <BrokerIcon
-                      icon={broker.icon}
-                      name={broker.name}
-                      invertInDark={broker.invertInDark}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span
-                        className={cn(
-                          "block truncate text-xs font-semibold",
-                          broker.status === "soon"
-                            ? "text-muted-foreground"
-                            : "text-foreground group-hover:text-primary transition-colors",
-                        )}
-                      >
                         {broker.name}
                       </span>
                       {broker.subtitle && (
@@ -875,7 +1219,7 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
               </span>
               <button
                 type="button"
-                onClick={onGoToFile}
+                onClick={() => onGoToFile()}
                 className="flex w-full items-center gap-2.5 rounded-xl border border-border/70 p-2.5 text-left transition-all hover:bg-muted/50 cursor-pointer active:scale-[0.98]"
               >
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted text-xs font-bold text-muted-foreground">
@@ -908,54 +1252,71 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
           <div className="flex items-center gap-3 border-b border-border/60 pb-3">
             <BrokerIcon
               icon={selectedBroker.icon}
+              iconDark={selectedBroker.iconDark}
               name={selectedBroker.name}
               invertInDark={selectedBroker.invertInDark}
-              className="size-9 rounded-lg"
+              className="size-9 rounded-lg object-contain"
             />
             <div>
               <h3 className="text-sm font-semibold text-foreground">
                 Connect {selectedBroker.name}
               </h3>
               <p className="text-[11px] text-muted-foreground">
-                {selectedBroker.id === "ftmo"
+                {!matchedSdkBroker
                   ? "Account management & trade tracking"
                   : "Encrypted read-only synchronization"}
               </p>
             </div>
           </div>
 
-          {selectedBroker.id === "ftmo" ? (
-            /* FTMO dedicated setup */
+          {!matchedSdkBroker ? (
+            /* Prop Firm / Statement Import Account Setup */
             <div className="space-y-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Account Name</Label>
-                <Input
-                  value={brokerAccountName}
-                  onChange={(e) => setBrokerAccountName(e.target.value)}
-                  placeholder="e.g. FTMO 100k Challenge"
-                  className="h-8 text-xs"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs">Account Name</Label>
+                  <Input
+                    value={brokerAccountName}
+                    onChange={(e) => setBrokerAccountName(e.target.value)}
+                    placeholder={`e.g. ${selectedBroker.name} Account`}
+                    className="h-8 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Account ID / Number</Label>
+                    <span className="text-[10px] text-muted-foreground">Auto-match on import</span>
+                  </div>
+                  <Input
+                    value={brokerAccountNumber}
+                    onChange={(e) => setBrokerAccountNumber(e.target.value)}
+                    placeholder="e.g. LFE0506847043001"
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1">
                   <Label className="text-xs">Trading Platform</Label>
-                  <Select value={ftmoPlatform} onValueChange={setFtmoPlatform}>
+                  <Select value={propPlatform} onValueChange={setPropPlatform}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Platform" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="mt5">MetaTrader 5</SelectItem>
-                      <SelectItem value="mt4">MetaTrader 4</SelectItem>
-                      <SelectItem value="ctrader">cTrader</SelectItem>
-                      <SelectItem value="dxtrade">DXtrade</SelectItem>
+                      {getPlatformOptionsForBroker(selectedBroker.id).map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-xs">Currency</Label>
-                  <Select value={ftmoCurrency} onValueChange={setFtmoCurrency}>
+                  <Select value={propCurrency} onValueChange={setPropCurrency}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Currency" />
                     </SelectTrigger>
@@ -963,31 +1324,46 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
                       <SelectItem value="USD">USD ($)</SelectItem>
                       <SelectItem value="EUR">EUR (€)</SelectItem>
                       <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="BRL">BRL (R$)</SelectItem>
                       <SelectItem value="CZK">CZK (Kč)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs">Initial Account Balance</Label>
-                <Input
-                  type="number"
-                  value={ftmoBalance}
-                  onChange={(e) => setFtmoBalance(e.target.value)}
-                  placeholder="100000"
-                  className="h-8 text-xs font-mono tnum"
-                />
-                <p className="text-[10px] text-muted-foreground">
-                  Unlocks exact drawdown metrics and prop evaluation progress.
-                </p>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs">Initial Account Balance ($)</Label>
+                  <Input
+                    type="number"
+                    value={propBalance}
+                    onChange={(e) => setPropBalance(e.target.value)}
+                    placeholder={selectedBroker.id === "ftmo" ? "100000" : "50000"}
+                    className="h-8 text-xs font-mono tnum"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Max Drawdown Limit ($)</Label>
+                  <Input
+                    type="number"
+                    value={propMaxDrawdown}
+                    onChange={(e) => setPropMaxDrawdown(e.target.value)}
+                    placeholder="2000"
+                    className="h-8 text-xs font-mono tnum"
+                  />
+                </div>
               </div>
+              <p className="text-[10px] text-muted-foreground">
+                Unlocks exact drawdown metrics and prop evaluation progress.
+              </p>
 
               <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 text-xs text-muted-foreground space-y-1">
                 <p className="font-medium text-foreground">Statement Import Ready</p>
                 <p className="text-[11px] leading-relaxed">
-                  After creating this account, export your trading history report from MetaTrader
-                  (HTML/CSV) or cTrader and import it anytime to sync executions.
+                  After creating this account, export your trading history report from{" "}
+                  {selectedBroker.name} or your execution platform and import it anytime to sync
+                  executions.
                 </p>
               </div>
 
@@ -1002,7 +1378,9 @@ function BrokerConnect({ onGoToFile }: { onGoToFile: () => void }) {
                 disabled={busy}
                 className="w-full h-8 text-xs font-semibold cursor-pointer"
               >
-                {busy ? "Creating FTMO account…" : "Create FTMO Account"}
+                {busy
+                  ? `Creating ${selectedBroker.name} account…`
+                  : `Create ${selectedBroker.name} Account`}
               </Button>
             </div>
           ) : (

@@ -71,7 +71,7 @@ interface NaiveParts {
   millisecond: number;
 }
 
-const toNaive = (value: string): NaiveParts | null => {
+const toNaive = (value: string, dateOrder?: "DMY" | "MDY"): NaiveParts | null => {
   const text = value.trim();
 
   // IBKR Flex Query: "20260105;093100"
@@ -104,7 +104,7 @@ const toNaive = (value: string): NaiveParts | null => {
     };
   }
 
-  // US: 01/05/2026 2:30:00 PM  (also 1/5/26)
+  // Slash or dash date: 01/05/2026 2:30:00 PM (also 1/5/26, 25/01/2026)
   match = text.match(
     /^(\d{1,2})[-/](\d{1,2})[-/](\d{2}|\d{4})(?:[, ]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?\s*(AM|PM|am|pm)?)?$/,
   );
@@ -115,10 +115,33 @@ const toNaive = (value: string): NaiveParts | null => {
     if (meridiem === "PM" && hour < 12) hour += 12;
     if (meridiem === "AM" && hour === 12) hour = 0;
     const year = Number(match[3]!.length === 2 ? `20${match[3]}` : match[3]);
+    const first = Number(match[1]);
+    const second = Number(match[2]);
+
+    let month: number;
+    let day: number;
+
+    if (first > 12 && second <= 12) {
+      // Unambiguous DMY (e.g. 25/01/2026)
+      day = first;
+      month = second;
+    } else if (second > 12 && first <= 12) {
+      // Unambiguous MDY (e.g. 01/25/2026)
+      month = first;
+      day = second;
+    } else if (dateOrder === "DMY") {
+      day = first;
+      month = second;
+    } else {
+      // Default fallback MDY
+      month = first;
+      day = second;
+    }
+
     return {
       year,
-      month: Number(match[1]),
-      day: Number(match[2]),
+      month,
+      day,
       hour,
       minute: Number(match[5] ?? 0),
       second: Number(match[6] ?? 0),
@@ -157,7 +180,11 @@ const toNaive = (value: string): NaiveParts | null => {
  * A trailing offset/Z is honored; otherwise the timestamp is interpreted in `timeZone`.
  * Returns null when the value cannot be parsed.
  */
-export const parseTimestamp = (value: string | undefined, timeZone = "UTC"): string | null => {
+export const parseTimestamp = (
+  value: string | undefined,
+  timeZone = "UTC",
+  dateOrder?: "DMY" | "MDY",
+): string | null => {
   if (!value) return null;
   // Some journal exports (TradeZella) append a timezone abbreviation to time
   // fields ("09:31:00 EST"). Abbreviations are ambiguous, so we strip them and
@@ -170,7 +197,7 @@ export const parseTimestamp = (value: string | undefined, timeZone = "UTC"): str
     return Number.isNaN(ms) ? null : new Date(ms).toISOString();
   }
 
-  const naive = toNaive(text);
+  const naive = toNaive(text, dateOrder);
   if (!naive) return null;
   const naiveUtcMs = Date.UTC(
     naive.year,
@@ -201,4 +228,5 @@ export const parseDateAndTime = (
   date: string | undefined,
   time: string | undefined,
   timeZone = "UTC",
-): string | null => parseTimestamp([date, time].filter(Boolean).join(" "), timeZone);
+  dateOrder?: "DMY" | "MDY",
+): string | null => parseTimestamp([date, time].filter(Boolean).join(" "), timeZone, dateOrder);

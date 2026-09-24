@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <style>
+    .fg { fill: #FFFFFF; }
+    @media (prefers-color-scheme: light) {
+      .fg { fill: #1A1D20; }
+    }
+  </style>
+  <path class="fg" d="m5.845 18.789 9.28-9.34V3.75L3 15.895zm9.28 9.294v-7.935l-3.94 3.945zm0-16.222L7.07 19.972l2.933 2.938 5.164-5.174v-5.875zm1.532-8.111v5.7l6.434 6.445-6.434 6.445v5.7l12.168-12.145z"/>
+</svg>

@@ -7,7 +7,16 @@ export interface QuantInstrument {
   tickSize: number;
   tickValue?: number;
   currency?: "USD" | "BRL" | "EUR";
-  category?: "indices" | "micros" | "commodities" | "crypto" | "energy" | "metals" | "bonds" | "b3" | "currencies";
+  category?:
+    | "indices"
+    | "micros"
+    | "commodities"
+    | "crypto"
+    | "energy"
+    | "metals"
+    | "bonds"
+    | "b3"
+    | "currencies";
   microId?: string;
   assetTitle?: string;
 }

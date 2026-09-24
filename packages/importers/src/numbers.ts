@@ -9,11 +9,22 @@ export const parseMoney = (value: string | undefined): number => {
   if (combined) text = combined[2]!;
   const negative = /^\(.*\)$/.test(text) || text.startsWith("-");
   text = text.replace(/[()$€£\s]/g, "").replace(/^-/, "");
-  // European decimal comma: "1.234,56" → "1234.56"; plain "12,5" → "12.5".
-  if (/,\d{1,2}$/.test(text) && !/\.\d+$/.test(text)) {
-    text = text.replace(/\./g, "").replace(",", ".");
-  } else {
-    text = text.replace(/,/g, "");
+  // European/Brazilian decimal comma vs US point:
+  // Detect by last separator position (e.g. 1.000,50 vs 1,000.50)
+  if (text.includes(",") && text.includes(".")) {
+    const lastComma = text.lastIndexOf(",");
+    const lastDot = text.lastIndexOf(".");
+    if (lastComma > lastDot) {
+      text = text.replace(/\./g, "").replace(",", ".");
+    } else {
+      text = text.replace(/,/g, "");
+    }
+  } else if (text.includes(",")) {
+    if ((text.match(/,/g) || []).length > 1 || /^\d{1,3}(,\d{3})+$/.test(text)) {
+      text = text.replace(/,/g, "");
+    } else {
+      text = text.replace(",", ".");
+    }
   }
   const parsed = Number(text);
   if (Number.isNaN(parsed)) return NaN;

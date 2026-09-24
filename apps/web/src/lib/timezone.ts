@@ -31,3 +31,22 @@ export const formatTimestamp = (iso: string, timeZone: string): string => {
   const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)!.value;
   return `${part("year")}-${part("month")}-${part("day")} ${part("hour")}:${part("minute")}:${part("second")}`;
 };
+
+/** Formats an IANA timezone to its current short offset, e.g. "UTC-3", "UTC+3", "UTC". */
+export const formatZoneOffset = (zone?: string | null): string => {
+  if (!zone || zone === "UTC") return "UTC";
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: zone,
+      timeZoneName: "shortOffset",
+    });
+    const parts = formatter.formatToParts(new Date());
+    const offsetPart = parts.find((p) => p.type === "timeZoneName")?.value;
+    if (offsetPart) {
+      return offsetPart.replace("GMT", "UTC");
+    }
+  } catch {
+    // fallback
+  }
+  return zone;
+};

@@ -179,7 +179,8 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
                 Market instrument
               </label>
               <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-                {curr}{instrument.multiplier}/pt
+                {curr}
+                {instrument.multiplier}/pt
               </span>
             </div>
             <div className="w-36">
@@ -310,7 +311,8 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
                 isRiskFocused && "bg-primary/20 text-primary ring-1 ring-primary/40",
               )}
             >
-              {curr}{effectiveRiskDollars > 0 ? effectiveRiskDollars.toLocaleString("en-US") : "0"}
+              {curr}
+              {effectiveRiskDollars > 0 ? effectiveRiskDollars.toLocaleString("en-US") : "0"}
             </span>
           }
           valueDenominator={
@@ -322,7 +324,8 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
                   : "text-muted-foreground",
               )}
             >
-              {stopPoints > 0 ? stopPoints : "0"} pts × {curr}{pointValue}
+              {stopPoints > 0 ? stopPoints : "0"} pts × {curr}
+              {pointValue}
             </span>
           }
           resultValue={
@@ -344,7 +347,10 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <div>
               <span className="block text-[11px] text-muted-foreground">Loss at stop</span>
               <span className="font-mono font-semibold text-loss tnum">
-                <MonetaryValue>-{curr}{sizing.actualRiskDollars.toLocaleString("en-US")}</MonetaryValue>
+                <MonetaryValue>
+                  -{curr}
+                  {sizing.actualRiskDollars.toLocaleString("en-US")}
+                </MonetaryValue>
               </span>
             </div>
             <div>
@@ -356,7 +362,8 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
               </span>
               <span className="font-mono font-semibold text-profit tnum">
                 <MonetaryValue>
-                  +{curr}{(sizing.targetDollars ?? 0).toLocaleString("en-US")}
+                  +{curr}
+                  {(sizing.targetDollars ?? 0).toLocaleString("en-US")}
                 </MonetaryValue>
               </span>
             </div>

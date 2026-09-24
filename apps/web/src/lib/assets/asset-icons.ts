@@ -181,8 +181,6 @@ export const CRYPTO_BASES: Record<string, string> = {
   XRP: `${ICON_BASE}/crypto/ripple.svg`,
 };
 
-
-
 /**
  * Resolves an asset symbol into an icon configuration.
  * Dynamically resolves forex pairs, crypto pairs, and single index/commodity assets.

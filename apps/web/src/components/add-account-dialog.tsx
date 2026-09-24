@@ -1,16 +1,15 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useId, useState } from "react";
 import {
   ArrowLeft,
   Check,
-  ChevronDown,
-  FileUp,
   Landmark,
   PencilLine,
-  RefreshCw,
+  Radio,
+  ShieldCheck,
   Sparkles,
+  Trophy,
 } from "lucide-react";
 import {
   Dialog,
@@ -27,63 +26,202 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { postJson, useApi } from "@/lib/use-api";
-import { decodeImportFile } from "@/lib/decode-import";
-import { formatTimestamp } from "@/lib/timezone";
-import { cn } from "@/lib/utils";
-import { dayKeyOf } from "@luxalgo/journal-core";
-import type { AccountRow } from "@/types/accounts";
-import type {
-  BrokerSdkInfo,
-  PreviewTotals,
-  PreviewResponse,
-} from "@/types/import";
-
-import { BROKER_CATALOG, type BrokerCatalogItem } from "@/lib/brokers/broker-catalog";
+import { TimeZonePicker } from "@/components/timezone-picker";
 import { BrokerIcon } from "@/components/ui/broker-icon";
+import {
+  BROKER_CATALOG,
+  getBrokerInfo,
+  getBrokerMetadata,
+  type BrokerCatalogItem,
+} from "@/lib/brokers/broker-catalog";
+import { formatZoneOffset } from "@/lib/timezone";
+import { postJson, useApi } from "@/lib/use-api";
+import { cn } from "@/lib/utils";
+import type { AccountRow } from "@/types/accounts";
+import type { BrokerSdkInfo } from "@/types/import";
 
 export { BROKER_CATALOG };
 export type { BrokerCatalogItem };
-
 
 export interface AddAccountDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAccountCreated?: (accountId: string) => void;
-  initialTab?: "broker" | "import" | "manual";
+  initialTab?: "prop" | "broker" | "sync" | "manual" | "import";
+  initialAccountNumber?: string;
+  initialPlatform?: string;
+  initialBroker?: string;
+  initialName?: string;
+  initialBalance?: number | string;
+  initialMaxDrawdown?: number | string;
 }
+
+const BALANCE_PRESETS = [25000, 50000, 100000, 150000, 200000, 300000];
+
+const PROP_FIRMS = [
+  {
+    id: "lucid",
+    name: "Lucid Trading",
+    defaultPlatform: "tradovate",
+    defaultTz: "America/Chicago",
+    icon: "lucid.png",
+  },
+  {
+    id: "topstep",
+    name: "Topstep",
+    defaultPlatform: "topstepx",
+    defaultTz: "America/Chicago",
+    icon: "topstep-light.svg",
+  },
+  {
+    id: "apex",
+    name: "Apex Trader Funding",
+    defaultPlatform: "tradovate",
+    defaultTz: "America/Chicago",
+    icon: "apex.png",
+  },
+  {
+    id: "ftmo",
+    name: "FTMO",
+    defaultPlatform: "metatrader5",
+    defaultTz: "Europe/Helsinki",
+    icon: "ftmo-light.svg",
+  },
+  {
+    id: "bulenox",
+    name: "Bulenox",
+    defaultPlatform: "rithmic",
+    defaultTz: "America/Chicago",
+    icon: "tradesea.png",
+  },
+  {
+    id: "fasttrack",
+    name: "Fast Track Trading",
+    defaultPlatform: "rithmic",
+    defaultTz: "America/Chicago",
+    icon: "tradesea.png",
+  },
+  {
+    id: "tradeday",
+    name: "TradeDay",
+    defaultPlatform: "tradovate",
+    defaultTz: "America/Chicago",
+    icon: "tradovate.svg",
+  },
+  {
+    id: "goatfunded",
+    name: "Goat Funded Trader",
+    defaultPlatform: "metatrader5",
+    defaultTz: "Europe/Helsinki",
+    icon: "metatrader5.png",
+  },
+  {
+    id: "other",
+    name: "Other Prop Firm",
+    defaultPlatform: "tradovate",
+    defaultTz: "America/Chicago",
+    icon: "default.png",
+  },
+];
+
+const PLATFORM_CHOICES = [
+  { id: "tradovate", name: "Tradovate", icon: "tradovate.svg", defaultTz: "America/Chicago" },
+  {
+    id: "ninjatrader",
+    name: "NinjaTrader 8",
+    icon: "ninjatrader.svg",
+    defaultTz: "America/Chicago",
+  },
+  { id: "topstepx", name: "TopstepX", icon: "tradovate.svg", defaultTz: "America/Chicago" },
+  {
+    id: "rithmic",
+    name: "Rithmic (RTrader Pro)",
+    icon: "tradesea.png",
+    defaultTz: "America/Chicago",
+  },
+  { id: "tradesea", name: "TradeSea", icon: "tradesea.png", defaultTz: "America/Chicago" },
+  {
+    id: "metatrader5",
+    name: "MetaTrader 5",
+    icon: "metatrader5.png",
+    defaultTz: "Europe/Helsinki",
+  },
+  {
+    id: "metatrader4",
+    name: "MetaTrader 4",
+    icon: "metatrader5.png",
+    defaultTz: "Europe/Helsinki",
+  },
+];
 
 export function AddAccountDialog({
   open,
   onOpenChange,
   onAccountCreated,
-  initialTab = "broker",
+  initialTab = "prop",
+  initialAccountNumber,
+  initialPlatform,
+  initialBroker,
+  initialName,
+  initialBalance,
+  initialMaxDrawdown,
 }: AddAccountDialogProps) {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"broker" | "import" | "manual">(initialTab);
-  const [selectedBroker, setSelectedBroker] = useState<BrokerCatalogItem | null>(null);
+  const mapInitialTab = (tab?: string): "prop" | "broker" | "sync" | "manual" => {
+    if (tab === "import" || tab === "prop") return "prop";
+    if (tab === "broker") return "broker";
+    if (tab === "sync") return "sync";
+    if (tab === "manual") return "manual";
+    return "prop";
+  };
 
-  // Broker SDK API data
+  const [activeTab, setActiveTab] = useState<"prop" | "broker" | "sync" | "manual">(() =>
+    mapInitialTab(initialTab),
+  );
+
   const { data: brokerData } = useApi<{ brokers: BrokerSdkInfo[] }>("/api/brokers");
   const { refresh: refreshAccounts } = useApi<{ accounts: AccountRow[] }>(
     "/api/accounts?summary=1",
   );
-  const { data: settingsData } = useApi<{ timeZone: string }>("/api/settings");
 
-  // --- Broker Connect State ---
+  // --- Tab 1: Prop Firm State ---
+  const [propFirm, setPropFirm] = useState("lucid");
+  const [propPlatform, setPropPlatform] = useState("tradovate");
+  const [propAccountName, setPropAccountName] = useState("");
+  const [propAccountNumber, setPropAccountNumber] = useState("");
+  const [propBalance, setPropBalance] = useState("50000");
+  const [propMaxDrawdown, setPropMaxDrawdown] = useState("2000");
+  const [propCurrency, setPropCurrency] = useState("USD");
+  const [propTimeZone, setPropTimeZone] = useState("America/Chicago");
+  const [propProfitCalc, setPropProfitCalc] = useState<"fifo" | "lifo" | "wavg">("fifo");
+  const [propBusy, setPropBusy] = useState(false);
+  const [propError, setPropError] = useState<string | null>(null);
+
+  // --- Tab 2: Direct Broker State ---
+  const [brokerId, setBrokerId] = useState("ibkr");
   const [brokerAccountName, setBrokerAccountName] = useState("");
-  const [brokerCredentials, setBrokerCredentials] = useState<Record<string, string>>({});
-  const [ftmoPlatform, setFtmoPlatform] = useState("mt5");
-  const [ftmoBalance, setFtmoBalance] = useState("100000");
-  const [ftmoCurrency, setFtmoCurrency] = useState("USD");
+  const [brokerAccountNumber, setBrokerAccountNumber] = useState("");
+  const [brokerBalance, setBrokerBalance] = useState("10000");
+  const [brokerCurrency, setBrokerCurrency] = useState("USD");
+  const [brokerTimeZone, setBrokerTimeZone] = useState("America/New_York");
+  const [brokerProfitCalc, setBrokerProfitCalc] = useState<"fifo" | "lifo" | "wavg">("fifo");
   const [brokerBusy, setBrokerBusy] = useState(false);
   const [brokerError, setBrokerError] = useState<string | null>(null);
 
-  // --- Manual Account State ---
+  // --- Tab 3: API Sync State ---
+  const [syncBrokerId, setSyncBrokerId] = useState<string>("");
+  const [syncAccountName, setSyncAccountName] = useState("");
+  const [syncCredentials, setSyncCredentials] = useState<Record<string, string>>({});
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  // --- Tab 4: Manual Account State ---
   const [manualName, setManualName] = useState("");
   const [manualCurrency, setManualCurrency] = useState("USD");
   const [manualBalance, setManualBalance] = useState("");
@@ -91,36 +229,164 @@ export function AddAccountDialog({
   const [manualBusy, setManualBusy] = useState(false);
   const [manualError, setManualError] = useState<string | null>(null);
 
-  // --- File Import State ---
-  const [importAccountName, setImportAccountName] = useState("");
-  const [importContent, setImportContent] = useState<string | null>(null);
-  const [importFileName, setImportFileName] = useState<string | null>(null);
-  const [importPreview, setImportPreview] = useState<PreviewResponse | null>(null);
-  const [importBusy, setImportBusy] = useState(false);
-  const [importError, setImportError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Hydrate initial props when opening
+  useEffect(() => {
+    if (open) {
+      setActiveTab(mapInitialTab(initialTab));
 
-  const resetAll = () => {
-    setSelectedBroker(null);
-    setBrokerAccountName("");
-    setBrokerCredentials({});
+      if (initialAccountNumber) {
+        setPropAccountNumber(initialAccountNumber);
+        setBrokerAccountNumber(initialAccountNumber);
+      }
+      if (initialPlatform) {
+        setPropPlatform(initialPlatform);
+      }
+      if (initialBroker) {
+        setPropFirm(initialBroker);
+        setBrokerId(initialBroker);
+      }
+      if (initialName) {
+        setPropAccountName(initialName);
+        setBrokerAccountName(initialName);
+        setManualName(initialName);
+      }
+      if (initialBalance !== undefined) {
+        setPropBalance(String(initialBalance));
+        setBrokerBalance(String(initialBalance));
+      }
+      if (initialMaxDrawdown !== undefined) {
+        setPropMaxDrawdown(String(initialMaxDrawdown));
+      }
+    }
+  }, [
+    open,
+    initialTab,
+    initialAccountNumber,
+    initialPlatform,
+    initialBroker,
+    initialName,
+    initialBalance,
+    initialMaxDrawdown,
+  ]);
+
+  // Update default timezone when prop firm changes
+  const handlePropFirmChange = (firmId: string) => {
+    setPropFirm(firmId);
+    const firm = PROP_FIRMS.find((f) => f.id === firmId);
+    if (firm) {
+      setPropPlatform(firm.defaultPlatform);
+      setPropTimeZone(firm.defaultTz);
+    }
+  };
+
+  // Update default timezone when broker changes
+  const handleBrokerChange = (id: string) => {
+    setBrokerId(id);
+    const meta = getBrokerMetadata(id);
+    if (meta?.defaultTimeZone) {
+      setBrokerTimeZone(meta.defaultTimeZone);
+    }
+  };
+
+  // --- Submit Prop Firm Account ---
+  const handleCreatePropAccount = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setPropBusy(true);
+    setPropError(null);
+
+    const firmObj = PROP_FIRMS.find((f) => f.id === propFirm);
+    const firmLabel = firmObj ? firmObj.name : "Prop Account";
+    const balanceNum = propBalance ? Number(propBalance) : 50000;
+    const balanceLabel = balanceNum >= 1000 ? `${Math.round(balanceNum / 1000)}k` : `${balanceNum}`;
+    const finalName =
+      propAccountName.trim() ||
+      `${firmLabel} ${balanceLabel}${propAccountNumber.trim() ? ` (${propAccountNumber.trim()})` : ""}`;
+
+    try {
+      const res = await postJson<{ id: string }>("/api/accounts", {
+        name: finalName,
+        kind: "manual",
+        broker: propFirm === "other" ? "" : propFirm,
+        platform: propPlatform,
+        accountNumber: propAccountNumber.trim() || null,
+        currency: propCurrency.toUpperCase().trim() || "USD",
+        initialBalance: balanceNum,
+        maxDrawdown: propMaxDrawdown ? Number(propMaxDrawdown) : null,
+        timeZone: propTimeZone || "America/Chicago",
+        profitCalcMethod: propProfitCalc,
+      });
+      refreshAccounts();
+      onAccountCreated?.(res.id);
+      onOpenChange(false);
+    } catch (cause) {
+      setPropError(cause instanceof Error ? cause.message : "Failed to create prop account.");
+    } finally {
+      setPropBusy(false);
+    }
+  };
+
+  // --- Submit Direct Broker Account ---
+  const handleCreateBrokerAccount = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setBrokerBusy(true);
     setBrokerError(null);
-    setManualName("");
-    setManualCurrency("USD");
-    setManualBalance("");
-    setManualError(null);
-    setImportContent(null);
-    setImportFileName(null);
-    setImportPreview(null);
-    setImportError(null);
+
+    const meta = getBrokerMetadata(brokerId);
+    const finalName =
+      brokerAccountName.trim() ||
+      `${meta?.name || "Broker"} Account${brokerAccountNumber.trim() ? ` (${brokerAccountNumber.trim()})` : ""}`;
+
+    try {
+      const res = await postJson<{ id: string }>("/api/accounts", {
+        name: finalName,
+        kind: "manual",
+        broker: brokerId,
+        platform: meta?.platform || null,
+        accountNumber: brokerAccountNumber.trim() || null,
+        currency: brokerCurrency.toUpperCase().trim() || "USD",
+        initialBalance: brokerBalance ? Number(brokerBalance) : 0,
+        timeZone: brokerTimeZone || "America/New_York",
+        profitCalcMethod: brokerProfitCalc,
+      });
+      refreshAccounts();
+      onAccountCreated?.(res.id);
+      onOpenChange(false);
+    } catch (cause) {
+      setBrokerError(cause instanceof Error ? cause.message : "Failed to create broker account.");
+    } finally {
+      setBrokerBusy(false);
+    }
   };
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) resetAll();
-    onOpenChange(nextOpen);
+  // --- Submit API Sync Account ---
+  const handleConnectSync = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!syncBrokerId) return;
+    setSyncBusy(true);
+    setSyncError(null);
+
+    const brokerMeta = brokerData?.brokers.find((b) => b.id === syncBrokerId);
+    const finalName = syncAccountName.trim() || (brokerMeta?.displayName ?? "Connected Exchange");
+
+    try {
+      const res = await postJson<{ id: string }>("/api/accounts", {
+        name: finalName,
+        kind: "sync",
+        broker: syncBrokerId,
+        credentials: syncCredentials,
+        timeZone: "UTC",
+      });
+      refreshAccounts();
+      onAccountCreated?.(res.id);
+      onOpenChange(false);
+    } catch (cause) {
+      setSyncError(cause instanceof Error ? cause.message : "Failed to connect API broker.");
+    } finally {
+      setSyncBusy(false);
+    }
   };
 
-  // --- Create Manual Account ---
+  // --- Submit Simple Manual Account ---
   const handleCreateManual = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!manualName.trim()) {
@@ -129,6 +395,7 @@ export function AddAccountDialog({
     }
     setManualBusy(true);
     setManualError(null);
+
     try {
       const res = await postJson<{ id: string }>("/api/accounts", {
         name: manualName.trim(),
@@ -139,636 +406,561 @@ export function AddAccountDialog({
       });
       refreshAccounts();
       onAccountCreated?.(res.id);
-      handleOpenChange(false);
+      onOpenChange(false);
     } catch (cause) {
-      setManualError(cause instanceof Error ? cause.message : "Failed to create account.");
+      setManualError(cause instanceof Error ? cause.message : "Failed to create manual account.");
     } finally {
       setManualBusy(false);
     }
   };
 
-  // --- Create Broker Connected Account (or FTMO) ---
-  const handleConnectBroker = async () => {
-    if (!selectedBroker) return;
-    setBrokerBusy(true);
-    setBrokerError(null);
-
-    try {
-      if (selectedBroker.id === "ftmo") {
-        // FTMO is recorded as a dedicated prop trading account
-        const res = await postJson<{ id: string }>("/api/accounts", {
-          name: brokerAccountName.trim() || `FTMO (${ftmoPlatform.toUpperCase()})`,
-          kind: "manual",
-          broker: "ftmo",
-          currency: ftmoCurrency,
-          initialBalance: Number(ftmoBalance) || 100000,
-          profitCalcMethod: "fifo",
-        });
-        refreshAccounts();
-        onAccountCreated?.(res.id);
-        handleOpenChange(false);
-        return;
-      }
-
-      // API Broker connected via SDK
-      const brokerMeta = brokerData?.brokers.find((b) => b.id === selectedBroker.id);
-      const res = await postJson<{ id: string }>("/api/accounts", {
-        name: brokerAccountName.trim() || (brokerMeta?.displayName ?? selectedBroker.name),
-        kind: "sync",
-        broker: selectedBroker.id,
-        credentials: brokerCredentials,
-      });
-      refreshAccounts();
-      onAccountCreated?.(res.id);
-      handleOpenChange(false);
-    } catch (cause) {
-      setBrokerError(cause instanceof Error ? cause.message : "Broker connection failed.");
-    } finally {
-      setBrokerBusy(false);
-    }
-  };
-
-  // --- Handle File Drop / Select ---
-  const handleFileChange = async (file: File) => {
-    setImportBusy(true);
-    setImportError(null);
-    setImportFileName(file.name);
-
-    try {
-      const buffer = await file.arrayBuffer();
-      const text = decodeImportFile(buffer);
-      setImportContent(text);
-
-      // Auto-preview
-      const previewRes = await postJson<PreviewResponse>("/api/import", {
-        mode: "preview",
-        content: text,
-        fileName: file.name,
-        timeZone: settingsData?.timeZone || "UTC",
-      });
-      setImportPreview(previewRes);
-    } catch (cause) {
-      setImportError(cause instanceof Error ? cause.message : "Failed to inspect statement file.");
-    } finally {
-      setImportBusy(false);
-    }
-  };
-
-  // --- Commit File Import ---
-  const handleCommitImport = async () => {
-    if (!importContent || !importPreview) return;
-    setImportBusy(true);
-    setImportError(null);
-
-    try {
-      // Create account automatically named after the custom name, file, or detected format
-      const defaultName =
-        importAccountName.trim() ||
-        importPreview.detected ||
-        importFileName?.replace(/\.[^/.]+$/, "") ||
-        "Imported Account";
-
-      const accountRes = await postJson<{ id: string }>("/api/accounts", {
-        name: defaultName,
-        kind: "import",
-        broker: importPreview.detected ?? "",
-      });
-      const finalAccountId = accountRes.id;
-
-      await postJson<{ inserted: number; duplicates: number; skipped?: number }>("/api/import", {
-        mode: "commit",
-        content: importContent,
-        accountId: finalAccountId,
-        fileName: importFileName,
-        timeZone: importPreview.timeZone || settingsData?.timeZone || "UTC",
-      });
-
-      refreshAccounts();
-      onAccountCreated?.(finalAccountId);
-      handleOpenChange(false);
-    } catch (cause) {
-      setImportError(cause instanceof Error ? cause.message : "Import failed.");
-    } finally {
-      setImportBusy(false);
-    }
-  };
-
-  const matchedSdkBroker = selectedBroker
-    ? (brokerData?.brokers.find((b) => b.id === selectedBroker.id) ?? null)
-    : null;
+  const selectedSyncMeta = brokerData?.brokers.find((b) => b.id === syncBrokerId);
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[88vh] overflow-y-auto p-5 sm:p-6 rounded-3xl">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 rounded-2xl">
         <DialogHeader className="gap-1 pb-1">
-          <DialogTitle className="text-base font-semibold">Add journal account</DialogTitle>
+          <DialogTitle className="text-base font-semibold tracking-tight">
+            Add Journal Account
+          </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Connect a broker, import an export file, or start an empty manual account.
+            Configure an evaluation prop firm, direct broker, API sync, or manual tracking account.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs
           value={activeTab}
-          onValueChange={(val) => {
-            setActiveTab(val as "broker" | "import" | "manual");
-            setSelectedBroker(null);
-          }}
+          onValueChange={(val) => setActiveTab(val as "prop" | "broker" | "sync" | "manual")}
+          className="pt-1"
         >
-          <TabsList className="w-full flex h-9 p-1 gap-1 bg-muted/60 dark:bg-muted/40 rounded-xl">
+          <TabsList className="w-full grid grid-cols-4 h-9 p-1 gap-1 bg-muted/60 dark:bg-muted/40 rounded-xl">
             <TabsTrigger
-              value="broker"
-              className="flex-1 h-full text-xs font-medium rounded-lg data-[state=active]:bg-background dark:data-[state=active]:bg-black data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              value="prop"
+              className="h-full text-xs font-medium rounded-lg data-[state=active]:bg-background dark:data-[state=active]:bg-black data-[state=active]:text-foreground data-[state=active]:shadow-xs cursor-pointer"
             >
-              <Landmark className="mr-1.5 size-3.5 shrink-0" />
-              Connect broker
+              <Trophy className="mr-1.5 size-3.5 shrink-0" />
+              <span>Prop firm</span>
             </TabsTrigger>
             <TabsTrigger
-              value="import"
-              className="flex-1 h-full text-xs font-medium rounded-lg data-[state=active]:bg-background dark:data-[state=active]:bg-black data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              value="broker"
+              className="h-full text-xs font-medium rounded-lg data-[state=active]:bg-background dark:data-[state=active]:bg-black data-[state=active]:text-foreground data-[state=active]:shadow-xs cursor-pointer"
             >
-              <FileUp className="mr-1.5 size-3.5 shrink-0" />
-              Import file
+              <Landmark className="mr-1.5 size-3.5 shrink-0" />
+              <span>Broker</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="sync"
+              className="h-full text-xs font-medium rounded-lg data-[state=active]:bg-background dark:data-[state=active]:bg-black data-[state=active]:text-foreground data-[state=active]:shadow-xs cursor-pointer"
+            >
+              <Radio className="mr-1.5 size-3.5 shrink-0" />
+              <span>API sync</span>
             </TabsTrigger>
             <TabsTrigger
               value="manual"
-              className="flex-1 h-full text-xs font-medium rounded-lg data-[state=active]:bg-background dark:data-[state=active]:bg-black data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              className="h-full text-xs font-medium rounded-lg data-[state=active]:bg-background dark:data-[state=active]:bg-black data-[state=active]:text-foreground data-[state=active]:shadow-xs cursor-pointer"
             >
               <PencilLine className="mr-1.5 size-3.5 shrink-0" />
-              Manual
+              <span>Manual</span>
             </TabsTrigger>
           </TabsList>
 
           {/* ============================================================ */}
-          {/* TAB 1: CONNECT BROKER                                        */}
+          {/* TAB 1: PROP FIRM / EVALUATION                                */}
           {/* ============================================================ */}
-          <TabsContent value="broker" className="mt-3 space-y-4">
-            {!selectedBroker ? (
-              <>
-                <p className="text-xs text-muted-foreground">
-                  Connected brokers sync into your journal automatically (and refresh daily).
-                </p>
-
-                <div className="space-y-4 pt-1">
-                  {/* Crypto */}
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                      Crypto
-                    </span>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {BROKER_CATALOG.filter((b) => b.category === "crypto").map((broker) => (
-                        <button
-                          key={broker.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedBroker(broker);
-                            setBrokerAccountName(broker.name);
-                          }}
-                          className="group flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/40 p-2.5 text-left transition-all hover:bg-muted/50 hover:border-border active:scale-[0.98] cursor-pointer"
+          <TabsContent value="prop" className="mt-3.5 space-y-3.5">
+            <form onSubmit={handleCreatePropAccount} className="space-y-3">
+              {/* Prop Firm & Execution Platform */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Prop Firm</Label>
+                  <Select value={propFirm} onValueChange={handlePropFirmChange}>
+                    <SelectTrigger className="h-8.5 text-xs">
+                      <SelectValue placeholder="Select prop firm" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {PROP_FIRMS.map((firm) => (
+                        <SelectItem
+                          key={firm.id}
+                          value={firm.id}
+                          className="text-xs cursor-pointer"
                         >
-                          <BrokerIcon
-                            icon={broker.icon}
-                            name={broker.name}
-                            invertInDark={broker.invertInDark}
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
-                              {broker.name}
-                            </span>
-                            {broker.subtitle && (
-                              <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
-                                {broker.subtitle}
-                              </span>
-                            )}
-                          </span>
-                        </button>
+                          <div className="flex items-center gap-2">
+                            <BrokerIcon
+                              icon={firm.icon}
+                              name={firm.name}
+                              className="size-4 rounded-sm object-contain"
+                            />
+                            <span>{firm.name}</span>
+                          </div>
+                        </SelectItem>
                       ))}
-                    </div>
-                  </div>
-
-                  {/* Stocks & Options */}
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                      Stocks & options
-                    </span>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {BROKER_CATALOG.filter((b) => b.category === "stocks").map((broker) => (
-                        <button
-                          key={broker.id}
-                          type="button"
-                          onClick={() => {
-                            if (broker.status === "active") {
-                              setSelectedBroker(broker);
-                              setBrokerAccountName(broker.name);
-                            } else {
-                              setActiveTab("import");
-                            }
-                          }}
-                          className={cn(
-                            "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
-                            broker.status === "soon"
-                              ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
-                              : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
-                          )}
-                        >
-                          <BrokerIcon
-                            icon={broker.icon}
-                            name={broker.name}
-                            invertInDark={broker.invertInDark}
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span
-                              className={cn(
-                                "block truncate text-xs font-semibold",
-                                broker.status === "soon"
-                                  ? "text-muted-foreground"
-                                  : "text-foreground group-hover:text-primary transition-colors",
-                              )}
-                            >
-                              {broker.name}
-                            </span>
-                            {broker.subtitle && (
-                              <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
-                                {broker.subtitle}
-                              </span>
-                            )}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Futures & Prop Trading (includes FTMO!) */}
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                      Futures & prop trading
-                    </span>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {BROKER_CATALOG.filter((b) => b.category === "futures").map((broker) => (
-                        <button
-                          key={broker.id}
-                          type="button"
-                          onClick={() => {
-                            if (broker.status === "active") {
-                              setSelectedBroker(broker);
-                              setBrokerAccountName(
-                                broker.id === "ftmo" ? "FTMO 100k Challenge" : broker.name,
-                              );
-                            } else {
-                              setActiveTab("import");
-                            }
-                          }}
-                          className={cn(
-                            "group flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] cursor-pointer",
-                            broker.status === "soon"
-                              ? "border-dashed border-border/60 opacity-80 hover:opacity-100 hover:bg-muted/30"
-                              : "border-border/70 bg-card/40 hover:bg-muted/50 hover:border-border",
-                          )}
-                        >
-                          <BrokerIcon
-                            icon={broker.icon}
-                            name={broker.name}
-                            invertInDark={broker.invertInDark}
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span
-                              className={cn(
-                                "block truncate text-xs font-semibold",
-                                broker.status === "soon"
-                                  ? "text-muted-foreground"
-                                  : "text-foreground group-hover:text-primary transition-colors",
-                              )}
-                            >
-                              {broker.name}
-                            </span>
-                            {broker.subtitle && (
-                              <span className="block truncate text-[10px] text-muted-foreground/80 mt-0.5">
-                                {broker.subtitle}
-                              </span>
-                            )}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Anything else */}
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                      Anything else
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("import")}
-                      className="flex w-full items-center gap-2.5 rounded-xl border border-border/70 p-2.5 text-left transition-all hover:bg-muted/50 cursor-pointer active:scale-[0.98]"
-                    >
-                      <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border/60 bg-muted text-xs font-bold text-muted-foreground">
-                        I
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-semibold text-foreground">
-                          Import a statement
-                        </span>
-                        <span className="block truncate text-[10px] text-muted-foreground">
-                          Any broker&apos;s CSV or HTML export feeds the same stats
-                        </span>
-                      </span>
-                    </button>
-                  </div>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <p className="pt-2 text-[11px] text-muted-foreground/80">
-                  Read-only access. Credentials are encrypted and can be revoked from your broker at
-                  any time.
-                </p>
-              </>
-            ) : (
-              /* --- Single Broker Configuration View --- */
-              <div className="space-y-4 pt-1 animate-in fade-in-50 duration-150">
-                <button
-                  type="button"
-                  onClick={() => setSelectedBroker(null)}
-                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  <ArrowLeft className="size-3.5" />
-                  <span>Back to brokers</span>
-                </button>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Execution Platform</Label>
+                  <Select value={propPlatform} onValueChange={setPropPlatform}>
+                    <SelectTrigger className="h-8.5 text-xs">
+                      <SelectValue placeholder="Execution platform" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PLATFORM_CHOICES.map((plat) => (
+                        <SelectItem
+                          key={plat.id}
+                          value={plat.id}
+                          className="text-xs cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <BrokerIcon
+                              icon={plat.icon}
+                              name={plat.name}
+                              className="size-4 rounded-sm object-contain"
+                            />
+                            <span>{plat.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-                <div className="flex items-center gap-3 border-b border-border/60 pb-3">
-                  <BrokerIcon
-                    icon={selectedBroker.icon}
-                    name={selectedBroker.name}
-                    invertInDark={selectedBroker.invertInDark}
-                    className="size-9 rounded-lg"
+              {/* Account Name & Statement Account Number */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Account Name</Label>
+                  <Input
+                    value={propAccountName}
+                    onChange={(e) => setPropAccountName(e.target.value)}
+                    placeholder="e.g. Lucid 50k Combine, Apex PA-1"
+                    className="h-8.5 text-xs"
                   />
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground">
-                      Connect {selectedBroker.name}
-                    </h3>
-                    <p className="text-[11px] text-muted-foreground">
-                      {selectedBroker.id === "ftmo"
-                        ? "Account management & trade tracking"
-                        : "Encrypted read-only synchronization"}
-                    </p>
-                  </div>
                 </div>
 
-                {selectedBroker.id === "ftmo" ? (
-                  /* FTMO specific setup */
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Account Name</Label>
-                      <Input
-                        value={brokerAccountName}
-                        onChange={(e) => setBrokerAccountName(e.target.value)}
-                        placeholder="e.g. FTMO 100k Challenge"
-                        className="h-8 text-xs"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Trading Platform</Label>
-                        <Select value={ftmoPlatform} onValueChange={setFtmoPlatform}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Platform" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="mt5">MetaTrader 5</SelectItem>
-                            <SelectItem value="mt4">MetaTrader 4</SelectItem>
-                            <SelectItem value="ctrader">cTrader</SelectItem>
-                            <SelectItem value="dxtrade">DXtrade</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs">Currency</Label>
-                        <Select value={ftmoCurrency} onValueChange={setFtmoCurrency}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Currency" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="USD">USD ($)</SelectItem>
-                            <SelectItem value="EUR">EUR (€)</SelectItem>
-                            <SelectItem value="GBP">GBP (£)</SelectItem>
-                            <SelectItem value="CZK">CZK (Kč)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-xs">Initial Account Balance</Label>
-                      <Input
-                        type="number"
-                        value={ftmoBalance}
-                        onChange={(e) => setFtmoBalance(e.target.value)}
-                        placeholder="100000"
-                        className="h-8 text-xs tnum"
-                      />
-                      <p className="text-[10px] text-muted-foreground">
-                        Unlocks exact drawdown metrics and prop evaluation progress.
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 text-xs text-muted-foreground space-y-1">
-                      <p className="font-medium text-foreground">Statement Import Ready</p>
-                      <p className="text-[11px] leading-relaxed">
-                        After creating this account, export your trading history report from
-                        MetaTrader (HTML/CSV) or cTrader and import it anytime to sync executions.
-                      </p>
-                    </div>
-
-                    {brokerError && (
-                      <p role="alert" className="text-xs text-destructive">
-                        {brokerError}
-                      </p>
-                    )}
-
-                    <Button
-                      onClick={handleConnectBroker}
-                      disabled={brokerBusy}
-                      className="w-full h-8 text-xs font-semibold cursor-pointer"
-                    >
-                      {brokerBusy ? "Creating FTMO account…" : "Create FTMO Account"}
-                    </Button>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Account ID / Number</Label>
+                    <span className="text-[10px] text-muted-foreground">Auto-match on import</span>
                   </div>
-                ) : (
-                  /* Standard SDK API Broker */
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Account Name</Label>
-                      <Input
-                        value={brokerAccountName}
-                        onChange={(e) => setBrokerAccountName(e.target.value)}
-                        placeholder={`My ${selectedBroker.name} Account`}
-                        className="h-8 text-xs"
-                      />
-                    </div>
-
-                    {(matchedSdkBroker?.credentials ?? []).map((cred) => (
-                      <div key={cred.key} className="space-y-1">
-                        <Label className="text-xs">{cred.label}</Label>
-                        <Input
-                          type={cred.secret ? "password" : "text"}
-                          value={brokerCredentials[cred.key] ?? ""}
-                          onChange={(e) =>
-                            setBrokerCredentials((prev) => ({
-                              ...prev,
-                              [cred.key]: e.target.value,
-                            }))
-                          }
-                          className="h-8 text-xs font-mono"
-                          placeholder={cred.secret ? "••••••••" : ""}
-                        />
-                      </div>
-                    ))}
-
-                    {matchedSdkBroker?.readOnlySetup && (
-                      <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 text-xs text-muted-foreground">
-                        <span className="font-semibold text-foreground">Setup instructions: </span>
-                        <span className="text-[11px] leading-relaxed">
-                          {matchedSdkBroker.readOnlySetup}
-                        </span>
-                      </div>
-                    )}
-
-                    {brokerError && (
-                      <p role="alert" className="text-xs text-destructive">
-                        {brokerError}
-                      </p>
-                    )}
-
-                    <Button
-                      onClick={handleConnectBroker}
-                      disabled={brokerBusy}
-                      className="w-full h-8 text-xs font-semibold cursor-pointer"
-                    >
-                      {brokerBusy
-                        ? "Connecting & syncing…"
-                        : `Connect & Sync ${selectedBroker.name}`}
-                    </Button>
-                  </div>
-                )}
+                  <Input
+                    value={propAccountNumber}
+                    onChange={(e) => setPropAccountNumber(e.target.value)}
+                    placeholder="e.g. LFE0506847043001"
+                    className="h-8.5 text-xs font-mono"
+                  />
+                </div>
               </div>
-            )}
-          </TabsContent>
 
-          {/* ============================================================ */}
-          {/* TAB 2: IMPORT FILE                                           */}
-          {/* ============================================================ */}
-          <TabsContent value="import" className="mt-3 space-y-3.5">
-            <p className="text-xs text-muted-foreground">
-              Broker and journal exports are auto-detected — MetaTrader, IBKR, thinkorswim,
-              TradingView, TradeZella, Tradervue and more.
-            </p>
-
-            <div className="space-y-1">
-              <Label className="text-xs">Account Name</Label>
-              <Input
-                value={importAccountName}
-                onChange={(e) => setImportAccountName(e.target.value)}
-                placeholder="e.g. Main Account (or auto-detected from statement)"
-                className="h-8 text-xs"
-              />
-            </div>
-
-            {/* Hidden File Input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,.htm,.html,text/csv,text/html"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void handleFileChange(f);
-              }}
-            />
-
-            {/* File Dropzone */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={importBusy}
-              className={cn(
-                "flex h-24 w-full flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-border/70 p-4 text-center transition-colors cursor-pointer hover:bg-muted/40 active:scale-[0.99]",
-                importPreview && "border-primary/50 bg-primary/5",
-              )}
-            >
-              <FileUp className="size-5 text-muted-foreground" />
-              <span className="text-xs font-semibold text-foreground">
-                {importFileName ? importFileName : "Upload CSV or HTML file"}
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                Drag &amp; drop or click to browse CSV or HTML statement
-              </span>
-            </button>
-
-            {/* Preview Card */}
-            {importPreview && (
-              <div className="rounded-xl border border-border/70 bg-card p-3 space-y-2 text-xs">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary" className="text-[10px] font-semibold">
-                    {importPreview.detected ?? "Auto-detected"}
-                  </Badge>
-                  <span className="font-semibold text-foreground">
-                    {importPreview.totals?.executions ?? 0} executions
+              {/* Initial Balance Chips & Custom Input */}
+              <div className="space-y-1.5 pt-0.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">Initial Account Balance ($)</Label>
+                  <span className="text-[10px] text-muted-foreground">
+                    Unlocks drawdown &amp; return metrics
                   </span>
-                  <span className="text-muted-foreground">
-                    · {importPreview.totals?.symbols ?? 0} symbols
-                  </span>
-                  {importPreview.totals?.from && (
-                    <span className="text-muted-foreground">
-                      · {dayKeyOf(importPreview.totals.from, settingsData?.timeZone || "UTC")} →{" "}
-                      {importPreview.totals.to &&
-                        dayKeyOf(importPreview.totals.to, settingsData?.timeZone || "UTC")}
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 pb-1">
+                  {BALANCE_PRESETS.map((preset) => {
+                    const active = Number(propBalance) === preset;
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          setPropBalance(String(preset));
+                          // Suggest realistic max drawdown limit
+                          if (preset === 25000) setPropMaxDrawdown("1500");
+                          else if (preset === 50000) setPropMaxDrawdown("2000");
+                          else if (preset === 100000) setPropMaxDrawdown("3000");
+                          else if (preset === 150000) setPropMaxDrawdown("4500");
+                          else if (preset === 200000) setPropMaxDrawdown("6000");
+                          else if (preset === 300000) setPropMaxDrawdown("7500");
+                        }}
+                        className={cn(
+                          "rounded-md border px-2.5 py-1 text-xs font-mono font-medium transition-colors cursor-pointer",
+                          active
+                            ? "border-primary bg-primary text-primary-foreground font-semibold"
+                            : "border-border/70 bg-card hover:bg-muted/50 text-foreground",
+                        )}
+                      >
+                        ${(preset / 1000).toFixed(0)}k
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">Custom Balance ($)</Label>
+                    <Input
+                      type="number"
+                      value={propBalance}
+                      onChange={(e) => setPropBalance(e.target.value)}
+                      placeholder="50000"
+                      className="h-8.5 text-xs font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Max Drawdown Limit ($)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={propMaxDrawdown}
+                      onChange={(e) => setPropMaxDrawdown(e.target.value)}
+                      placeholder="2000"
+                      className="h-8.5 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Timezone & Currency */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Statement Timezone</Label>
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      {formatZoneOffset(propTimeZone)}
                     </span>
-                  )}
+                  </div>
+                  <TimeZonePicker
+                    id="prop-account-tz"
+                    label="Statement timezone"
+                    value={propTimeZone}
+                    onValueChange={setPropTimeZone}
+                  />
                 </div>
 
-                {importPreview.warnings?.map((warn, i) => (
-                  <p key={i} className="text-[11px] text-amber-500">
-                    ⚠ {warn}
-                  </p>
-                ))}
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Currency</Label>
+                  <Select value={propCurrency} onValueChange={setPropCurrency}>
+                    <SelectTrigger className="h-8.5 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="BRL">BRL (R$)</SelectItem>
+                      <SelectItem value="CAD">CAD ($)</SelectItem>
+                      <SelectItem value="AUD">AUD ($)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            )}
 
-            {importError && (
-              <p role="alert" className="text-xs text-destructive">
-                {importError}
-              </p>
-            )}
+              {/* Profit Calculation Method */}
+              <div className="space-y-1.5 pt-0.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">Profit Calculation Method</Label>
+                  <span className="font-mono text-[10px] uppercase text-muted-foreground">
+                    {propProfitCalc}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 rounded-lg border border-border/70 bg-muted/30 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setPropProfitCalc("fifo")}
+                    className={cn(
+                      "rounded-md py-1 text-xs font-medium transition-all cursor-pointer text-center",
+                      propProfitCalc === "fifo"
+                        ? "bg-background text-foreground shadow-xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    FIFO (Standard)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPropProfitCalc("lifo")}
+                    className={cn(
+                      "rounded-md py-1 text-xs font-medium transition-all cursor-pointer text-center",
+                      propProfitCalc === "lifo"
+                        ? "bg-background text-foreground shadow-xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    LIFO
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPropProfitCalc("wavg")}
+                    className={cn(
+                      "rounded-md py-1 text-xs font-medium transition-all cursor-pointer text-center",
+                      propProfitCalc === "wavg"
+                        ? "bg-background text-foreground shadow-xs font-semibold"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Weighted Avg
+                  </button>
+                </div>
+              </div>
 
-            {importPreview && (
+              {propError && (
+                <p role="alert" className="text-xs text-destructive">
+                  {propError}
+                </p>
+              )}
+
               <Button
-                onClick={handleCommitImport}
-                disabled={importBusy || !importPreview.totals?.executions}
-                className="w-full h-8 text-xs font-semibold cursor-pointer"
+                type="submit"
+                disabled={propBusy}
+                className="w-full h-8.5 text-xs font-semibold cursor-pointer mt-1"
               >
-                {importBusy
-                  ? "Importing trades…"
-                  : `Import ${importPreview.totals?.executions ?? 0} Trades`}
+                {propBusy ? "Creating prop account…" : "Create Prop Account"}
               </Button>
-            )}
+            </form>
           </TabsContent>
 
           {/* ============================================================ */}
-          {/* TAB 3: MANUAL ACCOUNT                                        */}
+          {/* TAB 2: DIRECT BROKER                                         */}
           {/* ============================================================ */}
-          <TabsContent value="manual" className="mt-3 space-y-3.5">
-            <p className="text-xs text-muted-foreground">
-              Start an empty manual account to record trades and diários directly.
-            </p>
+          <TabsContent value="broker" className="mt-3.5 space-y-3.5">
+            <form onSubmit={handleCreateBrokerAccount} className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Broker or Platform</Label>
+                <Select value={brokerId} onValueChange={handleBrokerChange}>
+                  <SelectTrigger className="h-8.5 text-xs">
+                    <SelectValue placeholder="Choose broker" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Supported Direct Brokers &amp; Platforms
+                      </SelectLabel>
+                      {BROKER_CATALOG.filter(
+                        (b) =>
+                          b.category === "platform" ||
+                          b.category === "stocks" ||
+                          b.category === "forex-cfd" ||
+                          b.category === "futures",
+                      ).map((b) => (
+                        <SelectItem key={b.id} value={b.id} className="text-xs cursor-pointer">
+                          <div className="flex items-center gap-2">
+                            <BrokerIcon
+                              icon={b.icon}
+                              iconDark={b.iconDark}
+                              name={b.name}
+                              className="size-4 rounded-sm object-contain"
+                            />
+                            <span>{b.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Account Name</Label>
+                  <Input
+                    value={brokerAccountName}
+                    onChange={(e) => setBrokerAccountName(e.target.value)}
+                    placeholder="e.g. IBKR Pro Margin, Schwab Individual"
+                    className="h-8.5 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Account ID / Number (optional)</Label>
+                  <Input
+                    value={brokerAccountNumber}
+                    onChange={(e) => setBrokerAccountNumber(e.target.value)}
+                    placeholder="e.g. U12345678"
+                    className="h-8.5 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Initial Balance</Label>
+                  <Input
+                    type="number"
+                    value={brokerBalance}
+                    onChange={(e) => setBrokerBalance(e.target.value)}
+                    placeholder="10000"
+                    className="h-8.5 text-xs font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Currency</Label>
+                  <Select value={brokerCurrency} onValueChange={setBrokerCurrency}>
+                    <SelectTrigger className="h-8.5 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="BRL">BRL (R$)</SelectItem>
+                      <SelectItem value="CAD">CAD ($)</SelectItem>
+                      <SelectItem value="AUD">AUD ($)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">Statement Timezone</Label>
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    {formatZoneOffset(brokerTimeZone)}
+                  </span>
+                </div>
+                <TimeZonePicker
+                  id="broker-account-tz"
+                  label="Statement timezone"
+                  value={brokerTimeZone}
+                  onValueChange={setBrokerTimeZone}
+                />
+              </div>
+
+              {brokerError && (
+                <p role="alert" className="text-xs text-destructive">
+                  {brokerError}
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                disabled={brokerBusy}
+                className="w-full h-8.5 text-xs font-semibold cursor-pointer"
+              >
+                {brokerBusy ? "Creating broker account…" : "Create Broker Account"}
+              </Button>
+            </form>
+          </TabsContent>
+
+          {/* ============================================================ */}
+          {/* TAB 3: API DIRECT SYNC                                       */}
+          {/* ============================================================ */}
+          <TabsContent value="sync" className="mt-3.5 space-y-3.5">
+            <form onSubmit={handleConnectSync} className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Select Sync Provider</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(brokerData?.brokers ?? []).map((broker) => {
+                    const active = syncBrokerId === broker.id;
+                    return (
+                      <button
+                        key={broker.id}
+                        type="button"
+                        onClick={() => {
+                          setSyncBrokerId(broker.id);
+                          setSyncAccountName(`${broker.displayName} Sync`);
+                        }}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer",
+                          active
+                            ? "border-primary bg-primary/5 text-foreground shadow-xs"
+                            : "border-border/70 bg-card/40 hover:bg-muted/40",
+                        )}
+                      >
+                        <BrokerIcon
+                          icon={`${broker.id}.svg`}
+                          name={broker.displayName}
+                          className="size-6"
+                        />
+                        <div>
+                          <span className="block text-xs font-semibold">{broker.displayName}</span>
+                          <span className="block text-[10px] text-muted-foreground">API Sync</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {selectedSyncMeta && (
+                <div className="space-y-3 pt-1 border-t border-border/50">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium">Account Name</Label>
+                    <Input
+                      value={syncAccountName}
+                      onChange={(e) => setSyncAccountName(e.target.value)}
+                      placeholder={`e.g. My ${selectedSyncMeta.displayName} Sync`}
+                      className="h-8.5 text-xs"
+                    />
+                  </div>
+
+                  {(selectedSyncMeta.credentials ?? []).map((cred) => (
+                    <div key={cred.key} className="space-y-1">
+                      <Label className="text-xs font-medium">{cred.label}</Label>
+                      <Input
+                        type={cred.secret ? "password" : "text"}
+                        value={syncCredentials[cred.key] ?? ""}
+                        onChange={(e) =>
+                          setSyncCredentials((prev) => ({
+                            ...prev,
+                            [cred.key]: e.target.value,
+                          }))
+                        }
+                        className="h-8.5 text-xs font-mono"
+                        placeholder={cred.secret ? "••••••••••••" : ""}
+                        autoComplete="off"
+                      />
+                    </div>
+                  ))}
+
+                  {selectedSyncMeta.readOnlySetup && (
+                    <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 text-xs text-muted-foreground flex items-start gap-2">
+                      <ShieldCheck className="size-4 shrink-0 text-emerald-500 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="font-semibold text-foreground">
+                          Read-Only Permission Required:
+                        </span>
+                        <p className="text-[11px] leading-relaxed">
+                          {selectedSyncMeta.readOnlySetup}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {syncError && (
+                    <p role="alert" className="text-xs text-destructive">
+                      {syncError}
+                    </p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={
+                      syncBusy ||
+                      !syncBrokerId ||
+                      (selectedSyncMeta.credentials.some((c) => !syncCredentials[c.key]) ?? false)
+                    }
+                    className="w-full h-8.5 text-xs font-semibold cursor-pointer"
+                  >
+                    {syncBusy
+                      ? "Connecting & syncing…"
+                      : `Connect & Sync ${selectedSyncMeta.displayName}`}
+                  </Button>
+                </div>
+              )}
+            </form>
+          </TabsContent>
+
+          {/* ============================================================ */}
+          {/* TAB 4: MANUAL ACCOUNT                                        */}
+          {/* ============================================================ */}
+          <TabsContent value="manual" className="mt-3.5 space-y-3.5">
             <form onSubmit={handleCreateManual} className="space-y-3">
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Account Name</Label>
                 <Input
                   value={manualName}
                   onChange={(e) => setManualName(e.target.value)}
-                  placeholder="e.g. Futures Prop Account"
-                  className="h-8 text-xs"
+                  placeholder="e.g. Paper Trading Account"
+                  className="h-8.5 text-xs"
                   required
                 />
               </div>
@@ -780,7 +972,7 @@ export function AddAccountDialog({
                     value={manualCurrency}
                     onChange={(e) => setManualCurrency(e.target.value.toUpperCase())}
                     maxLength={3}
-                    className="h-8 text-xs uppercase"
+                    className="h-8.5 text-xs uppercase"
                   />
                 </div>
 
@@ -791,7 +983,7 @@ export function AddAccountDialog({
                     value={manualBalance}
                     onChange={(e) => setManualBalance(e.target.value)}
                     placeholder="Unlocks drawdown %"
-                    className="h-8 text-xs tnum"
+                    className="h-8.5 text-xs font-mono"
                   />
                 </div>
               </div>
@@ -802,7 +994,7 @@ export function AddAccountDialog({
                   value={manualProfitCalc}
                   onValueChange={(val) => setManualProfitCalc(val as "fifo" | "lifo" | "wavg")}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-8.5 text-xs">
                     <SelectValue placeholder="Calculation method" />
                   </SelectTrigger>
                   <SelectContent>
@@ -822,7 +1014,7 @@ export function AddAccountDialog({
               <Button
                 type="submit"
                 disabled={manualBusy || !manualName.trim()}
-                className="w-full h-8 text-xs font-semibold cursor-pointer"
+                className="w-full h-8.5 text-xs font-semibold cursor-pointer"
               >
                 {manualBusy ? "Creating account…" : "Create Account"}
               </Button>

@@ -12,6 +12,11 @@ import { getImportTimeZone } from "@/server/settings";
 import { isTimeZone } from "@/lib/timezone";
 import type { ImportReviewOptions } from "@/lib/import-review";
 import { previewNinjaTraderImport, commitNinjaTraderImport } from "@/server/ninjatrader-import";
+import { db } from "@/db";
+import { accounts, importSources } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
+import { getBrokerMetadata, formatToPlatformId } from "@/lib/brokers/broker-catalog";
+import { newId, nowIso } from "@/server/ids";
 
 interface ImportBody {
   mode: "preview" | "commit";
@@ -20,6 +25,7 @@ interface ImportBody {
   /** Column mapping when auto-detection found nothing. */
   mapping?: GenericMapping;
   timeZone?: string;
+  dateOrder?: "DMY" | "MDY";
   fileName?: string;
   symbol?: string;
   review?: ImportReviewOptions;
@@ -38,18 +44,43 @@ export const POST = handler(async (request: Request) => {
     return bad("Invalid symbol");
   if (body.fileName !== undefined && typeof body.fileName !== "string")
     return bad("Invalid filename");
+  if (body.dateOrder !== undefined && !["DMY", "MDY"].includes(body.dateOrder))
+    return bad("Invalid dateOrder (must be 'DMY' or 'MDY')");
+
+  const account = body.accountId
+    ? db.select().from(accounts).where(eq(accounts.id, body.accountId)).get()
+    : undefined;
+  const brokerMeta = account?.broker ? getBrokerMetadata(account.broker) : undefined;
+
   if (body.timeZone !== undefined)
     requireValue(isTimeZone(body.timeZone), "Enter a valid IANA statement timezone.");
+
   const timeZone = body.timeZone ?? getImportTimeZone();
 
+  const dateOrder =
+    body.dateOrder ??
+    (brokerMeta?.dateFormat === "DMY"
+      ? "DMY"
+      : brokerMeta?.dateFormat === "MDY"
+        ? "MDY"
+        : undefined);
+
+  const importOptions = {
+    timeZone,
+    fileName: body.fileName,
+    symbol: body.symbol,
+    dateOrder,
+  };
+
   const parsed = body.mapping
-    ? parseWithMapping(body.content, body.mapping, { timeZone })
-    : parseAuto(body.content, { timeZone, fileName: body.fileName, symbol: body.symbol });
+    ? parseWithMapping(body.content, body.mapping, importOptions)
+    : parseAuto(body.content, importOptions);
 
   if (!parsed) {
     return ok({
       detected: null,
       timeZone,
+      dateOrder,
       headers: readHeaders(body.content),
       needsMapping: true,
     });
@@ -59,7 +90,10 @@ export const POST = handler(async (request: Request) => {
     const symbols = [...new Set(parsed.executions.map((e) => e.symbol))];
     return ok({
       detected: parsed.format,
+      detectedAccount: parsed.account,
+      sourceAccounts: parsed.sourceAccounts,
       timeZone,
+      dateOrder,
       needsMapping: false,
       executions: parsed.executions.slice(0, 50),
       totals: {
@@ -92,6 +126,55 @@ export const POST = handler(async (request: Request) => {
     parsed.format === "ninjatrader"
       ? commitNinjaTraderImport(body.accountId, parsed, body.content, timeZone, body.review)
       : insertExecutions(body.accountId, parsed.executions as ImportedExecution[], "import");
+  // Auto-binding: bind detected platform, broker, and account number to the target account
+  const detectedPlatform = formatToPlatformId(parsed.format);
+  if (body.accountId) {
+    const existingAccount = db.select().from(accounts).where(eq(accounts.id, body.accountId)).get();
+    if (existingAccount) {
+      const updates: { platform?: string; broker?: string; accountNumber?: string } = {};
+      if (
+        detectedPlatform &&
+        (!existingAccount.platform || existingAccount.platform !== detectedPlatform)
+      ) {
+        updates.platform = detectedPlatform;
+      }
+      if (detectedPlatform && !existingAccount.broker) {
+        updates.broker = detectedPlatform;
+      }
+      if (parsed.account && !existingAccount.accountNumber) {
+        updates.accountNumber = parsed.account;
+      }
+      if (Object.keys(updates).length > 0) {
+        db.update(accounts).set(updates).where(eq(accounts.id, body.accountId)).run();
+      }
+    }
+  }
+
+  // Register import source for provenance tracking
+  try {
+    const sourceName = body.fileName || parsed.format;
+    const existingSource = db
+      .select()
+      .from(importSources)
+      .where(
+        and(eq(importSources.accountId, body.accountId), eq(importSources.format, parsed.format)),
+      )
+      .get();
+    if (!existingSource) {
+      db.insert(importSources)
+        .values({
+          id: newId(),
+          accountId: body.accountId,
+          format: parsed.format,
+          name: sourceName,
+          createdAt: nowIso(),
+        })
+        .run();
+    }
+  } catch {
+    // Non-fatal if provenance recording is duplicate or fails
+  }
+
   // Invalid rows are skipped with a warning rather than failing the whole file.
   const warnings = [
     ...(parsed.warnings ?? []),

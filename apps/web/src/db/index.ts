@@ -17,6 +17,20 @@ const createDb = () => {
   sqlite.pragma("busy_timeout = 5000");
   sqlite.pragma("foreign_keys = ON");
   sqlite.exec(BOOTSTRAP_SQL);
+  // Additive upgrade: accounts table gains time_zone and platform columns.
+  const accountColumns = sqlite.pragma("table_info(accounts)") as { name: string }[];
+  if (!accountColumns.some((column) => column.name === "time_zone")) {
+    sqlite.exec("ALTER TABLE accounts ADD COLUMN time_zone TEXT NOT NULL DEFAULT 'UTC'");
+  }
+  if (!accountColumns.some((column) => column.name === "platform")) {
+    sqlite.exec("ALTER TABLE accounts ADD COLUMN platform TEXT");
+  }
+  if (!accountColumns.some((column) => column.name === "account_number")) {
+    sqlite.exec("ALTER TABLE accounts ADD COLUMN account_number TEXT");
+  }
+  if (!accountColumns.some((column) => column.name === "max_drawdown")) {
+    sqlite.exec("ALTER TABLE accounts ADD COLUMN max_drawdown REAL");
+  }
   // Additive upgrade: existing executions retain their fields and dedup hashes.
   const executionColumns = sqlite.pragma("table_info(executions)") as { name: string }[];
   if (!executionColumns.some((column) => column.name === "import_metadata_json")) {

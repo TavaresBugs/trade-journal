@@ -1,9 +1,5 @@
 import { normalizeSymbol } from "./symbol-utils";
-import {
-  SYMBOL_SPECS,
-  formatSpecBadge,
-  type SymbolSpec,
-} from "./symbol-specs";
+import { SYMBOL_SPECS, formatSpecBadge, type SymbolSpec } from "./symbol-specs";
 
 export type AssetCategory = "futures" | "stocks" | "forex" | "crypto";
 

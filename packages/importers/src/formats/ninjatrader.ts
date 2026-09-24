@@ -4,12 +4,22 @@ import { rowsToFills, type FillsColumnMap } from "./fills";
 import { parseMoney } from "../numbers";
 
 const columns: FillsColumnMap = {
-  symbol: ["instrument"],
-  side: ["action"],
-  quantity: ["quantity", "qty"],
-  price: ["price"],
-  fees: [["commission"]],
-  timestamp: ["time"],
+  symbol: ["instrument", "ativo", "instrumento"],
+  side: ["action", "lado", "operacao", "operação", "posmercado", "pos. mercado", "marketpos"],
+  quantity: ["quantity", "qty", "quantidade", "qtd"],
+  price: ["price", "preco", "preço", "precomédio", "preço médio", "preçoentrada", "preço entrada"],
+  fees: [["commission", "comissao", "comissão", "corretagem", "taxas"]],
+  timestamp: [
+    "time",
+    "data/hora",
+    "datahora",
+    "horário",
+    "horario",
+    "hora",
+    "data",
+    "horaentrada",
+    "hora entrada",
+  ],
 };
 
 /**
@@ -22,7 +32,12 @@ const columns: FillsColumnMap = {
 export const ninjatrader: ImportFormat = {
   id: "ninjatrader",
   label: "NinjaTrader (executions export)",
-  detect: (headers) => hasHeaders(headers, [["instrument"], ["action"], ["price"]]),
+  detect: (headers) =>
+    hasHeaders(headers, [
+      ["instrument", "ativo", "instrumento"],
+      ["action", "lado", "operacao", "operação", "posmercado", "pos. mercado", "marketpos"],
+      ["price", "preco", "preço", "precomédio", "preço médio", "preçoentrada", "preço entrada"],
+    ]),
   parse: (content, options) => {
     const executions: ImportedExecution[] = [];
     const occurrences = new Map<string, number>();
@@ -34,7 +49,7 @@ export const ninjatrader: ImportFormat = {
     let withoutId = false;
     let withoutAccount = false;
     for (const row of toRecords(parseCsv(content))) {
-      const commission = pick(row, ["commission"]);
+      const commission = pick(row, ["commission", "comissao", "comissão", "corretagem", "taxas"]);
       if (
         commission !== undefined &&
         (!/^(?:[+-]?[\d.,]+|\([\d.,]+\))$/.test(commission.replace(/[$€£\s]/g, "")) ||
@@ -54,25 +69,40 @@ export const ninjatrader: ImportFormat = {
       skippedRows += parsed.skippedRows;
       const fill = parsed.executions[0];
       if (!fill) continue;
-      const instrument = row.instrument!.trim().replace(/\s+/g, " ").toUpperCase();
-      const account = pick(row, ["account", "accountname", "accountdisplayname"]) ?? "";
-      const connection = pick(row, ["connection", "connectionname"]) ?? "";
+      const rawInstrument =
+        pick(row, ["instrument", "ativo", "instrumento"]) ?? row.instrument ?? "";
+      const instrument = rawInstrument.trim().replace(/\s+/g, " ").toUpperCase();
+      const account =
+        pick(row, ["account", "accountname", "accountdisplayname", "conta", "nomedaconta"]) ?? "";
+      const connection = pick(row, ["connection", "connectionname", "conexao", "conexão"]) ?? "";
       // NinjaTrader's Executions grid calls this column "ID", distinct from "Order ID".
-      const executionId = pick(row, ["executionid", "id"]);
-      const effectText = pick(row, ["ex", "entryexit"])?.toLowerCase();
+      const executionId = pick(row, ["executionid", "id", "iddaexecucao", "id da execução"]);
+      const effectText = pick(row, [
+        "ex",
+        "entryexit",
+        "entradasaida",
+        "entrada/saída",
+      ])?.toLowerCase();
       const effect =
-        effectText === "entry"
+        effectText === "entry" || effectText === "entrada"
           ? "entry"
-          : effectText === "exit"
+          : effectText === "exit" || effectText === "saida" || effectText === "saída"
             ? "exit"
-            : ["reverse", "entry/exit", "exit/entry"].includes(effectText ?? "")
+            : [
+                  "reverse",
+                  "reversao",
+                  "reversão",
+                  "entry/exit",
+                  "exit/entry",
+                  "entrada/saída",
+                ].includes(effectText ?? "")
               ? "reverse"
               : undefined;
       if (effectText && !effect)
         errors.add(
           "Unrecognized NinjaTrader entry/exit value. Export Entry, Exit or Reverse values.",
         );
-      const sequenceText = pick(row, ["sequence", "executionsequence"]);
+      const sequenceText = pick(row, ["sequence", "executionsequence", "sequencia", "sequência"]);
       const sequence = sequenceText === undefined ? undefined : Number(sequenceText);
       if (sequence !== undefined && (!Number.isSafeInteger(sequence) || sequence < 0))
         errors.add("Execution sequence must be a non-negative integer.");
@@ -112,7 +142,7 @@ export const ninjatrader: ImportFormat = {
         id,
         group,
         order: executions.length,
-        preserveFee: pick(row, ["commission"]) !== undefined,
+        preserveFee: commission !== undefined,
       };
       fill.ninjaTrader = {
         sourceKey: JSON.stringify([connection, account]),
@@ -122,7 +152,7 @@ export const ninjatrader: ImportFormat = {
         executionId,
         effect,
         sequence,
-        reportedFee: pick(row, ["commission"]) === undefined ? undefined : fill.fee,
+        reportedFee: commission === undefined ? undefined : fill.fee,
       };
       executions.push(fill);
     }

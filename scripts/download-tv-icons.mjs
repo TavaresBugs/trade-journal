@@ -9,8 +9,7 @@ const MANIFEST_PATH = join(ROOT, "apps/web/src/lib/assets/tv-icons-manifest.json
 
 // Import TradingView Desktop CDP bridge (configurable via TRADINGVIEW_MCP_PATH)
 const tvMcpPath =
-  process.env.TRADINGVIEW_MCP_PATH ||
-  "/home/jhontavares/tradingview-mcp/src/connection.js";
+  process.env.TRADINGVIEW_MCP_PATH || "/home/jhontavares/tradingview-mcp/src/connection.js";
 let evaluateAsync;
 let disconnect;
 try {

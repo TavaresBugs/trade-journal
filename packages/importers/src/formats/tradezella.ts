@@ -48,10 +48,12 @@ export const tradezella: ImportFormat = {
       const openedAt = parseTimestamp(
         pick(row, ["opendate", "opentime", "entrydate"]),
         options.timeZone,
+        options.dateOrder,
       );
       const closedAt = parseTimestamp(
         pick(row, ["closedate", "closetime", "exitdate"]),
         options.timeZone,
+        options.dateOrder,
       );
       const netPnl = parseMoney(pick(row, ["netpnl", "netpl", "netprofit"]));
       const commissions =

@@ -51,6 +51,9 @@ export interface ParsedImport {
   /** Missing source facts or malformed/truncated input block a commit. */
   errors?: string[];
   needsSymbol?: boolean;
+  /** Account identifier detected inside the statement (e.g. LFE0506847043001). */
+  account?: string;
+  sourceAccounts?: string[];
 }
 
 export interface ImportOptions {
@@ -63,6 +66,10 @@ export interface ImportOptions {
   fileName?: string;
   /** User-supplied symbol for single-strategy files that omit it. */
   symbol?: string;
+  /**
+   * Expected slash date order when ambiguous: "DMY" (e.g. Brazil/UK/Europe) or "MDY" (US default).
+   */
+  dateOrder?: "DMY" | "MDY";
 }
 
 export interface ImportFormat {

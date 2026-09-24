@@ -21,11 +21,13 @@ export function AccountPicker({
   onChange,
   kind,
   className,
+  label = "Target Account",
 }: {
   value: string;
-  onChange: (id: string) => void;
+  onChange: (id: string, account?: AccountRow) => void;
   kind: "import" | "manual";
   className?: string;
+  label?: string;
 }) {
   const {
     data,
@@ -47,7 +49,7 @@ export function AccountPicker({
     <div className="space-y-1.5 w-full min-w-0">
       <div className="flex items-center justify-between">
         <Label htmlFor={`${fieldId}-account`} className="text-xs font-semibold text-foreground/80">
-          Target Account
+          {label}
         </Label>
         <button
           type="button"
@@ -59,7 +61,13 @@ export function AccountPicker({
         </button>
       </div>
 
-      <Select value={value} onValueChange={onChange}>
+      <Select
+        value={value}
+        onValueChange={(id) => {
+          const selected = accounts.find((a) => a.id === id);
+          onChange(id, selected);
+        }}
+      >
         <SelectTrigger
           id={`${fieldId}-account`}
           className={cn(
@@ -72,7 +80,12 @@ export function AccountPicker({
         <SelectContent>
           {accounts.map((account) => (
             <SelectItem key={account.id} value={account.id} className="text-xs">
-              {account.name}
+              <span>{account.name}</span>
+              {account.accountNumber && (
+                <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+                  ({account.accountNumber})
+                </span>
+              )}
             </SelectItem>
           ))}
         </SelectContent>
