@@ -5,24 +5,18 @@ import { Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BrokerIconProps {
-  icon: string;
-  iconDark?: string;
+  icon?: string | null;
+  iconDark?: string | null;
   name?: string;
   className?: string;
   invertInDark?: boolean;
 }
 
 export function BrokerIcon({ icon, iconDark, name, className, invertInDark }: BrokerIconProps) {
-  const [hasError, setHasError] = useState(false);
+  const [lightError, setLightError] = useState(false);
+  const [darkError, setDarkError] = useState(false);
 
-  const lightSrc = icon.startsWith("/") ? icon : `/assets/brokers/${icon}`;
-  const darkSrc = iconDark
-    ? iconDark.startsWith("/")
-      ? iconDark
-      : `/assets/brokers/${iconDark}`
-    : null;
-
-  if (hasError) {
+  if (!icon || (lightError && (!iconDark || darkError))) {
     return (
       <span
         className={cn(
@@ -36,20 +30,36 @@ export function BrokerIcon({ icon, iconDark, name, className, invertInDark }: Br
     );
   }
 
-  if (darkSrc) {
+  const lightSrc = icon.startsWith("/") ? icon : `/assets/brokers/${icon}`;
+  const effectiveDarkSrc =
+    iconDark && !darkError
+      ? iconDark.startsWith("/")
+        ? iconDark
+        : `/assets/brokers/${iconDark}`
+      : lightSrc;
+
+  if (iconDark && !darkError) {
     return (
       <>
+        {!lightError && (
+          <img
+            src={lightSrc}
+            alt={name || ""}
+            onError={() => setLightError(true)}
+            className={cn("size-8 shrink-0 rounded-md object-contain dark:hidden", className)}
+          />
+        )}
         <img
-          src={lightSrc}
+          src={effectiveDarkSrc}
           alt={name || ""}
-          onError={() => setHasError(true)}
-          className={cn("size-8 shrink-0 rounded-md object-contain dark:hidden", className)}
-        />
-        <img
-          src={darkSrc}
-          alt={name || ""}
-          onError={() => setHasError(true)}
-          className={cn("hidden size-8 shrink-0 rounded-md object-contain dark:block", className)}
+          onError={() => setDarkError(true)}
+          className={cn(
+            lightError
+              ? "size-8 shrink-0 rounded-md object-contain"
+              : "hidden size-8 shrink-0 rounded-md object-contain dark:block",
+            invertInDark && "dark:invert",
+            className,
+          )}
         />
       </>
     );
@@ -59,7 +69,7 @@ export function BrokerIcon({ icon, iconDark, name, className, invertInDark }: Br
     <img
       src={lightSrc}
       alt={name || ""}
-      onError={() => setHasError(true)}
+      onError={() => setLightError(true)}
       className={cn(
         "size-8 shrink-0 rounded-md object-contain",
         invertInDark && "dark:invert",
