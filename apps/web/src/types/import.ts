@@ -5,6 +5,7 @@ export interface BrokerCatalogItem {
   icon: string;
   iconDark?: string;
   status: "active" | "soon";
+  connectionType?: "api" | "csv";
   subtitle?: string;
   invertInDark?: boolean;
   defaultTimeZone?: string;
@@ -42,10 +43,35 @@ export interface PreviewExecution {
   executedAt: string;
 }
 
+export interface AccountReconciliation {
+  accountId: string;
+  accountName: string;
+  totalFills: number;
+  existingFills: number;
+  newFills: number;
+  totalTrades: number;
+  existingTrades: number;
+  newTrades: number;
+  isFullyImported: boolean;
+}
+
 import type { ImportReview } from "@/lib/import-review";
+
+export interface StatementAccountConflict {
+  isConflict: boolean;
+  detectedAccount?: string;
+  targetAccountNumber?: string;
+  targetAccountName?: string;
+}
+
+export interface StatementCompatibility {
+  compatible: boolean;
+  reason?: string;
+}
 
 export interface PreviewResponse {
   reconciliation?: ImportReview;
+  accountReconciliation?: AccountReconciliation;
   detected: string | null;
   detectedAccount?: string;
   sourceAccounts?: string[];
@@ -58,4 +84,8 @@ export interface PreviewResponse {
   errors?: string[];
   needsSymbol?: boolean;
   executions?: PreviewExecution[];
+  accountConflict?: StatementAccountConflict;
+  compatibility?: StatementCompatibility;
 }
+
+

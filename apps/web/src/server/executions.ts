@@ -176,7 +176,8 @@ export const insertExecutions = (
         }
       }
     }
-    if (inserted > 0) rebuildAccount(accountId);
+    rebuildAccount(accountId);
+
     if (note) {
       const affected = tx
         .select({

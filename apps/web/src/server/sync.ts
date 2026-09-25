@@ -25,8 +25,9 @@ export const syncAccount = async (accountId: string): Promise<SyncOutcome> => {
   }
 
   const credentials = decryptJson<Record<string, string>>(account.credentialsEnc);
+  const sdkBroker = account.broker === "ibkr" ? "ibkr-flex" : account.broker;
   const connection = connect({
-    broker: account.broker as BrokerId,
+    broker: sdkBroker as BrokerId,
     credentials,
     // Some brokers rotate tokens on every fetch (Questrade): persist or die.
     onCredentialsRotated: (next: Record<string, string>) => {

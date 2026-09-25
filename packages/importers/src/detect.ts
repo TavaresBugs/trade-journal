@@ -5,14 +5,38 @@ import {
   dastrader,
   ibkrFlex,
   ninjatrader,
+  robinhood,
   topstepx,
   tradervue,
+  tradezero,
   tradingview,
   tradovate,
   webull,
 } from "./formats/simple";
 import { thinkorswim } from "./formats/thinkorswim";
 import { tradezella } from "./formats/tradezella";
+import { moomoo } from "./formats/moomoo";
+import { wealthcharts } from "./formats/wealthcharts";
+import { ctrader } from "./formats/ctrader";
+import { quantower } from "./formats/quantower";
+import { tradestation } from "./formats/tradestation";
+import { ftmo } from "./formats/ftmo";
+import { matchtrader } from "./formats/matchtrader";
+import { tastytrade } from "./formats/tastytrade";
+import { rithmic } from "./formats/rithmic";
+import { sierrachart } from "./formats/sierrachart";
+import { capitalcom } from "./formats/capitalcom";
+import { motivewave } from "./formats/motivewave";
+import { lightspeed } from "./formats/lightspeed";
+import { questrade } from "./formats/questrade";
+import { tc2000 } from "./formats/tc2000";
+import { etrade } from "./formats/etrade";
+import { silexx } from "./formats/silexx";
+import { tefs } from "./formats/tefs";
+import { tickblaze } from "./formats/tickblaze";
+import { oanda } from "./formats/oanda";
+import { tddirect } from "./formats/tddirect";
+import { sterling } from "./formats/sterling";
 import { historyFormat, parseHistory } from "./formats/history";
 import type { ImportFormat, ImportOptions, ParsedImport } from "./types";
 
@@ -33,6 +57,30 @@ const LEGACY_FORMATS: ImportFormat[] = [
   tradovate,
   webull,
   dastrader,
+  tradezero,
+  robinhood,
+  moomoo,
+  wealthcharts,
+  ctrader,
+  quantower,
+  tradestation,
+  matchtrader,
+  ftmo,
+  tastytrade,
+  rithmic,
+  sierrachart,
+  capitalcom,
+  motivewave,
+  lightspeed,
+  questrade,
+  tc2000,
+  etrade,
+  silexx,
+  tefs,
+  tickblaze,
+  oanda,
+  tddirect,
+  sterling,
 ];
 
 export const FORMATS: ImportFormat[] = [...LEGACY_FORMATS, historyFormat];

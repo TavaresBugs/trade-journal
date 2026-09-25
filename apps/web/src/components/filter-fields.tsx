@@ -7,6 +7,8 @@ import { OptionSelect } from "@/components/ui/option-select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { JournalAssetDropdown } from "@/components/journal-asset-dropdown";
 import { MonetaryField } from "./privacy";
+import { BrokerIcon } from "@/components/ui/broker-icon";
+import { getAccountBrokerInfo } from "@/lib/brokers/broker-catalog";
 import { useApi } from "@/lib/use-api";
 import { cn } from "@/lib/utils";
 
@@ -232,6 +234,7 @@ export function FilterFields({
           <div className="flex flex-wrap gap-1.5">
             {activeAccounts.map((a) => {
               const isChecked = (value.accounts ?? "").split(",").filter(Boolean).includes(a.id);
+              const brokerInfo = getAccountBrokerInfo(a);
               return (
                 <button
                   key={a.id}
@@ -243,7 +246,7 @@ export function FilterFields({
                     set("accounts", [...ids].join(","));
                   }}
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer select-none",
+                    "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer select-none",
                     isChecked
                       ? "border-primary/50 bg-primary/10 text-foreground font-semibold shadow-xs"
                       : "border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/40 hover:text-foreground",
@@ -259,6 +262,15 @@ export function FilterFields({
                   >
                     {isChecked && <Check className="size-2.5 stroke-[3]" />}
                   </span>
+                  {brokerInfo?.icon && (
+                    <BrokerIcon
+                      icon={brokerInfo.icon}
+                      iconDark={brokerInfo.iconDark}
+                      name={a.name}
+                      invertInDark={brokerInfo.invertInDark}
+                      className="size-3.5 rounded-xs object-contain shrink-0"
+                    />
+                  )}
                   <span>{a.name}</span>
                 </button>
               );

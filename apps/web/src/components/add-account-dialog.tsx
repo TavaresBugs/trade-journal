@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/select";
 import { TimeZonePicker } from "@/components/timezone-picker";
 import { BrokerIcon } from "@/components/ui/broker-icon";
+import { CurrencyBadge } from "@/components/ui/currency-badge";
+import { CURRENCY_LIST, getCurrencyInfo } from "@/lib/currencies";
 import {
   BROKER_CATALOG,
   getBrokerInfo,
@@ -78,7 +80,7 @@ const PROP_FIRMS = [
     name: "Topstep",
     defaultPlatform: "topstepx",
     defaultTz: "America/Chicago",
-    icon: "topstep-light.svg",
+    icon: "topstep.png",
   },
   {
     id: "apex",
@@ -93,20 +95,28 @@ const PROP_FIRMS = [
     defaultPlatform: "metatrader5",
     defaultTz: "Europe/Helsinki",
     icon: "ftmo-light.svg",
+    iconDark: "ftmo-dark.svg",
   },
   {
     id: "bulenox",
     name: "Bulenox",
-    defaultPlatform: "rithmic",
+    defaultPlatform: "tradovate",
     defaultTz: "America/Chicago",
-    icon: "tradesea.png",
+    icon: "bulenox.png",
+  },
+  {
+    id: "tradeify",
+    name: "Tradeify",
+    defaultPlatform: "tradovate",
+    defaultTz: "America/Chicago",
+    icon: "tradeify.png",
   },
   {
     id: "fasttrack",
     name: "Fast Track Trading",
     defaultPlatform: "rithmic",
     defaultTz: "America/Chicago",
-    icon: "tradesea.png",
+    icon: "rithmic.png",
   },
   {
     id: "tradeday",
@@ -127,7 +137,6 @@ const PROP_FIRMS = [
     name: "Other Prop Firm",
     defaultPlatform: "tradovate",
     defaultTz: "America/Chicago",
-    icon: "default.png",
   },
 ];
 
@@ -139,14 +148,20 @@ const PLATFORM_CHOICES = [
     icon: "ninjatrader.svg",
     defaultTz: "America/Chicago",
   },
-  { id: "topstepx", name: "TopstepX", icon: "tradovate.svg", defaultTz: "America/Chicago" },
+  { id: "topstepx", name: "TopstepX", icon: "topstep.png", defaultTz: "America/Chicago" },
   {
     id: "rithmic",
-    name: "Rithmic (RTrader Pro)",
-    icon: "tradesea.png",
+    name: "Rithmic",
+    icon: "rithmic.png",
     defaultTz: "America/Chicago",
   },
   { id: "tradesea", name: "TradeSea", icon: "tradesea.png", defaultTz: "America/Chicago" },
+  {
+    id: "wealthcharts",
+    name: "WealthCharts",
+    icon: "wealthcharts.png",
+    defaultTz: "America/Chicago",
+  },
   {
     id: "metatrader5",
     name: "MetaTrader 5",
@@ -158,6 +173,24 @@ const PLATFORM_CHOICES = [
     name: "MetaTrader 4",
     icon: "metatrader5.png",
     defaultTz: "Europe/Helsinki",
+  },
+  {
+    id: "ctrader",
+    name: "cTrader",
+    icon: "ctrader.png",
+    defaultTz: "UTC",
+  },
+  {
+    id: "matchtrader",
+    name: "Match-Trader",
+    icon: "matchtrader.png",
+    defaultTz: "UTC",
+  },
+  {
+    id: "quantower",
+    name: "Quantower",
+    icon: "quantower.svg",
+    defaultTz: "UTC",
   },
 ];
 
@@ -244,6 +277,15 @@ export function AddAccountDialog({
       if (initialBroker) {
         setPropFirm(initialBroker);
         setBrokerId(initialBroker);
+        const firm = PROP_FIRMS.find((f) => f.id === initialBroker);
+        if (firm) {
+          setPropTimeZone(firm.defaultTz);
+          if (!initialPlatform) setPropPlatform(firm.defaultPlatform);
+        }
+        const meta = getBrokerMetadata(initialBroker);
+        if (meta?.defaultTimeZone) {
+          setBrokerTimeZone(meta.defaultTimeZone);
+        }
       }
       if (initialName) {
         setPropAccountName(initialName);
@@ -473,56 +515,92 @@ export function AddAccountDialog({
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1">
                   <Label className="text-xs font-medium">Prop Firm</Label>
-                  <Select value={propFirm} onValueChange={handlePropFirmChange}>
-                    <SelectTrigger className="h-8.5 text-xs">
-                      <SelectValue placeholder="Select prop firm" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {PROP_FIRMS.map((firm) => (
-                        <SelectItem
-                          key={firm.id}
-                          value={firm.id}
-                          className="text-xs cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <BrokerIcon
-                              icon={firm.icon}
-                              name={firm.name}
-                              className="size-4 rounded-sm object-contain"
-                            />
-                            <span>{firm.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {(() => {
+                    const selectedFirm = PROP_FIRMS.find((f) => f.id === propFirm);
+                    return (
+                      <Select value={propFirm} onValueChange={handlePropFirmChange}>
+                        <SelectTrigger className="h-8.5 text-xs">
+                          <SelectValue placeholder="Select prop firm">
+                            {selectedFirm ? (
+                              <div className="flex items-center gap-2">
+                                <BrokerIcon
+                                  icon={selectedFirm.icon}
+                                  name={selectedFirm.name}
+                                  className="size-4 rounded-sm object-contain shrink-0"
+                                />
+                                <span className="truncate">{selectedFirm.name}</span>
+                              </div>
+                            ) : (
+                              <span>Select prop firm</span>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {PROP_FIRMS.map((firm) => (
+                            <SelectItem
+                              key={firm.id}
+                              value={firm.id}
+                              className="text-xs cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2">
+                                <BrokerIcon
+                                  icon={firm.icon}
+                                  name={firm.name}
+                                  className="size-4 rounded-sm object-contain"
+                                />
+                                <span>{firm.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    );
+                  })()}
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-xs font-medium">Execution Platform</Label>
-                  <Select value={propPlatform} onValueChange={setPropPlatform}>
-                    <SelectTrigger className="h-8.5 text-xs">
-                      <SelectValue placeholder="Execution platform" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PLATFORM_CHOICES.map((plat) => (
-                        <SelectItem
-                          key={plat.id}
-                          value={plat.id}
-                          className="text-xs cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <BrokerIcon
-                              icon={plat.icon}
-                              name={plat.name}
-                              className="size-4 rounded-sm object-contain"
-                            />
-                            <span>{plat.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {(() => {
+                    const selectedPlat = PLATFORM_CHOICES.find((p) => p.id === propPlatform);
+                    return (
+                      <Select value={propPlatform} onValueChange={setPropPlatform}>
+                        <SelectTrigger className="h-8.5 text-xs">
+                          <SelectValue placeholder="Execution platform">
+                            {selectedPlat ? (
+                              <div className="flex items-center gap-2">
+                                <BrokerIcon
+                                  icon={selectedPlat.icon}
+                                  name={selectedPlat.name}
+                                  className="size-4 rounded-sm object-contain shrink-0"
+                                />
+                                <span className="truncate">{selectedPlat.name}</span>
+                              </div>
+                            ) : (
+                              <span>Execution platform</span>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PLATFORM_CHOICES.map((plat) => (
+                            <SelectItem
+                              key={plat.id}
+                              value={plat.id}
+                              className="text-xs cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2">
+                                <BrokerIcon
+                                  icon={plat.icon}
+                                  name={plat.name}
+                                  className="size-4 rounded-sm object-contain"
+                                />
+                                <span>{plat.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -593,26 +671,28 @@ export function AddAccountDialog({
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1">
-                    <Label className="text-[11px] text-muted-foreground">Custom Balance ($)</Label>
+                    <Label className="text-[11px] text-muted-foreground">
+                      Custom Balance ({getCurrencyInfo(propCurrency).symbol})
+                    </Label>
                     <Input
                       type="number"
                       value={propBalance}
                       onChange={(e) => setPropBalance(e.target.value)}
                       placeholder="50000"
-                      className="h-8.5 text-xs font-mono"
+                      className="h-8.5 text-xs font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
 
                   <div className="space-y-1">
                     <Label className="text-[11px] text-muted-foreground">
-                      Max Drawdown Limit ($)
+                      Max Drawdown Limit ({getCurrencyInfo(propCurrency).symbol})
                     </Label>
                     <Input
                       type="number"
                       value={propMaxDrawdown}
                       onChange={(e) => setPropMaxDrawdown(e.target.value)}
                       placeholder="2000"
-                      className="h-8.5 text-xs font-mono"
+                      className="h-8.5 text-xs font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>
@@ -639,15 +719,16 @@ export function AddAccountDialog({
                   <Label className="text-xs font-medium">Currency</Label>
                   <Select value={propCurrency} onValueChange={setPropCurrency}>
                     <SelectTrigger className="h-8.5 text-xs">
-                      <SelectValue />
+                      <SelectValue placeholder="Currency">
+                        <CurrencyBadge code={propCurrency} />
+                      </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="GBP">GBP (£)</SelectItem>
-                      <SelectItem value="BRL">BRL (R$)</SelectItem>
-                      <SelectItem value="CAD">CAD ($)</SelectItem>
-                      <SelectItem value="AUD">AUD ($)</SelectItem>
+                    <SelectContent className="max-h-60">
+                      {CURRENCY_LIST.map((curr) => (
+                        <SelectItem key={curr.code} value={curr.code} className="text-xs cursor-pointer">
+                          <CurrencyBadge code={curr.code} showName />
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -724,37 +805,56 @@ export function AddAccountDialog({
             <form onSubmit={handleCreateBrokerAccount} className="space-y-3">
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Broker or Platform</Label>
-                <Select value={brokerId} onValueChange={handleBrokerChange}>
-                  <SelectTrigger className="h-8.5 text-xs">
-                    <SelectValue placeholder="Choose broker" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-64">
-                    <SelectGroup>
-                      <SelectLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Supported Direct Brokers &amp; Platforms
-                      </SelectLabel>
-                      {BROKER_CATALOG.filter(
-                        (b) =>
-                          b.category === "platform" ||
-                          b.category === "stocks" ||
-                          b.category === "forex-cfd" ||
-                          b.category === "futures",
-                      ).map((b) => (
-                        <SelectItem key={b.id} value={b.id} className="text-xs cursor-pointer">
-                          <div className="flex items-center gap-2">
-                            <BrokerIcon
-                              icon={b.icon}
-                              iconDark={b.iconDark}
-                              name={b.name}
-                              className="size-4 rounded-sm object-contain"
-                            />
-                            <span>{b.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                {(() => {
+                  const selectedBrokerMeta = BROKER_CATALOG.find((b) => b.id === brokerId);
+                  return (
+                    <Select value={brokerId} onValueChange={handleBrokerChange}>
+                      <SelectTrigger className="h-8.5 text-xs">
+                        <SelectValue placeholder="Choose broker">
+                          {selectedBrokerMeta ? (
+                            <div className="flex items-center gap-2">
+                              <BrokerIcon
+                                icon={selectedBrokerMeta.icon}
+                                iconDark={selectedBrokerMeta.iconDark}
+                                name={selectedBrokerMeta.name}
+                                className="size-4 rounded-sm object-contain shrink-0"
+                              />
+                              <span className="truncate">{selectedBrokerMeta.name}</span>
+                            </div>
+                          ) : (
+                            <span>Choose broker</span>
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        <SelectGroup>
+                          <SelectLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            Supported Direct Brokers &amp; Platforms
+                          </SelectLabel>
+                          {BROKER_CATALOG.filter(
+                            (b) =>
+                              b.category === "platform" ||
+                              b.category === "stocks" ||
+                              b.category === "forex-cfd" ||
+                              b.category === "futures",
+                          ).map((b) => (
+                            <SelectItem key={b.id} value={b.id} className="text-xs cursor-pointer">
+                              <div className="flex items-center gap-2">
+                                <BrokerIcon
+                                  icon={b.icon}
+                                  iconDark={b.iconDark}
+                                  name={b.name}
+                                  className="size-4 rounded-sm object-contain"
+                                />
+                                <span>{b.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  );
+                })()}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -781,13 +881,15 @@ export function AddAccountDialog({
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium">Initial Balance</Label>
+                  <Label className="text-xs font-medium">
+                    Initial Balance ({getCurrencyInfo(brokerCurrency).symbol})
+                  </Label>
                   <Input
                     type="number"
                     value={brokerBalance}
                     onChange={(e) => setBrokerBalance(e.target.value)}
                     placeholder="10000"
-                    className="h-8.5 text-xs font-mono"
+                    className="h-8.5 text-xs font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
 
@@ -795,15 +897,16 @@ export function AddAccountDialog({
                   <Label className="text-xs font-medium">Currency</Label>
                   <Select value={brokerCurrency} onValueChange={setBrokerCurrency}>
                     <SelectTrigger className="h-8.5 text-xs">
-                      <SelectValue />
+                      <SelectValue placeholder="Currency">
+                        <CurrencyBadge code={brokerCurrency} />
+                      </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="GBP">GBP (£)</SelectItem>
-                      <SelectItem value="BRL">BRL (R$)</SelectItem>
-                      <SelectItem value="CAD">CAD ($)</SelectItem>
-                      <SelectItem value="AUD">AUD ($)</SelectItem>
+                    <SelectContent className="max-h-60">
+                      {CURRENCY_LIST.map((curr) => (
+                        <SelectItem key={curr.code} value={curr.code} className="text-xs cursor-pointer">
+                          <CurrencyBadge code={curr.code} showName />
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -968,22 +1071,32 @@ export function AddAccountDialog({
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1">
                   <Label className="text-xs font-medium">Currency</Label>
-                  <Input
-                    value={manualCurrency}
-                    onChange={(e) => setManualCurrency(e.target.value.toUpperCase())}
-                    maxLength={3}
-                    className="h-8.5 text-xs uppercase"
-                  />
+                  <Select value={manualCurrency} onValueChange={setManualCurrency}>
+                    <SelectTrigger className="h-8.5 text-xs">
+                      <SelectValue placeholder="Currency">
+                        <CurrencyBadge code={manualCurrency} />
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {CURRENCY_LIST.map((curr) => (
+                        <SelectItem key={curr.code} value={curr.code} className="text-xs cursor-pointer">
+                          <CurrencyBadge code={curr.code} showName />
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium">Initial Balance (optional)</Label>
+                  <Label className="text-xs font-medium">
+                    Initial Balance ({getCurrencyInfo(manualCurrency).symbol}) (optional)
+                  </Label>
                   <Input
                     type="number"
                     value={manualBalance}
                     onChange={(e) => setManualBalance(e.target.value)}
                     placeholder="Unlocks drawdown %"
-                    className="h-8.5 text-xs font-mono"
+                    className="h-8.5 text-xs font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>

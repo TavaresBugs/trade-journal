@@ -104,9 +104,9 @@ const toNaive = (value: string, dateOrder?: "DMY" | "MDY"): NaiveParts | null =>
     };
   }
 
-  // Slash or dash date: 01/05/2026 2:30:00 PM (also 1/5/26, 25/01/2026)
+  // Slash, dash, or dot date: 01/05/2026 2:30:00 PM (also 1/5/26, 25/01/2026, 19.02.2025)
   match = text.match(
-    /^(\d{1,2})[-/](\d{1,2})[-/](\d{2}|\d{4})(?:[, ]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?\s*(AM|PM|am|pm)?)?$/,
+    /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2}|\d{4})(?:[, ]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?\s*(AM|PM|am|pm)?)?$/,
   );
   if (match) {
     let hour = Number(match[4] ?? 0);
@@ -172,6 +172,29 @@ const toNaive = (value: string, dateOrder?: "DMY" | "MDY"): NaiveParts | null =>
     };
   }
 
+  // "11 Jan 2024 11:14:07 AM" or "11 Jan 2024"
+  match = text.match(
+    /^(\d{1,2})\s+([A-Za-z]{3,})\.?\s+(\d{4})(?:[, ]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?\s*(AM|PM|am|pm)?)?$/,
+  );
+  if (match) {
+    const month = MONTHS[match[2]!.slice(0, 3).toLowerCase()];
+    if (!month) return null;
+    let hour = Number(match[4] ?? 0);
+    const meridiem = match[8]?.toUpperCase();
+    if (meridiem && (hour < 1 || hour > 12)) return null;
+    if (meridiem === "PM" && hour < 12) hour += 12;
+    if (meridiem === "AM" && hour === 12) hour = 0;
+    return {
+      year: Number(match[3]),
+      month,
+      day: Number(match[1]),
+      hour,
+      minute: Number(match[5] ?? 0),
+      second: Number(match[6] ?? 0),
+      millisecond: Number((match[7] ?? "").padEnd(3, "0")),
+    };
+  }
+
   return null;
 };
 
@@ -189,7 +212,10 @@ export const parseTimestamp = (
   // Some journal exports (TradeZella) append a timezone abbreviation to time
   // fields ("09:31:00 EST"). Abbreviations are ambiguous, so we strip them and
   // interpret the wall clock in the caller's timezone — documented behavior.
-  const text = value.trim().replace(/\s+(E[SD]T|C[SD]T|M[SD]T|P[SD]T|UTC|GMT)$/i, "");
+  const text = value
+    .trim()
+    .replace(/\s+(E[SD]?T|C[SD]?T|M[SD]?T|P[SD]?T|UTC|GMT)$/i, "")
+    .replace(/(:\d{2})\s+([+-]\d{2})$/, "$1$2:00");
   if (text === "") return null;
 
   if (/(Z|[+-]\d{2}:?\d{2})$/.test(text)) {
@@ -229,4 +255,12 @@ export const parseDateAndTime = (
   time: string | undefined,
   timeZone = "UTC",
   dateOrder?: "DMY" | "MDY",
-): string | null => parseTimestamp([date, time].filter(Boolean).join(" "), timeZone, dateOrder);
+  defaultDate?: string,
+): string | null => {
+  const dateText = date?.trim();
+  const timeText = time?.trim();
+  if (!dateText && !timeText) return null;
+  const effectiveDate =
+    dateText || (timeText ? defaultDate || new Date().toISOString().slice(0, 10) : undefined);
+  return parseTimestamp([effectiveDate, timeText].filter(Boolean).join(" "), timeZone, dateOrder);
+};

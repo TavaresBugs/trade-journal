@@ -1,11 +1,23 @@
-import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { db } from "@/db";
-import { accounts, executions } from "@/db/schema";
+import { afterAll, describe, expect, it } from "vitest";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { eq } from "drizzle-orm";
-import { POST } from "@/app/api/import/route";
 import { NextRequest } from "next/server";
+
+const originalDir = process.env.JOURNAL_DATA_DIR;
+const scratch = mkdtempSync(join(tmpdir(), "journal-tradovate-test-"));
+process.env.JOURNAL_DATA_DIR = scratch;
+
+const { db, accounts, executions, trades } = await import("@/db");
+const { POST } = await import("@/app/api/import/route");
+
+afterAll(() => {
+  db.$client.close();
+  if (originalDir === undefined) delete process.env.JOURNAL_DATA_DIR;
+  else process.env.JOURNAL_DATA_DIR = originalDir;
+  rmSync(scratch, { recursive: true, force: true });
+});
 
 describe("Tradovate End-to-End Import & Idempotency", () => {
   const csvPath = resolve(
@@ -98,6 +110,7 @@ describe("Tradovate End-to-End Import & Idempotency", () => {
     expect(repeatData.duplicates).toBe(28);
 
     // 5. Clean up test records
+    await db.delete(trades).where(eq(trades.accountId, testAccountId));
     await db.delete(executions).where(eq(executions.accountId, testAccountId));
     await db.delete(accounts).where(eq(accounts.id, testAccountId));
   });

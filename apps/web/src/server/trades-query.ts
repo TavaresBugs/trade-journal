@@ -1,7 +1,7 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { matchesFilters, type AnalysisFilters, type AnnotatedTrade } from "@luxalgo/journal-core";
 import { getTimeZone, getMultipliers, getJournalDefaults } from "./settings";
-import { db, trades } from "@/db";
+import { db, accounts, trades } from "@/db";
 
 export type TradeFilters = AnalysisFilters & { accountIds?: string[] };
 
@@ -83,6 +83,20 @@ export const queryTrades = (
     ?.split(",")
     .map((id) => id.trim())
     .filter(Boolean);
+  let targetAccountIds = accountIds;
+  if (!targetAccountIds?.length) {
+    const activeAccounts = db
+      .select({ id: accounts.id })
+      .from(accounts)
+      .where(isNull(accounts.archivedAt))
+      .all()
+      .map((a) => a.id);
+    targetAccountIds = activeAccounts;
+    if (targetAccountIds.length === 0) {
+      return { rows: [], trades: [] };
+    }
+  }
+
   const symbols = effective.symbol
     ?.split(",")
     .map((s) => s.trim().toUpperCase())
@@ -92,7 +106,7 @@ export const queryTrades = (
     .from(trades)
     .where(
       and(
-        accountIds?.length ? inArray(trades.accountId, accountIds) : undefined,
+        targetAccountIds.length ? inArray(trades.accountId, targetAccountIds) : undefined,
         symbols?.length && symbols.length <= 500 ? inArray(trades.symbol, symbols) : undefined,
         effective.playbookId ? eq(trades.playbookId, effective.playbookId) : undefined,
         effective.direction

@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
@@ -178,4 +178,17 @@ describe("file decoding", () => {
       expect(decodeImportFile(buffer)).toBe(value);
     }
   });
+
+  it("decodes XLSX spreadsheet files with UTF-16LE XML into parseable CSV", () => {
+    const realXlsxPath = "/home/jhontavares/Documents/ReportHistory-530319802 - MT5.xlsx";
+    if (existsSync(realXlsxPath)) {
+      const buf = readFileSync(realXlsxPath);
+      const arrayBuf = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+      const csv = decodeImportFile(arrayBuf);
+      expect(csv).toContain("Positions");
+      expect(csv).toContain("530319802");
+      expect(csv).toContain("78698762");
+    }
+  });
 });
+

@@ -503,7 +503,8 @@ body.dashboard-is-dragging .journal-hover-card {
 /* Minimalist number inputs: hidden by default to maximize text space, revealed on hover/focus */
 .journal-filter-fields input[type="number"],
 .journal-filter-dialog input[type="number"],
-input[type="number"].clean-number {
+input[type="number"].clean-number,
+input[type="number"].tnum {
   -moz-appearance: textfield;
   appearance: textfield;
 }
@@ -513,7 +514,9 @@ input[type="number"].clean-number {
 .journal-filter-dialog input[type="number"]::-webkit-inner-spin-button,
 .journal-filter-dialog input[type="number"]::-webkit-outer-spin-button,
 input[type="number"].clean-number::-webkit-inner-spin-button,
-input[type="number"].clean-number::-webkit-outer-spin-button {
+input[type="number"].clean-number::-webkit-outer-spin-button,
+input[type="number"].tnum::-webkit-inner-spin-button,
+input[type="number"].tnum::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }

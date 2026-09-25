@@ -368,12 +368,10 @@ export function importTradeHistory(rawText: string, options: ImportOptions = {})
         ),
       );
     }
-    if (htmlSource) {
-      // Multi-section statements repeat headers and interleave section titles;
-      // import only the section the located header governs.
-      const trimmed = truncateAtSectionBoundary(records, (cells) => headerScore(cells) >= 2);
-      records = trimmed.records;
-    }
+    // Multi-section statements (HTML or converted XLSX/CSV) repeat headers and interleave
+    // section titles (e.g. Orders, Deals, Summary); import only the section the located header governs.
+    const trimmed = truncateAtSectionBoundary(records, (cells) => headerScore(cells) >= 2);
+    records = trimmed.records;
   } else if (options.mapping !== undefined) {
     header = allRecords[0]!.cells.map((_, i) => `column ${i + 1}`);
     records = [...allRecords];

@@ -30,7 +30,7 @@ import {
 import { BrokerIcon } from "@/components/ui/broker-icon";
 import { AddAccountDialog } from "@/components/add-account-dialog";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
-import { getBrokerInfo } from "@/lib/brokers/broker-catalog";
+import { getAccountBrokerInfo, getBrokerInfo } from "@/lib/brokers/broker-catalog";
 import { formatZoneOffset } from "@/lib/timezone";
 import { postJson, useApi } from "@/lib/use-api";
 import { fmtMoney, fmtAmount, pnlClass, cn } from "@/lib/utils";
@@ -124,30 +124,9 @@ function Accounts() {
         )}
 
         {data?.accounts.map((account) => {
-          const nameLower = (account.name || "").toLowerCase();
-          const detectedId =
-            account.broker ||
-            (nameLower.includes("ftmo")
-              ? "ftmo"
-              : nameLower.includes("topstep")
-                ? "topstep"
-                : nameLower.includes("apex")
-                  ? "apex"
-                  : nameLower.includes("lucid")
-                    ? "lucid"
-                    : nameLower.includes("tradesea")
-                      ? "tradesea"
-                      : nameLower.includes("ninjatrader")
-                        ? "ninjatrader"
-                        : nameLower.includes("tradovate")
-                          ? "tradovate"
-                          : nameLower.includes("binance")
-                            ? "binance"
-                            : null);
-
+          const brokerInfo = getAccountBrokerInfo(account);
           const isExplicit = Boolean(account.broker);
-          const brokerInfo = getBrokerInfo(account.broker || detectedId, account.platform);
-          const isDetected = !isExplicit && Boolean(detectedId) && Boolean(brokerInfo);
+          const isDetected = !isExplicit && Boolean(brokerInfo);
           const currentTimeZone = account.timeZone || brokerInfo?.defaultTimeZone || "UTC";
 
           const categoryLabel =
@@ -412,7 +391,7 @@ function Accounts() {
                       await postJson(
                         `/api/accounts/${account.id}`,
                         {
-                          broker: detectedId,
+                          broker: brokerInfo.id,
                           timeZone: brokerInfo.defaultTimeZone || account.timeZone || "UTC",
                         },
                         "PATCH",

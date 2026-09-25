@@ -12,10 +12,17 @@ import { getImportTimeZone } from "@/server/settings";
 import { isTimeZone } from "@/lib/timezone";
 import type { ImportReviewOptions } from "@/lib/import-review";
 import { previewNinjaTraderImport, commitNinjaTraderImport } from "@/server/ninjatrader-import";
+import { reconcileImport } from "@/server/import-reconciliation";
 import { db } from "@/db";
+
 import { accounts, importSources } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
-import { getBrokerMetadata, formatToPlatformId } from "@/lib/brokers/broker-catalog";
+import { and, eq, isNull, or } from "drizzle-orm";
+import {
+  getBrokerMetadata,
+  formatToPlatformId,
+  platformToDefaultBrokerId,
+  checkPlatformCompatibility,
+} from "@/lib/brokers/broker-catalog";
 import { newId, nowIso } from "@/server/ids";
 
 interface ImportBody {
@@ -29,6 +36,7 @@ interface ImportBody {
   fileName?: string;
   symbol?: string;
   review?: ImportReviewOptions;
+  forceMismatch?: boolean;
 }
 
 /**
@@ -87,6 +95,67 @@ export const POST = handler(async (request: Request) => {
   }
 
   if (body.mode === "preview") {
+    const targetAccount = body.accountId
+      ? db.select().from(accounts).where(eq(accounts.id, body.accountId)).get()
+      : undefined;
+
+    let accountConflict: { isConflict: boolean; detectedAccount?: string; targetAccountNumber?: string; targetAccountName?: string } | undefined;
+    if (targetAccount && parsed.account && targetAccount.accountNumber) {
+      if (targetAccount.accountNumber.trim().toLowerCase() !== parsed.account.trim().toLowerCase()) {
+        accountConflict = {
+          isConflict: true,
+          detectedAccount: parsed.account,
+          targetAccountNumber: targetAccount.accountNumber,
+          targetAccountName: targetAccount.name,
+        };
+      }
+    }
+
+    const compatibility = targetAccount ? checkPlatformCompatibility(targetAccount, parsed.format) : undefined;
+
+    let resolvedAccountId = body.accountId;
+    if (accountConflict?.isConflict && !body.forceMismatch) {
+      // Do not run reconciliation against a conflicting account
+      resolvedAccountId = undefined;
+    }
+
+    if (!resolvedAccountId && parsed.account) {
+      const matched = db
+        .select({ id: accounts.id })
+        .from(accounts)
+        .where(
+          and(
+            isNull(accounts.archivedAt),
+            or(
+              eq(accounts.accountNumber, parsed.account),
+              eq(accounts.name, parsed.account),
+            ),
+          ),
+        )
+        .get();
+      if (matched) {
+        resolvedAccountId = matched.id;
+      }
+    }
+    if (!resolvedAccountId) {
+      const activeAccounts = db
+        .select()
+        .from(accounts)
+        .where(isNull(accounts.archivedAt))
+        .all();
+      if (activeAccounts.length === 1 && activeAccounts[0]) {
+        const candidate = activeAccounts[0];
+        const candidateConflict =
+          parsed.account &&
+          candidate.accountNumber &&
+          candidate.accountNumber.trim().toLowerCase() !== parsed.account.trim().toLowerCase();
+        const candidateCompat = checkPlatformCompatibility(candidate, parsed.format);
+        if (!candidateConflict && candidateCompat.compatible) {
+          resolvedAccountId = candidate.id;
+        }
+      }
+    }
+
     const symbols = [...new Set(parsed.executions.map((e) => e.symbol))];
     return ok({
       detected: parsed.format,
@@ -112,41 +181,67 @@ export const POST = handler(async (request: Request) => {
       warnings: parsed.warnings,
       errors: parsed.errors,
       needsSymbol: parsed.needsSymbol,
+      accountConflict,
+      compatibility,
       reconciliation:
-        parsed.format === "ninjatrader" && body.accountId
-          ? previewNinjaTraderImport(body.accountId, parsed, body.content, timeZone, body.review)
+        parsed.format === "ninjatrader" && resolvedAccountId
+          ? previewNinjaTraderImport(resolvedAccountId, parsed, body.content, timeZone, body.review)
+          : undefined,
+      accountReconciliation:
+        resolvedAccountId
+          ? reconcileImport(resolvedAccountId, parsed.executions as ImportedExecution[])
           : undefined,
     });
   }
 
+
   if (!body.accountId) return bad("accountId is required to commit");
   if (parsed.errors?.length) return bad(parsed.errors.join(" "));
   if (parsed.executions.length === 0) return bad("No executions to import");
+
+  const targetAccount = db.select().from(accounts).where(eq(accounts.id, body.accountId)).get();
+  if (!targetAccount) return bad("Account not found");
+
+  // Validate account number identity mismatch
+  if (
+    parsed.account &&
+    targetAccount.accountNumber &&
+    parsed.account.trim().toLowerCase() !== targetAccount.accountNumber.trim().toLowerCase() &&
+    !body.forceMismatch
+  ) {
+    return bad(
+      `Account mismatch: statement belongs to account #${parsed.account}, but selected account is ${targetAccount.name} (#${targetAccount.accountNumber}). Pass forceMismatch=true to override.`,
+    );
+  }
+
+  // Validate platform / broker compatibility
+  const compat = checkPlatformCompatibility(targetAccount, parsed.format);
+  if (!compat.compatible && !body.forceMismatch) {
+    return bad(
+      `Incompatible statement format: ${compat.reason ?? "Format does not match target account."} Pass forceMismatch=true to override.`,
+    );
+  }
+
   const result =
     parsed.format === "ninjatrader"
       ? commitNinjaTraderImport(body.accountId, parsed, body.content, timeZone, body.review)
       : insertExecutions(body.accountId, parsed.executions as ImportedExecution[], "import");
-  // Auto-binding: bind detected platform, broker, and account number to the target account
+
+  // Auto-binding: bind detected platform, broker, and account number to the target account only if compatible
   const detectedPlatform = formatToPlatformId(parsed.format);
-  if (body.accountId) {
-    const existingAccount = db.select().from(accounts).where(eq(accounts.id, body.accountId)).get();
-    if (existingAccount) {
-      const updates: { platform?: string; broker?: string; accountNumber?: string } = {};
-      if (
-        detectedPlatform &&
-        (!existingAccount.platform || existingAccount.platform !== detectedPlatform)
-      ) {
-        updates.platform = detectedPlatform;
-      }
-      if (detectedPlatform && !existingAccount.broker) {
-        updates.broker = detectedPlatform;
-      }
-      if (parsed.account && !existingAccount.accountNumber) {
-        updates.accountNumber = parsed.account;
-      }
-      if (Object.keys(updates).length > 0) {
-        db.update(accounts).set(updates).where(eq(accounts.id, body.accountId)).run();
-      }
+  if (targetAccount && compat.compatible) {
+    const updates: { platform?: string; broker?: string; accountNumber?: string } = {};
+    if (detectedPlatform && !targetAccount.platform) {
+      updates.platform = detectedPlatform;
+    }
+    if (detectedPlatform && !targetAccount.broker) {
+      updates.broker = platformToDefaultBrokerId(detectedPlatform) ?? detectedPlatform;
+    }
+    if (parsed.account && !targetAccount.accountNumber) {
+      updates.accountNumber = parsed.account;
+    }
+    if (Object.keys(updates).length > 0) {
+      db.update(accounts).set(updates).where(eq(accounts.id, body.accountId)).run();
     }
   }
 

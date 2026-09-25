@@ -70,6 +70,8 @@ export interface ImportOptions {
    * Expected slash date order when ambiguous: "DMY" (e.g. Brazil/UK/Europe) or "MDY" (US default).
    */
   dateOrder?: "DMY" | "MDY";
+  /** Fallback date (YYYY-MM-DD) for time-only statements that omit the date column. */
+  defaultDate?: string;
 }
 
 export interface ImportFormat {

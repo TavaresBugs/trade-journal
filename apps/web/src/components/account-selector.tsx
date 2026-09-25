@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Check, ChevronDown, FlaskConical, Plus, RefreshCw, SlidersHorizontal } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  FlaskConical,
+  Layers,
+  Plus,
+  RefreshCw,
+  SlidersHorizontal,
+  Wallet,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AddAccountDialog } from "@/components/add-account-dialog";
+import { BrokerIcon } from "@/components/ui/broker-icon";
+import { getAccountBrokerInfo } from "@/lib/brokers/broker-catalog";
 import { postJson, useApi } from "@/lib/use-api";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +29,8 @@ interface AccountOption {
   id: string;
   name: string;
   broker: string;
+  platform?: string | null;
+  accountNumber?: string | null;
   archivedAt: string | null;
 }
 
@@ -40,11 +53,12 @@ export function AccountSelector() {
   const accounts = data?.accounts.filter((a) => !a.archivedAt || selected.includes(a.id)) ?? [];
   const demo = accounts.find((a) => a.broker === "demo");
   const value = selected.length > 1 ? "multiple" : (selected[0] ?? "all");
+  const selectedAccount = selected.length === 1 ? accounts.find((a) => a.id === selected[0]) : null;
+  const selectedBrokerInfo = selectedAccount ? getAccountBrokerInfo(selectedAccount) : null;
   const label =
     selected.length > 1
       ? `${selected.length} accounts`
-      : (accounts.find((a) => a.id === selected[0])?.name ??
-        (selected.length ? "Selected account" : "All accounts"));
+      : (selectedAccount?.name ?? (selected.length ? "Selected account" : "All accounts"));
 
   function selectAccount(id: string) {
     const next = new URLSearchParams(params.toString());
@@ -98,8 +112,23 @@ export function AccountSelector() {
             <button
               type="button"
               aria-label="Switch journal account"
-              className="flex h-8 min-w-0 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-left text-xs font-medium text-foreground transition-[background-color,transform] duration-150 hover:bg-muted/60 active:scale-[0.98] max-w-40 sm:max-w-48 cursor-pointer select-none"
+              className="flex h-8 min-w-0 items-center gap-2 rounded-md border border-border bg-background px-2.5 text-left text-xs font-medium text-foreground transition-[background-color,transform] duration-150 hover:bg-muted/60 active:scale-[0.98] max-w-44 sm:max-w-56 cursor-pointer select-none"
             >
+              {loadingDemo ? (
+                <FlaskConical className="size-3.5 shrink-0 text-muted-foreground animate-pulse" />
+              ) : selectedAccount && selectedBrokerInfo?.icon ? (
+                <BrokerIcon
+                  icon={selectedBrokerInfo.icon}
+                  iconDark={selectedBrokerInfo.iconDark}
+                  name={selectedAccount.name}
+                  invertInDark={selectedBrokerInfo.invertInDark}
+                  className="size-3.5 rounded-xs object-contain shrink-0"
+                />
+              ) : value === "all" || selected.length > 1 ? (
+                <Layers className="size-3.5 text-muted-foreground shrink-0" />
+              ) : (
+                <Wallet className="size-3.5 text-muted-foreground shrink-0" />
+              )}
               <span className="min-w-0 truncate">{loadingDemo ? "Loading demo…" : label}</span>
               <ChevronDown className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
             </button>
@@ -107,14 +136,17 @@ export function AccountSelector() {
 
           <DropdownMenuContent
             align="end"
-            className="w-52 rounded-xl p-1 shadow-xl border border-border/70"
+            className="w-56 rounded-xl p-1 shadow-xl border border-border/70"
           >
             {/* All accounts option */}
             <DropdownMenuItem
               onClick={() => selectAccount("all")}
               className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium"
             >
-              <span>All accounts</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <Layers className="size-3.5 text-muted-foreground shrink-0" />
+                <span>All accounts</span>
+              </div>
               {value === "all" && <Check className="size-3.5 shrink-0 text-foreground" />}
             </DropdownMenuItem>
 
@@ -124,7 +156,10 @@ export function AccountSelector() {
                 disabled
                 className="flex items-center justify-between text-xs rounded-lg text-muted-foreground"
               >
-                <span>{label}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Layers className="size-3.5 text-muted-foreground shrink-0" />
+                  <span>{label}</span>
+                </div>
                 <Check className="size-3.5 shrink-0 text-foreground" />
               </DropdownMenuItem>
             )}
@@ -134,16 +169,30 @@ export function AccountSelector() {
               .filter((a) => a.broker !== "demo")
               .map((account) => {
                 const isSelected = selected.length === 1 && selected[0] === account.id;
+                const brokerInfo = getAccountBrokerInfo(account);
                 return (
                   <DropdownMenuItem
                     key={account.id}
                     onClick={() => selectAccount(account.id)}
                     className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium"
                   >
-                    <span className="truncate">
-                      {account.name}
-                      {account.archivedAt ? " (archived)" : ""}
-                    </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {brokerInfo?.icon ? (
+                        <BrokerIcon
+                          icon={brokerInfo.icon}
+                          iconDark={brokerInfo.iconDark}
+                          name={account.name}
+                          invertInDark={brokerInfo.invertInDark}
+                          className="size-4 rounded-xs object-contain shrink-0"
+                        />
+                      ) : (
+                        <Wallet className="size-3.5 text-muted-foreground shrink-0" />
+                      )}
+                      <span className="truncate">
+                        {account.name}
+                        {account.archivedAt ? " (archived)" : ""}
+                      </span>
+                    </div>
                     {isSelected && <Check className="size-3.5 shrink-0 text-foreground" />}
                   </DropdownMenuItem>
                 );

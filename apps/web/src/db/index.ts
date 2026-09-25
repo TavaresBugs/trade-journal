@@ -1,11 +1,17 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import * as schema from "./schema";
 import { BOOTSTRAP_SQL } from "./bootstrap";
 
-export const dataDir = (): string => process.env.JOURNAL_DATA_DIR ?? join(process.cwd(), "data");
+export const dataDir = (): string => {
+  if (process.env.JOURNAL_DATA_DIR) return process.env.JOURNAL_DATA_DIR;
+  const webData = join(process.cwd(), "apps/web/data");
+  if (existsSync(join(webData, "journal.db"))) return webData;
+  return join(process.cwd(), "data");
+};
+
 
 const globalForDb = globalThis as unknown as { __journalDb?: ReturnType<typeof createDb> };
 

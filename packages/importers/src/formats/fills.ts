@@ -32,17 +32,19 @@ export const parseSide = (value: string | undefined): "buy" | "sell" | null => {
   // "bid"/"ask" per TopstepX fills exports: bid = buy interest, ask = sell.
   // Also supports Portuguese/multilingual sides: compra, comprado, comprada, venda, vendido, vendida.
   if (
-    /^(buy|bot|bought|long|b|bid|btc|buytoopen|buytoclose|buy to open|buy to close|compra|comprado|comprada)$/.test(
+    /^(buy|bot|bought|long|b|bid|btc|bto|buytoopen|buytoclose|buy to open|buy to close|compra|comprado|comprada|b open|b close)$/.test(
       text,
     ) ||
-    /^(buy|compra)/.test(text)
+    /^(buy|compra)\b/.test(text) ||
+    /^b\s+(open|close)\b/.test(text)
   )
     return "buy";
   if (
-    /^(sell|sld|sold|short|s|ask|stc|selltoopen|selltoclose|sell to open|sell to close|venda|vendido|vendida)$/.test(
+    /^(sell|sld|sold|short|s|ss|sshort|sellshort|ask|stc|sto|selltoopen|selltoclose|sell to open|sell to close|venda|vendido|vendida|s open|s close|sld shrt)$/.test(
       text,
     ) ||
-    /^(sell|venda)/.test(text)
+    /^(sell|venda)\b/.test(text) ||
+    /^s\s+(open|close)\b/.test(text)
   )
     return "sell";
   return null;
@@ -77,6 +79,7 @@ export const rowsToFills = (
         pick(row, columns.time ?? []),
         options.timeZone,
         options.dateOrder,
+        options.defaultDate,
       );
     }
 

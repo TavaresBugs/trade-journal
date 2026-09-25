@@ -33,7 +33,7 @@ import { DirectionBadge } from "@/components/ui/direction-badge";
 import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -386,51 +386,52 @@ function Trades() {
       />
       <div className="space-y-3 p-4">
         {m && (
-          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Net cumulative P&L</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Pnl value={m.netPnl} className="text-xl font-semibold" />
-                <span className="ml-2 text-xs text-muted-foreground tnum">
-                  {m.closedTrades} trades
+          <Card className="overflow-hidden">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border/40">
+              <div className="bg-card p-4 space-y-1">
+                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground block">
+                  Net cumulative P&L
                 </span>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Profit factor</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <span className="text-xl font-semibold tnum">
+                <div className="flex items-baseline gap-2">
+                  <Pnl value={m.netPnl} className="text-xl font-semibold" />
+                  <span className="text-xs text-muted-foreground tnum">
+                    {m.closedTrades} trades
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-card p-4 space-y-1">
+                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground block">
+                  Profit factor
+                </span>
+                <span className="text-xl font-semibold tnum block">
                   {m.profitFactorIsInfinite
                     ? "∞"
                     : m.profitFactor === null
                       ? "–"
                       : fmtNumber(m.profitFactor)}
                 </span>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Trade win %</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <span className="text-xl font-semibold tnum">{fmtPercent(m.winRate)}</span>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Avg win / loss</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <span className="text-xl font-semibold tnum">
+              </div>
+
+              <div className="bg-card p-4 space-y-1">
+                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground block">
+                  Trade win %
+                </span>
+                <span className="text-xl font-semibold tnum block">
+                  {fmtPercent(m.winRate)}
+                </span>
+              </div>
+
+              <div className="bg-card p-4 space-y-1">
+                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground block">
+                  Avg win / loss
+                </span>
+                <span className="text-xl font-semibold tnum block">
                   {m.avgWinLossRatio === null ? "–" : fmtNumber(m.avgWinLossRatio)}
                 </span>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </div>
+          </Card>
         )}
 
         {showColumns && (

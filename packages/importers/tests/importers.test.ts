@@ -178,9 +178,12 @@ U1234567,AAPL,20260105;093100,BUY,100,185.50,-1.00,STK,O
 U1234567,AAPL,20260105;101500,SELL,-100,187.25,-1.00,STK,C`;
     const result = parseAuto(csv)!;
     expect(result.format).toBe("ibkr-flex");
+    expect(result.account).toBe("U1234567");
+    expect(result.sourceAccounts).toEqual(["U1234567"]);
     expect(result.executions).toHaveLength(2);
     expect(result.executions[0]!.executedAt).toBe("2026-01-05T09:31:00.000Z");
     expect(result.executions[0]!.fee).toBe(1);
+    expect(result.executions[0]!.assetClass).toBe("equity");
   });
 
   it("TradeZella time fields with a timezone abbreviation still parse", () => {
@@ -199,4 +202,188 @@ AAPL,Sell,Cancelled,0/10,0/0,`;
     expect(result.executions[0]!.quantity).toBe(5); // filled, not total
     expect(result.executions[0]!.price).toBe(185.5); // avg fill price
   });
+
+  it("a TradeZero / TradeNote template export parses buys, short sells, and sums all fee columns", () => {
+    const csv = `Account,T/D,S/D,Currency,Type,Side,Symbol,Qty,Price,Exec Time,Comm,SEC,TAF,NSCC,Nasdaq,ECN Remove,ECN Add,Gross Proceeds,Net Proceeds,Clr Broker,Liq,Note
+12345,09/18/2023,09/20/2023,USD,CASH,B,AAPL,100,175.50,09:35:10,0.99,0.02,0.01,0.01,0.00,0.00,0.00,-17550.00,-17551.03,APEX,,
+12345,09/18/2023,09/20/2023,USD,CASH,SS,TSLA,50,240.00,10:15:00,0.99,0.00,0.01,0.00,0.00,0.05,0.00,12000.00,11998.95,APEX,,`;
+    const result = parseAuto(csv)!;
+    expect(result.format).toBe("tradezero");
+    expect(result.account).toBe("12345");
+    expect(result.sourceAccounts).toEqual(["12345"]);
+    expect(result.executions).toHaveLength(2);
+    expect(result.executions[0]!.symbol).toBe("AAPL");
+    expect(result.executions[0]!.side).toBe("buy");
+    expect(result.executions[0]!.quantity).toBe(100);
+    expect(result.executions[0]!.price).toBe(175.5);
+    expect(result.executions[0]!.fee).toBeCloseTo(1.03, 2);
+
+    expect(result.executions[1]!.symbol).toBe("TSLA");
+    expect(result.executions[1]!.side).toBe("sell"); // SS (short sale) maps to sell
+    expect(result.executions[1]!.quantity).toBe(50);
+    expect(result.executions[1]!.price).toBe(240);
+    expect(result.executions[1]!.fee).toBeCloseTo(1.05, 2);
+  });
+
+  it("a Robinhood activity export imports equity buys/sells and skips options and dividends", () => {
+    const csv = `Activity Date,Process Date,Settle Date,Instrument,Description,Trans Code,Quantity,Price,Amount
+9/18/2023,9/18/2023,9/19/2023,AAPL,Apple Inc.,Buy,10,$175.00,($1750.00)
+9/20/2023,9/20/2023,9/21/2023,AAPL,Apple Inc.,Sell,10,$180.00,$1800.00
+9/30/2023,9/30/2023,9/30/2023,AAPL,Apple Inc.,CDIV,,,$2.40
+9/15/2023,9/15/2023,9/18/2023,AAPL,Call $180,BTO,1,$2.50,($250.00)`;
+    const result = parseAuto(csv)!;
+    expect(result.format).toBe("robinhood");
+    expect(result.executions).toHaveLength(2);
+    expect(result.executions[0]!.symbol).toBe("AAPL");
+    expect(result.executions[0]!.side).toBe("buy");
+    expect(result.executions[0]!.quantity).toBe(10);
+    expect(result.executions[0]!.price).toBe(175);
+    expect(result.executions[1]!.symbol).toBe("AAPL");
+    expect(result.executions[1]!.side).toBe("sell");
+    expect(result.executions[1]!.quantity).toBe(10);
+    expect(result.executions[1]!.price).toBe(180);
+    expect(result.skippedRows).toBe(2);
+  });
+
+  it("a Moomoo order history export parses filled orders and skips continuation and cancelled rows", () => {
+    const csv = `"Side","Symbol","Name","Order Price","Order Qty","Order Amount","Status","Filled@Avg Price","Order Time","Order Type","Time-in-Force","Allow Pre-Market","Session","Trigger price","Position Opening","Markets","Currency","Order Source","Fill Qty","Fill Price","Fill Amount","Fill Time","Markets","Currency","Counterparty","Remarks","Platform Fees","Settlement Fees","Consolidated Audit Trail Fees","SEC Fees","Trading Activity Fees","Total"
+"Buy","SUNE","SUNation Energy","2.47","172","424.84","Filled","172@2.47","Jun 8, 2026 06:51:04 ET","Limit","Day","","RTH + Pre/Post-Mkt","","","US","USD","","172","2.47","424.84","Jun 8, 2026 06:51:05 ET","US","USD","","","0.99","0.52","0","","","1.51"
+"Buy","SKYQ","Sky Quarry","2.43","183","444.69","Filled","183@2.36454","Jun 8, 2026 04:57:06 ET","Limit","Day","","RTH + Pre/Post-Mkt","","","US","USD","","83","2.37","196.71","Jun 8, 2026 04:57:06 ET","US","USD","","","0.99","0.55","0","","","1.54"
+"","","","","","","","","","","","","","","","","","","100","2.36","236.00","Jun 8, 2026 04:57:06 ET","US","USD","","","","","","","",""
+"Buy","LXEH","Lixiang Education","3.06","139","425.34","Failed","0@0.00","Jun 8, 2026 06:20:23 ET","Limit","Day","","RTH + Pre/Post-Mkt","","","US","USD","","","","","","","","","","","","","","",""`;
+    const result = parseAuto(csv)!;
+    expect(result.format).toBe("moomoo");
+    expect(result.executions).toHaveLength(2);
+    expect(result.executions[0]!.symbol).toBe("SUNE");
+    expect(result.executions[0]!.side).toBe("buy");
+    expect(result.executions[0]!.quantity).toBe(172);
+    expect(result.executions[0]!.price).toBe(2.47);
+    expect(result.executions[0]!.fee).toBeCloseTo(1.51, 2);
+
+    expect(result.executions[1]!.symbol).toBe("SKYQ");
+    expect(result.executions[1]!.quantity).toBe(183);
+    expect(result.executions[1]!.price).toBeCloseTo(2.36454, 5);
+    expect(result.executions[1]!.fee).toBeCloseTo(1.54, 2);
+    expect(result.skippedRows).toBe(1); // LXEH (0@0.00 failed) is skipped
+  });
+
+  it("a WealthCharts orders export parses executions with Apex account and prefix stripping", () => {
+    const csv = `name,order_id,symbol,mov_time,mov_type,exec_qty,price_done,points,profit,created_on
+PA-APEX-408453-01,7ZZM15C2LMUD03J0L,CM.MNQZ6,Tue Sep 22 2026 15:21:45 GMT-0300 (Brasilia Standard Time),2,-1,30994.75,,-1.04,2026-09-22T18:21:38.000Z
+PA-APEX-408453-01,7ZZTQGXVQMUD03DTA,CM.MNQZ6,Tue Sep 22 2026 15:21:38 GMT-0300 (Brasilia Standard Time),1,1,30994.75,,,2026-09-22T18:21:38.000Z
+PA-APEX-408453-01,7ZZDU8AI1MS347ZTS,CM.ESU6,Mon Jul 27 2026 08:00:06 GMT-0300 (Brasilia Standard Time),4,1,7521.5,0.5,21.9,2026-07-27T11:00:01.000Z
+PA-APEX-408453-01,7ZZ6G5WNSMS347WLV,CM.ESU6,Mon Jul 27 2026 08:00:02 GMT-0300 (Brasilia Standard Time),3,-1,7522,,,2026-07-27T11:00:01.000Z`;
+    const result = parseAuto(csv)!;
+    expect(result).not.toBeNull();
+    expect(result.format).toBe("wealthcharts");
+    expect(result.account).toBe("PA-APEX-408453-01");
+    expect(result.executions).toHaveLength(4);
+
+    // MNQ Sell exit
+    expect(result.executions[0]!.symbol).toBe("MNQZ6");
+    expect(result.executions[0]!.side).toBe("sell");
+    expect(result.executions[0]!.quantity).toBe(1);
+    expect(result.executions[0]!.price).toBe(30994.75);
+    expect(result.executions[0]!.importMetadata?.id).toBe("7ZZM15C2LMUD03J0L");
+    expect(result.executions[0]!.importMetadata?.reportedGrossPnl).toBe(-1.04);
+    expect(result.executions[0]!.assetClass).toBe("futures");
+
+    // MNQ Buy entry
+    expect(result.executions[1]!.symbol).toBe("MNQZ6");
+    expect(result.executions[1]!.side).toBe("buy");
+    expect(result.executions[1]!.quantity).toBe(1);
+    expect(result.executions[1]!.price).toBe(30994.75);
+    expect(result.executions[1]!.importMetadata?.id).toBe("7ZZTQGXVQMUD03DTA");
+
+    // ES Buy cover exit
+    expect(result.executions[2]!.symbol).toBe("ESU6");
+    expect(result.executions[2]!.side).toBe("buy");
+    expect(result.executions[2]!.quantity).toBe(1);
+    expect(result.executions[2]!.price).toBe(7521.5);
+    expect(result.executions[2]!.importMetadata?.reportedGrossPnl).toBe(21.9);
+
+    // ES Sell short entry
+    expect(result.executions[3]!.symbol).toBe("ESU6");
+    expect(result.executions[3]!.side).toBe("sell");
+    expect(result.executions[3]!.quantity).toBe(1);
+    expect(result.executions[3]!.price).toBe(7522);
+  });
+
+  it("a MetaTrader 5 statement with Deals section parses executions, tickets, P&L, and detects FTMO account", () => {
+    const html = `<!DOCTYPE html><html><head><title>530319802: $10k FTMO Challenge - Trade History Report</title></head><body>
+<table>
+<tr><th>Trade History Report</th></tr>
+<tr><th>Name:</th><th>$10k FTMO Challenge</th></tr>
+<tr><th>Account:</th><th><b>530319802&nbsp;(USD,&nbsp;FTMO-Server3,&nbsp;real,&nbsp;Hedge)</b></th></tr>
+<tr><th>Company:</th><th>FTMO Global Markets Ltd</th></tr>
+<tr><th>Deals</th></tr>
+<tr><th>Time</th><th>Deal</th><th>Symbol</th><th>Type</th><th>Direction</th><th>Volume</th><th>Price</th><th>Order</th><th>Cost</th><th>Commission</th><th>Fee</th><th>Swap</th><th>Profit</th><th>Balance</th><th>Comment</th></tr>
+<tr><td>2025.09.01 15:01:13</td><td>71414906</td><td></td><td>balance</td><td></td><td></td><td></td><td></td><td></td><td>0.00</td><td>0.00</td><td>0.00</td><td>10 000.00</td><td>10 000.00</td><td>Initial account balance</td></tr>
+<tr><td>2025.09.23 20:58:41</td><td>74094794</td><td>US100.cash</td><td>buy</td><td>in</td><td>0.1</td><td>24597.95</td><td>78698762</td><td></td><td>0.00</td><td>0.00</td><td>0.00</td><td>0.00</td><td>10 000.00</td><td></td></tr>
+<tr><td>2025.09.23 21:19:42</td><td>74096712</td><td>US100.cash</td><td>sell</td><td>out</td><td>0.1</td><td>24552.65</td><td>78701470</td><td></td><td>0.00</td><td>0.00</td><td>0.00</td><td>-4.53</td><td>9 995.47</td><td>[sl 24552.88]</td></tr>
+<tr><td>2025.09.24 14:03:10</td><td>74184915</td><td>US100.cash</td><td>buy</td><td>in</td><td>0.1</td><td>24666.05</td><td>78796559</td><td></td><td>0.00</td><td>0.00</td><td>0.00</td><td>0.00</td><td>9 995.47</td><td></td></tr>
+<tr><td>2025.09.24 14:41:08</td><td>74190459</td><td>US100.cash</td><td>sell</td><td>out</td><td>0.1</td><td>24645.55</td><td>78802517</td><td></td><td>0.00</td><td>0.00</td><td>0.00</td><td>-2.05</td><td>9 993.42</td><td>[sl 24645.67]</td></tr>
+</table></body></html>`;
+    const result = parseAuto(html)!;
+    expect(result).not.toBeNull();
+    expect(result.format).toBe("metatrader");
+    expect(result.account).toBe("530319802");
+    expect(result.executions).toHaveLength(4);
+
+    // Deal 1: Buy Entry
+    expect(result.executions[0]!.symbol).toBe("US100.CASH");
+    expect(result.executions[0]!.side).toBe("buy");
+    expect(result.executions[0]!.quantity).toBe(0.1);
+    expect(result.executions[0]!.price).toBe(24597.95);
+    expect(result.executions[0]!.importMetadata?.id).toBe("74094794");
+
+    // Deal 2: Sell Exit
+    expect(result.executions[1]!.symbol).toBe("US100.CASH");
+    expect(result.executions[1]!.side).toBe("sell");
+    expect(result.executions[1]!.quantity).toBe(0.1);
+    expect(result.executions[1]!.price).toBe(24552.65);
+    expect(result.executions[1]!.importMetadata?.id).toBe("74096712");
+    expect(result.executions[1]!.importMetadata?.reportedGrossPnl).toBe(-4.53);
+  });
+
+  it("a cTrader Deals statement parses entry and exit executions with P&L and fees", () => {
+    const CTRADER_CSV = `Deal ID,Position ID,Symbol,Opening Direction,Closing Direction,Volume,Entry Price,Closing Price,Open Time,Closing Time,Gross P&L,Net P&L,Commission,Swap
+98765432,1234567,EURUSD,Buy,Sell,100000,1.08500,1.08950,2026-01-10 10:15:00,2026-01-10 14:30:00,450.00,442.00,-6.00,-2.00
+98765433,1234568,XAUUSD,Sell,Buy,10,2050.50,2045.00,2026-01-11 09:00:00,2026-01-11 11:20:00,55.00,51.50,-3.50,0.00`;
+
+    const result = parseAuto(CTRADER_CSV)!;
+    expect(result).not.toBeNull();
+    expect(result.format).toBe("ctrader");
+    expect(result.executions).toHaveLength(4);
+
+    // Trade 1 Entry: Buy EURUSD
+    expect(result.executions[0]!.symbol).toBe("EURUSD");
+    expect(result.executions[0]!.side).toBe("buy");
+    expect(result.executions[0]!.quantity).toBe(100000);
+    expect(result.executions[0]!.price).toBe(1.085);
+    expect(result.executions[0]!.fee).toBe(0);
+
+    // Trade 1 Exit: Sell EURUSD
+    expect(result.executions[1]!.symbol).toBe("EURUSD");
+    expect(result.executions[1]!.side).toBe("sell");
+    expect(result.executions[1]!.quantity).toBe(100000);
+    expect(result.executions[1]!.price).toBe(1.0895);
+    expect(result.executions[1]!.fee).toBe(8); // 6 commission + 2 swap
+    expect(result.executions[1]!.importMetadata?.reportedGrossPnl).toBe(450);
+
+    // Trade 2 Entry: Sell XAUUSD (short)
+    expect(result.executions[2]!.symbol).toBe("XAUUSD");
+    expect(result.executions[2]!.side).toBe("sell");
+    expect(result.executions[2]!.quantity).toBe(10);
+    expect(result.executions[2]!.price).toBe(2050.5);
+
+    // Trade 2 Exit: Buy XAUUSD
+    expect(result.executions[3]!.symbol).toBe("XAUUSD");
+    expect(result.executions[3]!.side).toBe("buy");
+    expect(result.executions[3]!.quantity).toBe(10);
+    expect(result.executions[3]!.price).toBe(2045);
+    expect(result.executions[3]!.fee).toBe(3.5);
+    expect(result.executions[3]!.importMetadata?.reportedGrossPnl).toBe(55);
+  });
 });
+

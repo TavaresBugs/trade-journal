@@ -88,7 +88,15 @@ export const parseHistory = (
   const fallbackSymbol = symbolFrom(content, options);
   let needsSymbol = false;
   let skippedRows = history.stats.skippedRows;
+
+  const accMatch =
+    content.slice(0, 4000).match(/Account:[\s\S]*?<b>\s*([0-9A-Za-z_-]+)/i) ||
+    content.slice(0, 4000).match(/Account:\s*([0-9A-Za-z_-]+)/i) ||
+    content.slice(0, 4000).match(/Account:,,,["']?([0-9A-Za-z_-]+)/i);
+  const account = accMatch ? accMatch[1] : undefined;
+
   const occurrences = new Map<string, number>();
+
   const nextId = (key: string) => {
     const n = occurrences.get(key) ?? 0;
     occurrences.set(key, n + 1);
@@ -275,8 +283,10 @@ export const parseHistory = (
     warnings: [...new Set(warnings)].slice(0, 50),
     ...(errors.length ? { errors: [...new Set(errors)].slice(0, 20) } : {}),
     ...(needsSymbol ? { needsSymbol: true } : {}),
+    ...(account ? { account, sourceAccounts: [account] } : {}),
   };
 };
+
 
 export const historyFormat: ImportFormat = {
   id: "trade-history",

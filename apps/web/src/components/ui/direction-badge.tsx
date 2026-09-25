@@ -3,13 +3,13 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface DirectionBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  direction?: "long" | "short" | string | null;
+  direction?: "long" | "short" | "buy" | "sell" | string | null;
   size?: "xs" | "sm" | "md";
 }
 
 /**
  * Visual direction indicator matching institutional trading interfaces.
- * Features trending sparkline vectors with emerald LONG and rose SHORT styling.
+ * Features trending sparkline vectors with emerald LONG/BUY and rose SHORT/SELL styling.
  */
 export function DirectionBadge({
   direction,
@@ -21,8 +21,11 @@ export function DirectionBadge({
     return <span className="text-muted-foreground select-none">–</span>;
   }
 
-  const dir = direction.toLowerCase();
-  if (dir !== "long" && dir !== "short") {
+  const raw = direction.toLowerCase().trim();
+  const isLongOrBuy = raw === "long" || raw === "buy" || raw === "b";
+  const isShortOrSell = raw === "short" || raw === "sell" || raw === "s";
+
+  if (!isLongOrBuy && !isShortOrSell) {
     return (
       <span
         className={cn(
@@ -39,18 +42,24 @@ export function DirectionBadge({
     );
   }
 
-  const isLong = dir === "long";
-  const Icon = isLong ? TrendingUp : TrendingDown;
-  const label = isLong ? "LONG" : "SHORT";
+  const Icon = isLongOrBuy ? TrendingUp : TrendingDown;
+  const label =
+    raw === "buy" || raw === "b"
+      ? "BUY"
+      : raw === "sell" || raw === "s"
+      ? "SELL"
+      : isLongOrBuy
+      ? "LONG"
+      : "SHORT";
 
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center gap-1 font-medium tracking-wide rounded-md border border-transparent select-none transition-colors",
+        "inline-flex items-center justify-center gap-1 font-semibold tracking-wide rounded-md border border-transparent select-none transition-colors",
         size === "xs" && "px-1.5 py-0.5 text-[10px]",
         size === "sm" && "px-2 py-0.5 text-xs",
         size === "md" && "px-2.5 py-1 text-xs",
-        isLong ? "bg-profit/15 text-profit" : "bg-loss/15 text-loss",
+        isLongOrBuy ? "bg-profit/15 text-profit" : "bg-loss/15 text-loss",
         className,
       )}
       {...props}

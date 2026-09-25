@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { accounts, db, executions, trades } from "@/db";
 import { bad, handler, ok } from "@/server/api";
 import { rebuildAccount } from "@/server/rebuild";
+import { isTimeZone } from "@/lib/timezone";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -24,6 +25,16 @@ export const PATCH = handler(async (request: Request, { params }: Params) => {
   if (!account) return bad("Account not found", 404);
 
   const body = (await request.json()) as PatchBody;
+  if (body.timeZone !== undefined && !isTimeZone(body.timeZone)) {
+    return bad("Invalid IANA timezone.");
+  }
+  if (
+    body.profitCalcMethod !== undefined &&
+    !["fifo", "lifo", "wavg"].includes(body.profitCalcMethod)
+  ) {
+    return bad("Invalid profit calculation method.");
+  }
+
   const patch: Partial<typeof accounts.$inferInsert> = {};
   if (body.name !== undefined) patch.name = body.name;
   if (body.broker !== undefined) patch.broker = body.broker;

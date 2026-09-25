@@ -1,0 +1,590 @@
+﻿
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/1999/REC-html401-19991224">
+<html xmlns:msxsl="urn:schemas-microsoft-com:xslt" xmlns:ms="urn:schemas-microsoft-com:xslt" xmlns:dt="urn:schemas-microsoft-com:datatypes" xmlns:ext="urn:xstl-ext">
+<head>
+    <META http-equiv="Content-Type" content="text/html; charset=utf-16">
+        <title>
+            cT
+            _
+            4142841
+            _
+            2024-5-02
+        </title>
+        <style type="text/css">
+        body {
+            color: #000000;
+            background-color: #FFFFFF;
+        }
+
+        .caption-style {
+            font-size: xx-large;
+            font-weight: bold;
+            margin-top: 60px;
+        }
+
+        .company-name-style {
+            font-size: x-large;
+            margin-top: 60px;
+        }
+
+        .date-style {
+            font-size: x-large;
+            margin-top: 5px;
+        }
+
+        .invisible-totals {
+            color: white;
+        }
+
+        .default-text-style {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: small;
+        }
+
+        .summary-style { text-align: right; font-weight: bold; }
+
+        .title-style { font-size: x-large; height: 50px; background: #FFF;}
+
+        .cell-header {
+            border-bottom: 2px solid black;
+            text-align: center;
+        }
+
+        .cell-text {
+            border-bottom: 1px solid black;
+            text-align: center;
+        }
+
+        .totals-title { 
+			color: #FFFFFF;  
+			text-align: left; 
+		}
+
+        .total-cell
+        {
+            color: #FFFFFF;
+            text-align: center;
+        }
+
+        .balance-style {
+            text-align: left;
+            font-size: x-large;
+            vertical-align: bottom;
+			font-weight: bold;
+        }
+
+        .dataTable tr:nth-child(even) { background: #FFF; }
+        .dataTable tr:nth-child(odd) { background: #E0E0E0; }
+
+        .dataTable td:first-child { width: 1px }
+        .dataTable td:nth-child(2) { width: 1px }
+        </style>
+    </head>
+    <body style="margin: 0px 25px 0px 25px">
+        <table class="default-text-style">
+            <tr>
+                <td>
+                    <table width="100%">
+                        <tr>
+                            <td>
+                                <div class="caption-style">
+                                    Account Statement
+                                </div>
+
+                                <br />
+                            </td>
+                            <td align="right"
+                            valign="top">
+                            <div class="company-name-style"
+                            style="margin-top: 69px">
+                            Pepperstone - Europe
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <!-- Header -->
+    <tr align="left">
+        <td>
+            <table style="width: 100%; margin-top: 30px">
+                <tr>
+                    <td style="width: auto">
+                        Account :
+                    </td>
+                    <td style="width: 70%">
+                        <strong>
+                            4142841
+                        </strong>
+                    </td>
+                    <td class="summary-style"
+                    rowspan="2"
+                    valign="top">
+                    <strong>
+                        02/05/2024 19:18:01.312, UTC +0
+                    </strong>
+                </td>
+            </tr>
+            <tr>
+                <td style="width: auto">
+                    Currency
+                    :
+                </td>
+                <td style="width: 70%">
+                    <strong>
+                        GBP
+                    </strong>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- Render tables-->
+    <tr align="left">
+        <td>
+            <table class="dataTable" style="width: 100%; margin-top: 30px;"
+                   cellspacing="0"
+                   cellpadding="3">
+                <tr>
+                    <td colspan="13"
+                        class="title-style"
+                        valign="top">
+                        <strong>History</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="cell-header invisible-totals">Totals</td>
+                        <td class="cell-header"><strong>ID</strong></td>
+                        <td class="cell-header"><strong>Order ID</strong></td>
+                        <td class="cell-header"><strong>Closing Direction</strong></td>
+                        <td class="cell-header"><strong>Symbol</strong></td>
+                        <td class="cell-header"><strong>Opening time (UTC+0)</strong></td>
+                        <td class="cell-header"><strong>Closing Time (UTC+0)</strong></td>
+                        <td class="cell-header"><strong>Entry Price</strong></td>
+                        <td class="cell-header"><strong>Closing Price</strong></td>
+                        <td class="cell-header"><strong>Opening Direction</strong></td>
+                        <td class="cell-header"><strong>Closing Quantity</strong></td>
+                        <td class="cell-header"><strong>Swap</strong></td>
+                        <td class="cell-header"><strong>Commission</strong></td>
+                        <td class="cell-header"><strong>Gross GBP</strong></td>
+                        <td class="cell-header"><strong>Net GBP</strong></td>
+                        <td class="cell-header"><strong>Gross USD</strong></td>
+                        <td class="cell-header"><strong>Net USD</strong></td>
+                        <td class="cell-header"><strong>Balance GBP</strong></td>
+                        <td class="cell-header"><strong>Pips</strong></td>
+                        <td class="cell-header"><strong>Requested Quantity</strong></td>
+                        <td class="cell-header"><strong>Channel</strong></td>
+                        <td class="cell-header"><strong>Label</strong></td>
+                        <td class="cell-header"><strong>Comment</strong></td>
+                </tr>
+
+                    <tr>
+                        <td class="cell-text"></td>
+                            <td class="cell-text"><nobr>DID21424083</nobr></td>
+                            <td class="cell-text"><nobr>OID23796678</nobr></td>
+                            <td class="cell-text"><nobr>Sell</nobr></td>
+                            <td class="cell-text"><nobr>CADJPY_SB</nobr></td>
+                            <td class="cell-text"><nobr>14/03/2024 15:00:42.656</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:16:05.337</nobr></td>
+                            <td class="cell-text"><nobr>109.64300</nobr></td>
+                            <td class="cell-text"><nobr>112.02000</nobr></td>
+                            <td class="cell-text"><nobr>Buy</nobr></td>
+                            <td class="cell-text"><nobr>0.10 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>3.52</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>23.77</nobr></td>
+                            <td class="cell-text"><nobr>27.29</nobr></td>
+                            <td class="cell-text"><nobr>25.50</nobr></td>
+                            <td class="cell-text"><nobr>29.27</nobr></td>
+                            <td class="cell-text"><nobr>50 027.29</nobr></td>
+                            <td class="cell-text"><nobr>237.7</nobr></td>
+                            <td class="cell-text"><nobr>0.10 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>cTrader</nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                    </tr>
+                    <tr>
+                        <td class="cell-text"></td>
+                            <td class="cell-text"><nobr>DID21424085</nobr></td>
+                            <td class="cell-text"><nobr>OID23796679</nobr></td>
+                            <td class="cell-text"><nobr>Sell</nobr></td>
+                            <td class="cell-text"><nobr>AUDNZD_SB</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:15:59.291</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:16:07.125</nobr></td>
+                            <td class="cell-text"><nobr>1.10187</nobr></td>
+                            <td class="cell-text"><nobr>1.10162</nobr></td>
+                            <td class="cell-text"><nobr>Buy</nobr></td>
+                            <td class="cell-text"><nobr>1.00 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>-2.50</nobr></td>
+                            <td class="cell-text"><nobr>-2.50</nobr></td>
+                            <td class="cell-text"><nobr>-2.68</nobr></td>
+                            <td class="cell-text"><nobr>-2.68</nobr></td>
+                            <td class="cell-text"><nobr>50 024.79</nobr></td>
+                            <td class="cell-text"><nobr>-2.5</nobr></td>
+                            <td class="cell-text"><nobr>1.00 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>cTrader</nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                    </tr>
+                    <tr>
+                        <td class="cell-text"></td>
+                            <td class="cell-text"><nobr>DID21424086</nobr></td>
+                            <td class="cell-text"><nobr>OID23796680</nobr></td>
+                            <td class="cell-text"><nobr>Buy</nobr></td>
+                            <td class="cell-text"><nobr>EURUSD_SB</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:15:47.877</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:16:07.825</nobr></td>
+                            <td class="cell-text"><nobr>1.07276</nobr></td>
+                            <td class="cell-text"><nobr>1.07285</nobr></td>
+                            <td class="cell-text"><nobr>Sell</nobr></td>
+                            <td class="cell-text"><nobr>1.00 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>-0.90</nobr></td>
+                            <td class="cell-text"><nobr>-0.90</nobr></td>
+                            <td class="cell-text"><nobr>-0.96</nobr></td>
+                            <td class="cell-text"><nobr>-0.96</nobr></td>
+                            <td class="cell-text"><nobr>50 023.89</nobr></td>
+                            <td class="cell-text"><nobr>-0.9</nobr></td>
+                            <td class="cell-text"><nobr>1.00 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>cTrader</nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                    </tr>
+                    <tr>
+                        <td class="cell-text"></td>
+                            <td class="cell-text"><nobr>DID21424089</nobr></td>
+                            <td class="cell-text"><nobr>OID23796684</nobr></td>
+                            <td class="cell-text"><nobr>Sell</nobr></td>
+                            <td class="cell-text"><nobr>EURUSD_SB</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:15:44.575</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:16:17.314</nobr></td>
+                            <td class="cell-text"><nobr>1.07281</nobr></td>
+                            <td class="cell-text"><nobr>1.07276</nobr></td>
+                            <td class="cell-text"><nobr>Buy</nobr></td>
+                            <td class="cell-text"><nobr>1.00 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>-0.50</nobr></td>
+                            <td class="cell-text"><nobr>-0.50</nobr></td>
+                            <td class="cell-text"><nobr>-0.53</nobr></td>
+                            <td class="cell-text"><nobr>-0.53</nobr></td>
+                            <td class="cell-text"><nobr>50 023.39</nobr></td>
+                            <td class="cell-text"><nobr>-0.5</nobr></td>
+                            <td class="cell-text"><nobr>1.00 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>cTrader</nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                    </tr>
+                    <tr>
+                        <td class="cell-text"></td>
+                            <td class="cell-text"><nobr>DID21424091</nobr></td>
+                            <td class="cell-text"><nobr>OID23796686</nobr></td>
+                            <td class="cell-text"><nobr>Buy</nobr></td>
+                            <td class="cell-text"><nobr>EURUSD_SB</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:15:50.160</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:16:18.329</nobr></td>
+                            <td class="cell-text"><nobr>1.07277</nobr></td>
+                            <td class="cell-text"><nobr>1.07283</nobr></td>
+                            <td class="cell-text"><nobr>Sell</nobr></td>
+                            <td class="cell-text"><nobr>1.00 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>-0.60</nobr></td>
+                            <td class="cell-text"><nobr>-0.60</nobr></td>
+                            <td class="cell-text"><nobr>-0.64</nobr></td>
+                            <td class="cell-text"><nobr>-0.64</nobr></td>
+                            <td class="cell-text"><nobr>50 022.79</nobr></td>
+                            <td class="cell-text"><nobr>-0.6</nobr></td>
+                            <td class="cell-text"><nobr>1.00 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>cTrader</nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                    </tr>
+                    <tr style="background: #000;">
+                        <td class="totals-title">Totals</td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell">3.52</td>
+                            <td class="total-cell">0</td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell">22.79</td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell">24.46</td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                    </tr>          
+            </table>
+        </td>
+    </tr>     
+    <tr align="left">
+        <td>
+            <table class="dataTable" style="width: 100%; margin-top: 30px;"
+                   cellspacing="0"
+                   cellpadding="3">
+                <tr>
+                    <td colspan="13"
+                        class="title-style"
+                        valign="top">
+                        <strong>Positions</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="cell-header invisible-totals">Totals</td>
+                        <td class="cell-header"><strong>ID</strong></td>
+                        <td class="cell-header"><strong>Symbol</strong></td>
+                        <td class="cell-header"><strong>Quantity</strong></td>
+                        <td class="cell-header"><strong>Direction</strong></td>
+                        <td class="cell-header"><strong>Entry Price</strong></td>
+                        <td class="cell-header"><strong>T/P</strong></td>
+                        <td class="cell-header"><strong>S/L</strong></td>
+                        <td class="cell-header"><strong>Commissions</strong></td>
+                        <td class="cell-header"><strong>Closing Commissions</strong></td>
+                        <td class="cell-header"><strong>P&L conversion fee rate</strong></td>
+                        <td class="cell-header"><strong>Created (UTC+0)</strong></td>
+                        <td class="cell-header"><strong>Last Modified (UTC+0)</strong></td>
+                        <td class="cell-header"><strong>Margin</strong></td>
+                        <td class="cell-header"><strong>Swap</strong></td>
+                        <td class="cell-header"><strong>Channel</strong></td>
+                        <td class="cell-header"><strong>Label</strong></td>
+                        <td class="cell-header"><strong>Comment</strong></td>
+                        <td class="cell-header"><strong>Pips</strong></td>
+                        <td class="cell-header"><strong>Gross GBP</strong></td>
+                        <td class="cell-header"><strong>Net GBP</strong></td>
+                        <td class="cell-header"><strong>Gross USD</strong></td>
+                        <td class="cell-header"><strong>Net USD</strong></td>
+                </tr>
+
+                    <tr>
+                        <td class="cell-text"></td>
+                            <td class="cell-text"><nobr>PID12534215</nobr></td>
+                            <td class="cell-text"><nobr>CADJPY_SB</nobr></td>
+                            <td class="cell-text"><nobr>0.10 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>Sell</nobr></td>
+                            <td class="cell-text"><nobr>109.67500</nobr></td>
+                            <td class="cell-text"><nobr>-</nobr></td>
+                            <td class="cell-text"><nobr>-</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>14/03/2024 14:09:06</nobr></td>
+                            <td class="cell-text"><nobr>01/05/2024 21:00:00</nobr></td>
+                            <td class="cell-text"><nobr>36.56</nobr></td>
+                            <td class="cell-text"><nobr>-8.88</nobr></td>
+                            <td class="cell-text"><nobr>openapi_Tradingview</nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr>-235.5</nobr></td>
+                            <td class="cell-text"><nobr>-23.55</nobr></td>
+                            <td class="cell-text"><nobr>-32.43</nobr></td>
+                            <td class="cell-text"><nobr>-29.52</nobr></td>
+                            <td class="cell-text"><nobr>-40.65</nobr></td>
+                    </tr>
+                    <tr>
+                        <td class="cell-text"></td>
+                            <td class="cell-text"><nobr>PID12534247</nobr></td>
+                            <td class="cell-text"><nobr>CADJPY_SB</nobr></td>
+                            <td class="cell-text"><nobr>1.00 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>Sell</nobr></td>
+                            <td class="cell-text"><nobr>109.67100</nobr></td>
+                            <td class="cell-text"><nobr>-</nobr></td>
+                            <td class="cell-text"><nobr>-</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>14/03/2024 14:10:52</nobr></td>
+                            <td class="cell-text"><nobr>01/05/2024 21:00:00</nobr></td>
+                            <td class="cell-text"><nobr>365.57</nobr></td>
+                            <td class="cell-text"><nobr>-88.52</nobr></td>
+                            <td class="cell-text"><nobr>openapi_Tradingview</nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr>-235.9</nobr></td>
+                            <td class="cell-text"><nobr>-235.90</nobr></td>
+                            <td class="cell-text"><nobr>-324.42</nobr></td>
+                            <td class="cell-text"><nobr>-295.72</nobr></td>
+                            <td class="cell-text"><nobr>-406.69</nobr></td>
+                    </tr>
+                    <tr>
+                        <td class="cell-text"></td>
+                            <td class="cell-text"><nobr>PID13649897</nobr></td>
+                            <td class="cell-text"><nobr>AUDNZD_SB</nobr></td>
+                            <td class="cell-text"><nobr>1.00 Stakes</nobr></td>
+                            <td class="cell-text"><nobr>Sell</nobr></td>
+                            <td class="cell-text"><nobr>1.10162</nobr></td>
+                            <td class="cell-text"><nobr>-</nobr></td>
+                            <td class="cell-text"><nobr>-</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:16:13</nobr></td>
+                            <td class="cell-text"><nobr>02/05/2024 19:16:13</nobr></td>
+                            <td class="cell-text"><nobr>550.81</nobr></td>
+                            <td class="cell-text"><nobr>0.00</nobr></td>
+                            <td class="cell-text"><nobr>cTrader</nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr></nobr></td>
+                            <td class="cell-text"><nobr>-1.3</nobr></td>
+                            <td class="cell-text"><nobr>-1.30</nobr></td>
+                            <td class="cell-text"><nobr>-1.30</nobr></td>
+                            <td class="cell-text"><nobr>-1.62</nobr></td>
+                            <td class="cell-text"><nobr>-1.62</nobr></td>
+                    </tr>
+                    <tr style="background: #000;">
+                        <td class="totals-title">Totals</td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell">0</td>
+                            <td class="total-cell">0</td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell">-97.40</td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell">-358.15</td>
+                            <td class="total-cell"></td>
+                            <td class="total-cell">-448.98</td>
+                    </tr>          
+            </table>
+        </td>
+    </tr>     
+    <tr align="left">
+        <td>
+            <table class="dataTable" style="width: 100%; margin-top: 30px;"
+                   cellspacing="0"
+                   cellpadding="3">
+                <tr>
+                    <td colspan="13"
+                        class="title-style"
+                        valign="top">
+                        <strong>Orders</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="cell-header invisible-totals">Totals</td>
+                        <td class="cell-header"><strong>Direction</strong></td>
+                        <td class="cell-header"><strong>Order Type</strong></td>
+                        <td class="cell-header"><strong>Submitted Time (UTC+0)</strong></td>
+                        <td class="cell-header"><strong>Symbol</strong></td>
+                        <td class="cell-header"><strong>Current Quantity</strong></td>
+                        <td class="cell-header"><strong>Submitted Price</strong></td>
+                        <td class="cell-header"><strong>Distance</strong></td>
+                        <td class="cell-header"><strong>T/P</strong></td>
+                        <td class="cell-header"><strong>S/L</strong></td>
+                </tr>
+                    <tr>
+                        <td colspan="10" align="center">- No Orders -</td>
+                    </tr>
+
+            </table>
+        </td>
+    </tr>     
+    <tr align="left">
+        <td>
+            <table class="dataTable" style="width: 100%; margin-top: 30px;"
+                   cellspacing="0"
+                   cellpadding="3">
+                <tr>
+                    <td colspan="13"
+                        class="title-style"
+                        valign="top">
+                        <strong>Transactions</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="cell-header invisible-totals">Totals</td>
+                        <td class="cell-header"><strong>ID</strong></td>
+                        <td class="cell-header"><strong>Time (UTC+0)</strong></td>
+                        <td class="cell-header"><strong>Type</strong></td>
+                        <td class="cell-header"><strong>Amount GBP</strong></td>
+                        <td class="cell-header"><strong>Note</strong></td>
+                </tr>
+
+                    <tr>
+                        <td class="cell-text"></td>
+                            <td class="cell-text"><nobr>TID7411254</nobr></td>
+                            <td class="cell-text"><nobr>14/03/2024 14:08:14</nobr></td>
+                            <td class="cell-text"><nobr>Deposit</nobr></td>
+                            <td class="cell-text"><nobr>50 000.00</nobr></td>
+                            <td class="cell-text"><nobr>Demo Deposit</nobr></td>
+                    </tr>
+            </table>
+        </td>
+    </tr>     
+
+<!--Summary-->
+<tr align="left">
+    <td>
+        <table class="summaryTable" style="width: 100%; margin-top: 30px;"
+        cellspacing="0"
+        cellpadding="3">
+        <tr>
+            <td colspan="13"
+            class="title-style"
+            valign="top"><strong>Summary</strong></td>
+        </tr>
+        <tr>
+          <td><nobr>Deposit</nobr></td>
+          <td class="summary-style"><nobr>50 000.00</nobr></td>
+          <td style="width:10%"></td>
+          <td><nobr>Equity</nobr></td>
+          <td class="summary-style"><nobr>49 664.64</nobr></td>
+          <td style="width:10%"></td>
+          <td>Margin</td>
+          <td class="summary-style"><nobr>952.94</nobr></td>
+          <td style="width:10%"></td>
+          <td>Balance</td>
+      </tr>
+      <tr>
+          <td><nobr>Withdrawal</nobr></td>
+          <td class="summary-style"><nobr>0.00</nobr></td>
+          <td style="width:10%"></td>
+          <td><nobr>Unrealised P&L</nobr></td>
+          <td class="summary-style"><nobr>-358.15</nobr></td>
+          <td style="width:10%"></td>
+          <td><nobr>Free Margin</nobr></td>
+          <td class="summary-style"><nobr>48 711.70</nobr></td>
+          <td style="width:10%"></td>
+          <td class="balance-style" rowspan="2"><nobr>50 022.79</nobr></td>
+      </tr>
+      <tr>
+          <td><nobr>Total Net</nobr></td>
+          <td class="summary-style"><nobr>50 000.00</nobr></td>
+          <td style="width:10%"></td>
+          <td><nobr>Realised P&L</nobr></td>
+          <td class="summary-style"><nobr>22.79</nobr></td>
+          <td style="width:10%"></td>
+          <td><nobr>Margin Level</nobr></td>
+          <td class="summary-style"><nobr>5 211.73%</nobr></td>
+      </tr>     
+  </table>
+</td>
+</tr>           
+</table>
+</body>
+</html>

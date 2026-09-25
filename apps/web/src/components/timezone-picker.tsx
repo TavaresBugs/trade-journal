@@ -5,7 +5,6 @@ import * as Popover from "@radix-ui/react-popover";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { timeZoneLabel, timeZoneOptions } from "@/lib/timezone-options";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function TimeZonePicker({
@@ -15,6 +14,7 @@ export function TimeZonePicker({
   onValueChange,
   disabled = false,
   describedBy,
+  className,
 }: {
   id: string;
   label: string;
@@ -22,6 +22,7 @@ export function TimeZonePicker({
   onValueChange: (zone: string) => void;
   disabled?: boolean;
   describedBy?: string;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -55,18 +56,20 @@ export function TimeZonePicker({
       }}
     >
       <Popover.Trigger asChild>
-        <Button
+        <button
           id={id}
           type="button"
-          variant="outline"
-          className="w-full min-w-0 justify-between font-normal"
           disabled={disabled}
           aria-label={`${label}: ${value || "Choose a timezone"}`}
           aria-describedby={describedBy}
+          className={cn(
+            "flex h-9 w-full min-w-0 items-center justify-between gap-2 whitespace-nowrap rounded-lg border border-input bg-background/80 px-3 py-2 text-xs font-medium text-foreground shadow-xs transition-[border-color,box-shadow,background-color] hover:bg-accent/40 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25 focus-visible:border-ring data-[state=open]:border-ring/60 disabled:cursor-not-allowed disabled:opacity-50 select-none cursor-pointer [&>span]:truncate motion-reduce:transition-none",
+            className,
+          )}
         >
           <span className="truncate">{value ? timeZoneLabel(value) : "Choose a timezone"}</span>
-          <ChevronsUpDown className="shrink-0 text-muted-foreground" aria-hidden="true" />
-        </Button>
+          <ChevronsUpDown className="size-3.5 shrink-0 opacity-50" aria-hidden="true" />
+        </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content

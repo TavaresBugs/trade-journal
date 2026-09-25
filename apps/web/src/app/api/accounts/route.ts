@@ -5,6 +5,7 @@ import { encryptJson } from "@/server/crypto";
 import { newId, nowIso } from "@/server/ids";
 import { syncAccount } from "@/server/sync";
 import { getBrokerTimeZone } from "@/lib/brokers/broker-catalog";
+import { isTimeZone } from "@/lib/timezone";
 
 export const GET = handler((request: Request) => {
   if (new URL(request.url).searchParams.get("summary") === "1") {
@@ -40,6 +41,10 @@ export const GET = handler((request: Request) => {
         sql<number>`coalesce(sum(case when ${trades.status} = 'loss' then 1 else 0 end), 0)`.as(
           "loss_count",
         ),
+      breakevenCount:
+        sql<number>`coalesce(sum(case when ${trades.status} = 'breakeven' then 1 else 0 end), 0)`.as(
+          "breakeven_count",
+        ),
     })
     .from(trades)
     .groupBy(trades.accountId)
@@ -54,7 +59,8 @@ export const GET = handler((request: Request) => {
       const netPnl = Number(stats?.netPnl ?? 0);
       const winCount = Number(stats?.winCount ?? 0);
       const lossCount = Number(stats?.lossCount ?? 0);
-      const finishedCount = winCount + lossCount;
+      const breakevenCount = Number(stats?.breakevenCount ?? 0);
+      const finishedCount = winCount + lossCount + breakevenCount;
       const winRate = finishedCount > 0 ? (winCount / finishedCount) * 100 : 0;
       const initialBalance = Number(safe.initialBalance ?? 0);
       const currentBalance = initialBalance + netPnl;
@@ -96,6 +102,12 @@ export const POST = handler(async (request: Request) => {
   if (!body.name || !body.kind) return bad("name and kind are required");
   if (body.kind === "sync" && (!body.broker || !body.credentials)) {
     return bad("sync accounts need a broker and credentials");
+  }
+  if (body.timeZone && !isTimeZone(body.timeZone)) {
+    return bad("Invalid IANA timezone.");
+  }
+  if (body.profitCalcMethod && !["fifo", "lifo", "wavg"].includes(body.profitCalcMethod)) {
+    return bad("Invalid profit calculation method.");
   }
 
   const id = newId();

@@ -25,8 +25,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BrokerIcon } from "@/components/ui/broker-icon";
+import { CurrencyBadge } from "@/components/ui/currency-badge";
 import { TimeZonePicker } from "@/components/timezone-picker";
-import { BROKER_CATALOG, getBrokerInfo } from "@/lib/brokers/broker-catalog";
+import { BROKER_CATALOG, getBrokerInfo, SUPPORTED_PLATFORMS } from "@/lib/brokers/broker-catalog";
+import { CURRENCY_LIST, getCurrencyInfo } from "@/lib/currencies";
 import { formatZoneOffset } from "@/lib/timezone";
 import { postJson } from "@/lib/use-api";
 import { cn } from "@/lib/utils";
@@ -359,86 +361,24 @@ export function EditAccountDialog({
                   )}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-64">
                 <SelectItem value="auto" className="cursor-pointer text-xs">
                   Auto-detect from statement
                 </SelectItem>
-                <SelectItem value="metatrader5" className="cursor-pointer text-xs">
-                  <div className="flex items-center gap-2">
-                    <BrokerIcon
-                      icon="metatrader5.png"
-                      name="MetaTrader 5"
-                      className="size-4 rounded-sm"
-                    />
-                    <span>MetaTrader 5</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="metatrader4" className="cursor-pointer text-xs">
-                  <div className="flex items-center gap-2">
-                    <BrokerIcon
-                      icon="metatrader5.png"
-                      name="MetaTrader 4"
-                      className="size-4 rounded-sm"
-                    />
-                    <span>MetaTrader 4</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="tradovate" className="cursor-pointer text-xs">
-                  <div className="flex items-center gap-2">
-                    <BrokerIcon
-                      icon="tradovate.svg"
-                      name="Tradovate"
-                      className="size-4 rounded-sm"
-                    />
-                    <span>Tradovate</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="ninjatrader" className="cursor-pointer text-xs">
-                  <div className="flex items-center gap-2">
-                    <BrokerIcon
-                      icon="ninjatrader.svg"
-                      name="NinjaTrader 8"
-                      className="size-4 rounded-sm"
-                    />
-                    <span>NinjaTrader 8</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="topstepx" className="cursor-pointer text-xs">
-                  <div className="flex items-center gap-2">
-                    <BrokerIcon
-                      icon="tradovate.svg"
-                      name="TopstepX"
-                      className="size-4 rounded-sm"
-                    />
-                    <span>TopstepX</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="tradesea" className="cursor-pointer text-xs">
-                  <div className="flex items-center gap-2">
-                    <BrokerIcon icon="tradesea.png" name="TradeSea" className="size-4 rounded-sm" />
-                    <span>TradeSea</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="ibkr" className="cursor-pointer text-xs">
-                  <div className="flex items-center gap-2">
-                    <BrokerIcon
-                      icon="ibkr.svg"
-                      name="Interactive Brokers"
-                      className="size-4 rounded-sm"
-                    />
-                    <span>Interactive Brokers</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="thinkorswim" className="cursor-pointer text-xs">
-                  <div className="flex items-center gap-2">
-                    <BrokerIcon
-                      icon="schwab.png"
-                      name="thinkorswim"
-                      className="size-4 rounded-sm"
-                    />
-                    <span>thinkorswim</span>
-                  </div>
-                </SelectItem>
+                {SUPPORTED_PLATFORMS.map((plat) => (
+                  <SelectItem key={plat.value} value={plat.value} className="cursor-pointer text-xs">
+                    <div className="flex items-center gap-2">
+                      {plat.icon && (
+                        <BrokerIcon
+                          icon={plat.icon}
+                          name={plat.label}
+                          className="size-4 rounded-sm object-contain"
+                        />
+                      )}
+                      <span>{plat.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -489,7 +429,7 @@ export function EditAccountDialog({
           <div className="grid grid-cols-3 gap-2.5">
             <div className="space-y-1.5">
               <Label htmlFor="edit-account-balance" className="text-xs font-medium text-foreground">
-                Initial Balance
+                Initial Balance ({getCurrencyInfo(currency).symbol})
               </Label>
               <Input
                 id="edit-account-balance"
@@ -498,12 +438,12 @@ export function EditAccountDialog({
                 value={initialBalance}
                 onChange={(e) => setInitialBalance(e.target.value)}
                 placeholder="50000"
-                className="h-9 text-xs font-mono"
+                className="h-9 text-xs font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="edit-account-max-dd" className="text-xs font-medium text-foreground">
-                Max Drawdown
+                Max Drawdown ({getCurrencyInfo(currency).symbol})
               </Label>
               <Input
                 id="edit-account-max-dd"
@@ -512,7 +452,7 @@ export function EditAccountDialog({
                 value={maxDrawdown}
                 onChange={(e) => setMaxDrawdown(e.target.value)}
                 placeholder="2000"
-                className="h-9 text-xs font-mono"
+                className="h-9 text-xs font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
             <div className="space-y-1.5">
@@ -524,27 +464,16 @@ export function EditAccountDialog({
               </Label>
               <Select value={currency} onValueChange={setCurrency}>
                 <SelectTrigger id="edit-account-currency" className="h-9 text-xs">
-                  <SelectValue />
+                  <SelectValue placeholder="Currency">
+                    <CurrencyBadge code={currency} />
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD" className="text-xs">
-                    USD ($)
-                  </SelectItem>
-                  <SelectItem value="EUR" className="text-xs">
-                    EUR (€)
-                  </SelectItem>
-                  <SelectItem value="GBP" className="text-xs">
-                    GBP (£)
-                  </SelectItem>
-                  <SelectItem value="BRL" className="text-xs">
-                    BRL (R$)
-                  </SelectItem>
-                  <SelectItem value="CAD" className="text-xs">
-                    CAD ($)
-                  </SelectItem>
-                  <SelectItem value="AUD" className="text-xs">
-                    AUD ($)
-                  </SelectItem>
+                <SelectContent className="max-h-60">
+                  {CURRENCY_LIST.map((c) => (
+                    <SelectItem key={c.code} value={c.code} className="text-xs">
+                      <CurrencyBadge code={c.code} showName />
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

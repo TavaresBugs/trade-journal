@@ -82,10 +82,10 @@ export const toRecords = (rows: string[][]): Row[] => {
   });
 };
 
-/** First non-empty value among alias keys (aliases already in headerKey form). */
+/** First non-empty value among alias keys (supports both raw and headerKey aliases). */
 export const pick = (row: Row, aliases: string[]): string | undefined => {
   for (const alias of aliases) {
-    const value = row[alias];
+    const value = row[alias] ?? row[headerKey(alias)];
     if (value !== undefined && value !== "") return value;
   }
   return undefined;
@@ -93,5 +93,5 @@ export const pick = (row: Row, aliases: string[]): string | undefined => {
 
 export const hasHeaders = (headers: string[], required: string[][]): boolean => {
   const keys = new Set(headers.map(headerKey));
-  return required.every((aliases) => aliases.some((alias) => keys.has(alias)));
+  return required.every((aliases) => aliases.some((alias) => keys.has(headerKey(alias))));
 };
