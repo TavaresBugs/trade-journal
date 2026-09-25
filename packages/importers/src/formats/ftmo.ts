@@ -20,7 +20,12 @@ export const ftmo: ImportFormat = {
   parse: (content: string, options: ImportOptions): ParsedImport => {
     const rows = parseCsv(content);
     if (rows.length < 2) {
-      return { format: "ftmo", executions: [], skippedRows: 0, warnings: ["File contains no data rows"] };
+      return {
+        format: "ftmo",
+        executions: [],
+        skippedRows: 0,
+        warnings: ["File contains no data rows"],
+      };
     }
 
     const headerRow = rows[0]!.map((h) => h.trim().toLowerCase());
@@ -29,9 +34,7 @@ export const ftmo: ImportFormat = {
     const typeIdx = headerRow.indexOf("type");
     const volumeIdx = headerRow.indexOf("volume");
     const symbolIdx = headerRow.indexOf("symbol");
-    const priceIndices = headerRow
-      .map((h, i) => (h === "price" ? i : -1))
-      .filter((i) => i !== -1);
+    const priceIndices = headerRow.map((h, i) => (h === "price" ? i : -1)).filter((i) => i !== -1);
     const openPriceIdx = priceIndices[0] ?? -1;
     const closePriceIdx = priceIndices[1] ?? priceIndices[0] ?? -1;
     const closeIdx = headerRow.indexOf("close");
@@ -87,12 +90,11 @@ export const ftmo: ImportFormat = {
       const entrySide = isLong ? "buy" : "sell";
       const exitSide = isLong ? "sell" : "buy";
 
-      const assetClass =
-        /^(BTC|ETH|SOL|XRP|DOGE)/i.test(symbol)
-          ? "crypto"
-          : /^(US30|US100|US500|GER40|UK100|NAS100|SPX500|ES|NQ)/i.test(symbol)
-            ? "futures"
-            : "forex";
+      const assetClass = /^(BTC|ETH|SOL|XRP|DOGE)/i.test(symbol)
+        ? "crypto"
+        : /^(US30|US100|US500|GER40|UK100|NAS100|SPX500|ES|NQ)/i.test(symbol)
+          ? "futures"
+          : "forex";
 
       const occurrenceKey = `${openedAt}:${symbol}:${entrySide}:${quantity}:${entryPrice}`;
       const occ = occurrences.get(occurrenceKey) ?? 0;

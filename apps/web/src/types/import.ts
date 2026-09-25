@@ -87,5 +87,3 @@ export interface PreviewResponse {
   accountConflict?: StatementAccountConflict;
   compatibility?: StatementCompatibility;
 }
-
-

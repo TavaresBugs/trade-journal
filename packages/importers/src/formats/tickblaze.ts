@@ -32,12 +32,23 @@ export const tickblaze: ImportFormat = {
         continue;
       }
 
-      const quantity = Math.abs(parseQuantity(pick(row, ["qty. filled", "qty filled", "quantity"])));
+      const quantity = Math.abs(
+        parseQuantity(pick(row, ["qty. filled", "qty filled", "quantity"])),
+      );
       const price = parseMoney(pick(row, ["price"]));
-      const timeRaw = pick(row, ["update date/time (e)", "update date/time (l)", "update date/time", "time"]) ?? "";
+      const timeRaw =
+        pick(row, ["update date/time (e)", "update date/time (l)", "update date/time", "time"]) ??
+        "";
       const executedAt = parseTimestamp(timeRaw, options.timeZone, options.dateOrder);
 
-      if (!symbol || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (
+        !symbol ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         skippedRows++;
         continue;
       }

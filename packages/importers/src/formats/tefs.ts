@@ -8,8 +8,12 @@ export const tefs: ImportFormat = {
   label: "TEFS Evolution (trades export)",
   detect: (headers, content) => {
     return (
-      (headers.includes("Date/Time") && headers.includes("Trading exchange") && headers.includes("Gross P/L")) ||
-      (content.includes("Date/Time;") && content.includes("Gross P/L;") && content.includes("Execution fee;"))
+      (headers.includes("Date/Time") &&
+        headers.includes("Trading exchange") &&
+        headers.includes("Gross P/L")) ||
+      (content.includes("Date/Time;") &&
+        content.includes("Gross P/L;") &&
+        content.includes("Execution fee;"))
     );
   },
   parse: (content: string, options: ImportOptions): ParsedImport => {
@@ -51,7 +55,14 @@ export const tefs: ImportFormat = {
       const timeRaw = (dateIdx !== -1 ? row[dateIdx] : "")?.trim();
       const executedAt = parseTimestamp(timeRaw, options.timeZone, options.dateOrder ?? "DMY");
 
-      if (!symbol || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (
+        !symbol ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         skippedRows++;
         continue;
       }
@@ -71,7 +82,8 @@ export const tefs: ImportFormat = {
         importMetadata: {
           id,
           order: executions.length,
-          reportedGrossPnl: Number.isFinite(grossPnlRaw) && grossPnlRaw !== 0 ? grossPnlRaw : undefined,
+          reportedGrossPnl:
+            Number.isFinite(grossPnlRaw) && grossPnlRaw !== 0 ? grossPnlRaw : undefined,
           preserveFee: fee > 0,
         },
       });

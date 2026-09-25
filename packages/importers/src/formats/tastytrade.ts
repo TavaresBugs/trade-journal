@@ -55,7 +55,13 @@ export const tastytrade: ImportFormat = {
         price = Math.abs(valueRaw) / (quantity * multiplier);
       }
 
-      if (!symbol || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price)) {
+      if (
+        !symbol ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price)
+      ) {
         skippedRows++;
         continue;
       }
@@ -71,7 +77,9 @@ export const tastytrade: ImportFormat = {
       else if (instType.includes("crypto")) assetClass = "crypto";
 
       const orderNum = pick(row, ["order #", "order id", "orderid"]) ?? "";
-      const id = orderNum ? `tastytrade:${orderNum}:${i}` : `tastytrade:${executedAt}:${symbol}:${i}`;
+      const id = orderNum
+        ? `tastytrade:${orderNum}:${i}`
+        : `tastytrade:${executedAt}:${symbol}:${i}`;
 
       executions.push({
         symbol,

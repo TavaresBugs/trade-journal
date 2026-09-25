@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS executions (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS executions_account_hash ON executions (account_id, content_hash);
 CREATE INDEX IF NOT EXISTS executions_account_symbol ON executions (account_id, symbol);
+CREATE INDEX IF NOT EXISTS executions_account_executed ON executions (account_id, executed_at);
 
 CREATE TABLE IF NOT EXISTS trades (
   key TEXT PRIMARY KEY,
@@ -77,6 +78,7 @@ CREATE INDEX IF NOT EXISTS trades_account_closed ON trades (account_id, closed_a
 CREATE INDEX IF NOT EXISTS trades_symbol ON trades (symbol);
 CREATE INDEX IF NOT EXISTS trades_opened ON trades (opened_at);
 CREATE INDEX IF NOT EXISTS trades_account_opened ON trades (account_id, opened_at);
+CREATE INDEX IF NOT EXISTS trades_account_symbol_opened ON trades (account_id, symbol, opened_at);
 
 CREATE TABLE IF NOT EXISTS market_csv_datasets (
  id TEXT PRIMARY KEY, name TEXT NOT NULL, symbol TEXT NOT NULL,

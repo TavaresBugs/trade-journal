@@ -8,8 +8,11 @@ export const sierrachart: ImportFormat = {
   label: "Sierra Chart (Activity/Fills export)",
   detect: (headers, content) => {
     return (
-      (headers.includes("ActivityType") && headers.includes("Symbol") && headers.includes("BuySell")) ||
-      content.slice(0, 500).includes("InternalOrderID") && content.slice(0, 500).includes("FillPrice")
+      (headers.includes("ActivityType") &&
+        headers.includes("Symbol") &&
+        headers.includes("BuySell")) ||
+      (content.slice(0, 500).includes("InternalOrderID") &&
+        content.slice(0, 500).includes("FillPrice"))
     );
   },
   parse: (content: string, options: ImportOptions): ParsedImport => {
@@ -28,7 +31,9 @@ export const sierrachart: ImportFormat = {
     const filledQtyIdx = header.indexOf("filledquantity");
     const qtyIdx = filledQtyIdx !== -1 ? filledQtyIdx : header.indexOf("quantity");
     const acctIdx = header.indexOf("tradeaccount");
-    const idIdx = header.findIndex((h) => h === "fillexecutionserviceid" || h === "internalorderid" || h === "serviceorderid");
+    const idIdx = header.findIndex(
+      (h) => h === "fillexecutionserviceid" || h === "internalorderid" || h === "serviceorderid",
+    );
 
     const executions: ImportedExecution[] = [];
     const accounts = new Set<string>();
@@ -59,17 +64,27 @@ export const sierrachart: ImportFormat = {
       const price = parseMoney(priceIdx !== -1 ? row[priceIdx] : "");
       const quantity = parseQuantity(qtyIdx !== -1 ? row[qtyIdx] : "");
       const timeRaw = (dateIdx !== -1 ? row[dateIdx] : "")?.trim();
-      const normalizedTime = timeRaw ? timeRaw.replace(/\s+/g, " ").replace(/\.(\d{3})\d+/, ".$1") : "";
+      const normalizedTime = timeRaw
+        ? timeRaw.replace(/\s+/g, " ").replace(/\.(\d{3})\d+/, ".$1")
+        : "";
       const executedAt = parseTimestamp(normalizedTime, options.timeZone, options.dateOrder);
 
-      if (!symbol || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price)) {
+      if (
+        !symbol ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price)
+      ) {
         skippedRows++;
         continue;
       }
 
       const rawId = idIdx !== -1 ? row[idIdx]?.trim() : "";
       const acctPrefix = acct ? `${acct}:` : "";
-      const id = rawId ? `sierrachart:${acctPrefix}${rawId}` : `sierrachart:${acctPrefix}${executedAt}:${symbol}:${i}`;
+      const id = rawId
+        ? `sierrachart:${acctPrefix}${rawId}`
+        : `sierrachart:${acctPrefix}${executedAt}:${symbol}:${i}`;
 
       executions.push({
         symbol,

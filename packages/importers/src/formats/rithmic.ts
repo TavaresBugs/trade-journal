@@ -10,7 +10,9 @@ export const rithmic: ImportFormat = {
     return (
       content.includes("Completed Orders") ||
       (content.includes("Working Orders") && content.includes("Qty Filled")) ||
-      (headers.includes("Account") && headers.includes("Qty Filled") && headers.includes("Order Number"))
+      (headers.includes("Account") &&
+        headers.includes("Qty Filled") &&
+        headers.includes("Order Number"))
     );
   },
   parse: (content: string, options: ImportOptions): ParsedImport => {
@@ -23,21 +25,35 @@ export const rithmic: ImportFormat = {
 
     const rows = parseCsv(targetText);
     if (rows.length < 2) {
-      return { format: "rithmic", executions: [], skippedRows: 0, warnings: ["No data rows found"] };
+      return {
+        format: "rithmic",
+        executions: [],
+        skippedRows: 0,
+        warnings: ["No data rows found"],
+      };
     }
 
     // Find the header row
     let headerIdx = -1;
     for (let i = 0; i < Math.min(rows.length, 10); i++) {
       const r = rows[i]!.map((c) => c.trim().toLowerCase());
-      if (r.includes("account") && (r.includes("buy/sell") || r.includes("side")) && r.includes("status")) {
+      if (
+        r.includes("account") &&
+        (r.includes("buy/sell") || r.includes("side")) &&
+        r.includes("status")
+      ) {
         headerIdx = i;
         break;
       }
     }
 
     if (headerIdx === -1) {
-      return { format: "rithmic", executions: [], skippedRows: rows.length, warnings: ["Headers not recognized"] };
+      return {
+        format: "rithmic",
+        executions: [],
+        skippedRows: rows.length,
+        warnings: ["Headers not recognized"],
+      };
     }
 
     const header = rows[headerIdx]!.map((c) => c.trim().toLowerCase());
@@ -47,9 +63,13 @@ export const rithmic: ImportFormat = {
     const symbolIdx = header.indexOf("symbol");
     const priceIdx = header.findIndex((h) => h.includes("avg fill price") || h === "price");
     const qtyIdx = header.findIndex((h) => h === "qty filled" || h === "quantity" || h === "qty");
-    const orderIdx = header.findIndex((h) => h === "order number" || h === "order id" || h === "orderid");
+    const orderIdx = header.findIndex(
+      (h) => h === "order number" || h === "order id" || h === "orderid",
+    );
     const timeIdx = header.findIndex((h) => h.includes("update time") || h.includes("time"));
-    const commIdx = header.findIndex((h) => h.includes("commission fill rate") || h === "commission");
+    const commIdx = header.findIndex(
+      (h) => h.includes("commission fill rate") || h === "commission",
+    );
 
     const executions: ImportedExecution[] = [];
     const accounts = new Set<string>();
@@ -84,9 +104,19 @@ export const rithmic: ImportFormat = {
       const price = parseMoney(priceIdx !== -1 ? row[priceIdx] : "");
       const quantity = parseQuantity(qtyIdx !== -1 ? row[qtyIdx] : "");
       const timeRaw = (timeIdx !== -1 ? row[timeIdx] : "")?.trim();
-      const executedAt = parseTimestamp(timeRaw, options.timeZone ?? "America/New_York", options.dateOrder);
+      const executedAt = parseTimestamp(
+        timeRaw,
+        options.timeZone ?? "America/New_York",
+        options.dateOrder,
+      );
 
-      if (!symbol || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price)) {
+      if (
+        !symbol ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price)
+      ) {
         skippedRows++;
         continue;
       }

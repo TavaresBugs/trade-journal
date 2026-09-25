@@ -417,9 +417,7 @@ function Trades() {
                 <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground block">
                   Trade win %
                 </span>
-                <span className="text-xl font-semibold tnum block">
-                  {fmtPercent(m.winRate)}
-                </span>
+                <span className="text-xl font-semibold tnum block">{fmtPercent(m.winRate)}</span>
               </div>
 
               <div className="bg-card p-4 space-y-1">

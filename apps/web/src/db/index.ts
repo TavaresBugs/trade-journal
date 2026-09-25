@@ -12,7 +12,6 @@ export const dataDir = (): string => {
   return join(process.cwd(), "data");
 };
 
-
 const globalForDb = globalThis as unknown as { __journalDb?: ReturnType<typeof createDb> };
 
 const createDb = () => {
@@ -22,7 +21,18 @@ const createDb = () => {
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("busy_timeout = 5000");
   sqlite.pragma("foreign_keys = ON");
+  sqlite.pragma("synchronous = NORMAL");
+  sqlite.pragma("cache_size = -64000"); // 64MB RAM page cache
+  sqlite.pragma("temp_store = MEMORY");
+  sqlite.pragma("mmap_size = 268435456"); // 256MB memory-mapped IO
   sqlite.exec(BOOTSTRAP_SQL);
+  // Additive upgrade: high-throughput indexes on executions and trades.
+  sqlite.exec(
+    "CREATE INDEX IF NOT EXISTS executions_account_executed ON executions (account_id, executed_at)",
+  );
+  sqlite.exec(
+    "CREATE INDEX IF NOT EXISTS trades_account_symbol_opened ON trades (account_id, symbol, opened_at)",
+  );
   // Additive upgrade: accounts table gains time_zone and platform columns.
   const accountColumns = sqlite.pragma("table_info(accounts)") as { name: string }[];
   if (!accountColumns.some((column) => column.name === "time_zone")) {

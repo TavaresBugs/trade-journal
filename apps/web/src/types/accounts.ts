@@ -16,6 +16,7 @@ export interface AccountRow {
   connected?: boolean;
   snapshot?: { equity: number; positions: unknown[] } | null;
   tradeCount?: number;
+  closedTrades?: number;
   winCount?: number;
   lossCount?: number;
   winRate?: number;

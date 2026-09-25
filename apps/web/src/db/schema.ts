@@ -106,6 +106,7 @@ export const executions = sqliteTable(
   (table) => [
     uniqueIndex("executions_account_hash").on(table.accountId, table.contentHash),
     index("executions_account_symbol").on(table.accountId, table.symbol),
+    index("executions_account_executed").on(table.accountId, table.executedAt),
   ],
 );
 
@@ -151,6 +152,7 @@ export const trades = sqliteTable(
     index("trades_symbol").on(table.symbol),
     index("trades_opened").on(table.openedAt),
     index("trades_account_opened").on(table.accountId, table.openedAt),
+    index("trades_account_symbol_opened").on(table.accountId, table.symbol, table.openedAt),
   ],
 );
 

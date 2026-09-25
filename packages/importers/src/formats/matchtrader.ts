@@ -74,15 +74,16 @@ export const matchtrader: ImportFormat = {
       const entrySide = isLong ? "buy" : "sell";
       const exitSide = isLong ? "sell" : "buy";
 
-      const assetClass =
-        /^(BTC|ETH|SOL|XRP|DOGE)/i.test(symbol)
-          ? "crypto"
-          : /^(US30|US100|US500|GER40|UK100|NAS100|SPX500|ES|NQ)/i.test(symbol)
-            ? "futures"
-            : "forex";
+      const assetClass = /^(BTC|ETH|SOL|XRP|DOGE)/i.test(symbol)
+        ? "crypto"
+        : /^(US30|US100|US500|GER40|UK100|NAS100|SPX500|ES|NQ)/i.test(symbol)
+          ? "futures"
+          : "forex";
 
       const acctPrefix = account ? `${account}:` : "";
-      const idPrefix = id ? `matchtrader:${acctPrefix}${id}` : `matchtrader:${acctPrefix}${executions.length}`;
+      const idPrefix = id
+        ? `matchtrader:${acctPrefix}${id}`
+        : `matchtrader:${acctPrefix}${executions.length}`;
 
       executions.push({
         symbol,

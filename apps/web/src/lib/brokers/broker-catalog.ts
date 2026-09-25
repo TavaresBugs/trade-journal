@@ -2,6 +2,13 @@ import type { BrokerCatalogItem } from "@/types/import";
 
 export type { BrokerCatalogItem };
 
+export type BrokerCategory =
+  "prop-firm" | "platform" | "futures" | "forex-cfd" | "stocks" | "crypto";
+
+export type DateFormat = "DMY" | "MDY" | "ISO";
+export type ConnectionType = "api" | "csv";
+export type BrokerStatus = "active" | "soon";
+
 export interface BrokerMetadata {
   id: string;
   name: string;
@@ -12,7 +19,8 @@ export interface BrokerMetadata {
   connectionType?: "api" | "csv";
   icon?: string;
   iconDark?: string;
-  category?: "prop-firm" | "platform" | "futures" | "forex-cfd" | "stocks" | "crypto";
+  invertInDark?: boolean;
+  category?: BrokerCategory;
   platform?: string;
   platformName?: string;
   platformIcon?: string;
@@ -26,6 +34,33 @@ export interface PlatformOption {
   label: string;
   icon?: string;
   iconDark?: string;
+}
+
+export interface BrokerDefinition {
+  name: string;
+  category: BrokerCategory;
+  icon: string;
+  iconDark?: string;
+  invertInDark?: boolean;
+  status?: BrokerStatus;
+  subtitle?: string;
+  connectionType?: ConnectionType;
+  defaultTimeZone?: string;
+  defaultFormat?: string;
+  dateFormat?: DateFormat;
+  tvBrokerId?: string;
+  platform?: string;
+  platformName?: string;
+  platformIcon?: string;
+  gateway?: string;
+  docUrl?: string;
+  officialNote?: string;
+  priority?: number;
+  popular?: boolean;
+  aliases?: readonly string[];
+  supportedPlatforms?: readonly string[];
+  accountPrefixes?: readonly string[];
+  namePatterns?: readonly string[];
 }
 
 export const PLATFORM_METADATA: Record<string, { name: string; icon?: string; gateway?: string }> =
@@ -297,793 +332,693 @@ export const SUPPORTED_PLATFORMS: PlatformOption[] = Object.entries(PLATFORM_MET
     icon: meta.icon,
   }));
 
-export const BROKER_CATALOG: BrokerCatalogItem[] = [
-  // Prop Firms (Evaluations & Funded Accounts)
-  {
-    id: "topstep",
+export const BROKERS_CONFIG = {
+  // === PROP FIRMS ===
+  topstep: {
     name: "Topstep",
     category: "prop-firm",
     connectionType: "api",
     icon: "topstep.png",
-    status: "active",
     subtitle: "ProjectX API Sync",
-    defaultTimeZone: "America/Chicago",
-    defaultFormat: "topstepx",
     dateFormat: "ISO",
     platform: "topstepx",
-    platformName: "TopstepX",
-    platformIcon: "topstep.png",
+    priority: 1,
+    popular: true,
+    supportedPlatforms: ["topstepx", "tradovate", "ninjatrader"],
+    accountPrefixes: ["TOP", "TS-"],
+    namePatterns: ["topstep"],
   },
-  {
-    id: "lucid",
+  lucid: {
     name: "Lucid Trading",
     category: "prop-firm",
-    connectionType: "csv",
     icon: "lucid.png",
-    status: "active",
     subtitle: "Futures Prop (CSV Import)",
-    defaultTimeZone: "America/Chicago",
-    defaultFormat: "tradovate",
-    dateFormat: "MDY",
     platform: "tradovate",
-    platformName: "Tradovate",
-    platformIcon: "tradovate.svg",
     officialNote: "Lucid accounts execute through Tradovate, NinjaTrader, or Rithmic.",
+    priority: 2,
+    popular: true,
+    supportedPlatforms: ["tradovate", "ninjatrader", "tradesea", "rithmic"],
+    accountPrefixes: ["LF"],
+    namePatterns: ["lucid"],
   },
-  {
-    id: "apex",
+  apex: {
     name: "Apex Trader Funding",
     category: "prop-firm",
-    connectionType: "csv",
     icon: "apex.png",
-    status: "active",
     subtitle: "Futures Prop (CSV Import)",
-    defaultTimeZone: "America/Chicago",
-    defaultFormat: "tradovate",
-    dateFormat: "MDY",
     platform: "tradovate",
-    platformName: "Tradovate",
-    platformIcon: "tradovate.svg",
+    priority: 3,
+    popular: true,
+    supportedPlatforms: ["tradovate", "wealthcharts", "ninjatrader", "rithmic"],
+    accountPrefixes: ["APEX"],
+    namePatterns: ["apex"],
   },
-  {
-    id: "ftmo",
+  ftmo: {
     name: "FTMO",
     category: "prop-firm",
-    connectionType: "csv",
     icon: "ftmo-light.svg",
     iconDark: "ftmo-dark.svg",
-    status: "active",
     subtitle: "Forex & CFD (MT5 Import)",
     defaultTimeZone: "Europe/Helsinki",
     defaultFormat: "metatrader",
     dateFormat: "ISO",
     platform: "metatrader5",
-    platformName: "MetaTrader 5",
-    platformIcon: "metatrader5.png",
+    priority: 4,
+    popular: true,
+    supportedPlatforms: ["metatrader5", "metatrader4", "ctrader"],
+    namePatterns: ["ftmo"],
   },
-  {
-    id: "bulenox",
+  bulenox: {
     name: "Bulenox",
     category: "prop-firm",
-    connectionType: "csv",
     icon: "bulenox.png",
-    status: "active",
     subtitle: "Futures Prop (CSV Import)",
-    defaultTimeZone: "America/Chicago",
-    defaultFormat: "tradovate",
-    dateFormat: "MDY",
     platform: "tradovate",
-    platformName: "Tradovate",
-    platformIcon: "tradovate.svg",
+    priority: 5,
+    supportedPlatforms: ["tradovate", "rithmic", "ninjatrader"],
+    accountPrefixes: ["BX-", "BULENOX"],
+    namePatterns: ["bulenox"],
   },
-  {
-    id: "tradeify",
+  tradeify: {
     name: "Tradeify",
     category: "prop-firm",
-    connectionType: "csv",
     icon: "tradeify.png",
-    status: "active",
     subtitle: "Futures Prop (CSV Import)",
-    defaultTimeZone: "America/Chicago",
-    defaultFormat: "tradovate",
-    dateFormat: "MDY",
     platform: "tradovate",
-    platformName: "Tradovate",
-    platformIcon: "tradovate.svg",
     officialNote: "Tradeify accounts execute through Tradovate, NinjaTrader, or ProjectX.",
+    priority: 6,
+    supportedPlatforms: ["tradovate", "ninjatrader"],
+    accountPrefixes: ["TDFY", "TRADEIFY"],
+    namePatterns: ["tradeify"],
   },
 
-  // Execution Platforms & Gateways
-  {
-    id: "tradovate",
+  // === EXECUTION PLATFORMS ===
+  tradovate: {
     name: "Tradovate",
     category: "platform",
-    connectionType: "csv",
     icon: "tradovate.svg",
-    status: "active",
     subtitle: "Orders & Positions CSV",
     defaultTimeZone: "America/Chicago",
-    defaultFormat: "tradovate",
-    dateFormat: "MDY",
     tvBrokerId: "TRADOVATE",
     platform: "tradovate",
-    platformName: "Tradovate",
-    platformIcon: "tradovate.svg",
+    priority: 7,
+    popular: true,
+    namePatterns: ["tradovate"],
   },
-  {
-    id: "ninjatrader",
+  ninjatrader: {
     name: "NinjaTrader 8",
     category: "platform",
-    connectionType: "csv",
     icon: "ninjatrader.svg",
-    status: "active",
     subtitle: "Trade Performance Executions CSV",
     defaultTimeZone: "America/Chicago",
-    defaultFormat: "ninjatrader",
-    dateFormat: "MDY",
     platform: "ninjatrader",
-    platformName: "NinjaTrader 8",
-    platformIcon: "ninjatrader.svg",
+    priority: 8,
+    popular: true,
+    namePatterns: ["ninjatrader"],
   },
-  {
-    id: "topstepx",
+  topstepx: {
     name: "TopstepX",
     category: "platform",
-    connectionType: "csv",
     icon: "topstep.png",
-    status: "active",
     subtitle: "Orders Fills Export",
     defaultTimeZone: "America/Chicago",
-    defaultFormat: "topstepx",
     dateFormat: "ISO",
     platform: "topstepx",
-    platformName: "TopstepX",
-    platformIcon: "topstep.png",
+    priority: 9,
+    namePatterns: ["topstepx"],
   },
-  {
-    id: "rithmic",
+  rithmic: {
     name: "Rithmic",
     category: "platform",
-    connectionType: "csv",
     icon: "rithmic.png",
-    status: "active",
     subtitle: "Order History CSV Export",
     defaultTimeZone: "America/Chicago",
     defaultFormat: "generic-csv",
-    dateFormat: "MDY",
     platform: "rithmic",
-    platformName: "Rithmic",
-    platformIcon: "rithmic.png",
+    priority: 10,
+    aliases: ["rtrader", "r-trader"],
+    namePatterns: ["rithmic"],
   },
-  {
-    id: "tradesea",
+  tradesea: {
     name: "TradeSea",
     category: "platform",
-    connectionType: "csv",
     icon: "tradesea.png",
-    status: "active",
     subtitle: "TradeSea Executions Export",
     defaultTimeZone: "America/Chicago",
     defaultFormat: "generic-csv",
-    dateFormat: "MDY",
     platform: "tradesea",
-    platformName: "TradeSea",
-    platformIcon: "tradesea.png",
+    priority: 11,
+    namePatterns: ["tradesea"],
   },
-  {
-    id: "wealthcharts",
+  wealthcharts: {
     name: "WealthCharts",
     category: "platform",
-    connectionType: "csv",
     icon: "wealthcharts.png",
-    status: "active",
     subtitle: "Orders & Fills CSV Export",
     defaultTimeZone: "America/Chicago",
-    defaultFormat: "wealthcharts",
-    dateFormat: "MDY",
     platform: "wealthcharts",
-    platformName: "WealthCharts",
-    platformIcon: "wealthcharts.png",
     gateway: "Apex / CQG",
+    priority: 12,
+    namePatterns: ["wealthcharts"],
   },
-  {
-    id: "metatrader",
+  metatrader: {
     name: "MetaTrader 5 / 4",
     category: "platform",
-    connectionType: "csv",
     icon: "metatrader5.png",
-    status: "active",
     subtitle: "HTML & XML Reports",
-    defaultTimeZone: "UTC",
     defaultFormat: "metatrader",
     dateFormat: "ISO",
     platform: "metatrader5",
-    platformName: "MetaTrader 5",
-    platformIcon: "metatrader5.png",
+    priority: 13,
+    popular: true,
+    aliases: ["metatrader5", "metatrader4", "mt4", "mt5"],
+    namePatterns: ["metatrader", "mt5", "mt4"],
   },
-  {
-    id: "tradingview",
+  tradingview: {
     name: "TradingView",
     category: "platform",
-    connectionType: "csv",
     icon: "tradingview.svg",
-    status: "active",
     subtitle: "Paper Trading Export",
-    defaultTimeZone: "UTC",
-    defaultFormat: "tradingview",
     dateFormat: "ISO",
+    priority: 14,
+    popular: true,
+    namePatterns: ["tradingview"],
   },
-  {
-    id: "dastrader",
+  dastrader: {
     name: "DAS Trader Pro",
     category: "platform",
-    connectionType: "csv",
     icon: "dastrader.png",
-    status: "active",
     subtitle: "Executions Export",
     defaultTimeZone: "America/New_York",
     defaultFormat: "das-trader",
-    dateFormat: "MDY",
+    priority: 15,
+    aliases: ["das-trader"],
+    namePatterns: ["dastrader", "das-trader"],
   },
-  {
-    id: "ctrader",
+  ctrader: {
     name: "cTrader",
     category: "platform",
-    connectionType: "csv",
     icon: "ctrader.png",
-    status: "active",
     subtitle: "Deals & Statements CSV",
-    defaultTimeZone: "UTC",
-    defaultFormat: "ctrader",
     dateFormat: "ISO",
     platform: "ctrader",
-    platformName: "cTrader",
-    platformIcon: "ctrader.png",
     gateway: "Spotware",
+    priority: 16,
+    popular: true,
+    aliases: ["ctrade"],
+    namePatterns: ["ctrader", "ctrade"],
   },
-  {
-    id: "quantower",
+  quantower: {
     name: "Quantower",
     category: "platform",
-    connectionType: "csv",
     icon: "quantower.svg",
     iconDark: "quantower-dark.svg",
-    status: "active",
     subtitle: "Trades & Orders CSV",
-    defaultTimeZone: "UTC",
-    defaultFormat: "quantower",
     dateFormat: "ISO",
     platform: "quantower",
-    platformName: "Quantower",
-    platformIcon: "quantower.svg",
+    priority: 17,
+    namePatterns: ["quantower"],
   },
-  {
-    id: "sierrachart",
+  sierrachart: {
     name: "Sierra Chart",
     category: "platform",
-    connectionType: "csv",
     icon: "sierrachart.png",
     iconDark: "sierrachart-dark.png",
-    status: "active",
     subtitle: "Trade Activity Fills Log",
     defaultTimeZone: "America/Chicago",
-    defaultFormat: "sierrachart",
     dateFormat: "ISO",
     platform: "sierrachart",
-    platformName: "Sierra Chart",
-    platformIcon: "sierrachart.png",
+    priority: 18,
+    namePatterns: ["sierrachart"],
   },
-  {
-    id: "tc2000",
+  tc2000: {
     name: "TC2000",
     category: "platform",
-    connectionType: "csv",
     icon: "tc2000.png",
     iconDark: "tc2000-dark.png",
-    status: "active",
     subtitle: "Trade History CSV",
     defaultTimeZone: "America/New_York",
-    defaultFormat: "tc2000",
-    dateFormat: "MDY",
     platform: "tc2000",
-    platformName: "TC2000",
-    platformIcon: "tc2000.png",
+    priority: 19,
+    namePatterns: ["tc2000"],
   },
-  {
-    id: "motivewave",
+  motivewave: {
     name: "MotiveWave",
     category: "platform",
-    connectionType: "csv",
     icon: "motivewave.png",
-    status: "active",
     subtitle: "Trades CSV Export",
     defaultTimeZone: "America/New_York",
-    defaultFormat: "motivewave",
-    dateFormat: "MDY",
     platform: "motivewave",
-    platformName: "MotiveWave",
-    platformIcon: "motivewave.png",
+    priority: 20,
+    namePatterns: ["motivewave"],
   },
-  {
-    id: "sterling",
+  sterling: {
     name: "Sterling Trader Pro",
     category: "platform",
-    connectionType: "csv",
     icon: "sterling.svg",
-    status: "active",
     subtitle: "Trading Monitor CSV",
     defaultTimeZone: "America/New_York",
-    defaultFormat: "sterling",
-    dateFormat: "MDY",
     platform: "sterling",
-    platformName: "Sterling Trader Pro",
-    platformIcon: "sterling.svg",
+    priority: 21,
+    namePatterns: ["sterling"],
   },
-  {
-    id: "silexx",
+  silexx: {
     name: "Cboe Silexx",
     category: "platform",
-    connectionType: "csv",
     icon: "silexx.svg",
     iconDark: "silexx-dark.svg",
-    status: "active",
     subtitle: "Order Blotter CSV",
     defaultTimeZone: "America/Chicago",
-    defaultFormat: "silexx",
-    dateFormat: "MDY",
     platform: "silexx",
-    platformName: "Cboe Silexx",
-    platformIcon: "silexx.svg",
+    priority: 22,
+    namePatterns: ["silexx"],
   },
-  {
-    id: "matchtrader",
+  matchtrader: {
     name: "Match-Trader",
     category: "platform",
-    connectionType: "csv",
     icon: "matchtrader.png",
-    status: "active",
     subtitle: "Positions HTML & CSV",
-    defaultTimeZone: "UTC",
-    defaultFormat: "matchtrader",
     dateFormat: "ISO",
     platform: "matchtrader",
-    platformName: "Match-Trader",
-    platformIcon: "matchtrader.png",
+    priority: 23,
+    namePatterns: ["matchtrader"],
   },
-  {
-    id: "tickblaze",
+  tickblaze: {
     name: "Tickblaze",
     category: "platform",
-    connectionType: "csv",
     icon: "tickblaze.png",
-    status: "active",
     subtitle: "Filled Orders CSV",
     defaultTimeZone: "America/New_York",
-    defaultFormat: "tickblaze",
-    dateFormat: "MDY",
     platform: "tickblaze",
-    platformName: "Tickblaze",
-    platformIcon: "tickblaze.png",
+    priority: 24,
+    namePatterns: ["tickblaze"],
   },
 
-  // Crypto Exchanges (Direct API Sync)
-  {
-    id: "hyperliquid",
+  // === CRYPTO ===
+  hyperliquid: {
     name: "Hyperliquid",
     category: "crypto",
     connectionType: "api",
     icon: "hyperliquid.png",
-    status: "active",
     subtitle: "Perpetual DEX (API Sync)",
-    defaultTimeZone: "UTC",
-    defaultFormat: "generic-csv",
-    dateFormat: "ISO",
+    priority: 25,
+    popular: true,
+    namePatterns: ["hyperliquid"],
   },
-  {
-    id: "binance",
+  binance: {
     name: "Binance",
     category: "crypto",
     connectionType: "api",
     icon: "binance.svg",
-    status: "active",
     subtitle: "Spot & Futures API Sync",
-    defaultTimeZone: "UTC",
-    defaultFormat: "generic-csv",
-    dateFormat: "ISO",
+    priority: 26,
+    popular: true,
+    namePatterns: ["binance"],
   },
-  {
-    id: "coinbase",
+  coinbase: {
     name: "Coinbase",
     category: "crypto",
     connectionType: "api",
     icon: "coinbase.svg",
-    status: "active",
     subtitle: "Spot API & Advanced Trade",
-    defaultTimeZone: "UTC",
-    defaultFormat: "generic-csv",
-    dateFormat: "ISO",
+    priority: 27,
+    popular: true,
+    namePatterns: ["coinbase"],
   },
-  {
-    id: "kraken",
+  kraken: {
     name: "Kraken",
     category: "crypto",
     connectionType: "api",
     icon: "kraken.svg",
-    status: "active",
     subtitle: "Spot & Margin API",
-    defaultTimeZone: "UTC",
-    defaultFormat: "generic-csv",
-    dateFormat: "ISO",
+    priority: 28,
+    popular: true,
+    namePatterns: ["kraken"],
   },
-  {
-    id: "bybit",
+  bybit: {
     name: "Bybit",
     category: "crypto",
     connectionType: "api",
     icon: "bybit.svg",
-    status: "active",
     subtitle: "Unified Account API",
     invertInDark: true,
-    defaultTimeZone: "UTC",
-    defaultFormat: "generic-csv",
-    dateFormat: "ISO",
+    priority: 29,
+    popular: true,
+    namePatterns: ["bybit"],
   },
-  {
-    id: "okx",
+  okx: {
     name: "OKX",
     category: "crypto",
     connectionType: "api",
     icon: "okx.svg",
-    status: "active",
     subtitle: "API v5 Sync",
     invertInDark: true,
-    defaultTimeZone: "UTC",
-    defaultFormat: "generic-csv",
-    dateFormat: "ISO",
     tvBrokerId: "OKX",
+    priority: 30,
+    popular: true,
+    namePatterns: ["okx"],
   },
-  {
-    id: "crypto-com",
+  "crypto-com": {
     name: "Crypto.com",
     category: "crypto",
     connectionType: "api",
     icon: "cryptocom.svg",
-    status: "active",
     subtitle: "Exchange API",
-    defaultTimeZone: "UTC",
-    defaultFormat: "generic-csv",
-    dateFormat: "ISO",
+    priority: 31,
+    namePatterns: ["crypto.com"],
   },
 
-  // Direct Brokers (Forex, CFDs & Stocks)
-  // 1. API Sync Supported
-  {
-    id: "ibkr",
+  // === DIRECT BROKERS (STOCKS, FOREX & CFD) ===
+  ibkr: {
     name: "Interactive Brokers",
     category: "stocks",
     connectionType: "api",
     icon: "ibkr.svg",
-    status: "active",
     subtitle: "Flex Query & Web API",
-    defaultTimeZone: "America/New_York",
     defaultFormat: "ibkr-flex",
     dateFormat: "ISO",
     tvBrokerId: "IBKR",
+    priority: 32,
+    popular: true,
+    aliases: ["ibkr-flex", "interactive-brokers"],
+    namePatterns: ["ibkr", "interactive brokers"],
   },
-  {
-    id: "alpaca",
+  alpaca: {
     name: "Alpaca",
     category: "stocks",
     connectionType: "api",
     icon: "alpaca.svg",
-    status: "active",
     subtitle: "Commission-free Trading API",
-    defaultTimeZone: "America/New_York",
     defaultFormat: "generic-csv",
     dateFormat: "ISO",
     tvBrokerId: "ALPACABROKER",
+    priority: 33,
+    popular: true,
+    namePatterns: ["alpaca"],
   },
-  {
-    id: "webull",
+  webull: {
     name: "Webull",
     category: "stocks",
     connectionType: "api",
     icon: "webull.svg",
-    status: "active",
     subtitle: "Open API Sync",
-    defaultTimeZone: "America/New_York",
-    defaultFormat: "webull",
-    dateFormat: "MDY",
+    priority: 34,
+    popular: true,
+    namePatterns: ["webull"],
   },
-  {
-    id: "tradier",
+  tradier: {
     name: "Tradier",
     category: "stocks",
     connectionType: "api",
     icon: "tradier.svg",
-    status: "active",
     subtitle: "Equities & Options API",
-    defaultTimeZone: "America/New_York",
     defaultFormat: "generic-csv",
-    dateFormat: "MDY",
+    priority: 35,
+    namePatterns: ["tradier"],
   },
-  {
-    id: "public",
+  public: {
     name: "Public",
     category: "stocks",
     connectionType: "api",
     icon: "public.svg",
-    status: "active",
     subtitle: "Stocks & ETFs API",
-    defaultTimeZone: "America/New_York",
     defaultFormat: "generic-csv",
-    dateFormat: "MDY",
+    priority: 36,
+    namePatterns: ["public"],
   },
-  {
-    id: "questrade",
+  questrade: {
     name: "Questrade",
     category: "stocks",
     connectionType: "api",
     icon: "questrade.svg",
-    status: "active",
     subtitle: "API Sync",
     invertInDark: true,
     defaultTimeZone: "America/Toronto",
-    defaultFormat: "questrade",
     dateFormat: "ISO",
+    priority: 37,
+    namePatterns: ["questrade"],
   },
-  {
-    id: "trading212",
+  trading212: {
     name: "Trading 212",
     category: "stocks",
     connectionType: "api",
     icon: "trading212.png",
-    status: "active",
     subtitle: "Zero-Commission API",
     defaultTimeZone: "UTC",
     defaultFormat: "generic-csv",
     dateFormat: "DMY",
+    priority: 38,
+    namePatterns: ["trading 212", "trading212"],
   },
-  {
-    id: "etrade",
+  etrade: {
     name: "E*TRADE",
     category: "stocks",
     connectionType: "api",
     icon: "etrade.png",
-    status: "active",
     subtitle: "OAuth API Sync",
-    defaultTimeZone: "America/New_York",
-    defaultFormat: "etrade",
-    dateFormat: "MDY",
+    priority: 39,
+    namePatterns: ["etrade", "e*trade"],
   },
-
-  // 2. Statement / CSV Import Supported
-  {
-    id: "tradestation",
+  tradestation: {
     name: "TradeStation",
     category: "stocks",
-    connectionType: "csv",
     icon: "tradestation.svg",
-    status: "active",
     subtitle: "Orders Records CSV",
-    defaultTimeZone: "America/New_York",
-    defaultFormat: "tradestation",
-    dateFormat: "MDY",
     tvBrokerId: "TRADESTATION",
+    priority: 40,
+    popular: true,
+    namePatterns: ["tradestation"],
   },
-  {
-    id: "thinkorswim",
+  thinkorswim: {
     name: "thinkorswim",
     category: "stocks",
-    connectionType: "csv",
     icon: "thinkorswim.png",
-    status: "active",
     subtitle: "Schwab / TD Statement CSV",
-    defaultTimeZone: "America/New_York",
-    defaultFormat: "thinkorswim",
-    dateFormat: "MDY",
+    priority: 41,
+    popular: true,
+    namePatterns: ["thinkorswim"],
   },
-  {
-    id: "schwab",
+  schwab: {
     name: "Charles Schwab",
     category: "stocks",
-    connectionType: "csv",
     icon: "schwab.png",
-    status: "active",
     subtitle: "Charles Schwab Statement CSV",
-    defaultTimeZone: "America/New_York",
     defaultFormat: "thinkorswim",
-    dateFormat: "MDY",
+    priority: 42,
+    popular: true,
+    namePatterns: ["schwab"],
   },
-  {
-    id: "fidelity",
+  fidelity: {
     name: "Fidelity",
     category: "stocks",
-    connectionType: "csv",
     icon: "fidelity.png",
-    status: "active",
     subtitle: "Fidelity Statement CSV",
-    defaultTimeZone: "America/New_York",
     defaultFormat: "generic-csv",
-    dateFormat: "MDY",
+    priority: 43,
+    popular: true,
+    namePatterns: ["fidelity"],
   },
-  {
-    id: "tastytrade",
+  tastytrade: {
     name: "tastytrade",
     category: "stocks",
-    connectionType: "csv",
     icon: "tastytrade.svg",
-    status: "active",
     subtitle: "tastytrade Orders CSV",
     defaultTimeZone: "America/Chicago",
-    defaultFormat: "tastytrade",
-    dateFormat: "MDY",
+    priority: 44,
+    namePatterns: ["tastytrade"],
   },
-  {
-    id: "capitalcom",
+  capitalcom: {
     name: "Capital.com",
     category: "forex-cfd",
-    connectionType: "csv",
     icon: "capital-com.svg",
-    status: "active",
     subtitle: "Trades Report CSV",
     defaultTimeZone: "UTC",
-    defaultFormat: "capitalcom",
     dateFormat: "ISO",
+    priority: 45,
+    namePatterns: ["capital.com", "capitalcom"],
   },
-  {
-    id: "oanda",
+  oanda: {
     name: "OANDA",
     category: "forex-cfd",
-    connectionType: "csv",
     icon: "oanda.svg",
-    status: "active",
     subtitle: "Transaction History CSV",
     defaultTimeZone: "America/New_York",
-    defaultFormat: "oanda",
-    dateFormat: "MDY",
+    priority: 46,
+    namePatterns: ["oanda"],
   },
-  {
-    id: "lightspeed",
+  lightspeed: {
     name: "Lightspeed",
     category: "stocks",
-    connectionType: "csv",
     icon: "lightspeed.png",
-    status: "active",
     subtitle: "Blotter Executions CSV",
-    defaultTimeZone: "America/New_York",
-    defaultFormat: "lightspeed",
-    dateFormat: "MDY",
+    priority: 47,
+    namePatterns: ["lightspeed"],
   },
-  {
-    id: "b3",
+  b3: {
     name: "B3 / Nelogica Profit",
     category: "stocks",
-    connectionType: "csv",
     icon: "genial-investimentos.svg",
-    status: "active",
     subtitle: "Nelogica Profit / B3 CSV",
     defaultTimeZone: "America/Sao_Paulo",
     defaultFormat: "generic-csv",
     dateFormat: "DMY",
+    priority: 48,
+    namePatterns: ["nelogica", "profit", "b3"],
   },
-  {
-    id: "tradezero",
+  tradezero: {
     name: "TradeZero",
     category: "stocks",
-    connectionType: "csv",
     icon: "tradezero.svg",
-    status: "active",
     subtitle: "Trade History CSV",
-    defaultTimeZone: "America/New_York",
-    defaultFormat: "tradezero",
-    dateFormat: "MDY",
     tvBrokerId: "TRADEZERO",
+    priority: 49,
+    popular: true,
+    namePatterns: ["tradezero"],
   },
-  {
-    id: "robinhood",
+  robinhood: {
     name: "Robinhood",
     category: "stocks",
-    connectionType: "csv",
     icon: "robinhood.svg",
-    status: "active",
     subtitle: "Account Activity CSV",
-    defaultTimeZone: "America/New_York",
-    defaultFormat: "robinhood",
-    dateFormat: "MDY",
+    priority: 50,
+    popular: true,
+    namePatterns: ["robinhood"],
   },
-  {
-    id: "moomoo",
+  moomoo: {
     name: "Moomoo",
     category: "stocks",
-    connectionType: "csv",
     icon: "moomoo.svg",
-    status: "active",
     subtitle: "Order History CSV",
-    defaultTimeZone: "America/New_York",
-    defaultFormat: "moomoo",
-    dateFormat: "MDY",
+    priority: 51,
+    popular: true,
+    namePatterns: ["moomoo"],
   },
-];
+} as const satisfies Record<string, BrokerDefinition>;
 
-const ALIASES: Record<string, string> = {
-  "ibkr-flex": "ibkr",
-  "interactive-brokers": "ibkr",
-  metatrader5: "metatrader",
-  metatrader4: "metatrader",
-  mt4: "metatrader",
-  mt5: "metatrader",
-  rtrader: "rithmic",
-  "r-trader": "rithmic",
-  "das-trader": "dastrader",
-  ctrade: "ctrader",
-};
+function buildCatalogItem(id: string, def: BrokerDefinition): BrokerCatalogItem {
+  const platformMeta = def.platform ? PLATFORM_METADATA[def.platform] : undefined;
 
+  const defaultTz =
+    def.defaultTimeZone ??
+    (def.category === "crypto"
+      ? "UTC"
+      : def.category === "prop-firm"
+        ? "America/Chicago"
+        : def.category === "stocks"
+          ? "America/New_York"
+          : "UTC");
+
+  const defaultFmt =
+    def.defaultFormat ?? (def.category === "crypto" ? "generic-csv" : (def.platform ?? id));
+
+  const defaultDateFmt: DateFormat = def.dateFormat ?? (def.category === "crypto" ? "ISO" : "MDY");
+
+  return Object.freeze({
+    id,
+    name: def.name,
+    category: def.category,
+    icon: def.icon,
+    iconDark: def.iconDark,
+    invertInDark: def.invertInDark,
+    status: def.status ?? "active",
+    subtitle: def.subtitle,
+    connectionType: def.connectionType ?? "csv",
+    defaultTimeZone: defaultTz,
+    defaultFormat: defaultFmt,
+    dateFormat: defaultDateFmt,
+    tvBrokerId: def.tvBrokerId,
+    platform: def.platform,
+    platformName: def.platformName ?? platformMeta?.name,
+    platformIcon: def.platformIcon ?? platformMeta?.icon,
+    gateway: def.gateway,
+    docUrl: def.docUrl,
+    officialNote: def.officialNote,
+  });
+}
+
+// Immutable BROKER_CATALOG sorted by priority
+const rawCatalog = (Object.entries(BROKERS_CONFIG) as [string, BrokerDefinition][])
+  .map(([id, def]) => ({
+    item: buildCatalogItem(id, def),
+    priority: def.priority ?? 100,
+  }))
+  .sort((a, b) => a.priority - b.priority)
+  .map((entry) => entry.item);
+
+export const BROKER_CATALOG: BrokerCatalogItem[] = Object.freeze(
+  rawCatalog,
+) as unknown as BrokerCatalogItem[];
+
+// Fast O(1) Catalog Map
 const CATALOG_MAP = new Map<string, BrokerCatalogItem>(
   BROKER_CATALOG.map((item) => [item.id.toLowerCase(), item]),
 );
 
-export const BROKER_METADATA: Record<string, BrokerMetadata> = Object.fromEntries(
-  BROKER_CATALOG.map((item) => [
-    item.id.toLowerCase(),
-    {
-      id: item.id,
-      name: item.name,
-      defaultTimeZone: item.defaultTimeZone ?? "UTC",
-      defaultFormat: item.defaultFormat ?? "generic-csv",
-      dateFormat: item.dateFormat ?? "ISO",
-      tvBrokerId: item.tvBrokerId,
-      connectionType: item.connectionType,
-      icon: item.icon,
-      iconDark: item.iconDark,
-      category: item.category,
-      platform: item.platform,
-      platformName: item.platformName,
-      platformIcon: item.platformIcon,
-      gateway: item.gateway,
-      docUrl: item.docUrl,
-      officialNote: item.officialNote,
-    },
-  ]),
-);
-
-// Register aliases in BROKER_METADATA
-for (const [alias, canonicalId] of Object.entries(ALIASES)) {
-  const canonical = BROKER_METADATA[canonicalId];
-  if (canonical) {
-    BROKER_METADATA[alias] = { ...canonical, id: alias };
+// Reverse alias map
+const ALIASES: Record<string, string> = {};
+for (const [id, def] of Object.entries(BROKERS_CONFIG) as [string, BrokerDefinition][]) {
+  if (def.aliases) {
+    for (const alias of def.aliases) {
+      ALIASES[alias.toLowerCase()] = id.toLowerCase();
+    }
   }
 }
+Object.freeze(ALIASES);
+
+// Immutable BROKER_METADATA (51 canonical + 10 aliases = 61 keys)
+const metadataMap: Record<string, BrokerMetadata> = {};
+
+for (const [id, def] of Object.entries(BROKERS_CONFIG) as [string, BrokerDefinition][]) {
+  const catalogItem = CATALOG_MAP.get(id.toLowerCase())!;
+  const metadata: BrokerMetadata = Object.freeze({
+    id: catalogItem.id,
+    name: catalogItem.name,
+    defaultTimeZone: catalogItem.defaultTimeZone ?? "UTC",
+    defaultFormat: catalogItem.defaultFormat ?? "generic-csv",
+    dateFormat: catalogItem.dateFormat ?? "ISO",
+    tvBrokerId: catalogItem.tvBrokerId,
+    connectionType: catalogItem.connectionType,
+    icon: catalogItem.icon,
+    iconDark: catalogItem.iconDark,
+    category: catalogItem.category,
+    platform: catalogItem.platform,
+    platformName: catalogItem.platformName,
+    platformIcon: catalogItem.platformIcon,
+    gateway: catalogItem.gateway,
+    docUrl: catalogItem.docUrl,
+    officialNote: catalogItem.officialNote,
+  });
+  metadataMap[id.toLowerCase()] = metadata;
+
+  if (def.aliases) {
+    for (const alias of def.aliases) {
+      metadataMap[alias.toLowerCase()] = Object.freeze({
+        ...metadata,
+        id: alias.toLowerCase(),
+      });
+    }
+  }
+}
+
+export const BROKER_METADATA: Record<string, BrokerMetadata> = Object.freeze(metadataMap);
+
+const FORMAT_TO_PLATFORM_MAP: Record<string, string> = {
+  metatrader: "metatrader5",
+  metatrader5: "metatrader5",
+  metatrader4: "metatrader5",
+  "ibkr-flex": "ibkr",
+  "das-trader": "dastrader",
+  ctrade: "ctrader",
+  "history-tradingview": "tradingview",
+  tradervue: "tradervue",
+  tradezella: "tradezella",
+};
 
 export const formatToPlatformId = (format?: string | null): string | undefined => {
   if (!format) return undefined;
   const f = format.toLowerCase().trim();
-  if (
-    f === "metatrader" ||
-    f.startsWith("history-meta") ||
-    f.startsWith("history-mt5") ||
-    f === "metatrader5" ||
-    f === "metatrader4"
-  ) {
-    return "metatrader5";
-  }
-  if (f === "tradovate") return "tradovate";
-  if (f === "ninjatrader") return "ninjatrader";
-  if (f === "topstepx") return "topstepx";
-  if (f === "tradesea") return "tradesea";
-  if (f === "wealthcharts") return "wealthcharts";
-  if (f === "rithmic") return "rithmic";
-  if (f === "ibkr" || f === "ibkr-flex") return "ibkr";
-  if (f === "tradingview" || f === "history-tradingview") return "tradingview";
-  if (f === "thinkorswim") return "thinkorswim";
-  if (f === "dastrader" || f === "das-trader") return "dastrader";
-  if (f === "webull") return "webull";
-  if (f === "tradervue") return "tradervue";
-  if (f === "tradezella") return "tradezella";
-  if (f === "tradezero") return "tradezero";
-  if (f === "robinhood") return "robinhood";
-  if (f === "moomoo") return "moomoo";
-  if (f === "ctrader" || f === "ctrade") return "ctrader";
+  if (f.startsWith("history-meta") || f.startsWith("history-mt5")) return "metatrader5";
+  if (FORMAT_TO_PLATFORM_MAP[f]) return FORMAT_TO_PLATFORM_MAP[f];
   if (PLATFORM_METADATA[f]) return f;
   return undefined;
 };
@@ -1176,72 +1111,27 @@ export interface MinimalAccountLike {
   name?: string | null;
 }
 
+const NAME_PATTERN_MATCHERS: { id: string; patterns: readonly string[] }[] = [];
+for (const item of BROKER_CATALOG) {
+  const def = (BROKERS_CONFIG as Record<string, BrokerDefinition>)[item.id];
+  if (def?.namePatterns && def.namePatterns.length > 0) {
+    NAME_PATTERN_MATCHERS.push({ id: item.id, patterns: def.namePatterns });
+  }
+}
+
 export const getAccountBrokerInfo = (account?: MinimalAccountLike | null) => {
   if (!account) return undefined;
   const nameLower = (account.name || "").toLowerCase();
-  const detectedId =
-    account.broker ||
-    (nameLower.includes("ftmo")
-      ? "ftmo"
-      : nameLower.includes("topstep")
-        ? "topstep"
-        : nameLower.includes("apex")
-          ? "apex"
-          : nameLower.includes("lucid")
-            ? "lucid"
-            : nameLower.includes("tradesea")
-              ? "tradesea"
-              : nameLower.includes("bulenox")
-                ? "bulenox"
-                : nameLower.includes("tradeify")
-                  ? "tradeify"
-                : nameLower.includes("ninjatrader")
-                  ? "ninjatrader"
-                  : nameLower.includes("tradovate")
-                    ? "tradovate"
-                    : nameLower.includes("wealthcharts")
-                      ? "wealthcharts"
-                      : nameLower.includes("rithmic")
-                        ? "rithmic"
-                        : nameLower.includes("binance")
-                          ? "binance"
-                          : nameLower.includes("bybit")
-                            ? "bybit"
-                            : nameLower.includes("coinbase")
-                              ? "coinbase"
-                              : nameLower.includes("kraken")
-                                ? "kraken"
-                                : nameLower.includes("hyperliquid")
-                                  ? "hyperliquid"
-                                  : nameLower.includes("ibkr") || nameLower.includes("interactive brokers")
-                                    ? "ibkr"
-                                    : nameLower.includes("alpaca")
-                                      ? "alpaca"
-                                      : nameLower.includes("webull")
-                                        ? "webull"
-                                        : nameLower.includes("tradier")
-                                          ? "tradier"
-                                          : nameLower.includes("robinhood")
-                                            ? "robinhood"
-                                            : nameLower.includes("moomoo")
-                                              ? "moomoo"
-                                              : nameLower.includes("ctrader") || nameLower.includes("ctrade")
-                                                ? "ctrader"
-                                              : nameLower.includes("fidelity")
-                                                ? "fidelity"
-                                                : nameLower.includes("schwab")
-                                                  ? "schwab"
-                                                  : nameLower.includes("thinkorswim")
-                                                    ? "thinkorswim"
-                                                    : nameLower.includes("tradezero")
-                                                      ? "tradezero"
-                                                      : nameLower.includes("tradingview")
-                                                        ? "tradingview"
-                                                        : nameLower.includes("metatrader") ||
-                                                            nameLower.includes("mt5") ||
-                                                            nameLower.includes("mt4")
-                                                          ? "metatrader"
-                                                          : null);
+  let detectedId: string | null = null;
+
+  if (!account.broker && nameLower) {
+    for (const matcher of NAME_PATTERN_MATCHERS) {
+      if (matcher.patterns.some((pattern) => nameLower.includes(pattern))) {
+        detectedId = matcher.id;
+        break;
+      }
+    }
+  }
 
   return getBrokerInfo(account.broker || detectedId, account.platform);
 };
@@ -1253,9 +1143,10 @@ const makePlatformOption = (value: string, label: string): PlatformOption => ({
 });
 
 export const getPlatformOptionsForBroker = (brokerId?: string | null): PlatformOption[] => {
+  const autoOption: PlatformOption = { value: "auto", label: "Auto-detect from statement" };
   if (!brokerId) {
     return [
-      { value: "auto", label: "Auto-detect from statement" },
+      autoOption,
       makePlatformOption("tradovate", "Tradovate"),
       makePlatformOption("ninjatrader", "NinjaTrader 8"),
       makePlatformOption("wealthcharts", "WealthCharts"),
@@ -1266,71 +1157,42 @@ export const getPlatformOptionsForBroker = (brokerId?: string | null): PlatformO
       makePlatformOption("ibkr", "Interactive Brokers"),
     ];
   }
+
   const b = brokerId.toLowerCase().trim();
-  switch (b) {
-    case "lucid":
-      return [
-        makePlatformOption("tradovate", "Tradovate"),
-        makePlatformOption("ninjatrader", "NinjaTrader 8"),
-        makePlatformOption("tradesea", "TradeSea"),
-        makePlatformOption("rithmic", "Rithmic"),
-        { value: "auto", label: "Auto-detect from statement" },
-      ];
-    case "topstep":
-      return [
-        makePlatformOption("topstepx", "TopstepX"),
-        makePlatformOption("tradovate", "Tradovate"),
-        makePlatformOption("ninjatrader", "NinjaTrader 8"),
-        { value: "auto", label: "Auto-detect from statement" },
-      ];
-    case "apex":
-      return [
-        makePlatformOption("tradovate", "Tradovate"),
-        makePlatformOption("wealthcharts", "WealthCharts"),
-        makePlatformOption("ninjatrader", "NinjaTrader 8"),
-        makePlatformOption("rithmic", "Rithmic"),
-        { value: "auto", label: "Auto-detect from statement" },
-      ];
-    case "tradeify":
-      return [
-        makePlatformOption("tradovate", "Tradovate"),
-        makePlatformOption("ninjatrader", "NinjaTrader 8"),
-        { value: "auto", label: "Auto-detect from statement" },
-      ];
-    case "ftmo":
-      return [
-        makePlatformOption("metatrader5", "MetaTrader 5"),
-        makePlatformOption("metatrader4", "MetaTrader 4"),
-        makePlatformOption("ctrader", "cTrader"),
-        { value: "auto", label: "Auto-detect from statement" },
-      ];
-    case "bulenox":
-      return [
-        makePlatformOption("tradovate", "Tradovate"),
-        makePlatformOption("rithmic", "Rithmic"),
-        makePlatformOption("ninjatrader", "NinjaTrader 8"),
-        { value: "auto", label: "Auto-detect from statement" },
-      ];
-    default:
-      if (PLATFORM_METADATA[b]) {
-        return [
-          makePlatformOption(b, PLATFORM_METADATA[b].name),
-          { value: "auto", label: "Auto-detect from statement" },
-        ];
-      }
-      return [
-        { value: "auto", label: "Auto-detect from statement" },
-        makePlatformOption("tradovate", "Tradovate"),
-        makePlatformOption("ninjatrader", "NinjaTrader 8"),
-        makePlatformOption("ctrader", "cTrader"),
-        makePlatformOption("wealthcharts", "WealthCharts"),
-        makePlatformOption("rithmic", "Rithmic"),
-        makePlatformOption("tradesea", "TradeSea"),
-        makePlatformOption("topstepx", "TopstepX"),
-        makePlatformOption("metatrader5", "MetaTrader 5"),
-        makePlatformOption("ibkr", "Interactive Brokers"),
-      ];
+  const canonicalId = ALIASES[b] ?? b;
+  const def = (BROKERS_CONFIG as Record<string, BrokerDefinition>)[canonicalId];
+
+  if (def?.supportedPlatforms && def.supportedPlatforms.length > 0) {
+    return [
+      ...def.supportedPlatforms.map((p) => makePlatformOption(p, PLATFORM_METADATA[p]?.name ?? p)),
+      autoOption,
+    ];
   }
+
+  const platformKey = PLATFORM_METADATA[canonicalId]
+    ? canonicalId
+    : PLATFORM_METADATA[b]
+      ? b
+      : undefined;
+  if (platformKey) {
+    return [
+      makePlatformOption(platformKey, PLATFORM_METADATA[platformKey]?.name ?? platformKey),
+      autoOption,
+    ];
+  }
+
+  return [
+    autoOption,
+    makePlatformOption("tradovate", "Tradovate"),
+    makePlatformOption("ninjatrader", "NinjaTrader 8"),
+    makePlatformOption("ctrader", "cTrader"),
+    makePlatformOption("wealthcharts", "WealthCharts"),
+    makePlatformOption("rithmic", "Rithmic"),
+    makePlatformOption("tradesea", "TradeSea"),
+    makePlatformOption("topstepx", "TopstepX"),
+    makePlatformOption("metatrader5", "MetaTrader 5"),
+    makePlatformOption("ibkr", "Interactive Brokers"),
+  ];
 };
 
 export interface CompatibilityResult {
@@ -1339,17 +1201,17 @@ export interface CompatibilityResult {
 }
 
 export const checkPlatformCompatibility = (
-  account: { broker?: string | null; platform?: string | null; name?: string | null } | null | undefined,
+  account:
+    { broker?: string | null; platform?: string | null; name?: string | null } | null | undefined,
   format?: string | null,
 ): CompatibilityResult => {
   if (!account || !format) return { compatible: true };
   const detectedPlatform = formatToPlatformId(format);
-  if (!detectedPlatform) return { compatible: true }; // Generic or unmapped CSV can be mapped to any account
+  if (!detectedPlatform) return { compatible: true };
 
   const brokerId = account.broker?.toLowerCase().trim();
   const accountPlatform = account.platform?.toLowerCase().trim();
 
-  // Generic or custom accounts accept any platform format
   if (
     brokerId === "generic" ||
     brokerId === "custom" ||
@@ -1359,7 +1221,6 @@ export const checkPlatformCompatibility = (
     return { compatible: true };
   }
 
-  // Exact platform match
   if (
     accountPlatform &&
     accountPlatform !== "auto" &&
@@ -1369,7 +1230,6 @@ export const checkPlatformCompatibility = (
     return { compatible: true };
   }
 
-  // Check if target broker supports the detected platform
   if (brokerId) {
     const brokerAllowed = getPlatformOptionsForBroker(brokerId)
       .map((opt) => opt.value)
@@ -1388,13 +1248,12 @@ export const checkPlatformCompatibility = (
         const platformName = platformMeta?.name || detectedPlatform;
         return {
           compatible: false,
-          reason: `O corretor/mesa ${brokerName} não opera com a plataforma ${platformName}.`,
+          reason: `Broker/prop firm ${brokerName} does not support platform ${platformName}.`,
         };
       }
     }
   }
 
-  // Explicit platform conflict on the account
   if (
     accountPlatform &&
     accountPlatform !== "auto" &&
@@ -1405,7 +1264,7 @@ export const checkPlatformCompatibility = (
     const detectedPlatformName = PLATFORM_METADATA[detectedPlatform]?.name || detectedPlatform;
     return {
       compatible: false,
-      reason: `A conta está configurada para ${accPlatformName}, mas o extrato é do ${detectedPlatformName}.`,
+      reason: `Account is configured for ${accPlatformName}, but statement is from ${detectedPlatformName}.`,
     };
   }
 
@@ -1427,10 +1286,11 @@ export const getPresetForDetectedStatement = (
 ): DetectedAccountPreset => {
   const acc = (detectedAccount || "").trim();
   const format = (detectedFormat || "").toLowerCase().trim();
-  const platform = formatToPlatformId(format) || (format && format !== "generic-csv" ? format : "tradovate");
+  const platform =
+    formatToPlatformId(format) || (format && format !== "generic-csv" ? format : "tradovate");
+  const accUpper = acc.toUpperCase();
 
-  // Lucid Trading (evaluation account prefix LFE, funded LFF, etc.)
-  if (acc.toUpperCase().startsWith("LF")) {
+  if (accUpper.startsWith("LF")) {
     return {
       broker: "lucid",
       platform: "tradovate",
@@ -1441,11 +1301,17 @@ export const getPresetForDetectedStatement = (
     };
   }
 
-  // Apex Trader Funding (PA-APEX-..., APEX-...)
-  if (acc.toUpperCase().includes("APEX")) {
+  if (accUpper.includes("APEX")) {
+    const apexPlatforms = (BROKERS_CONFIG.apex as { supportedPlatforms?: readonly string[] })
+      .supportedPlatforms;
+    const resolvedPlatform = apexPlatforms?.includes(platform)
+      ? platform
+      : platform === "wealthcharts"
+        ? "wealthcharts"
+        : "tradovate";
     return {
       broker: "apex",
-      platform: platform === "wealthcharts" ? "wealthcharts" : "tradovate",
+      platform: resolvedPlatform,
       tab: "prop",
       suggestedName: `Apex ${acc}`,
       timeZone: "America/Chicago",
@@ -1453,8 +1319,7 @@ export const getPresetForDetectedStatement = (
     };
   }
 
-  // Topstep (TOP..., TS-...)
-  if (acc.toUpperCase().startsWith("TOP") || acc.toUpperCase().startsWith("TS-")) {
+  if (accUpper.startsWith("TOP") || accUpper.startsWith("TS-")) {
     return {
       broker: "topstep",
       platform: platform === "topstepx" ? "topstepx" : "tradovate",
@@ -1465,8 +1330,7 @@ export const getPresetForDetectedStatement = (
     };
   }
 
-  // Tradeify
-  if (acc.toUpperCase().startsWith("TDFY") || acc.toUpperCase().includes("TRADEIFY")) {
+  if (accUpper.startsWith("TDFY") || accUpper.includes("TRADEIFY")) {
     return {
       broker: "tradeify",
       platform: "tradovate",
@@ -1477,8 +1341,7 @@ export const getPresetForDetectedStatement = (
     };
   }
 
-  // Bulenox
-  if (acc.toUpperCase().startsWith("BX-") || acc.toUpperCase().includes("BULENOX")) {
+  if (accUpper.startsWith("BX-") || accUpper.includes("BULENOX")) {
     return {
       broker: "bulenox",
       platform: "tradovate",
@@ -1489,8 +1352,7 @@ export const getPresetForDetectedStatement = (
     };
   }
 
-  // FTMO MetaTrader / cTrader
-  if (platform === "metatrader5" || platform === "metatrader4" || platform === "ctrader") {
+  if (platform === "metatrader5" || platform === "metatrader4") {
     return {
       broker: "ftmo",
       platform,
@@ -1501,7 +1363,24 @@ export const getPresetForDetectedStatement = (
     };
   }
 
-  // Direct Tradovate broker
+  if (platform === "ctrader") {
+    const isFtmo = accUpper.includes("FTMO");
+    return {
+      broker: isFtmo ? "ftmo" : "ctrader",
+      platform: "ctrader",
+      tab: isFtmo ? "prop" : "broker",
+      suggestedName: isFtmo
+        ? acc
+          ? `FTMO ${acc}`
+          : "FTMO Account"
+        : acc
+          ? `cTrader ${acc}`
+          : "cTrader Account",
+      timeZone: isFtmo ? "Europe/Helsinki" : "UTC",
+      accountNumber: acc,
+    };
+  }
+
   if (platform === "tradovate") {
     return {
       broker: "tradovate",
@@ -1513,7 +1392,6 @@ export const getPresetForDetectedStatement = (
     };
   }
 
-  // Direct NinjaTrader broker
   if (platform === "ninjatrader") {
     return {
       broker: "ninjatrader",
@@ -1538,3 +1416,18 @@ export const getPresetForDetectedStatement = (
   };
 };
 
+export const searchBrokers = (
+  query: string,
+  options?: { category?: BrokerCategory },
+): BrokerCatalogItem[] => {
+  const q = query.toLowerCase().trim();
+  return BROKER_CATALOG.filter((b) => {
+    if (options?.category && b.category !== options.category) return false;
+    if (!q) return true;
+    return b.name.toLowerCase().includes(q) || b.id.toLowerCase().includes(q);
+  });
+};
+
+export const getBrokersByAssetClass = (assetClass: BrokerCategory): BrokerCatalogItem[] => {
+  return BROKER_CATALOG.filter((b) => b.category === assetClass);
+};

@@ -19,7 +19,7 @@ export const wealthcharts: ImportFormat = {
   label: "WealthCharts (orders export)",
   detect: (headers, content) =>
     hasHeaders(headers, [["orderid"], ["movtype"], ["pricedone"]]) ||
-    (/name.*order_id.*symbol.*mov_time.*mov_type/i.test(content.slice(0, 1000))),
+    /name.*order_id.*symbol.*mov_time.*mov_type/i.test(content.slice(0, 1000)),
   parse: (content: string, options: ImportOptions): ParsedImport => {
     const records = toRecords(parseCsv(content));
     const executions: ImportedExecution[] = [];

@@ -30,7 +30,9 @@ export const metatrader: ImportFormat = {
   label: "MetaTrader 4/5 (HTML statement)",
   detect: (_headers, content) =>
     /<html/i.test(content) &&
-    /(MetaTrader|MetaQuotes|Closed Transactions|Strategy Tester|Trade History Report)/i.test(content),
+    /(MetaTrader|MetaQuotes|Closed Transactions|Strategy Tester|Trade History Report)/i.test(
+      content,
+    ),
   parse: (content, options): ParsedImport => {
     // Extract Account ID if present in header (e.g. "Account: 6059687" or "Statement: 6059687")
     const accMatch =
@@ -53,9 +55,6 @@ export const metatrader: ImportFormat = {
       }
     }
 
-
-
-
     const rows = [...content.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map((m) => rowCells(m[1]!));
     const executions: ImportedExecution[] = [];
     let skippedRows = 0;
@@ -68,7 +67,10 @@ export const metatrader: ImportFormat = {
       const rowText = cells.join(" ");
       if (
         cells.length <= 3 &&
-        cells.some((c) => c === "Positions" || c === "Deals" || c === "Orders" || c === "Trade History Report")
+        cells.some(
+          (c) =>
+            c === "Positions" || c === "Deals" || c === "Orders" || c === "Trade History Report",
+        )
       ) {
         if (rowText.includes("Positions")) currentSection = "positions";
         else if (rowText.includes("Orders")) currentSection = "orders";
@@ -212,4 +214,3 @@ export const metatrader: ImportFormat = {
     };
   },
 };
-

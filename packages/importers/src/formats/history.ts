@@ -287,7 +287,6 @@ export const parseHistory = (
   };
 };
 
-
 export const historyFormat: ImportFormat = {
   id: "trade-history",
   label: "Trade history (TradingView strategy and MetaTrader exports)",

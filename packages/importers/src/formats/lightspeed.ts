@@ -48,7 +48,14 @@ export const lightspeed: ImportFormat = {
       const rawTime = pick(row, ["raw exec. time", "execution time", "trade date"]) ?? "";
       const executedAt = parseTimestamp(rawTime, options.timeZone, options.dateOrder);
 
-      if (!symbol || !executedAt || !Number.isFinite(qtyRaw) || qtyRaw <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (
+        !symbol ||
+        !executedAt ||
+        !Number.isFinite(qtyRaw) ||
+        qtyRaw <= 0 ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         skippedRows++;
         continue;
       }

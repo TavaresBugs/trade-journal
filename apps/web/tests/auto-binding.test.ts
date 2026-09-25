@@ -339,4 +339,3 @@ describe("Auto-Binding on import commit", () => {
     });
   });
 });
-

@@ -7,23 +7,17 @@ import {
   type ImportedExecution,
 } from "@luxalgo/journal-importers";
 import { bad, handler, ok, requireValue } from "@/server/api";
-import { insertExecutions } from "@/server/executions";
 import { getImportTimeZone } from "@/server/settings";
 import { isTimeZone } from "@/lib/timezone";
 import type { ImportReviewOptions } from "@/lib/import-review";
-import { previewNinjaTraderImport, commitNinjaTraderImport } from "@/server/ninjatrader-import";
+import { previewNinjaTraderImport } from "@/server/ninjatrader-import";
 import { reconcileImport } from "@/server/import-reconciliation";
 import { db } from "@/db";
 
-import { accounts, importSources } from "@/db/schema";
+import { accounts } from "@/db/schema";
 import { and, eq, isNull, or } from "drizzle-orm";
-import {
-  getBrokerMetadata,
-  formatToPlatformId,
-  platformToDefaultBrokerId,
-  checkPlatformCompatibility,
-} from "@/lib/brokers/broker-catalog";
-import { newId, nowIso } from "@/server/ids";
+import { getBrokerMetadata, checkPlatformCompatibility } from "@/lib/brokers/broker-catalog";
+import { commitImportAtomically } from "@/server/services/import-service";
 
 interface ImportBody {
   mode: "preview" | "commit";
@@ -99,9 +93,18 @@ export const POST = handler(async (request: Request) => {
       ? db.select().from(accounts).where(eq(accounts.id, body.accountId)).get()
       : undefined;
 
-    let accountConflict: { isConflict: boolean; detectedAccount?: string; targetAccountNumber?: string; targetAccountName?: string } | undefined;
+    let accountConflict:
+      | {
+          isConflict: boolean;
+          detectedAccount?: string;
+          targetAccountNumber?: string;
+          targetAccountName?: string;
+        }
+      | undefined;
     if (targetAccount && parsed.account && targetAccount.accountNumber) {
-      if (targetAccount.accountNumber.trim().toLowerCase() !== parsed.account.trim().toLowerCase()) {
+      if (
+        targetAccount.accountNumber.trim().toLowerCase() !== parsed.account.trim().toLowerCase()
+      ) {
         accountConflict = {
           isConflict: true,
           detectedAccount: parsed.account,
@@ -111,7 +114,9 @@ export const POST = handler(async (request: Request) => {
       }
     }
 
-    const compatibility = targetAccount ? checkPlatformCompatibility(targetAccount, parsed.format) : undefined;
+    const compatibility = targetAccount
+      ? checkPlatformCompatibility(targetAccount, parsed.format)
+      : undefined;
 
     let resolvedAccountId = body.accountId;
     if (accountConflict?.isConflict && !body.forceMismatch) {
@@ -126,10 +131,7 @@ export const POST = handler(async (request: Request) => {
         .where(
           and(
             isNull(accounts.archivedAt),
-            or(
-              eq(accounts.accountNumber, parsed.account),
-              eq(accounts.name, parsed.account),
-            ),
+            or(eq(accounts.accountNumber, parsed.account), eq(accounts.name, parsed.account)),
           ),
         )
         .get();
@@ -138,11 +140,7 @@ export const POST = handler(async (request: Request) => {
       }
     }
     if (!resolvedAccountId) {
-      const activeAccounts = db
-        .select()
-        .from(accounts)
-        .where(isNull(accounts.archivedAt))
-        .all();
+      const activeAccounts = db.select().from(accounts).where(isNull(accounts.archivedAt)).all();
       if (activeAccounts.length === 1 && activeAccounts[0]) {
         const candidate = activeAccounts[0];
         const candidateConflict =
@@ -187,13 +185,11 @@ export const POST = handler(async (request: Request) => {
         parsed.format === "ninjatrader" && resolvedAccountId
           ? previewNinjaTraderImport(resolvedAccountId, parsed, body.content, timeZone, body.review)
           : undefined,
-      accountReconciliation:
-        resolvedAccountId
-          ? reconcileImport(resolvedAccountId, parsed.executions as ImportedExecution[])
-          : undefined,
+      accountReconciliation: resolvedAccountId
+        ? reconcileImport(resolvedAccountId, parsed.executions as ImportedExecution[])
+        : undefined,
     });
   }
-
 
   if (!body.accountId) return bad("accountId is required to commit");
   if (parsed.errors?.length) return bad(parsed.errors.join(" "));
@@ -222,64 +218,18 @@ export const POST = handler(async (request: Request) => {
     );
   }
 
-  const result =
-    parsed.format === "ninjatrader"
-      ? commitNinjaTraderImport(body.accountId, parsed, body.content, timeZone, body.review)
-      : insertExecutions(body.accountId, parsed.executions as ImportedExecution[], "import");
+  const result = commitImportAtomically({
+    accountId: body.accountId,
+    parsed,
+    content: body.content,
+    timeZone,
+    fileName: body.fileName,
+    review: body.review,
+    targetAccount,
+    compat,
+  });
 
-  // Auto-binding: bind detected platform, broker, and account number to the target account only if compatible
-  const detectedPlatform = formatToPlatformId(parsed.format);
-  if (targetAccount && compat.compatible) {
-    const updates: { platform?: string; broker?: string; accountNumber?: string } = {};
-    if (detectedPlatform && !targetAccount.platform) {
-      updates.platform = detectedPlatform;
-    }
-    if (detectedPlatform && !targetAccount.broker) {
-      updates.broker = platformToDefaultBrokerId(detectedPlatform) ?? detectedPlatform;
-    }
-    if (parsed.account && !targetAccount.accountNumber) {
-      updates.accountNumber = parsed.account;
-    }
-    if (Object.keys(updates).length > 0) {
-      db.update(accounts).set(updates).where(eq(accounts.id, body.accountId)).run();
-    }
-  }
-
-  // Register import source for provenance tracking
-  try {
-    const sourceName = body.fileName || parsed.format;
-    const existingSource = db
-      .select()
-      .from(importSources)
-      .where(
-        and(eq(importSources.accountId, body.accountId), eq(importSources.format, parsed.format)),
-      )
-      .get();
-    if (!existingSource) {
-      db.insert(importSources)
-        .values({
-          id: newId(),
-          accountId: body.accountId,
-          format: parsed.format,
-          name: sourceName,
-          createdAt: nowIso(),
-        })
-        .run();
-    }
-  } catch {
-    // Non-fatal if provenance recording is duplicate or fails
-  }
-
-  // Invalid rows are skipped with a warning rather than failing the whole file.
-  const warnings = [
-    ...(parsed.warnings ?? []),
-    ...(result.skipped > 0
-      ? [
-          `${result.skipped} row(s) were skipped because they could not be journaled: ${result.skippedReasons.join(" ")}`,
-        ]
-      : []),
-  ];
-  return ok({ detected: parsed.format, ...result, warnings });
+  return ok(result);
 });
 
 /** The import page lists what auto-detection understands. */

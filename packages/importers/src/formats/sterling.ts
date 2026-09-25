@@ -33,7 +33,8 @@ export const sterling: ImportFormat = {
       const action = row[5]?.trim().toUpperCase() ?? "";
 
       const isBuy = action === "BOT" || action === "BUY" || action === "B";
-      const isSell = action === "SLD" || action === "SLD SHRT" || action === "SELL" || action === "S";
+      const isSell =
+        action === "SLD" || action === "SLD SHRT" || action === "SELL" || action === "S";
       if (!isBuy && !isSell) {
         skippedRows++;
         continue;
@@ -43,7 +44,14 @@ export const sterling: ImportFormat = {
       const price = parseMoney(priceRaw);
       const executedAt = parseDateAndTime(dateRaw, timeRaw, options.timeZone, options.dateOrder);
 
-      if (!symbol || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (
+        !symbol ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         skippedRows++;
         continue;
       }

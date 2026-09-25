@@ -56,7 +56,14 @@ export const quantower: ImportFormat = {
       const price = parseMoney(priceRaw);
       const executedAt = parseTimestamp(timeRaw, options.timeZone, options.dateOrder);
 
-      if (!side || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (
+        !side ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         skippedRows++;
         continue;
       }

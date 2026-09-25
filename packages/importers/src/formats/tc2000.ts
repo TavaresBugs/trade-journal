@@ -37,7 +37,14 @@ export const tc2000: ImportFormat = {
       const timeRaw = pick(row, ["time", "date"]) ?? "";
       const executedAt = parseTimestamp(timeRaw, options.timeZone, options.dateOrder);
 
-      if (!symbol || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (
+        !symbol ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         skippedRows++;
         continue;
       }

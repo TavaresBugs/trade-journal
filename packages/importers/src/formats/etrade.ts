@@ -8,11 +8,10 @@ export const etrade: ImportFormat = {
   label: "Power E*TRADE (orders export)",
   detect: (headers, content) => {
     return (
-      (content.includes("Power E*TRADE") || content.includes("Orders, as of")) &&
-      content.includes("Fill") &&
-      content.includes("Description")
-    ) || (
-      headers.includes("Fill") && headers.includes("Description") && headers.includes("Market")
+      ((content.includes("Power E*TRADE") || content.includes("Orders, as of")) &&
+        content.includes("Fill") &&
+        content.includes("Description")) ||
+      (headers.includes("Fill") && headers.includes("Description") && headers.includes("Market"))
     );
   },
   parse: (content: string, options: ImportOptions): ParsedImport => {
@@ -35,7 +34,12 @@ export const etrade: ImportFormat = {
     }
 
     if (headerIdx === -1) {
-      return { format: "etrade", executions: [], skippedRows: rows.length, warnings: ["Header not found"] };
+      return {
+        format: "etrade",
+        executions: [],
+        skippedRows: rows.length,
+        warnings: ["Header not found"],
+      };
     }
 
     const header = rows[headerIdx]!.map((c) => c.trim().toLowerCase());
@@ -91,7 +95,14 @@ export const etrade: ImportFormat = {
       const timeRaw = (timeIdx !== -1 ? row[timeIdx] : "")?.trim();
       const executedAt = parseTimestamp(timeRaw, options.timeZone, options.dateOrder);
 
-      if (!symbol || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (
+        !symbol ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         skippedRows++;
         continue;
       }
@@ -100,7 +111,9 @@ export const etrade: ImportFormat = {
       const rawId = idIdx !== -1 ? row[idIdx]?.trim() : "";
       const effectiveAcct = rowAcct || account;
       const acctPrefix = effectiveAcct ? `${effectiveAcct}:` : "";
-      const id = rawId ? `etrade:${acctPrefix}${rawId}` : `etrade:${acctPrefix}${executedAt}:${symbol}:${i}`;
+      const id = rawId
+        ? `etrade:${acctPrefix}${rawId}`
+        : `etrade:${acctPrefix}${executedAt}:${symbol}:${i}`;
 
       executions.push({
         symbol,

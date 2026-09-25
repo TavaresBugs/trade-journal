@@ -4,6 +4,39 @@ import { db, executions, trades, accounts } from "@/db";
 import { getMultipliers, getJournalDefaults } from "./settings";
 import { defaultRisk } from "@/lib/journal-defaults";
 
+const UPSERT_TRADE_SQL = `
+  INSERT INTO trades (
+    key, account_id, symbol, asset_class, direction, status,
+    opened_at, closed_at, quantity, open_quantity, avg_entry, avg_exit,
+    gross_pnl, fees, net_pnl, execution_count, execution_ids_json, exits_json, duration_ms,
+    stop_loss, profit_target
+  ) VALUES (
+    @key, @accountId, @symbol, @assetClass, @direction, @status,
+    @openedAt, @closedAt, @quantity, @openQuantity, @avgEntry, @avgExit,
+    @grossPnl, @fees, @netPnl, @executionCount, @executionIdsJson, @exitsJson, @durationMs,
+    @stopLoss, @profitTarget
+  )
+  ON CONFLICT(key) DO UPDATE SET
+    account_id = excluded.account_id,
+    symbol = excluded.symbol,
+    asset_class = excluded.asset_class,
+    direction = excluded.direction,
+    status = excluded.status,
+    opened_at = excluded.opened_at,
+    closed_at = excluded.closed_at,
+    quantity = excluded.quantity,
+    open_quantity = excluded.open_quantity,
+    avg_entry = excluded.avg_entry,
+    avg_exit = excluded.avg_exit,
+    gross_pnl = excluded.gross_pnl,
+    fees = excluded.fees,
+    net_pnl = excluded.net_pnl,
+    execution_count = excluded.execution_count,
+    execution_ids_json = excluded.execution_ids_json,
+    exits_json = excluded.exits_json,
+    duration_ms = excluded.duration_ms
+`;
+
 /**
  * Rebuild the materialized round trips for an account from its executions.
  * Computed columns are overwritten; annotation columns are untouched because
@@ -43,10 +76,15 @@ export const rebuildAccount = (accountId: string): void => {
   );
   const defaults = getJournalDefaults();
 
+  const client = (db as any).$client ?? (db as any).session?.client;
+  const upsertTrade = client.prepare(UPSERT_TRADE_SQL);
+
   db.transaction((tx) => {
     for (const trip of trips) {
       obsolete.delete(trip.key);
-      const computed = {
+      const risk = defaultRisk(trip.avgEntry, trip.direction, accountId, trip.symbol, defaults);
+      upsertTrade.run({
+        key: trip.key,
         accountId: trip.accountId,
         symbol: trip.symbol,
         assetClass: trip.assetClass ?? null,
@@ -65,15 +103,9 @@ export const rebuildAccount = (accountId: string): void => {
         executionIdsJson: JSON.stringify(trip.executionIds),
         exitsJson: JSON.stringify(trip.exits),
         durationMs: trip.durationMs ?? null,
-      };
-      tx.insert(trades)
-        .values({
-          key: trip.key,
-          ...computed,
-          ...defaultRisk(trip.avgEntry, trip.direction, accountId, trip.symbol, defaults),
-        })
-        .onConflictDoUpdate({ target: trades.key, set: computed })
-        .run();
+        stopLoss: risk.stopLoss ?? null,
+        profitTarget: risk.profitTarget ?? null,
+      });
     }
     const vanished = [...obsolete];
     // Keep each statement below SQLite's bind-parameter limit, even for long histories.

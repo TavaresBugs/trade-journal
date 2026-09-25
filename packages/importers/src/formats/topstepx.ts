@@ -67,7 +67,9 @@ const parseTrades = (content: string, options: ImportOptions): ParsedImport => {
     const pnl = parseMoney(rawPnl);
 
     const typeText = (pick(row, ["type", "direction", "side"]) ?? "").trim().toLowerCase();
-    const isLong = /long|buy/i.test(typeText) || (!/short|sell/i.test(typeText) && entryPrice < exitPrice === (pnl > 0));
+    const isLong =
+      /long|buy/i.test(typeText) ||
+      (!/short|sell/i.test(typeText) && entryPrice < exitPrice === pnl > 0);
 
     if (
       !symbol ||

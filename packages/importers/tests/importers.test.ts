@@ -386,4 +386,3 @@ PA-APEX-408453-01,7ZZ6G5WNSMS347WLV,CM.ESU6,Mon Jul 27 2026 08:00:02 GMT-0300 (B
     expect(result.executions[3]!.importMetadata?.reportedGrossPnl).toBe(55);
   });
 });
-

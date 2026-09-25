@@ -20,7 +20,12 @@ const extractHtmlRows = (html: string): Row[] => {
   const headerRow = allRows.find((r) => r.includes("Closing Direction") && r.includes("Symbol"));
   if (!headerRow) return [];
 
-  const headers = headerRow.map((h) => h.toLowerCase().replace(/\s+/g, "").replace(/\([^)]*\)/g, ""));
+  const headers = headerRow.map((h) =>
+    h
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/\([^)]*\)/g, ""),
+  );
   const dataRows = allRows.filter((r) => r.some((c) => c.startsWith("DID") || c.startsWith("OID")));
 
   return dataRows.map((r) => {
@@ -43,19 +48,17 @@ export const ctrader: ImportFormat = {
   id: "ctrader",
   label: "cTrader",
   detect: (headers, content) => {
-    if (/<html/i.test(content) && (/(?:cTrader|cT\s*_)/i.test(content) || /Closing Direction/i.test(content))) {
+    if (
+      /<html/i.test(content) &&
+      (/(?:cTrader|cT\s*_)/i.test(content) || /Closing Direction/i.test(content))
+    ) {
       return true;
     }
     const hasDirections = hasHeaders(headers, [["closingdirection"], ["openingdirection"]]);
     const hasDealId = hasHeaders(headers, [["dealid", "deal", "dealno"]]);
     const hasPositionId = hasHeaders(headers, [["positionid", "position id"]]);
     const hasCtraderSpecifics = hasHeaders(headers, [
-      [
-        "closingdirection",
-        "openingdirection",
-        "channel",
-        "swap",
-      ],
+      ["closingdirection", "openingdirection", "channel", "swap"],
     ]);
 
     if (hasDirections) return true;
@@ -86,7 +89,13 @@ export const ctrader: ImportFormat = {
 
     records.forEach((row, index) => {
       const rawDealId = pick(row, ["dealid", "deal id", "deal_id", "deal", "id"])?.trim();
-      const rawPositionId = pick(row, ["positionid", "position id", "position_id", "position", "orderid"])?.trim();
+      const rawPositionId = pick(row, [
+        "positionid",
+        "position id",
+        "position_id",
+        "position",
+        "orderid",
+      ])?.trim();
       const rawAccount = pick(row, ["account", "accountnumber", "account id"])?.trim();
       if (rawAccount) accounts.add(rawAccount);
 
@@ -97,7 +106,15 @@ export const ctrader: ImportFormat = {
       }
       const symbol = rawSymbol.replace(/_SB$/i, "").trim().toUpperCase();
 
-      const rawVolume = pick(row, ["volume", "lots", "size", "quantity", "qty", "amount", "closingquantity"])?.trim();
+      const rawVolume = pick(row, [
+        "volume",
+        "lots",
+        "size",
+        "quantity",
+        "qty",
+        "amount",
+        "closingquantity",
+      ])?.trim();
       const numMatch = rawVolume?.match(/^[+-]?[\d.,]+/);
       const quantity = Math.abs(parseQuantity(numMatch ? numMatch[0] : rawVolume));
       if (!Number.isFinite(quantity) || quantity <= 0) {
@@ -106,8 +123,18 @@ export const ctrader: ImportFormat = {
       }
 
       // Check prices: closed deals report Entry Price + Closing Price; fills report Price
-      const rawEntryPrice = pick(row, ["entryprice", "entry price", "openprice", "open price"])?.trim();
-      const rawClosePrice = pick(row, ["closingprice", "closing price", "closeprice", "close price"])?.trim();
+      const rawEntryPrice = pick(row, [
+        "entryprice",
+        "entry price",
+        "openprice",
+        "open price",
+      ])?.trim();
+      const rawClosePrice = pick(row, [
+        "closingprice",
+        "closing price",
+        "closeprice",
+        "close price",
+      ])?.trim();
       const rawPrice = pick(row, ["price", "executionprice", "execution price"])?.trim();
 
       const entryPrice = rawEntryPrice ? parseMoney(rawEntryPrice) : NaN;
@@ -184,7 +211,11 @@ export const ctrader: ImportFormat = {
       const rawClosingDir = pick(row, ["closingdirection", "closing direction"])?.trim();
       const rawDir = pick(row, ["direction", "side", "type", "action"])?.trim();
 
-      const isTwoLegTrade = Number.isFinite(entryPrice) && entryPrice > 0 && Number.isFinite(closePrice) && closePrice > 0;
+      const isTwoLegTrade =
+        Number.isFinite(entryPrice) &&
+        entryPrice > 0 &&
+        Number.isFinite(closePrice) &&
+        closePrice > 0;
 
       if (isTwoLegTrade) {
         if (!closedAt || !openedAt) {
@@ -239,11 +270,12 @@ export const ctrader: ImportFormat = {
         });
       } else {
         // Single fill execution
-        const price = Number.isFinite(closePrice) && closePrice > 0
-          ? closePrice
-          : Number.isFinite(entryPrice) && entryPrice > 0
-            ? entryPrice
-            : singlePrice;
+        const price =
+          Number.isFinite(closePrice) && closePrice > 0
+            ? closePrice
+            : Number.isFinite(entryPrice) && entryPrice > 0
+              ? entryPrice
+              : singlePrice;
 
         if (!Number.isFinite(price) || price <= 0) {
           skippedRows++;

@@ -47,10 +47,10 @@ export function DirectionBadge({
     raw === "buy" || raw === "b"
       ? "BUY"
       : raw === "sell" || raw === "s"
-      ? "SELL"
-      : isLongOrBuy
-      ? "LONG"
-      : "SHORT";
+        ? "SELL"
+        : isLongOrBuy
+          ? "LONG"
+          : "SHORT";
 
   return (
     <span

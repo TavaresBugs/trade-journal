@@ -17,8 +17,7 @@ export const moomoo: ImportFormat = {
   id: "moomoo",
   label: "Moomoo (orders history export)",
   detect: (headers, content) =>
-    hasHeaders(headers, [["filledavgprice"]]) ||
-    /Filled@Avg Price/i.test(content.slice(0, 2000)),
+    hasHeaders(headers, [["filledavgprice"]]) || /Filled@Avg Price/i.test(content.slice(0, 2000)),
   parse: (content: string, options: ImportOptions): ParsedImport => {
     const records = toRecords(parseCsv(content));
     const executions: ImportedExecution[] = [];

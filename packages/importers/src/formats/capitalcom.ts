@@ -46,12 +46,15 @@ export const capitalcom: ImportFormat = {
 
       const feeRaw = Math.abs(parseMoney(pick(row, ["fee"])));
       const swapRaw = Math.abs(parseMoney(pick(row, ["swap", "swap converted"])));
-      const totalFee = (Number.isFinite(feeRaw) ? feeRaw : 0) + (Number.isFinite(swapRaw) ? swapRaw : 0);
+      const totalFee =
+        (Number.isFinite(feeRaw) ? feeRaw : 0) + (Number.isFinite(swapRaw) ? swapRaw : 0);
 
       const rplRaw = parseMoney(pick(row, ["rpl converted", "rpl"]));
       const execId = pick(row, ["exec id", "trade id", "order id"]);
       const acctPrefix = acct ? `${acct}:` : "";
-      const id = execId ? `capitalcom:${acctPrefix}${execId}` : `capitalcom:${acctPrefix}${executedAt}:${symbol}:${i}`;
+      const id = execId
+        ? `capitalcom:${acctPrefix}${execId}`
+        : `capitalcom:${acctPrefix}${executedAt}:${symbol}:${i}`;
 
       executions.push({
         symbol,

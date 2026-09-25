@@ -20,8 +20,9 @@ export function parseXlsxToCsv(bytes: Uint8Array): string | null {
     const unzipped = fflate.unzipSync(bytes);
     const sharedStrBuf = unzipped["xl/sharedStrings.xml"];
     const sheetKey =
-      Object.keys(unzipped).find((k) => k.startsWith("xl/worksheets/sheet") && k.endsWith(".xml")) ??
-      "xl/worksheets/sheet1.xml";
+      Object.keys(unzipped).find(
+        (k) => k.startsWith("xl/worksheets/sheet") && k.endsWith(".xml"),
+      ) ?? "xl/worksheets/sheet1.xml";
     const sheetBuf = unzipped[sheetKey];
     if (!sheetBuf) return null;
 
@@ -130,4 +131,3 @@ export function decodeImportFile(buffer: ArrayBuffer): string {
     return new TextDecoder("utf-16be").decode(bytes);
   return new TextDecoder("utf-8").decode(bytes);
 }
-

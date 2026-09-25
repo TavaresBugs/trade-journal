@@ -5,7 +5,7 @@ import { encryptJson } from "@/server/crypto";
 import { newId, nowIso } from "@/server/ids";
 import { syncAccount } from "@/server/sync";
 import { getBrokerTimeZone } from "@/lib/brokers/broker-catalog";
-import { isTimeZone } from "@/lib/timezone";
+import { validateCreateAccount } from "@/server/validation/accounts-schema";
 
 export const GET = handler((request: Request) => {
   if (new URL(request.url).searchParams.get("summary") === "1") {
@@ -31,8 +31,14 @@ export const GET = handler((request: Request) => {
   const tradeAggregates = db
     .select({
       accountId: trades.accountId,
-      tradeCount: sql<number>`count(*)`.as("trade_count"),
-      netPnl: sql<number>`coalesce(sum(${trades.netPnl}), 0)`.as("net_pnl"),
+      tradeCount:
+        sql<number>`coalesce(sum(case when ${trades.status} != 'open' then 1 else 0 end), 0)`.as(
+          "trade_count",
+        ),
+      netPnl:
+        sql<number>`coalesce(sum(case when ${trades.status} != 'open' then ${trades.netPnl} else 0 end), 0)`.as(
+          "net_pnl",
+        ),
       winCount:
         sql<number>`coalesce(sum(case when ${trades.status} = 'win' then 1 else 0 end), 0)`.as(
           "win_count",
@@ -55,13 +61,13 @@ export const GET = handler((request: Request) => {
   return ok({
     accounts: rows.map(({ credentialsEnc, ...safe }) => {
       const stats = statsMap.get(safe.id);
-      const tradeCount = Number(stats?.tradeCount ?? 0);
-      const netPnl = Number(stats?.netPnl ?? 0);
       const winCount = Number(stats?.winCount ?? 0);
       const lossCount = Number(stats?.lossCount ?? 0);
       const breakevenCount = Number(stats?.breakevenCount ?? 0);
-      const finishedCount = winCount + lossCount + breakevenCount;
-      const winRate = finishedCount > 0 ? (winCount / finishedCount) * 100 : 0;
+      const closedTrades = winCount + lossCount + breakevenCount;
+      const tradeCount = closedTrades;
+      const winRate = closedTrades > 0 ? (winCount / closedTrades) * 100 : 0;
+      const netPnl = Number(stats?.netPnl ?? 0);
       const initialBalance = Number(safe.initialBalance ?? 0);
       const currentBalance = initialBalance + netPnl;
       const returnPct = initialBalance > 0 ? (netPnl / initialBalance) * 100 : 0;
@@ -71,6 +77,7 @@ export const GET = handler((request: Request) => {
         connected: credentialsEnc !== null,
         snapshot: safe.snapshotJson ? JSON.parse(safe.snapshotJson) : null,
         tradeCount,
+        closedTrades,
         winCount,
         lossCount,
         winRate,
@@ -82,63 +89,45 @@ export const GET = handler((request: Request) => {
   });
 });
 
-interface CreateBody {
-  name?: string;
-  kind?: "sync" | "import" | "manual";
-  broker?: string;
-  platform?: string;
-  accountNumber?: string;
-  maxDrawdown?: number;
-  timeZone?: string;
-  currency?: string;
-  initialBalance?: number;
-  profitCalcMethod?: "fifo" | "lifo" | "wavg";
-  credentials?: Record<string, string>;
-  autoSync?: boolean;
-}
-
 export const POST = handler(async (request: Request) => {
-  const body = (await request.json()) as CreateBody;
-  if (!body.name || !body.kind) return bad("name and kind are required");
-  if (body.kind === "sync" && (!body.broker || !body.credentials)) {
-    return bad("sync accounts need a broker and credentials");
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return bad("name and kind are required");
   }
-  if (body.timeZone && !isTimeZone(body.timeZone)) {
-    return bad("Invalid IANA timezone.");
-  }
-  if (body.profitCalcMethod && !["fifo", "lifo", "wavg"].includes(body.profitCalcMethod)) {
-    return bad("Invalid profit calculation method.");
-  }
+
+  const validation = validateCreateAccount(body);
+  if (!validation.ok) return bad(validation.error);
+  const data = validation.data;
 
   const id = newId();
-  const brokerTz = body.broker ? getBrokerTimeZone(body.broker) : undefined;
-  const timeZone = body.timeZone || brokerTz || "UTC";
+  const brokerTz = data.broker ? getBrokerTimeZone(data.broker) : undefined;
+  const timeZone = data.timeZone || brokerTz || "UTC";
 
   db.insert(accounts)
     .values({
       id,
-      name: body.name,
-      broker: body.broker ?? "",
-      platform: body.platform ?? null,
-      accountNumber: body.accountNumber?.trim() ? body.accountNumber.trim() : null,
-      maxDrawdown:
-        typeof body.maxDrawdown === "number" && !Number.isNaN(body.maxDrawdown)
-          ? body.maxDrawdown
-          : null,
+      name: data.name,
+      broker: data.broker,
+      platform: data.platform,
+      accountNumber: data.accountNumber,
+      maxDrawdown: data.maxDrawdown,
       timeZone,
-      kind: body.kind,
-      currency: body.currency ?? "USD",
-      initialBalance: body.initialBalance ?? 0,
-      profitCalcMethod: body.profitCalcMethod ?? "fifo",
-      credentialsEnc: body.kind === "sync" ? encryptJson(body.credentials) : null,
-      autoSync: body.autoSync ?? body.kind === "sync",
+      kind: data.kind,
+      currency: data.currency,
+      initialBalance: data.initialBalance,
+      profitCalcMethod: data.profitCalcMethod,
+      credentialsEnc:
+        data.kind === "sync" && data.credentials ? encryptJson(data.credentials) : null,
+      autoSync: data.autoSync,
       createdAt: nowIso(),
     })
     .run();
 
   // First sync happens right away so the account isn't born empty.
   let sync = null;
-  if (body.kind === "sync") {
+  if (data.kind === "sync") {
     try {
       sync = await syncAccount(id);
     } catch (error) {

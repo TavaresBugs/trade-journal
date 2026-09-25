@@ -4,15 +4,7 @@ import { parseMoney, parseQuantity } from "../numbers";
 import type { ImportFormat, ImportOptions, ImportedExecution, ParsedImport } from "../types";
 import { parseSide } from "./fills";
 
-const FEE_COLUMNS = [
-  "comm",
-  "sec",
-  "taf",
-  "nscc",
-  "nasdaq",
-  "ecnremove",
-  "ecnadd",
-];
+const FEE_COLUMNS = ["comm", "sec", "taf", "nscc", "nasdaq", "ecnremove", "ecnadd"];
 
 export const tradezero: ImportFormat = {
   id: "tradezero",
@@ -65,7 +57,14 @@ export const tradezero: ImportFormat = {
         options.dateOrder || "MDY",
       );
 
-      if (!side || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (
+        !side ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         skippedRows++;
         continue;
       }

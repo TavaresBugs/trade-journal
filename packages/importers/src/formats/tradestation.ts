@@ -46,7 +46,14 @@ export const tradestation: ImportFormat = {
       const cleanedTime = timeRaw.replace(/:(\d{3})$/, ".$1");
       const executedAt = parseTimestamp(cleanedTime, options.timeZone, options.dateOrder || "MDY");
 
-      if (!side || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (
+        !side ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         skippedRows++;
         continue;
       }
@@ -55,7 +62,9 @@ export const tradestation: ImportFormat = {
       const fee = Math.abs(parseMoney(rawFee) || 0);
 
       const orderId = pick(row, ["orderid", "order id"])?.trim();
-      const execId = orderId ? `tradestation:order:${orderId}` : `tradestation:${executedAt}:${symbol}:${index}`;
+      const execId = orderId
+        ? `tradestation:order:${orderId}`
+        : `tradestation:${executedAt}:${symbol}:${index}`;
 
       const callPut = (pick(row, ["callput", "call/put"]) ?? "").trim().toUpperCase();
       const assetClass: AssetClass = callPut === "CALL" || callPut === "PUT" ? "option" : "equity";

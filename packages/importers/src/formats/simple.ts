@@ -177,7 +177,12 @@ export const dastrader: ImportFormat = {
 export const robinhood = makeFillsFormat({
   id: "robinhood",
   label: "Robinhood (account activity export)",
-  required: [["trans code", "transcode"], ["instrument"], ["activity date", "activitydate"], ["quantity"]],
+  required: [
+    ["trans code", "transcode"],
+    ["instrument"],
+    ["activity date", "activitydate"],
+    ["quantity"],
+  ],
   columns: {
     symbol: ["instrument"],
     side: ["trans code", "transcode"],

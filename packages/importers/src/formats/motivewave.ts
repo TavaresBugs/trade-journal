@@ -7,14 +7,7 @@ export const motivewave: ImportFormat = {
   id: "motivewave",
   label: "MotiveWave (trades export)",
   detect: (headers) =>
-    hasHeaders(headers, [
-      ["account"],
-      ["ticket"],
-      ["symbol"],
-      ["action"],
-      ["quantity"],
-      ["price"],
-    ]),
+    hasHeaders(headers, [["account"], ["ticket"], ["symbol"], ["action"], ["quantity"], ["price"]]),
   parse: (content: string, options: ImportOptions): ParsedImport => {
     const records = toRecords(parseCsv(content));
     const executions: ImportedExecution[] = [];
@@ -38,7 +31,14 @@ export const motivewave: ImportFormat = {
       const timeRaw = pick(row, ["time", "date"]) ?? "";
       const executedAt = parseTimestamp(timeRaw, options.timeZone, options.dateOrder);
 
-      if (!symbol || !executedAt || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price <= 0) {
+      if (
+        !symbol ||
+        !executedAt ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
         skippedRows++;
         continue;
       }
@@ -47,7 +47,9 @@ export const motivewave: ImportFormat = {
       const fee = Number.isFinite(commRaw) ? commRaw : 0;
       const ticket = pick(row, ["ticket"]) ?? "";
       const acctPrefix = acct ? `${acct}:` : "";
-      const id = ticket ? `motivewave:${acctPrefix}${ticket}` : `motivewave:${acctPrefix}${executedAt}:${symbol}:${i}`;
+      const id = ticket
+        ? `motivewave:${acctPrefix}${ticket}`
+        : `motivewave:${acctPrefix}${executedAt}:${symbol}:${i}`;
 
       executions.push({
         symbol,
