@@ -889,9 +889,17 @@ function UnifiedReviewCard({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <h2 className="text-base font-semibold tracking-tight text-foreground">
-          {hasTrade ? "Trade review" : "Day review"}
-        </h2>
+        <div className="space-y-0.5">
+          <CardTitle className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <BookOpen className="size-4 text-muted-foreground" />
+            <span>{hasTrade ? "Trade review" : "Day review"}</span>
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {hasTrade
+              ? "Execution rating, tags, mistakes, and trade reflection"
+              : "Daily session rating, tags, mistakes, and reflection"}
+          </p>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Rating Section */}

@@ -413,6 +413,7 @@ body.dashboard-is-dragging .journal-hover-card {
 }
 .journal-filter-bar {
   top: var(--journal-header-offset, 0px);
+  z-index: 20;
 }
 .journal-filter-dialog {
   display: flex;

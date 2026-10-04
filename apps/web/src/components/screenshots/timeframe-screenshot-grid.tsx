@@ -186,23 +186,19 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
   }, [handleUpload]);
 
   return (
-    <Card className="overflow-hidden border-border/80 bg-card">
+    <Card className="overflow-hidden border-border/80 bg-card isolate">
       <CardHeader className="pb-3.5 pt-4 px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="rounded-lg bg-primary/10 p-2 text-primary">
-              <Camera className="h-4 w-4" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-semibold tracking-tight">
-                Visual context & screenshots
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {activeCategory === "pre"
-                  ? "Macro context and market structure prior to session open"
-                  : "Trade executions, order management, and session review"}
-              </p>
-            </div>
+          <div className="space-y-0.5">
+            <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
+              <Camera className="size-4 text-muted-foreground" />
+              <span>Visual context & screenshots</span>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              {activeCategory === "pre"
+                ? "Macro context and market structure prior to session open"
+                : "Trade executions, order management, and session review"}
+            </p>
           </div>
 
           {/* Category Tabs: Pre-market vs Post-market */}

@@ -169,7 +169,7 @@ export function FilterBar({
     pathname.startsWith("/journal/");
 
   return (
-    <div className="journal-filter-bar sticky z-10 flex min-h-14 min-w-0 flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
+    <div className="journal-filter-bar sticky z-20 flex min-h-14 min-w-0 flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
       <h1 className="mr-auto min-w-0 text-base font-semibold tracking-tight">{title}</h1>
       {showFilters && (
         <>

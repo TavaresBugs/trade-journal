@@ -111,7 +111,7 @@ export function ImageUploadZone({
       }}
       onDragLeave={() => setIsDragOver(false)}
       onDrop={handleDrop}
-      className={`group relative aspect-video w-full overflow-hidden rounded-xl border-2 transition-all duration-200 outline-none select-none ${
+      className={`group relative aspect-video w-full overflow-hidden rounded-xl border-2 transition-all duration-200 outline-none select-none isolate ${
         isDragOver
           ? "border-primary bg-primary/10 shadow-lg scale-[1.01]"
           : attachments.length > 0
@@ -129,7 +129,7 @@ export function ImageUploadZone({
 
       {/* Timeframe Label Badge (Top Left) */}
       <div
-        className={`absolute top-2 left-2 z-20 flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm transition-colors ${
+        className={`absolute top-2 left-2 z-10 flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm transition-colors ${
           attachments.length > 0
             ? "bg-black/70 text-white border border-white/20 shadow-xs group-hover:bg-primary group-hover:text-primary-foreground group-focus-within:bg-primary group-focus-within:text-primary-foreground"
             : "bg-background/90 text-foreground border border-border shadow-2xs group-hover:bg-primary group-hover:text-primary-foreground group-focus-within:bg-primary group-focus-within:text-primary-foreground"
@@ -145,7 +145,7 @@ export function ImageUploadZone({
 
       {/* Loading Overlay */}
       {isUploading && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background/85 backdrop-blur-xs">
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/85 backdrop-blur-xs">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
           <span className="mt-1.5 text-[11px] text-muted-foreground font-medium">
             Compressing & Saving…
@@ -169,7 +169,7 @@ export function ImageUploadZone({
             type="button"
             variant="destructive"
             size="icon"
-            className="absolute top-2 right-2 z-30 h-7 w-7 rounded bg-black/65 hover:bg-destructive text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity border border-white/20 shadow-xs"
+            className="absolute top-2 right-2 z-20 h-7 w-7 rounded bg-black/65 hover:bg-destructive text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity border border-white/20 shadow-xs"
             onClick={(e) => {
               e.stopPropagation();
               if (confirm(`Remove screenshot for ${timeframe.label}?`)) {
@@ -186,7 +186,7 @@ export function ImageUploadZone({
             type="button"
             variant="secondary"
             size="icon"
-            className="absolute bottom-2 left-2 z-30 h-7 w-7 rounded bg-black/65 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-xs"
+            className="absolute bottom-2 left-2 z-20 h-7 w-7 rounded bg-black/65 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-xs"
             onClick={(e) => {
               e.stopPropagation();
               onZoom(attachments, safeIndex);
@@ -206,7 +206,7 @@ export function ImageUploadZone({
                   setCurrentIndex((prev) => (prev > 0 ? prev - 1 : attachments.length - 1));
                 }}
                 aria-label="Previous image"
-                className="absolute left-1.5 top-1/2 -translate-y-1/2 z-30 p-1 rounded-full bg-black/70 hover:bg-black/90 text-white opacity-0 group-hover:opacity-100 transition-opacity border border-white/20 shadow-xs"
+                className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 p-1 rounded-full bg-black/70 hover:bg-black/90 text-white opacity-0 group-hover:opacity-100 transition-opacity border border-white/20 shadow-xs"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -217,7 +217,7 @@ export function ImageUploadZone({
                   setCurrentIndex((prev) => (prev < attachments.length - 1 ? prev + 1 : 0));
                 }}
                 aria-label="Next image"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 z-30 p-1 rounded-full bg-black/70 hover:bg-black/90 text-white opacity-0 group-hover:opacity-100 transition-opacity border border-white/20 shadow-xs"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 p-1 rounded-full bg-black/70 hover:bg-black/90 text-white opacity-0 group-hover:opacity-100 transition-opacity border border-white/20 shadow-xs"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -225,7 +225,7 @@ export function ImageUploadZone({
           )}
 
           {/* CTRL+V Floating Badge in center */}
-          <span className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded bg-foreground text-background px-2.5 py-0.5 text-[10px] font-mono font-semibold opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-events-none shadow-md">
+          <span className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded bg-foreground text-background px-2.5 py-0.5 text-[10px] font-mono font-semibold opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-events-none shadow-md">
             CTRL+V
           </span>
 
@@ -238,7 +238,7 @@ export function ImageUploadZone({
               e.stopPropagation();
               fileInputRef.current?.click();
             }}
-            className="absolute bottom-2 right-2 z-30 h-7 w-7 rounded bg-black/65 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-xs"
+            className="absolute bottom-2 right-2 z-20 h-7 w-7 rounded bg-black/65 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-xs"
             title="Add another image to this slot"
           >
             <Plus className="h-4 w-4" />
@@ -256,7 +256,7 @@ export function ImageUploadZone({
           </span>
 
           {/* CTRL+V Floating Badge */}
-          <span className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded bg-foreground text-background px-2.5 py-0.5 text-[10px] font-mono font-semibold shadow-md opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-events-none">
+          <span className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded bg-foreground text-background px-2.5 py-0.5 text-[10px] font-mono font-semibold shadow-md opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-events-none">
             CTRL+V
           </span>
 
@@ -269,7 +269,7 @@ export function ImageUploadZone({
               e.stopPropagation();
               fileInputRef.current?.click();
             }}
-            className="absolute bottom-2 right-2 z-20 h-6 w-6 rounded bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border shadow-2xs opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+            className="absolute bottom-2 right-2 z-10 h-6 w-6 rounded bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border shadow-2xs opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
             title="Select image file"
           >
             <UploadCloud className="h-3.5 w-3.5" />
