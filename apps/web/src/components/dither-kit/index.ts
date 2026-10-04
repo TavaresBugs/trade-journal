@@ -18,4 +18,7 @@ export * from "./palette"
 export * from "./chart-context"
 export * from "./dither-gauge"
 export * from "./dither-ratio-bar"
-
+export * from "./dither-diverging-bar"
+export * from "./gradient"
+export * from "./pixel"
+export * from "./scales"
