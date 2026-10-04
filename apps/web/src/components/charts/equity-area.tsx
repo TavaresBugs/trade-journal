@@ -12,6 +12,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  STACKED_CHART_MARGINS,
   type ChartConfig,
 } from "@/components/dither-kit";
 
@@ -63,7 +64,7 @@ export function EquityArea({
         config={config}
         bloom="low"
         bloomOnHover
-        margins={{ top: 12, right: 12, bottom: 24, left: 56 }}
+        margins={STACKED_CHART_MARGINS}
         className="h-full w-full"
       >
         <Grid />
@@ -73,17 +74,13 @@ export function EquityArea({
           maxTicks={6}
         />
         <YAxis
-          tickFormatter={(value) =>
-            privateMode ? "••••" : formatValue(value).replace(".00", "")
-          }
+          tickFormatter={(value) => (privateMode ? "••••" : formatValue(value).replace(".00", ""))}
         />
         <ReferenceLine y={0} />
         <Area dataKey="cumNetPnl" variant="gradient" />
         <Tooltip
           labelKey="t"
-          valueFormatter={(value) =>
-            privateMode ? "Hidden" : formatValue(value)
-          }
+          valueFormatter={(value) => (privateMode ? "Hidden" : formatValue(value))}
         />
       </AreaChart>
     </ChartFrame>

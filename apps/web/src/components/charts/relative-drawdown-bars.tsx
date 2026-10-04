@@ -5,12 +5,15 @@ import type { RelativeDrawdownPoint } from "@luxalgo/journal-core";
 import { fmtPercent } from "@/lib/utils";
 import { ChartFrame } from "./chart-frame";
 import {
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   Grid,
   ReferenceLine,
   Tooltip,
   YAxis,
+  COMPACT_CHART_MARGINS,
   type ChartConfig,
 } from "@/components/dither-kit";
 
@@ -23,7 +26,10 @@ const config: ChartConfig = {
 };
 
 /**
- * Relative drawdown bars — retro ordered dither with bloom texture.
+ * Relative drawdown — density-adaptive retro ordered dither with bloom texture.
+ * When data is sparse (<= 31 days, e.g. 7D/30D presets), renders discrete bars with individual daily hover.
+ * When data is dense (> 31 days, e.g. 90D/YTD/All presets), smoothly transitions to a continuous
+ * underwater dither area, eliminating 1px needle collapse and aligning with EquityArea.
  * Margins strictly match EquityArea (left: 56, right: 12) for perfect vertical alignment.
  */
 export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }) {
@@ -36,10 +42,7 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
     [data],
   );
 
-  const available = useMemo(
-    () => data.filter((p) => p.drawdownPct !== null),
-    [data],
-  );
+  const available = useMemo(() => data.filter((p) => p.drawdownPct !== null), [data]);
 
   const maxDrawdown = useMemo(
     () => Math.max(0, ...available.map((p) => Math.abs(p.drawdownPct ?? 0))),
@@ -47,6 +50,7 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
   );
 
   const yAxisDigits = maxDrawdown < 0.01 ? (maxDrawdown < 0.002 ? 2 : 1) : 0;
+  const isDense = chartData.length > 31;
 
   return (
     <div className="mt-2 border-t pt-3">
@@ -64,26 +68,49 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
         </div>
       ) : (
         <ChartFrame height={96}>
-          <BarChart
-            data={chartData}
-            config={config}
-            bloom="low"
-            bloomOnHover
-            margins={{ top: 6, right: 12, bottom: 8, left: 56 }}
-            className="h-full w-full"
-          >
-            <Grid />
-            <YAxis
-              tickCount={3}
-              tickFormatter={(value: number) => fmtPercent(Math.abs(value), yAxisDigits)}
-            />
-            <ReferenceLine y={0} />
-            <Bar dataKey="drawdownPct" variant="gradient" />
-            <Tooltip
-              labelKey="t"
-              valueFormatter={(value) => `-${fmtPercent(Math.abs(value), 2)}`}
-            />
-          </BarChart>
+          {isDense ? (
+            <AreaChart
+              data={chartData}
+              config={config}
+              bloom="low"
+              bloomOnHover
+              margins={COMPACT_CHART_MARGINS}
+              className="h-full w-full"
+            >
+              <Grid />
+              <YAxis
+                tickCount={3}
+                tickFormatter={(value: number) => fmtPercent(Math.abs(value), yAxisDigits)}
+              />
+              <ReferenceLine y={0} />
+              <Area dataKey="drawdownPct" variant="gradient" />
+              <Tooltip
+                labelKey="t"
+                valueFormatter={(value) => `-${fmtPercent(Math.abs(value), 2)}`}
+              />
+            </AreaChart>
+          ) : (
+            <BarChart
+              data={chartData}
+              config={config}
+              bloom="low"
+              bloomOnHover
+              margins={COMPACT_CHART_MARGINS}
+              className="h-full w-full"
+            >
+              <Grid />
+              <YAxis
+                tickCount={3}
+                tickFormatter={(value: number) => fmtPercent(Math.abs(value), yAxisDigits)}
+              />
+              <ReferenceLine y={0} />
+              <Bar dataKey="drawdownPct" variant="gradient" />
+              <Tooltip
+                labelKey="t"
+                valueFormatter={(value) => `-${fmtPercent(Math.abs(value), 2)}`}
+              />
+            </BarChart>
+          )}
         </ChartFrame>
       )}
     </div>

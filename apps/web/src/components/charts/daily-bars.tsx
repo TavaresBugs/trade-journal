@@ -12,6 +12,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  STACKED_CHART_MARGINS,
   type ChartConfig,
 } from "@/components/dither-kit";
 
@@ -55,7 +56,7 @@ export function DailyBars({
         config={config}
         bloom="low"
         bloomOnHover
-        margins={{ top: 12, right: 12, bottom: 24, left: 56 }}
+        margins={STACKED_CHART_MARGINS}
         className="h-full w-full"
       >
         <Grid />
@@ -65,17 +66,13 @@ export function DailyBars({
           maxTicks={8}
         />
         <YAxis
-          tickFormatter={(value) =>
-            privateMode ? "••••" : fmtMoney(value).replace(".00", "")
-          }
+          tickFormatter={(value) => (privateMode ? "••••" : fmtMoney(value).replace(".00", ""))}
         />
         <ReferenceLine y={0} />
         <Bar dataKey="netPnl" variant="gradient" />
         <Tooltip
           labelKey="date"
-          valueFormatter={(value) =>
-            privateMode ? "Hidden" : fmtMoney(value)
-          }
+          valueFormatter={(value) => (privateMode ? "Hidden" : fmtMoney(value))}
         />
       </BarChart>
     </ChartFrame>

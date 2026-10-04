@@ -90,6 +90,8 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
     console.log(`   Sandbox: ${sandboxDbPath}`);
     console.log(`======================================================\n`);
 
+    const initialJournalDays = db.select().from(journalDays).all();
+
     // -------------------------------------------------------------
     // CENÁRIO 1: UPLOAD LIMPO (Fresh Ingestion)
     // -------------------------------------------------------------
@@ -384,12 +386,13 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
     // -------------------------------------------------------------
     console.log(`\n👉 [CENÁRIO 7] Verificando Imutabilidade dos Diários Reflexivos...`);
     const days = db.select().from(journalDays).all();
-    expect(days.length).toBe(6);
+    expect(days.length).toBe(initialJournalDays.length);
+    expect(days.length).toBeGreaterThanOrEqual(6);
     const dayFomc = days.find((d) => d.date === "2026-09-16")!;
     expect(dayFomc).toBeDefined();
     expect(dayFomc.note).toContain("Dia de Fomc");
     console.log(
-      `   ✅ Sucesso: 6 registros de journal_days intactos com todos os textos pré-market.`,
+      `   ✅ Sucesso: ${days.length} registros de journal_days intactos com todos os textos pré-market.`,
     );
 
     // -------------------------------------------------------------
