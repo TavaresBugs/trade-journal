@@ -1,16 +1,17 @@
 "use client";
 import { useMemo, useState } from "react";
-import { HoverHint } from "./ui/tooltip";
+import { HoverHint, Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronLeft, ChevronRight, NotebookPen } from "lucide-react";
 import { dayKeyOf, type CalendarMonth } from "@luxalgo/journal-core";
-import { cn, fmtMoney } from "@/lib/utils";
+import { cn, compactMoney, fmtMoney, pnlClass } from "@/lib/utils";
 import { Pnl } from "./pnl";
 import { MonetaryValue, usePrivacy } from "./privacy";
 import { useFilters } from "./filter-bar";
 import { DayJournalsDialog } from "./day-journals-dialog";
+import { DitherGradient } from "./dither-kit";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,22 +36,6 @@ const MONTH_NAMES = [
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 11 }, (_, i) => CURRENT_YEAR - 5 + i);
-
-const compactFormatters = new Map<string, Intl.NumberFormat>();
-const compactMoney = (value: number, currency: string) => {
-  let formatter = compactFormatters.get(currency);
-  if (!formatter) {
-    formatter = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      notation: "compact",
-      maximumFractionDigits: 1,
-      signDisplay: "exceptZero",
-    });
-    compactFormatters.set(currency, formatter);
-  }
-  return formatter.format(value);
-};
 
 /**
  * The P&L calendar — an HTML grid, not a chart. Each traded day prints its
@@ -243,33 +228,14 @@ export function CalendarPnl({
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           {calendar.weeks.map((week, weekIndex) => (
-            <div
+            <MobileWeekCard
               key={weekIndex}
-              className={cn(
-                "flex flex-col items-center justify-center rounded-lg bg-muted/20 p-2 ring-1 ring-border/40 text-center gap-0.5",
-                weekIndex === 4 && calendar.weeks.length === 5 ? "col-span-2" : "",
-              )}
-            >
-              <span className="text-[8px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-                Week {weekIndex + 1}
-              </span>
-              <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
-                {week.weekTrades > 0 ? (
-                  monetary ? (
-                    <Pnl value={week.weekNetPnl} currency={currency} />
-                  ) : (
-                    <span className="text-foreground font-medium">{week.weekTrades} trades</span>
-                  )
-                ) : (
-                  "—"
-                )}
-              </span>
-              {week.weekTrades > 0 && (
-                <span className="text-[8px] text-muted-foreground uppercase tracking-wider">
-                  {week.weekTrades} {week.weekTrades === 1 ? "trade" : "trades"}
-                </span>
-              )}
-            </div>
+              week={week}
+              weekIndex={weekIndex}
+              isLastFullSpan={weekIndex === 4 && calendar.weeks.length === 5}
+              monetary={monetary}
+              currency={currency}
+            />
           ))}
         </div>
       </div>
@@ -348,6 +314,381 @@ export function CalendarPnl({
   );
 }
 
+function MobileWeekCard({
+  week,
+  weekIndex,
+  isLastFullSpan,
+  monetary,
+  currency,
+}: {
+  week: CalendarMonth["weeks"][number];
+  weekIndex: number;
+  isLastFullSpan: boolean;
+  monetary: boolean;
+  currency: string;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const isProfit = week.weekNetPnl >= 0;
+
+  return (
+    <div
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      className={cn(
+        "relative overflow-hidden flex flex-col items-center justify-center rounded-lg bg-card border border-border/40 text-center gap-0.5 !p-0 transition-all duration-150",
+        isLastFullSpan ? "col-span-2" : "",
+        week.weekTrades > 0 && (
+          isProfit
+            ? "border-profit/40 hover:border-profit/90 hover:glow-profit"
+            : "border-loss/40 hover:border-loss/90 hover:glow-loss"
+        ),
+      )}
+      style={{
+        padding: 0,
+        background:
+          week.weekTrades > 0 && monetary
+            ? `linear-gradient(to top, color-mix(in oklab, ${isProfit ? "var(--profit-fill)" : "var(--loss)"} ${hovered ? "20%" : "10%"}, var(--card)) 0%, var(--card) 90%)`
+            : undefined,
+      }}
+    >
+      {week.weekTrades > 0 && monetary && (
+        <DitherGradient
+          from={isProfit ? "green" : "red"}
+          to="transparent"
+          direction="up"
+          cell={2}
+          opacity={hovered ? 0.44 : 0.22}
+          bloom={hovered ? "low" : "off"}
+          className="absolute -inset-1"
+        />
+      )}
+      <div className="relative z-10 flex flex-col items-center justify-center p-2 w-full h-full pointer-events-none select-none gap-0.5">
+        <span className="text-[8px] font-semibold tracking-[0.1em] text-muted-foreground uppercase text-shadow-oled">
+          Week {weekIndex + 1}
+        </span>
+        <span className={cn("font-mono text-xs font-bold tabular-nums text-shadow-oled", week.weekTrades > 0 && monetary && pnlClass(week.weekNetPnl))}>
+          {week.weekTrades > 0 ? (
+            monetary ? (
+              <Pnl value={week.weekNetPnl} currency={currency} />
+            ) : (
+              <span className="text-foreground font-medium">{week.weekTrades} trades</span>
+            )
+          ) : (
+            "—"
+          )}
+        </span>
+        {week.weekTrades > 0 && (
+          <span className={cn("text-[8px] font-medium uppercase tracking-wider text-shadow-oled transition-colors", hovered ? "text-foreground/95" : "text-muted-foreground/90")}>
+            {week.weekTrades} {week.weekTrades === 1 ? "trade" : "trades"}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CalendarDayCell({
+  day,
+  isToday,
+  traded,
+  hasJournal,
+  performance,
+  maxAbs,
+  currency,
+  monetary,
+  ariaLabel,
+  onSelectDay,
+}: {
+  day: NonNullable<CalendarMonth["weeks"][number]["days"][number]>;
+  isToday: boolean;
+  traded: boolean;
+  hasJournal: boolean;
+  performance: "profit" | "loss" | "journal" | "neutral";
+  maxAbs: number;
+  currency: string;
+  monetary: boolean;
+  ariaLabel: string;
+  onSelectDay: (date: string) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const privacy = usePrivacy();
+  const norm = Math.min(1, Math.abs(day.netPnl) / (maxAbs || 1));
+  const baseOpacity = 0.08 + 0.24 * norm;
+  const hoverOpacity = 0.18 + 0.24 * norm;
+  const baseGrad = Math.round((0.06 + 0.26 * norm) * 100);
+  const hoverGrad = Math.round((0.14 + 0.26 * norm) * 100);
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={() => onSelectDay(day.date)}
+          onPointerEnter={() => setHovered(true)}
+          onPointerLeave={() => setHovered(false)}
+          aria-label={ariaLabel}
+          data-today={isToday ? "true" : undefined}
+          data-hovered={hovered ? "true" : undefined}
+          className={cn(
+            "journal-calendar-day journal-calendar-day-link relative overflow-hidden flex flex-col min-w-0 rounded-md border text-left cursor-pointer transition-all duration-150 active:scale-[0.98] !p-0",
+            !traded
+              ? hasJournal
+                ? "border-brand/40 bg-card"
+                : "border-border/20 bg-muted/20 hover:bg-muted/30"
+              : performance === "profit"
+                ? norm >= 0.6
+                  ? "border-profit/50 bg-card"
+                  : "border-profit/30 bg-card"
+                : performance === "loss"
+                  ? norm >= 0.6
+                    ? "border-loss/50 bg-card"
+                    : "border-loss/30 bg-card"
+                  : "border-border/60 bg-card",
+            isToday && "ring-1 ring-primary",
+            hovered && (
+              performance === "profit"
+                ? "border-profit ring-1 ring-profit/60 glow-profit"
+                : performance === "loss"
+                  ? "border-loss ring-1 ring-loss/60 glow-loss"
+                  : hasJournal
+                    ? "border-brand ring-1 ring-brand/60 glow-brand"
+                    : "border-foreground/50"
+            ),
+          )}
+          data-performance={performance}
+          style={{
+            padding: 0,
+            ...(traded && monetary
+              ? {
+                  background: `linear-gradient(to top, color-mix(in oklab, ${
+                    performance === "profit"
+                      ? "var(--profit-fill)"
+                      : performance === "loss"
+                        ? "var(--loss)"
+                        : "var(--neutral-mid)"
+                  } ${hovered ? hoverGrad : baseGrad}%, var(--card)) 0%, var(--card) 90%)`,
+                }
+              : !traded && hasJournal
+                ? {
+                    background: `linear-gradient(to top, color-mix(in oklab, var(--brand) ${hovered ? "12%" : "6%"}, var(--card)) 0%, var(--card) 90%)`,
+                  }
+                : undefined),
+          }}
+        >
+          {traded && monetary && (
+            <DitherGradient
+              from={performance === "profit" ? "green" : performance === "loss" ? "red" : "grey"}
+              to="transparent"
+              direction="up"
+              cell={2}
+              opacity={hovered ? hoverOpacity : baseOpacity}
+              bloom={hovered ? "low" : "off"}
+              className="absolute -inset-1"
+            />
+          )}
+          {!traded && hasJournal && (
+            <DitherGradient
+              from="blue"
+              to="transparent"
+              direction="up"
+              cell={2}
+              opacity={hovered ? 0.18 : 0.08}
+              bloom="off"
+              className="absolute -inset-1"
+            />
+          )}
+          <div className="journal-calendar-day-content relative z-10 flex flex-col justify-between h-full w-full pointer-events-none select-none">
+            <div
+              className={cn(
+                "flex w-full",
+                traded && hasJournal ? "items-center justify-between" : "",
+                isToday ? "font-semibold text-foreground" : "text-muted-foreground",
+              )}
+            >
+              <span className={cn("text-shadow-oled transition-colors", hovered && "text-foreground font-semibold")}>
+                {Number(day.date.slice(8))}
+              </span>
+              {traded && hasJournal && (
+                <NotebookPen
+                  className="h-3 w-3 shrink-0 text-muted-foreground drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                  aria-label="Journal note recorded"
+                />
+              )}
+            </div>
+            {traded && (
+              <div className="flex flex-col mt-auto">
+                <div
+                  className={cn(
+                    "journal-calendar-full tnum text-xs font-bold leading-none text-shadow-oled",
+                    monetary && pnlClass(day.netPnl),
+                  )}
+                >
+                  {monetary ? (
+                    <MonetaryValue>{fmtMoney(day.netPnl, currency)}</MonetaryValue>
+                  ) : (
+                    "—"
+                  )}
+                </div>
+                <div
+                  className={cn(
+                    "journal-calendar-compact tnum text-xs font-bold leading-none text-shadow-oled",
+                    monetary && pnlClass(day.netPnl),
+                  )}
+                >
+                  {monetary ? (
+                    <MonetaryValue>{compactMoney(day.netPnl, currency)}</MonetaryValue>
+                  ) : (
+                    "—"
+                  )}
+                </div>
+                <div className={cn("journal-calendar-trades font-medium mt-0.5 text-shadow-oled transition-colors", hovered ? "text-foreground/95" : "text-muted-foreground/90")}>
+                  {day.trades} trade{day.trades === 1 ? "" : "s"}
+                </div>
+              </div>
+            )}
+            {!traded && hasJournal && (
+              <div className="journal-calendar-trades mt-auto flex items-center gap-1.5 font-semibold text-foreground text-xs text-shadow-oled">
+                <NotebookPen className="size-3.5 shrink-0 text-sky-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" />
+                <span className="truncate">Journaled</span>
+              </div>
+            )}
+          </div>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={6}
+        className={cn(
+          "journal-hover-card z-[80] min-w-44 whitespace-nowrap rounded-lg border bg-popover/95 p-2.5 shadow-xl backdrop-blur-md",
+          performance === "profit" && "border-profit/40 shadow-[0_0_12px_rgba(52,211,153,0.15)]",
+          performance === "loss" && "border-loss/40 shadow-[0_0_12px_rgba(248,113,113,0.15)]",
+          performance === "journal" && "border-brand/40 shadow-[0_0_12px_rgba(99,102,241,0.15)]",
+        )}
+      >
+        <div className="mb-2 flex items-center justify-between border-b border-border/50 pb-1 font-mono text-[10px] tracking-wide text-muted-foreground">
+          <span>{day.date}</span>
+          {isToday && (
+            <span className="rounded bg-primary/20 px-1 py-0.5 text-[8px] font-bold text-primary uppercase">
+              Today
+            </span>
+          )}
+        </div>
+        {traded ? (
+          <div className="flex flex-col gap-1.5 font-mono text-xs tabular-nums">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-1.5 text-muted-foreground text-[11px]">
+                <span
+                  className={cn(
+                    "inline-block size-2 shrink-0 rounded-[1px]",
+                    performance === "profit"
+                      ? "bg-profit shadow-[0_0_6px_var(--profit)]"
+                      : performance === "loss"
+                        ? "bg-loss shadow-[0_0_6px_var(--loss)]"
+                        : "bg-muted-foreground",
+                  )}
+                />
+                <span>Net P&L</span>
+              </div>
+              <span className={cn("font-bold leading-none text-xs", pnlClass(day.netPnl))}>
+                {!monetary ? (
+                  "Multiple currencies"
+                ) : privacy ? (
+                  "P&L hidden"
+                ) : (
+                  fmtMoney(day.netPnl, currency)
+                )}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-4 text-muted-foreground text-[11px]">
+              <span>Trades</span>
+              <span className="font-semibold text-foreground leading-none">
+                {day.trades} {day.trades === 1 ? "trade" : "trades"}
+              </span>
+            </div>
+            {hasJournal && (
+              <div className="flex items-center gap-1.5 pt-1 mt-0.5 border-t border-border/30 text-[10px] text-brand font-medium">
+                <NotebookPen className="size-3 shrink-0" />
+                <span>Journal note recorded</span>
+              </div>
+            )}
+          </div>
+        ) : hasJournal ? (
+          <div className="flex items-center gap-1.5 text-xs text-brand font-medium">
+            <NotebookPen className="size-3.5 shrink-0" />
+            <span>Journal note recorded</span>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">No trades</span>
+        )}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function CalendarWeekTotalCell({
+  week,
+  monetary,
+  currency,
+}: {
+  week: CalendarMonth["weeks"][number];
+  monetary: boolean;
+  currency: string;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const isProfit = week.weekNetPnl >= 0;
+
+  return (
+    <div
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      className={cn(
+        "journal-calendar-week relative overflow-hidden flex flex-col rounded-md bg-card border border-border/40 !p-0 transition-all duration-150",
+        week.weekTrades > 0 && (
+          isProfit
+            ? "border-profit/40 hover:border-profit/90 hover:glow-profit"
+            : "border-loss/40 hover:border-loss/90 hover:glow-loss"
+        ),
+      )}
+      style={{
+        padding: 0,
+        background:
+          week.weekTrades > 0 && monetary
+            ? `linear-gradient(to top, color-mix(in oklab, ${isProfit ? "var(--profit-fill)" : "var(--loss)"} ${hovered ? "20%" : "10%"}, var(--card)) 0%, var(--card) 90%)`
+            : undefined,
+      }}
+    >
+      {week.weekTrades > 0 && monetary && (
+        <DitherGradient
+          from={isProfit ? "green" : "red"}
+          to="transparent"
+          direction="up"
+          cell={2}
+          opacity={hovered ? 0.44 : 0.22}
+          bloom={hovered ? "low" : "off"}
+          className="absolute -inset-1"
+        />
+      )}
+      <div className="relative z-10 flex flex-col justify-between w-full h-full p-1.5 pointer-events-none select-none">
+        <span className="journal-calendar-week-label text-muted-foreground text-shadow-oled">
+          Week total
+        </span>
+        {week.weekTrades > 0 ? (
+          <div className="flex flex-col mt-auto">
+            {monetary && (
+              <Pnl value={week.weekNetPnl} currency={currency} className="font-bold text-shadow-oled" />
+            )}
+            <span className={cn("font-medium mt-0.5 text-shadow-oled transition-colors", hovered ? "text-foreground/95" : "text-muted-foreground/90")}>
+              {week.weekTrades} trades
+            </span>
+          </div>
+        ) : (
+          <span className="text-muted-foreground">–</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function CalendarWeekRow({
   week,
   maxAbs,
@@ -365,7 +706,6 @@ function CalendarWeekRow({
   journalDays?: string[];
   onSelectDay: (date: string) => void;
 }) {
-  const search = useSearchParams();
   const privacy = usePrivacy();
   const journalSet = useMemo(() => new Set(journalDays ?? []), [journalDays]);
 
@@ -376,7 +716,6 @@ function CalendarWeekRow({
         const isToday = day.date === today;
         const traded = day.trades > 0;
         const hasJournal = journalSet.has(day.date);
-        const intensity = traded ? 0.1 + 0.38 * (Math.abs(day.netPnl) / maxAbs) : 0;
         const performance = !monetary
           ? hasJournal
             ? "journal"
@@ -395,12 +734,6 @@ function CalendarWeekRow({
             ? "P&L hidden"
             : fmtMoney(day.netPnl, currency);
 
-        const tooltipContent = traded
-          ? `${tooltipPnl} · ${day.trades} trade${day.trades === 1 ? "" : "s"}${hasJournal ? " · Journaled" : ""}`
-          : hasJournal
-            ? "Journal entry recorded"
-            : "No trades";
-
         const ariaLabel = traded
           ? `${day.date}${isToday ? " (Today)" : ""}, ${tooltipPnl}, ${day.trades} trade${day.trades === 1 ? "" : "s"}${hasJournal ? ", journal note recorded" : ""}`
           : hasJournal
@@ -408,102 +741,26 @@ function CalendarWeekRow({
             : `${day.date}${isToday ? " (Today)" : ""}, no trades`;
 
         return (
-          <HoverHint
+          <CalendarDayCell
             key={day.date}
-            heading={isToday ? `${day.date} (Today)` : day.date}
-            content={tooltipContent}
-          >
-            <button
-              type="button"
-              key={day.date}
-              onClick={() => onSelectDay(day.date)}
-              aria-label={ariaLabel}
-              data-today={isToday ? "true" : undefined}
-              className={cn(
-                "journal-calendar-day journal-calendar-day-link flex flex-col min-w-0 rounded-md border text-left cursor-pointer transition-transform active:scale-[0.98]",
-                !traded
-                  ? hasJournal
-                    ? "border-brand/40 hover:border-brand/70"
-                    : "border-transparent bg-muted/30"
-                  : "border-border/60",
-              )}
-              data-performance={performance}
-              style={
-                traded && monetary
-                  ? {
-                      backgroundColor: `color-mix(in oklab, ${
-                        performance === "profit"
-                          ? "var(--profit-fill)"
-                          : performance === "loss"
-                            ? "var(--loss)"
-                            : "var(--neutral-mid)"
-                      } ${Math.round(intensity * 100)}%, var(--card))`,
-                    }
-                  : !traded && hasJournal
-                    ? {
-                        backgroundColor: "color-mix(in oklab, var(--brand) 18%, var(--card))",
-                      }
-                    : undefined
-              }
-            >
-              <div
-                className={cn(
-                  traded && hasJournal ? "flex items-center justify-between" : "",
-                  isToday ? "font-semibold text-foreground" : "text-muted-foreground",
-                )}
-              >
-                <span>{Number(day.date.slice(8))}</span>
-                {traded && hasJournal && (
-                  <NotebookPen
-                    className="h-3 w-3 shrink-0 text-muted-foreground"
-                    aria-label="Journal note recorded"
-                  />
-                )}
-              </div>
-              {traded && (
-                <>
-                  <div className="journal-calendar-full tnum font-medium">
-                    {monetary ? (
-                      <MonetaryValue>{fmtMoney(day.netPnl, currency)}</MonetaryValue>
-                    ) : (
-                      "—"
-                    )}
-                  </div>
-                  <div className="journal-calendar-compact tnum font-medium">
-                    {monetary ? (
-                      <MonetaryValue>{compactMoney(day.netPnl, currency)}</MonetaryValue>
-                    ) : (
-                      "—"
-                    )}
-                  </div>
-                  <div className="journal-calendar-trades text-muted-foreground">
-                    {day.trades} trade{day.trades === 1 ? "" : "s"}
-                  </div>
-                </>
-              )}
-              {!traded && hasJournal && (
-                <div className="journal-calendar-trades mt-auto flex items-center gap-1 font-medium text-brand">
-                  <NotebookPen className="h-3 w-3 shrink-0" />
-                  <span className="truncate">Journaled</span>
-                </div>
-              )}
-            </button>
-          </HoverHint>
+            day={day}
+            isToday={isToday}
+            traded={traded}
+            hasJournal={hasJournal}
+            performance={performance}
+            maxAbs={maxAbs}
+            currency={currency}
+            monetary={monetary}
+            ariaLabel={ariaLabel}
+            onSelectDay={onSelectDay}
+          />
         );
       })}
-      <div className="journal-calendar-week flex rounded-md bg-muted/40 p-1.5">
-        <span className="journal-calendar-week-label text-muted-foreground">Week total</span>
-        {week.weekTrades > 0 ? (
-          <>
-            {monetary && (
-              <Pnl value={week.weekNetPnl} currency={currency} className="font-medium" />
-            )}
-            <span className="text-muted-foreground">{week.weekTrades} trades</span>
-          </>
-        ) : (
-          <span className="text-muted-foreground">–</span>
-        )}
-      </div>
+      <CalendarWeekTotalCell
+        week={week}
+        monetary={monetary}
+        currency={currency}
+      />
     </>
   );
 }

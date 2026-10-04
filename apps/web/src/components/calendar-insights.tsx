@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, CalendarDays } from "lucide-react";
 import type { DayStats } from "@luxalgo/journal-core";
+import { DailyBreakdownList, BestWorstDayRow } from "./calendar-daily-breakdown";
 import { calendarTradeHref, type CalendarResponse } from "@/lib/calendar-insights";
 import { cn, fmtMoney, fmtPercent } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -13,6 +14,7 @@ import { HelpHint, HoverHint } from "./ui/tooltip";
 import { Pnl } from "./pnl";
 import { usePrivacy } from "./privacy";
 import { StatGaugeCard, StatRatioCard } from "./widgets";
+import { DitherDivergingBar } from "./dither-kit";
 // Keep the calendar and summaries usable before the plotting bundle loads.
 const CalendarDailyChart = dynamic(
   () => import("./charts/calendar-daily-chart").then((module) => module.CalendarDailyChart),
@@ -68,7 +70,8 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
   const privateMode = usePrivacy();
   const router = useRouter();
   const [weekday, setWeekday] = useState<number | null>(null);
-  const href = (date?: string) => calendarTradeHref(query, scope, date);
+  const tradeHref = (date?: string) => calendarTradeHref(query, scope, date);
+  const reviewHref = (date: string) => `/journal/${date}${query ? `?${query}` : ""}`;
   const money = (value: number | null) =>
     value === null || mixed ? (
       <span className="text-muted-foreground">—</span>
@@ -77,19 +80,6 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
     );
   const selected = weekday === null ? null : i.weekdays[weekday]!;
   const peak = Math.max(1, ...i.weekdays.map((day) => Math.abs(day.netPnl)));
-  const dayLink = (day: DayStats | null) =>
-    day && !mixed ? (
-      <Link
-        href={href(day.date)}
-        className="inline-flex max-w-full items-center gap-2 rounded text-sm font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {money(day.netPnl)}
-        <span className="text-xs font-normal text-muted-foreground">{dateLabel(day.date)}</span>
-        <ArrowUpRight aria-hidden="true" className="size-3.5 shrink-0" />
-      </Link>
-    ) : (
-      money(null)
-    );
   return (
     <section
       aria-labelledby="calendar-insights-heading"
@@ -107,7 +97,7 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
         </div>
         {i.trades > 0 && (
           <Link
-            href={href()}
+            href={tradeHref()}
             className="inline-flex items-center gap-1 rounded text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
           >
             View matching trades <ArrowUpRight aria-hidden="true" className="size-3.5" />
@@ -164,7 +154,7 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
               value={
                 <Link
                   className="rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                  href={href()}
+                  href={tradeHref()}
                 >
                   {i.trades}
                 </Link>
@@ -180,16 +170,26 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
                   <CardHeader>
                     <CardTitle>Best & worst day</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-1">
-                      <span className="text-xs text-muted-foreground">Best day</span>
-                      {dayLink(i.bestDay)}
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-1">
-                      <span className="text-xs text-muted-foreground">Worst day</span>
-                      {dayLink(i.worstDay)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
+                  <CardContent className="space-y-1.5">
+                    <BestWorstDayRow
+                      label="Best day"
+                      day={i.bestDay}
+                      type="best"
+                      mixed={mixed}
+                      currency={currency}
+                      href={reviewHref}
+                      dateLabel={dateLabel}
+                    />
+                    <BestWorstDayRow
+                      label="Worst day"
+                      day={i.worstDay}
+                      type="worst"
+                      mixed={mixed}
+                      currency={currency}
+                      href={reviewHref}
+                      dateLabel={dateLabel}
+                    />
+                    <p className="pt-1 text-xs text-muted-foreground">
                       {i.tradingDays === 1
                         ? "One trading day; both extrema are the same."
                         : "Highest and lowest daily net P&L."}
@@ -237,7 +237,7 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
                       <CalendarDailyChart
                         data={i.trend}
                         currency={currency}
-                        onInspect={(date) => router.push(href(date))}
+                        onInspect={(date) => router.push(reviewHref(date))}
                       />
                     ) : (
                       <div className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-lg bg-muted/30 p-5 text-center">
@@ -251,47 +251,13 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
                         </span>
                       </div>
                     )}
-                    <details className="mt-3 border-t pt-3">
-                      <summary className="cursor-pointer rounded text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
-                        Daily values & trade links ({i.tradingDays})
-                      </summary>
-                      <div className="mt-2 max-h-60 overflow-auto">
-                        <table className="w-full text-left text-xs">
-                          <caption className="sr-only">
-                            Daily results for the current month and filters
-                          </caption>
-                          <thead className="sticky top-0 bg-card text-muted-foreground">
-                            <tr>
-                              <th scope="col" className="py-2 font-medium">
-                                Closing day
-                              </th>
-                              <th scope="col" className="text-right font-medium">
-                                Trades
-                              </th>
-                              <th scope="col" className="text-right font-medium">
-                                Net P&L
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {i.days.map((day) => (
-                              <tr key={day.date} className="border-t">
-                                <th scope="row" className="py-2 font-normal">
-                                  <Link
-                                    href={href(day.date)}
-                                    className="rounded underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                  >
-                                    {dateLabel(day.date)}
-                                  </Link>
-                                </th>
-                                <td className="text-right tabular-nums">{day.trades}</td>
-                                <td className="text-right">{money(day.netPnl)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </details>
+                    <DailyBreakdownList
+                      days={i.days}
+                      currency={currency}
+                      reviewHref={reviewHref}
+                      allTradesHref={tradeHref()}
+                      dateLabel={dateLabel}
+                    />
                   </CardContent>
                 </Card>
                 <Card className="dashboard-visual-card">
@@ -336,27 +302,12 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
                             )}
                           >
                             <span>{day.label.slice(0, 3)}</span>
-                            <span aria-hidden="true" className="relative h-4">
-                              <span className="absolute inset-y-0 left-1/2 w-px bg-border" />
-                              <span
-                                className={cn(
-                                  "absolute top-1 h-2 rounded-sm",
-                                  day.netPnl > 0
-                                    ? "bg-profit"
-                                    : day.netPnl < 0
-                                      ? "bg-loss"
-                                      : "bg-muted-foreground",
-                                )}
-                                style={{
-                                  left:
-                                    day.netPnl < 0
-                                      ? `${50 - (Math.abs(day.netPnl) / peak) * 50}%`
-                                      : "50%",
-                                  width:
-                                    day.netPnl === 0
-                                      ? "2px"
-                                      : `${(Math.abs(day.netPnl) / peak) * 50}%`,
-                                }}
+                            <span aria-hidden="true" className="flex items-center w-full">
+                              <DitherDivergingBar
+                                value={day.trades ? day.netPnl : 0}
+                                maxAbs={peak}
+                                height={8}
+                                bloom="low"
                               />
                             </span>
                             <span className="text-right">
@@ -376,7 +327,7 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
                           {selected.days.map((day) => (
                             <Link
                               key={day.date}
-                              href={href(day.date)}
+                              href={reviewHref(day.date)}
                               className="rounded-md border px-2 py-1.5 text-xs outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               {dateLabel(day.date)}{" "}
