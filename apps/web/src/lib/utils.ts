@@ -61,3 +61,38 @@ export const fmtDuration = (ms: number | null | undefined): string => {
 
 export const pnlClass = (value: number): string =>
   value > 0 ? "text-profit" : value < 0 ? "text-loss" : "text-muted-foreground";
+
+const compactCurrencyFormatters = new Map<string, Intl.NumberFormat>();
+
+/**
+ * Compact signed currency (e.g. +$1.2K, -$450, $0) with SSR locale parity (en-US).
+ * Handles NaN, null, and normalizes negative zero to prevent hydration drift.
+ */
+export const compactMoney = (value: number | null | undefined, currency = "USD"): string => {
+  if (value === null || value === undefined || Number.isNaN(value)) return "–";
+  const normalized = Object.is(value, -0) || Math.abs(value) < 0.0001 ? 0 : value;
+  let formatter = compactCurrencyFormatters.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      notation: "compact",
+      maximumFractionDigits: 1,
+      signDisplay: "exceptZero",
+    });
+    compactCurrencyFormatters.set(currency, formatter);
+  }
+  return formatter.format(normalized);
+};
+
+/**
+ * Adaptive percentage tick formatter for charts.
+ * When reference scale is sub-1% (e.g. max drawdown is -0.3%), dynamically uses 1 or 2 decimals
+ * instead of integer round showing "0%, 0%, 0%".
+ */
+export const fmtAdaptivePercent = (value: number | null | undefined, maxSpan: number): string => {
+  if (value === null || value === undefined || Number.isNaN(value)) return "–";
+  const absSpan = Math.abs(maxSpan);
+  const digits = absSpan < 0.002 ? 2 : absSpan < 0.01 ? 1 : 0;
+  return fmtPercent(value, digits);
+};

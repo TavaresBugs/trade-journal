@@ -142,6 +142,22 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* OLED dual text-shadow for high contrast over color washes and dither gradients. */
+.text-shadow-oled {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.95);
+}
+
+/* Phosphor theme glows using semantic CSS tokens (replaces hardcoded RGBA). */
+.glow-profit {
+  box-shadow: 0 0 14px color-mix(in srgb, var(--profit) 35%, transparent);
+}
+.glow-loss {
+  box-shadow: 0 0 14px color-mix(in srgb, var(--loss) 35%, transparent);
+}
+.glow-brand {
+  box-shadow: 0 0 14px color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
 /* Hairline top sheen that lifts cards off a near-black canvas. */
 .card-sheen {
   box-shadow:
@@ -792,6 +808,12 @@ html {
   padding: 4px;
   font-size: clamp(8px, 2.8cqi, 11px);
 }
+.journal-calendar-day:has(.journal-calendar-day-content) {
+  padding: 0;
+}
+.journal-calendar-day-content {
+  padding: 4px;
+}
 .journal-calendar-day-link {
   --calendar-outline: var(--muted-foreground);
   outline: 2px solid transparent;
@@ -819,7 +841,7 @@ html {
 .journal-calendar-day-link:focus-visible {
   outline-color: var(--calendar-outline);
 }
-.journal-calendar-day > :first-child {
+.journal-calendar-day-content > :first-child {
   margin-bottom: 2px;
   font-size: 11px;
 }
@@ -845,6 +867,12 @@ html {
     font-size: 11px;
     aspect-ratio: auto;
     min-height: 64px;
+  }
+  .journal-calendar-day:has(.journal-calendar-day-content) {
+    padding: 0;
+  }
+  .journal-calendar-day-content {
+    padding: 6px;
   }
   .journal-calendar-full {
     display: block;
