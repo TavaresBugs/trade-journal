@@ -22,7 +22,13 @@ export const GET = handler(async (request: Request) => {
       month <= 12,
     "Choose a valid calendar month.",
   );
-  const scope = calendarScope(readFilters(params), year, month);
+  const rawFilters = readFilters(params);
+  // Calendar month views are scoped to the exact month requested [start, end].
+  // Date range presets (e.g. 90d, 30d, 7d) apply to dashboard metrics, but must
+  // never clip or prevent navigating across calendar months.
+  // Non-date filters (accounts, symbols, playbooks, etc.) are strictly preserved.
+  const { from: _from, to: _to, ...monthFilters } = rawFilters;
+  const scope = calendarScope(monthFilters, year, month);
   const { trades } = queryTrades(scope);
   const calendar = calendarMonthFromDays(dailyStats(trades, timeZone), year, month);
   const accountRows = db

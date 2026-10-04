@@ -14,10 +14,9 @@ import { CalendarPnl } from "@/components/calendar-pnl";
 import { DailyBars } from "@/components/charts/daily-bars";
 import { EdgeRadar } from "@/components/charts/edge-radar";
 import { EquityArea } from "@/components/charts/equity-area";
-import { Gauge } from "@/components/charts/gauge";
 import { RelativeDrawdownBars } from "@/components/charts/relative-drawdown-bars";
 import { TimeHeatmap } from "@/components/charts/time-heatmap";
-import { DitherRatioBar } from "@/components/dither-kit";
+import { StatGaugeCard, StatRatioCard } from "@/components/widgets";
 import {
   ArrowUpDown,
   CalendarCheck2,
@@ -226,21 +225,17 @@ function DashboardContent({
             size: "small",
             layoutGroup: "summary",
             content: (
-              <Card className="h-full">
-                <StatHeader
-                  title="Trade win %"
-                  icon={Target}
-                  hint="Winning trades divided by all closed trades, including breakevens."
-                />
-                <CardContent className="flex items-center justify-between gap-2">
-                  <Gauge value={m.winRate} label="Trade win rate" />
-                  <div className="space-y-0.5 text-xs text-muted-foreground">
-                    <div>{m.wins} W</div>
-                    <div>{m.breakevens} BE</div>
-                    <div>{m.losses} L</div>
-                  </div>
-                </CardContent>
-              </Card>
+              <StatGaugeCard
+                title="Trade win %"
+                icon={Target}
+                hint="Winning trades divided by all closed trades, including breakevens."
+                value={m.winRate}
+                details={[
+                  { label: "W", value: m.wins },
+                  { label: "BE", value: m.breakevens },
+                  { label: "L", value: m.losses },
+                ]}
+              />
             ),
           },
           {
@@ -276,17 +271,13 @@ function DashboardContent({
             size: "small",
             layoutGroup: "summary",
             content: (
-              <Card className="h-full">
-                <StatHeader
-                  title="Day win %"
-                  icon={CalendarCheck2}
-                  hint="Green trading days ÷ all trading days in the selected range."
-                />
-                <CardContent className="flex items-center justify-between gap-2">
-                  <Gauge value={m.dayWinRate} label="Day win rate" />
-                  <div className="text-xs text-muted-foreground">{m.tradingDays} days</div>
-                </CardContent>
-              </Card>
+              <StatGaugeCard
+                title="Day win %"
+                icon={CalendarCheck2}
+                hint="Green trading days ÷ all trading days in the selected range."
+                value={m.dayWinRate}
+                details={[{ label: "days", value: m.tradingDays }]}
+              />
             ),
           },
           {
@@ -295,46 +286,14 @@ function DashboardContent({
             size: "small",
             layoutGroup: "summary",
             content: (
-              <Card className="h-full">
-                <StatHeader
-                  title="Avg win / loss"
-                  icon={ArrowUpDown}
-                  hint="Average winning trade ÷ average losing trade. The bar shows the two to scale."
-                />
-                <CardContent>
-                  <div className="text-3xl font-semibold tracking-tight tnum">
-                    {m.avgWinLossRatio === null ? "–" : fmtNumber(m.avgWinLossRatio)}
-                  </div>
-                  {m.avgWin !== null && m.avgLoss !== null && m.avgWin + m.avgLoss > 0 && (
-                    <div className="mt-2.5">
-                      <DitherRatioBar
-                        winValue={m.avgWin}
-                        lossValue={m.avgLoss}
-                        height={8}
-                        bloom="low"
-                      />
-                    </div>
-                  )}
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    <span className="text-profit">
-                      {m.avgWin === null ? (
-                        "–"
-                      ) : (
-                        <MonetaryValue>{fmtMoney(m.avgWin)}</MonetaryValue>
-                      )}
-                    </span>
-                    {" avg win · "}
-                    <span className="text-loss">
-                      {m.avgLoss === null ? (
-                        "–"
-                      ) : (
-                        <MonetaryValue>{fmtMoney(-m.avgLoss)}</MonetaryValue>
-                      )}
-                    </span>
-                    {" avg loss"}
-                  </div>
-                </CardContent>
-              </Card>
+              <StatRatioCard
+                title="Avg win / loss"
+                icon={ArrowUpDown}
+                hint="Average winning trade ÷ average losing trade. The bar shows the two to scale."
+                ratio={m.avgWinLossRatio}
+                win={{ value: m.avgWin, label: "avg win" }}
+                loss={{ value: m.avgLoss, label: "avg loss" }}
+              />
             ),
           },
           {

@@ -5,6 +5,7 @@ import {
   BAYER,
   backingSize,
   bloomLayerStyle,
+  clamp01,
   easeOutCubic,
   OFF_TIER,
   prefersReducedMotion,
@@ -78,26 +79,42 @@ export function DitherRatioBar({
         for (let x = 0; x < cols; x++) {
           if (x < splitCol) {
             // WIN SECTION (Green)
+            // Equilibrium point is at splitCol - 1 (strongest / peak saturation & density)
+            // Gradient fades outward toward the left edge (x = 0) with a steeper quadratic falloff
+            const t = splitCol > 1 ? x / (splitCol - 1) : 1;
+            const falloff = Math.pow(t, 2.0);
+            const density = 0.12 + 0.88 * falloff;
+            const lit = density > (BAYER[y & 3]?.[x & 3] ?? 0);
+            const k = 0.25 + density * 0.75;
+            const alpha = clamp01(lit ? k : k * OFF_TIER);
+
             if (isBorder) {
-              c.fillStyle = rgb(winSeed.fill, 1, 1);
-              c.fillRect(x, y, 1, 1);
+              const borderAlpha = clamp01(0.25 + 0.75 * falloff);
+              c.fillStyle = rgb(winSeed.fill, 1, borderAlpha);
             } else {
-              const lit = 0.65 > (BAYER[y & 3]?.[x & 3] ?? 0);
-              const alpha = lit ? 0.85 : OFF_TIER * 0.6;
               c.fillStyle = rgb(winSeed.fill, 1, alpha);
-              c.fillRect(x, y, 1, 1);
             }
+            c.fillRect(x, y, 1, 1);
           } else if (x >= splitCol + gap && x < cols) {
             // LOSS SECTION (Red)
+            // Equilibrium point is at splitCol + gap (strongest / peak saturation & density)
+            // Gradient fades outward toward the right edge (x = cols - 1) with a steeper quadratic falloff
+            const lossWidth = cols - (splitCol + gap);
+            const distFromDivider = x - (splitCol + gap);
+            const t = lossWidth > 1 ? 1 - distFromDivider / (lossWidth - 1) : 1;
+            const falloff = Math.pow(t, 2.0);
+            const density = 0.12 + 0.88 * falloff;
+            const lit = density > (BAYER[y & 3]?.[x & 3] ?? 0);
+            const k = 0.25 + density * 0.75;
+            const alpha = clamp01(lit ? k : k * OFF_TIER);
+
             if (isBorder) {
-              c.fillStyle = rgb(lossSeed.fill, 1, 1);
-              c.fillRect(x, y, 1, 1);
+              const borderAlpha = clamp01(0.25 + 0.75 * falloff);
+              c.fillStyle = rgb(lossSeed.fill, 1, borderAlpha);
             } else {
-              const lit = 0.65 > (BAYER[y & 3]?.[x & 3] ?? 0);
-              const alpha = lit ? 0.85 : OFF_TIER * 0.6;
               c.fillStyle = rgb(lossSeed.fill, 1, alpha);
-              c.fillRect(x, y, 1, 1);
             }
+            c.fillRect(x, y, 1, 1);
           }
         }
       }

@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { HelpHint, HoverHint } from "./ui/tooltip";
 import { Pnl } from "./pnl";
 import { usePrivacy } from "./privacy";
+import { StatGaugeCard, StatRatioCard } from "./widgets";
 // Keep the calendar and summaries usable before the plotting bundle loads.
 const CalendarDailyChart = dynamic(
   () => import("./charts/calendar-daily-chart").then((module) => module.CalendarDailyChart),
@@ -38,14 +39,16 @@ function Metric({
   value,
   detail,
   hint,
+  className,
 }: {
   title: string;
   value: ReactNode;
   detail: ReactNode;
   hint: string;
+  className?: string;
 }) {
   return (
-    <Card>
+    <Card className={cn("dashboard-visual-card", className)}>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle>{title}</CardTitle>
         <HelpHint heading={title}>{hint}</HelpHint>
@@ -146,11 +149,15 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
               detail="Per day with closed trades"
               hint="Net P&L divided by trading days. Days without closed trades are excluded; break-even trading days are included."
             />
-            <Metric
+            <StatGaugeCard
               title="Trade win rate"
-              value={fmtPercent(i.winRate)}
-              detail={`${i.wins} wins · ${i.losses} losses · ${i.breakevens} break-even`}
               hint="Winning closed trades divided by all closed trades, including break-even trades. Uses your journal's configured break-even rule."
+              value={i.winRate}
+              details={[
+                { label: "W", value: i.wins },
+                { label: "BE", value: i.breakevens },
+                { label: "L", value: i.losses },
+              ]}
             />
             <Metric
               title="Total closed trades"
@@ -169,7 +176,7 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
           {!mixed && (
             <>
               <div className="grid gap-3 md:grid-cols-3">
-                <Card>
+                <Card className="dashboard-visual-card">
                   <CardHeader>
                     <CardTitle>Best & worst day</CardTitle>
                   </CardHeader>
@@ -189,35 +196,35 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
                     </p>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Average green & red day</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between gap-2 text-sm">
-                      <span className="text-xs text-muted-foreground">
-                        {i.greenDays} profitable days
-                      </span>
-                      {money(i.avgGreenDay)}
-                    </div>
-                    <div className="flex items-center justify-between gap-2 text-sm">
-                      <span className="text-xs text-muted-foreground">{i.redDays} losing days</span>
-                      {money(i.avgRedDay)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Each average uses only its own group.
-                    </p>
-                  </CardContent>
-                </Card>
-                <Metric
+                <StatRatioCard
+                  title="Average green & red day"
+                  hint="Average daily net P&L on green days vs red days. Each average uses only its own group."
+                  win={{
+                    value: i.avgGreenDay,
+                    label: "profitable days",
+                    count: i.greenDays,
+                  }}
+                  loss={{
+                    value: i.avgRedDay,
+                    label: "losing days",
+                    count: i.redDays,
+                  }}
+                  currency={currency}
+                  detailText="Each average uses only its own group."
+                />
+                <StatGaugeCard
                   title="Day consistency"
-                  value={fmtPercent(i.profitableDayRate)}
-                  detail={`${i.greenDays} positive · ${i.redDays} negative · ${i.flatDays} flat days`}
                   hint="Share of trading days with strictly positive net P&L. This is a profitable-day rate, not a risk-adjusted score or a prediction. Flat days stay in the denominator."
+                  value={i.profitableDayRate}
+                  details={[
+                    { label: "positive", value: i.greenDays, color: "profit" },
+                    { label: "negative", value: i.redDays, color: "loss" },
+                    ...(i.flatDays > 0 ? [{ label: "flat", value: i.flatDays }] : []),
+                  ]}
                 />
               </div>
               <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
-                <Card>
+                <Card className="dashboard-visual-card">
                   <CardHeader>
                     <h3 className="text-sm font-medium">Daily performance</h3>
                     <p className="text-xs text-muted-foreground">
@@ -287,7 +294,7 @@ export function CalendarPerformance({ data, query }: { data: CalendarResponse; q
                     </details>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="dashboard-visual-card">
                   <CardHeader>
                     <h3 className="text-sm font-medium">Performance by weekday</h3>
                     <p className="text-xs text-muted-foreground">

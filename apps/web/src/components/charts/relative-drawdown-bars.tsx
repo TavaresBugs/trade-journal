@@ -46,12 +46,16 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
     [available],
   );
 
+  const yAxisDigits = maxDrawdown < 0.01 ? (maxDrawdown < 0.002 ? 2 : 1) : 0;
+
   return (
     <div className="mt-2 border-t pt-3">
       <div className="mb-1 flex items-center justify-between gap-3 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
         <span>Relative drawdown</span>
         <span className="tnum text-loss">
-          {available.length === 0 ? "Initial balance required" : `Max −${fmtPercent(maxDrawdown)}`}
+          {available.length === 0
+            ? "Initial balance required"
+            : `Max −${fmtPercent(maxDrawdown, maxDrawdown < 0.01 ? 2 : 1)}`}
         </span>
       </div>
       {available.length === 0 ? (
@@ -71,7 +75,7 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
             <Grid />
             <YAxis
               tickCount={3}
-              tickFormatter={(value: number) => fmtPercent(Math.abs(value), 0)}
+              tickFormatter={(value: number) => fmtPercent(Math.abs(value), yAxisDigits)}
             />
             <ReferenceLine y={0} />
             <Bar dataKey="drawdownPct" variant="gradient" />
