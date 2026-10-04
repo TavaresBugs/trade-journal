@@ -1,23 +1,50 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useMemo } from "react";
 import type { RelativeDrawdownPoint } from "@luxalgo/journal-core";
 import { fmtPercent } from "@/lib/utils";
-import { tooltipStyle, useVizTokens } from "./tokens";
 import { ChartFrame } from "./chart-frame";
+import {
+  BarChart,
+  Bar,
+  Grid,
+  ReferenceLine,
+  Tooltip,
+  YAxis,
+  type ChartConfig,
+} from "@/components/dither-kit";
 
+const config: ChartConfig = {
+  drawdownPct: {
+    label: "Relative DD",
+    color: "red",
+    negativeColor: "red",
+  },
+};
+
+/**
+ * Relative drawdown bars — retro ordered dither with bloom texture.
+ * Margins strictly match EquityArea (left: 56, right: 12) for perfect vertical alignment.
+ */
 export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }) {
-  const tokens = useVizTokens();
-  const chartData = data.map((point) => ({
-    t: point.t,
-    drawdownPct: point.drawdownPct === null ? null : -point.drawdownPct,
-  }));
-  const available = chartData.filter(
-    (point): point is { t: string; drawdownPct: number } => point.drawdownPct !== null,
+  const chartData = useMemo(
+    () =>
+      data.map((point) => ({
+        t: point.t,
+        drawdownPct: point.drawdownPct === null ? 0 : -Math.abs(point.drawdownPct),
+      })),
+    [data],
   );
-  const maxDrawdown = Math.max(0, ...available.map((point) => Math.abs(point.drawdownPct)));
 
-  if (!tokens) return <div className="h-24" />;
+  const available = useMemo(
+    () => data.filter((p) => p.drawdownPct !== null),
+    [data],
+  );
+
+  const maxDrawdown = useMemo(
+    () => Math.max(0, ...available.map((p) => Math.abs(p.drawdownPct ?? 0))),
+    [available],
+  );
 
   return (
     <div className="mt-2 border-t pt-3">
@@ -33,43 +60,26 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
         </div>
       ) : (
         <ChartFrame height={96}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 2, right: 8, bottom: 0, left: 8 }}
-              barCategoryGap={0}
-            >
-              <CartesianGrid stroke={tokens.gridline} strokeWidth={1} vertical={false} />
-              <XAxis
-                dataKey="t"
-                tick={false}
-                tickLine={false}
-                axisLine={{ stroke: tokens.baseline }}
-                height={8}
-              />
-              <YAxis
-                tick={{ fill: tokens.inkMuted, fontSize: 10 }}
-                tickLine={false}
-                axisLine={false}
-                width={70}
-                domain={[-Math.max(maxDrawdown, 0.01), 0]}
-                tickFormatter={(value: number) => fmtPercent(Math.abs(value), 0)}
-                tickCount={3}
-              />
-              <Tooltip
-                contentStyle={tooltipStyle(tokens)}
-                labelFormatter={(value) => String(value).slice(0, 10)}
-                formatter={(value) => [fmtPercent(Math.abs(Number(value)), 2), "Relative drawdown"]}
-                cursor={{ fill: tokens.loss, fillOpacity: 0.08 }}
-              />
-              <Bar
-                dataKey="drawdownPct"
-                fill={tokens.loss}
-                fillOpacity={0.82}
-                isAnimationActive={false}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          <BarChart
+            data={chartData}
+            config={config}
+            bloom="low"
+            bloomOnHover
+            margins={{ top: 6, right: 12, bottom: 8, left: 56 }}
+            className="h-full w-full"
+          >
+            <Grid />
+            <YAxis
+              tickCount={3}
+              tickFormatter={(value: number) => fmtPercent(Math.abs(value), 0)}
+            />
+            <ReferenceLine y={0} />
+            <Bar dataKey="drawdownPct" variant="gradient" />
+            <Tooltip
+              labelKey="t"
+              valueFormatter={(value) => `-${fmtPercent(Math.abs(value), 2)}`}
+            />
+          </BarChart>
         </ChartFrame>
       )}
     </div>

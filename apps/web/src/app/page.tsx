@@ -17,6 +17,7 @@ import { EquityArea } from "@/components/charts/equity-area";
 import { Gauge } from "@/components/charts/gauge";
 import { RelativeDrawdownBars } from "@/components/charts/relative-drawdown-bars";
 import { TimeHeatmap } from "@/components/charts/time-heatmap";
+import { DitherRatioBar } from "@/components/dither-kit";
 import {
   ArrowUpDown,
   CalendarCheck2,
@@ -305,18 +306,13 @@ function DashboardContent({
                     {m.avgWinLossRatio === null ? "–" : fmtNumber(m.avgWinLossRatio)}
                   </div>
                   {m.avgWin !== null && m.avgLoss !== null && m.avgWin + m.avgLoss > 0 && (
-                    <div
-                      className="journal-progress-visual mt-2 flex h-1.5 gap-0.5"
-                      role="img"
-                      aria-label="Average win vs average loss, to scale"
-                    >
-                      <span
-                        className="rounded-full bg-profit"
-                        style={{
-                          width: `${((m.avgWin / (m.avgWin + m.avgLoss)) * 100).toFixed(1)}%`,
-                        }}
+                    <div className="mt-2.5">
+                      <DitherRatioBar
+                        winValue={m.avgWin}
+                        lossValue={m.avgLoss}
+                        height={8}
+                        bloom="low"
                       />
-                      <span className="flex-1 rounded-full bg-loss" />
                     </div>
                   )}
                   <div className="mt-1 text-xs text-muted-foreground">
@@ -347,7 +343,7 @@ function DashboardContent({
             size: "medium",
             layoutGroup: "visuals",
             content: (
-              <Card className="dashboard-visual-card h-full">
+              <Card className="dashboard-visual-card h-full overflow-visible">
                 <CardHeader className="flex-row items-center justify-between">
                   <div className="flex min-w-0 items-center gap-1">
                     <CardTitle>Edge Score</CardTitle>
@@ -365,7 +361,7 @@ function DashboardContent({
                     <span className="text-xs text-muted-foreground"> /100</span>
                   </span>
                 </CardHeader>
-                <CardContent className="dashboard-visual-card-content">
+                <CardContent className="dashboard-visual-card-content overflow-visible">
                   {edgeScore.score === null ? (
                     <p className="py-8 text-center text-sm text-muted-foreground">
                       Needs 5+ closed trades. The formula is open —{" "}
@@ -392,7 +388,7 @@ function DashboardContent({
             size: "medium",
             layoutGroup: "visuals",
             content: (
-              <Card className="dashboard-visual-card h-full">
+              <Card className="dashboard-visual-card h-full overflow-visible">
                 <CardHeader className="flex-row items-center justify-between">
                   <CardTitle>Daily net cumulative P&L</CardTitle>
                   <HelpHint heading="Cumulative P&L">
@@ -400,7 +396,7 @@ function DashboardContent({
                     below show declines from the running equity peak.
                   </HelpHint>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-visible">
                   <EquityArea
                     data={data.dailyCumulative.map((p) => ({ t: p.t, cumNetPnl: p.cumNetPnl }))}
                   />
@@ -417,7 +413,7 @@ function DashboardContent({
             size: "medium",
             layoutGroup: "visuals",
             content: (
-              <Card className="dashboard-visual-card h-full">
+              <Card className="dashboard-visual-card h-full overflow-visible">
                 <CardHeader className="flex-row items-center justify-between">
                   <CardTitle>Net daily P&L</CardTitle>
                   <HelpHint heading="Daily P&L">
@@ -425,7 +421,7 @@ function DashboardContent({
                     below zero are losses.
                   </HelpHint>
                 </CardHeader>
-                <CardContent className="dashboard-visual-card-content">
+                <CardContent className="dashboard-visual-card-content overflow-visible">
                   <DailyBars
                     data={data.days.map((d) => ({ date: d.date, netPnl: d.netPnl }))}
                     height="100%"
@@ -702,7 +698,7 @@ function DashboardContent({
             size: "full",
             layoutGroup: "full",
             content: (
-              <Card className="h-full">
+              <Card className="dashboard-visual-card h-full overflow-visible">
                 <CardHeader className="flex-row items-center justify-between">
                   <CardTitle>Trade time performance</CardTitle>
                   <HelpHint heading="Trade time performance">
@@ -710,7 +706,7 @@ function DashboardContent({
                     chart shows trade count.
                   </HelpHint>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-visible">
                   <TimeHeatmap
                     hours={data.buckets.hour.map((b) => ({
                       key: b.key,

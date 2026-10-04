@@ -234,8 +234,7 @@ body.dashboard-is-dragging .journal-hover-card {
   position: relative;
   width: 100%;
   min-width: 0;
-  overflow: hidden;
-  isolation: isolate;
+  overflow: visible !important;
 }
 .journal-chart-frame .recharts-surface {
   overflow: hidden;
@@ -745,15 +744,22 @@ input[type="number"].tnum::-webkit-outer-spin-button {
 }
 
 /* Visual cards consume the row height rather than leaving blank card interiors. */
+.dashboard-grid-card:hover,
+.dashboard-grid-card:focus-within {
+  z-index: 40;
+}
 .dashboard-visual-card {
   display: flex;
   flex-direction: column;
+  overflow: visible !important;
 }
+.dashboard-visual-card [data-slot="card-content"],
 .dashboard-visual-card-content {
   display: flex;
   min-height: 18rem;
   flex: 1;
   flex-direction: column;
+  overflow: visible !important;
 }
 .dashboard-layout-option:hover,
 .dashboard-layout-option:focus-visible {

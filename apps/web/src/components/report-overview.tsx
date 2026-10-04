@@ -344,7 +344,7 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
         </div>
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
-        <Card className="lg:col-span-2">
+        <Card className="dashboard-visual-card lg:col-span-2 overflow-visible">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -356,7 +356,7 @@ export function ReportOverview({ query, filters }: { query: string; filters: Ana
               Opening Hour (24h)
             </span>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-visible">
             <TimeHeatmap hours={data.buckets.hour} currency={currency} />
           </CardContent>
         </Card>

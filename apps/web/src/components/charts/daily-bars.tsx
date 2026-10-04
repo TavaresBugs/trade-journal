@@ -1,20 +1,19 @@
 "use client";
 
+import { useMemo } from "react";
+import { fmtMoney } from "@/lib/utils";
+import { usePrivacy } from "../privacy";
+import { ChartFrame } from "./chart-frame";
 import {
-  Bar,
   BarChart,
-  CartesianGrid,
-  Cell,
+  Bar,
+  Grid,
   ReferenceLine,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
-import { fmtMoney } from "@/lib/utils";
-import { usePrivacy } from "../privacy";
-import { tooltipStyle, useVizTokens } from "./tokens";
-import { ChartFrame } from "./chart-frame";
+  type ChartConfig,
+} from "@/components/dither-kit";
 
 export interface DailyBarDatum {
   date: string;
@@ -23,7 +22,7 @@ export interface DailyBarDatum {
 
 /**
  * Net daily P&L. Polarity is geometry first (bars grow from the zero baseline);
- * green/red only reinforces. Rounded corners sit at the data end.
+ * green/red retro dither with bloom texture.
  */
 export function DailyBars({
   data,
@@ -32,52 +31,53 @@ export function DailyBars({
   data: DailyBarDatum[];
   height?: number | `${number}%`;
 }) {
-  const t = useVizTokens();
   const privateMode = usePrivacy();
-  if (!t) return <div style={{ height }} />;
+
+  const config: ChartConfig = useMemo(
+    () => ({
+      netPnl: {
+        label: "Net P&L",
+        color: "green",
+        negativeColor: "red",
+      },
+    }),
+    [],
+  );
+
+  if (!data || data.length === 0) {
+    return <div style={{ height }} />;
+  }
+
   return (
     <ChartFrame height={height}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          key={String(privateMode)}
-          data={data}
-          margin={{ top: 8, right: 8, bottom: 0, left: 8 }}
-          barCategoryGap="20%"
-        >
-          <CartesianGrid stroke={t.gridline} strokeWidth={1} vertical={false} />
-          <XAxis
-            dataKey="date"
-            tick={{ fill: t.inkMuted, fontSize: 11 }}
-            tickLine={false}
-            axisLine={{ stroke: t.baseline }}
-            minTickGap={48}
-          />
-          <YAxis
-            tick={{ fill: t.inkMuted, fontSize: 11 }}
-            tickLine={false}
-            axisLine={false}
-            width={70}
-            tickFormatter={(value: number) =>
-              privateMode ? "••••" : fmtMoney(value).replace(".00", "")
-            }
-          />
-          <ReferenceLine y={0} stroke={t.baseline} />
-          <Tooltip
-            contentStyle={tooltipStyle(t)}
-            formatter={(value) => [privateMode ? "Hidden" : fmtMoney(Number(value)), "Net P&L"]}
-            cursor={{ fill: t.gridline, opacity: 0.4 }}
-          />
-          <Bar dataKey="netPnl" isAnimationActive={false} maxBarSize={28}>
-            {data.map((entry) => (
-              <Cell
-                key={entry.date}
-                fill={entry.netPnl >= 0 ? t.profitFill : t.loss}
-                radius={(entry.netPnl >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4]) as unknown as number}
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <BarChart
+        data={data}
+        config={config}
+        bloom="low"
+        bloomOnHover
+        margins={{ top: 12, right: 12, bottom: 24, left: 56 }}
+        className="h-full w-full"
+      >
+        <Grid />
+        <XAxis
+          dataKey="date"
+          tickFormatter={(value) => String(value ?? "").slice(5)}
+          maxTicks={8}
+        />
+        <YAxis
+          tickFormatter={(value) =>
+            privateMode ? "••••" : fmtMoney(value).replace(".00", "")
+          }
+        />
+        <ReferenceLine y={0} />
+        <Bar dataKey="netPnl" variant="gradient" />
+        <Tooltip
+          labelKey="date"
+          valueFormatter={(value) =>
+            privateMode ? "Hidden" : fmtMoney(value)
+          }
+        />
+      </BarChart>
     </ChartFrame>
   );
 }

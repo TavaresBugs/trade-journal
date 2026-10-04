@@ -1,13 +1,22 @@
 "use client";
 
-import { useMemo, useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import type { EChartsOption } from "echarts";
+import { useMemo, useState } from "react";
 import { fmtMoney, fmtNumber } from "@/lib/utils";
 import { usePrivacy } from "../privacy";
-import { useVizTokens } from "./tokens";
-
-const EChart = dynamic(() => import("./echart").then((module) => module.EChart), { ssr: false });
+import { ChartFrame } from "./chart-frame";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  Dot,
+  Grid,
+  ReferenceLine,
+  Tooltip,
+  XAxis,
+  YAxis,
+  type ChartConfig,
+} from "@/components/dither-kit";
 
 export interface HourBucket {
   key: string; // "09"
@@ -16,9 +25,12 @@ export interface HourBucket {
 }
 
 /**
- * Time-of-day performance (ECharts — the heavy plot). Two aligned rows:
- * P&L per opening hour as diverging columns, trade count as a muted line.
- * One value axis per pane — never dual-axis on one grid.
+ * Time-of-day performance rendered with the retro Dither Kit:
+ * - Upper pane: Net P&L per opening hour as diverging dithered bars (green/red with bloom glow).
+ * - Lower pane: Trade volume as a dithered line chart with dots on category band centers.
+ * - Synchronized hover crosshairs and tooltips across both panes.
+ *
+ * Keeps 100% of underlying calculations and business rules intact.
  */
 export function TimeHeatmap({
   hours,
@@ -29,125 +41,129 @@ export function TimeHeatmap({
   height?: number;
   currency?: string;
 }) {
-  const t = useVizTokens();
   const privateMode = usePrivacy();
-  const host = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    if (!host.current) return;
-    if (typeof IntersectionObserver === "undefined") {
-      setVisible(true);
-      return;
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  const chartData = useMemo(
+    () =>
+      hours.map((h) => ({
+        key: h.key,
+        hourLabel: `${h.key}:00`,
+        hourRange: `${h.key}:00 - ${h.key}:59`,
+        netPnl: h.netPnl,
+        trades: h.trades,
+      })),
+    [hours],
+  );
+
+  const pnlConfig: ChartConfig = useMemo(
+    () => ({
+      netPnl: {
+        label: "Net P&L",
+        color: "green",
+        negativeColor: "red",
+      },
+    }),
+    [],
+  );
+
+  const tradesConfig: ChartConfig = useMemo(
+    () => ({
+      trades: {
+        label: "Trades",
+        color: "blue",
+      },
+    }),
+    [],
+  );
+
+  const topHeight = Math.max(120, Math.round(height * 0.58));
+  const bottomHeight = Math.max(90, height - topHeight - 32);
+
+  const tooltipFormatter = (value: number, name: string) => {
+    if (name === "netPnl") {
+      // fmtMoney already provides the sign (+ or -), no duplicate ++
+      return privateMode ? "••••" : fmtMoney(value, currency);
     }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "240px" },
+    return `${fmtNumber(value, 0)} ${value === 1 ? "trade" : "trades"}`;
+  };
+
+  if (!hours || hours.length === 0) {
+    return (
+      <div
+        style={{ height }}
+        className="flex items-center justify-center text-xs text-muted-foreground"
+      >
+        No trade data available for this period.
+      </div>
     );
-    observer.observe(host.current);
-    return () => observer.disconnect();
-  }, []);
-  const option = useMemo<EChartsOption | null>(() => {
-    if (!t) return null;
-    const categories = hours.map((h) => `${h.key}:00`);
-    return {
-      backgroundColor: "transparent",
-      grid: [
-        { left: 64, right: 16, top: 24, height: "48%" },
-        { left: 64, right: 16, bottom: 28, height: "22%" },
-      ],
-      tooltip: {
-        confine: true,
-        trigger: "axis",
-        backgroundColor: t.card,
-        borderColor: t.border,
-        borderWidth: 1,
-        padding: [12, 14],
-        extraCssText:
-          "border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.1);line-height:1.6;",
-        textStyle: { color: t.foreground, fontSize: 13 },
-      },
-      axisPointer: { link: [{ xAxisIndex: "all" }] },
-      xAxis: [
-        {
-          type: "category",
-          data: categories,
-          gridIndex: 0,
-          axisLine: { lineStyle: { color: t.baseline } },
-          axisLabel: { show: false },
-          axisTick: { show: false },
-        },
-        {
-          type: "category",
-          data: categories,
-          gridIndex: 1,
-          axisLine: { lineStyle: { color: t.baseline } },
-          axisLabel: { color: t.inkMuted, fontSize: 11 },
-          axisTick: { show: false },
-        },
-      ],
-      yAxis: [
-        {
-          type: "value",
-          gridIndex: 0,
-          name: privateMode ? "Net P&L (hidden)" : `Net P&L (${currency})`,
-          nameTextStyle: { color: t.inkMuted, fontSize: 11 },
-          splitLine: { lineStyle: { color: t.gridline } },
-          axisLabel: {
-            color: t.inkMuted,
-            fontSize: 11,
-            formatter: (value: number) => (privateMode ? "••••" : fmtNumber(value, 0)),
-          },
-        },
-        {
-          type: "value",
-          gridIndex: 1,
-          name: "Trades",
-          nameTextStyle: { color: t.inkMuted, fontSize: 11 },
-          splitLine: { show: false },
-          axisLabel: { color: t.inkMuted, fontSize: 11 },
-        },
-      ],
-      series: [
-        {
-          type: "bar",
-          name: "Net P&L",
-          tooltip: {
-            valueFormatter: (value) => (privateMode ? "Hidden" : fmtMoney(Number(value), currency)),
-          },
-          xAxisIndex: 0,
-          yAxisIndex: 0,
-          data: hours.map((h) => ({
-            value: h.netPnl,
-            itemStyle: {
-              color: h.netPnl >= 0 ? t.profitFill : t.loss,
-              borderRadius: h.netPnl >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4],
-            },
-          })),
-          barMaxWidth: 26,
-        },
-        {
-          type: "line",
-          name: "Trades",
-          tooltip: { valueFormatter: (value) => fmtNumber(Number(value), 0) },
-          xAxisIndex: 1,
-          yAxisIndex: 1,
-          data: hours.map((h) => h.trades),
-          lineStyle: { color: t.inkMuted, width: 2 },
-          itemStyle: { color: t.inkMuted },
-          symbolSize: 6,
-        },
-      ],
-    };
-  }, [hours, t, privateMode, currency]);
+  }
 
   return (
-    <div ref={host} style={{ height }}>
-      {visible && option && <EChart key={String(privateMode)} option={option} height={height} />}
+    <div className="flex flex-col w-full" style={{ minHeight: height }}>
+      {/* Pane 1: Net P&L per Opening Hour (Dither Bars with Bloom) */}
+      <div className="flex items-center justify-between px-1 pb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+        <span>Net P&L</span>
+        <span>{privateMode ? "••••" : currency}</span>
+      </div>
+      <ChartFrame height={topHeight}>
+        <BarChart
+          data={chartData}
+          config={pnlConfig}
+          bloom="low"
+          bloomOnHover
+          margins={{ top: 10, right: 16, bottom: 10, left: 64 }}
+          markerIndex={hoveredIndex}
+          onHoverChange={setHoveredIndex}
+          className="h-full w-full"
+        >
+          <Grid />
+          <ReferenceLine y={0} />
+          <YAxis
+            tickFormatter={(val: number) =>
+              privateMode ? "••••" : fmtMoney(val, currency).replace(".00", "")
+            }
+          />
+          <Bar dataKey="netPnl" variant="gradient" />
+          <Tooltip
+            labelKey="hourRange"
+            valueFormatter={tooltipFormatter}
+          />
+        </BarChart>
+      </ChartFrame>
+
+      {/* Pane 2: Trades Volume per Opening Hour (Dither Line with Dots) */}
+      <div className="mt-2 border-t pt-2 flex items-center justify-between px-1 pb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+        <span>Trade Volume</span>
+        <span>Count</span>
+      </div>
+      <ChartFrame height={bottomHeight}>
+        <LineChart
+          data={chartData}
+          config={tradesConfig}
+          scaleType="band"
+          bloom="low"
+          bloomOnHover
+          margins={{ top: 8, right: 16, bottom: 24, left: 64 }}
+          markerIndex={hoveredIndex}
+          onHoverChange={setHoveredIndex}
+          className="h-full w-full"
+        >
+          <Grid />
+          <Line dataKey="trades" variant="gradient">
+            <Dot variant="colored-border" r={3} />
+          </Line>
+          <XAxis dataKey="hourLabel" />
+          <YAxis
+            tickCount={3}
+            tickFormatter={(val: number) => fmtNumber(Number(val), 0)}
+          />
+          <Tooltip
+            labelKey="hourRange"
+            valueFormatter={tooltipFormatter}
+          />
+        </LineChart>
+      </ChartFrame>
     </div>
   );
 }
