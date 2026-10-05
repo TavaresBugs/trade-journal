@@ -103,6 +103,59 @@ export function paintColumn(
   }
 }
 
+/**
+ * Horizontal transpose of paintColumn:
+ * Paints a horizontal row from `left` to `right` at row `y`.
+ * Density is 1.0 at the value edge (right, or left if inverted), fading to 0 at the zero baseline.
+ */
+export function paintRow(
+  octx: CanvasRenderingContext2D,
+  y: number,
+  left: number,
+  right: number,
+  seed: Seed,
+  { variant, intensity, dim, stacked, sparse = 0, inverted = false }: PaintOpts
+) {
+  const l = Math.round(left)
+  const r = Math.round(right)
+  const depth = r - l
+  if (depth <= 0) {
+    octx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * dim)
+    octx.fillRect(l, y, 1, 1)
+    return
+  }
+  const bias = (variant === "dotted" ? 0.12 : 0) + (stacked ? 0.2 : 0) - sparse
+  for (let x = l; x <= r; x++) {
+    // Density gradient: 1.0 at value edge (right if normal, left if inverted) -> 0 at baseline
+    let density = inverted ? (x - l) / depth : (r - x) / depth
+    if (stacked) density = 0.5 + 0.5 * density
+    if (variant === "hatched" && ((x + y) & 3) >= 2) continue
+    const lit =
+      variant === "solid" ||
+      density > (BAYER[y & 3]?.[x & 3] ?? 0) - 0.1 * intensity - bias
+    if (variant === "dotted" && !lit) continue
+    const k = (0.3 + density * 0.7) * (1 + 0.22 * intensity)
+    const alpha = clamp01((lit ? k : k * OFF_TIER) * dim)
+    octx.fillStyle = rgb(seed.fill, 1, alpha)
+    octx.fillRect(x, y, 1, 1)
+  }
+  // Border outline at the value edge
+  octx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * dim)
+  if (inverted) {
+    octx.fillRect(l, y, 1, 1)
+    if (depth > 1) {
+      octx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * 0.5 * dim)
+      octx.fillRect(l + 1, y, 1, 1)
+    }
+  } else {
+    octx.fillRect(r, y, 1, 1)
+    if (depth > 1) {
+      octx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * 0.5 * dim)
+      octx.fillRect(r - 1, y, 1, 1)
+    }
+  }
+}
+
 /** Linear-resample a per-index fraction array to `cols` columns. */
 export function resample(src: number[], cols: number): number[] {
   const out = new Array<number>(cols)

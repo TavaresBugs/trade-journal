@@ -128,6 +128,29 @@ export function buildYScale(
     .range([plotHeight, 0]);
 }
 
+/**
+ * value → horizontal pixel for horizontal bar charts.
+ * Domain includes zero, range maps from left [0] to right [plotWidth].
+ */
+export function buildXValueScale(
+  min: number,
+  max: number,
+  plotWidth: number,
+  options: YScaleOptions = {},
+) {
+  if (options.symmetric) {
+    const maxAbs = Math.max(Math.abs(min), Math.abs(max)) || 1;
+    return scaleLinear().domain([-maxAbs, maxAbs]).nice().range([0, plotWidth]);
+  }
+
+  const lo = Math.min(0, min);
+  const hi = Math.max(0, max);
+  return scaleLinear()
+    .domain([lo, hi === lo ? (lo === 0 ? 1 : lo + 1) : hi])
+    .nice()
+    .range([0, plotWidth]);
+}
+
 /** Index of the row nearest a horizontal pixel offset within the plot. */
 export function nearestIndex(px: number, length: number, plotWidth: number) {
   if (length <= 1 || plotWidth <= 0) return 0;

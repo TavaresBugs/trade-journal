@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildYScale } from "@/components/dither-kit/scales";
+import { buildXValueScale, buildYScale } from "@/components/dither-kit/scales";
 import { normalizeCumulativePoints } from "@/components/charts/equity-area";
 import { relativeDrawdownCurve } from "@luxalgo/journal-core";
 
@@ -131,3 +131,34 @@ describe("normalizeCumulativePoints & Range Boundary Alignment", () => {
     expect(normalized[1]).toEqual({ t: "2026-01-02", cumNetPnl: 10.0 });
   });
 });
+
+describe("buildXValueScale & Horizontal Bar Layout", () => {
+  const plotWidth = 300;
+
+  it("anchors zero at 0px (left boundary) for non-negative data", () => {
+    const scale = buildXValueScale(0, 100, plotWidth);
+    expect(scale.domain()[0]).toBe(0);
+    expect(scale(0)).toBe(0);
+    expect(scale(100)).toBe(plotWidth);
+  });
+
+  it("centers zero at 50% width when symmetric is enabled", () => {
+    const scale = buildXValueScale(-50, 50, plotWidth, { symmetric: true });
+    expect(scale(0)).toBe(150);
+    expect(scale(-50)).toBe(0);
+    expect(scale(50)).toBe(plotWidth);
+  });
+
+  it("faithfully maps negative and positive coordinates across width", () => {
+    const scale = buildXValueScale(-20, 80, plotWidth);
+    expect(scale(0)).toBeGreaterThan(0);
+    expect(scale(-20)).toBeLessThan(scale(0));
+    expect(scale(80)).toBe(plotWidth);
+  });
+
+  it("safely handles flat zero range without dividing by zero", () => {
+    const scale = buildXValueScale(0, 0, plotWidth);
+    expect(Number.isFinite(scale(0))).toBe(true);
+  });
+});
+

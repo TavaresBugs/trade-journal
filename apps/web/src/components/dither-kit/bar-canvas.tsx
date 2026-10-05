@@ -8,12 +8,13 @@ import {
   clamp01,
   easeOutCubic,
   paintColumn,
+  paintRow,
   prefersReducedMotion,
   resampleBanded,
 } from "./dither-paint";
 import { rgb, seedOfColor } from "./palette";
 
-type Bars = { top: number[]; base: number[] }; // per data index, in backing rows
+type Bars = { top: number[]; base: number[] }; // per data index, in backing rows/cols
 
 // Fraction of the timeline spent staggering bar starts — the rest is each bar's
 // own grow window, so the rise sweeps across the chart as a wave.
@@ -22,9 +23,9 @@ const STAGGER = 0.55;
 /**
  * Dither canvas for bar charts. Each category owns a band; grouped series split
  * it into side-by-side bars, stacked series share its full width and pile in y.
- * Every bar is filled with the shared {@link paintColumn} ordered dither. Bars
- * grow up from their base in a staggered left-to-right wave (eased), and the
- * hovered category lifts while the rest dim.
+ * Every bar is filled with the shared {@link paintColumn} ordered dither (or
+ * {@link paintRow} when layout is horizontal). Bars grow from their base in a
+ * staggered wave, and hovered bars lift while the rest dim.
  */
 export function BarCanvas() {
   const ctx = useChart();
@@ -33,29 +34,40 @@ export function BarCanvas() {
 
   const { width, height } = ctx.plot;
   const { cols, rows } = backingSize(width, height);
-  const { ready, configKeys, bands, seriesSpecs, y } = ctx;
+  const { ready, configKeys, bands, seriesSpecs, y, x, layout } = ctx;
 
-  // Memoized: per-series bar tops/bases (backing rows) over the data indices.
-  // The canvas re-renders on every hover/cursor tick, so pin this map to the
-  // exact ctx fields it reads plus the backing geometry — a bar hover must not
-  // rebuild every band's geometry.
+  // Memoized: per-series bar tops/bases (backing rows in vertical, cols in horizontal)
+  // over the data indices.
   const targets = useMemo(() => {
     const out: Record<string, Bars> = {};
     if (!ready) return out;
-    const h = height || 1;
     const registered = Object.keys(seriesSpecs);
     const keys =
       registered.length > 0 ? configKeys.filter((k) => registered.includes(k)) : configKeys;
-    for (const key of keys) {
-      const band = bands[key];
-      if (!band) continue;
-      out[key] = {
-        top: band.map((b) => (y(b[1]) / h) * (rows - 1)),
-        base: band.map((b) => (y(b[0]) / h) * (rows - 1)),
-      };
+
+    if (layout === "horizontal") {
+      const w = width || 1;
+      for (const key of keys) {
+        const band = bands[key];
+        if (!band) continue;
+        out[key] = {
+          top: band.map((b) => (x(b[1]) / w) * (cols - 1)),
+          base: band.map((b) => (x(b[0]) / w) * (cols - 1)),
+        };
+      }
+    } else {
+      const h = height || 1;
+      for (const key of keys) {
+        const band = bands[key];
+        if (!band) continue;
+        out[key] = {
+          top: band.map((b) => (y(b[1]) / h) * (rows - 1)),
+          base: band.map((b) => (y(b[0]) / h) * (rows - 1)),
+        };
+      }
     }
     return out;
-  }, [ready, configKeys, bands, seriesSpecs, y, height, rows]);
+  }, [ready, configKeys, bands, seriesSpecs, y, x, layout, width, height, rows, cols]);
 
   // The RAF loop reads these through refs so it always sees the latest values;
   // refs are written in an effect (never during render) — mutating a ref
@@ -114,72 +126,142 @@ export function BarCanvas() {
         const variant = s.seriesSpecs[key]?.variant ?? "gradient";
         const emphasis = s.selectedDataKey ?? s.focusDataKey;
         const selDim = emphasis !== null && emphasis !== key ? 0.3 : 1;
-        // Precompute uniform bar width in canvas backing columns for this series
-        const sampleSlot = s.barSlot(0, si, barKeys.length);
-        const floatCols = sampleSlot.width * fx;
-        let maxCols = floatCols;
+        if (s.layout === "horizontal") {
+          const fy = rows / Math.max(height, 1);
+          const sampleSlot = s.barSlot(0, si, barKeys.length);
+          const floatRows = sampleSlot.height * fy;
+          let maxRows = floatRows;
 
-        if (barKeys.length > 1) {
-          const nextSeriesSlot = s.barSlot(0, (si + 1) % barKeys.length, barKeys.length);
-          const seriesStepCols = Math.abs(nextSeriesSlot.x - sampleSlot.x) * fx;
-          if (seriesStepCols > 0) {
-            maxCols =
-              seriesStepCols >= 3
-                ? Math.floor(seriesStepCols) - 1
-                : Math.max(1, Math.floor(seriesStepCols));
-          }
-        } else if (s.dataLength > 1) {
-          const nextCatSlot = s.barSlot(1, si, barKeys.length);
-          const stepCols = Math.abs(nextCatSlot.x - sampleSlot.x) * fx;
-          maxCols = stepCols >= 3 ? Math.floor(stepCols) - 1 : Math.max(1, Math.floor(stepCols));
-        }
-
-        const barWidthCols = Math.max(
-          1,
-          Math.min(Math.round(floatCols), Math.max(1, Math.floor(maxCols))),
-        );
-
-        for (let i = 0; i < s.dataLength; i++) {
-          const base = t.base[i] ?? rows - 1;
-          const rawTop = t.top[i] ?? base;
-
-          // If the bar has no height (e.g. 0% drawdown, $0 net P&L), skip painting
-          if (Math.abs(rawTop - base) < 0.001) continue;
-
-          const bp = barProgress(i, s.dataLength, prog);
-          const grown = base + (rawTop - base) * bp;
-          const isNeg = rawTop > base;
-          const barSeed = negSeed && isNeg ? negSeed : defaultSeed;
-
-          const grownDepth = Math.max(1, Math.round(Math.abs(grown - base)));
-          const top = isNeg ? base : base - grownDepth;
-          const bottom = isNeg ? base + grownDepth : base;
-
-          const activeIndex = s.hoverIndex ?? s.markerIndex;
-          const active = activeIndex === i;
-          const hoverDim =
-            activeIndex != null && !active && (s.isMouseInChart || s.markerIndex != null) ? 0.5 : 1;
-
-          const slot = s.barSlot(i, si, barKeys.length);
-          const center = (slot.x + slot.width / 2) * fx;
-          let c0 = Math.round(center - barWidthCols / 2);
-          let c1 = c0 + barWidthCols;
-          if (c0 < 0) {
-            c0 = 0;
-            c1 = Math.min(cols, barWidthCols);
-          } else if (c1 > cols) {
-            c1 = cols;
-            c0 = Math.max(0, cols - barWidthCols);
+          if (barKeys.length > 1) {
+            const nextSeriesSlot = s.barSlot(0, (si + 1) % barKeys.length, barKeys.length);
+            const seriesStepRows = Math.abs(nextSeriesSlot.y - sampleSlot.y) * fy;
+            if (seriesStepRows > 0) {
+              maxRows =
+                seriesStepRows >= 3
+                  ? Math.floor(seriesStepRows) - 1
+                  : Math.max(1, Math.floor(seriesStepRows));
+            }
+          } else if (s.dataLength > 1) {
+            const nextCatSlot = s.barSlot(1, si, barKeys.length);
+            const stepRows = Math.abs(nextCatSlot.y - sampleSlot.y) * fy;
+            maxRows = stepRows >= 3 ? Math.floor(stepRows) - 1 : Math.max(1, Math.floor(stepRows));
           }
 
-          for (let x = c0; x < c1; x++) {
-            paintColumn(c, x, top, bottom, barSeed, {
-              variant,
-              intensity: intensity + (active ? 0.4 : 0),
-              dim: selDim * hoverDim,
-              stacked,
-              inverted: isNeg,
-            });
+          const barHeightRows = Math.max(
+            1,
+            Math.min(Math.round(floatRows), Math.max(1, Math.floor(maxRows))),
+          );
+
+          for (let i = 0; i < s.dataLength; i++) {
+            const base = t.base[i] ?? 0;
+            const rawTarget = t.top[i] ?? base;
+
+            if (Math.abs(rawTarget - base) < 0.001) continue;
+
+            const bp = barProgress(i, s.dataLength, prog);
+            const grown = base + (rawTarget - base) * bp;
+            const isNeg = rawTarget < base;
+            const barSeed = negSeed && isNeg ? negSeed : defaultSeed;
+
+            const grownLength = Math.max(1, Math.round(Math.abs(grown - base)));
+            const left = isNeg ? base - grownLength : base;
+            const right = isNeg ? base : base + grownLength;
+
+            const activeIndex = s.hoverIndex ?? s.markerIndex;
+            const active = activeIndex === i;
+            const hoverDim =
+              activeIndex != null && !active && (s.isMouseInChart || s.markerIndex != null) ? 0.5 : 1;
+
+            const slot = s.barSlot(i, si, barKeys.length);
+            const center = (slot.y + slot.height / 2) * fy;
+            let r0 = Math.round(center - barHeightRows / 2);
+            let r1 = r0 + barHeightRows;
+            if (r0 < 0) {
+              r0 = 0;
+              r1 = Math.min(rows, barHeightRows);
+            } else if (r1 > rows) {
+              r1 = rows;
+              r0 = Math.max(0, rows - barHeightRows);
+            }
+
+            for (let y = r0; y < r1; y++) {
+              paintRow(c, y, left, right, barSeed, {
+                variant,
+                intensity: intensity + (active ? 0.4 : 0),
+                dim: selDim * hoverDim,
+                stacked,
+                inverted: isNeg,
+              });
+            }
+          }
+        } else {
+          // Precompute uniform bar width in canvas backing columns for this series
+          const sampleSlot = s.barSlot(0, si, barKeys.length);
+          const floatCols = sampleSlot.width * fx;
+          let maxCols = floatCols;
+
+          if (barKeys.length > 1) {
+            const nextSeriesSlot = s.barSlot(0, (si + 1) % barKeys.length, barKeys.length);
+            const seriesStepCols = Math.abs(nextSeriesSlot.x - sampleSlot.x) * fx;
+            if (seriesStepCols > 0) {
+              maxCols =
+                seriesStepCols >= 3
+                  ? Math.floor(seriesStepCols) - 1
+                  : Math.max(1, Math.floor(seriesStepCols));
+            }
+          } else if (s.dataLength > 1) {
+            const nextCatSlot = s.barSlot(1, si, barKeys.length);
+            const stepCols = Math.abs(nextCatSlot.x - sampleSlot.x) * fx;
+            maxCols = stepCols >= 3 ? Math.floor(stepCols) - 1 : Math.max(1, Math.floor(stepCols));
+          }
+
+          const barWidthCols = Math.max(
+            1,
+            Math.min(Math.round(floatCols), Math.max(1, Math.floor(maxCols))),
+          );
+
+          for (let i = 0; i < s.dataLength; i++) {
+            const base = t.base[i] ?? rows - 1;
+            const rawTop = t.top[i] ?? base;
+
+            // If the bar has no height (e.g. 0% drawdown, $0 net P&L), skip painting
+            if (Math.abs(rawTop - base) < 0.001) continue;
+
+            const bp = barProgress(i, s.dataLength, prog);
+            const grown = base + (rawTop - base) * bp;
+            const isNeg = rawTop > base;
+            const barSeed = negSeed && isNeg ? negSeed : defaultSeed;
+
+            const grownDepth = Math.max(1, Math.round(Math.abs(grown - base)));
+            const top = isNeg ? base : base - grownDepth;
+            const bottom = isNeg ? base + grownDepth : base;
+
+            const activeIndex = s.hoverIndex ?? s.markerIndex;
+            const active = activeIndex === i;
+            const hoverDim =
+              activeIndex != null && !active && (s.isMouseInChart || s.markerIndex != null) ? 0.5 : 1;
+
+            const slot = s.barSlot(i, si, barKeys.length);
+            const center = (slot.x + slot.width / 2) * fx;
+            let c0 = Math.round(center - barWidthCols / 2);
+            let c1 = c0 + barWidthCols;
+            if (c0 < 0) {
+              c0 = 0;
+              c1 = Math.min(cols, barWidthCols);
+            } else if (c1 > cols) {
+              c1 = cols;
+              c0 = Math.max(0, cols - barWidthCols);
+            }
+
+            for (let x = c0; x < c1; x++) {
+              paintColumn(c, x, top, bottom, barSeed, {
+                variant,
+                intensity: intensity + (active ? 0.4 : 0),
+                dim: selDim * hoverDim,
+                stacked,
+                inverted: isNeg,
+              });
+            }
           }
         }
       });
@@ -249,22 +331,45 @@ export function BarCanvas() {
           const conf = s.config[key];
           const negSeed = conf?.negativeColor ? seedOfColor(conf.negativeColor) : null;
           const defaultSeed = s.seedOf(key);
-          const base = t.base[hi] ?? rows - 1;
-          const rawTop = t.top[hi] ?? base;
-          const isNeg = rawTop > base;
-          const pointSeed = negSeed && isNeg ? negSeed : defaultSeed;
-          const slot = s.barSlot(hi, si, barKeys.length);
-          const mx = Math.round((slot.x + slot.width / 2) * fx);
-          const my = Math.round(rawTop);
 
-          // Vertical guide line in series/value color (matches EquityArea)
-          c.fillStyle = rgb(pointSeed.fill, 1, 0.55);
-          for (let y = my; y < rows; y++) {
-            c.fillRect(mx, y, 1, 1);
+          if (s.layout === "horizontal") {
+            const fy = rows / Math.max(height, 1);
+            const base = t.base[hi] ?? 0;
+            const rawTarget = t.top[hi] ?? base;
+            const isNeg = rawTarget < base;
+            const pointSeed = negSeed && isNeg ? negSeed : defaultSeed;
+            const slot = s.barSlot(hi, si, barKeys.length);
+            const my = Math.round((slot.y + slot.height / 2) * fy);
+            const mx = Math.round(rawTarget);
+
+            // Horizontal guide line from baseline to mx
+            c.fillStyle = rgb(pointSeed.fill, 1, 0.55);
+            const startX = Math.min(Math.round(base), mx);
+            const endX = Math.max(Math.round(base), mx);
+            for (let x = startX; x <= endX; x++) {
+              c.fillRect(x, my, 1, 1);
+            }
+            // Highlight cap dot at value edge
+            c.fillStyle = rgb(pointSeed.fill);
+            c.fillRect(mx - 1, my - 1, 3, 3);
+          } else {
+            const base = t.base[hi] ?? rows - 1;
+            const rawTop = t.top[hi] ?? base;
+            const isNeg = rawTop > base;
+            const pointSeed = negSeed && isNeg ? negSeed : defaultSeed;
+            const slot = s.barSlot(hi, si, barKeys.length);
+            const mx = Math.round((slot.x + slot.width / 2) * fx);
+            const my = Math.round(rawTop);
+
+            // Vertical guide line in series/value color (matches EquityArea)
+            c.fillStyle = rgb(pointSeed.fill, 1, 0.55);
+            for (let y = my; y < rows; y++) {
+              c.fillRect(mx, y, 1, 1);
+            }
+            // Highlight cap dot at value edge
+            c.fillStyle = rgb(pointSeed.fill);
+            c.fillRect(mx - 1, my - 1, 3, 3);
           }
-          // Highlight cap dot at value edge
-          c.fillStyle = rgb(pointSeed.fill);
-          c.fillRect(mx - 1, my - 1, 3, 3);
         });
 
         lineKeys.forEach((key) => {

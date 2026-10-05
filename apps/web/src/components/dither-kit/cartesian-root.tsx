@@ -30,6 +30,8 @@ export type CartesianChartProps<TData extends Row> = {
   data: TData[];
   config: ChartConfig;
   children: ReactNode;
+  /** Layout direction: "vertical" (default column bars) or "horizontal" (transposed row bars) */
+  layout?: "vertical" | "horizontal";
   scaleType?: "point" | "band";
   stackType?: StackType;
   margins?: Partial<Margins>;
@@ -78,6 +80,7 @@ export function CartesianRoot<TData extends Row>({
   data,
   config,
   children,
+  layout = "vertical",
   scaleType,
   stackType = "default",
   margins: marginsProp,
@@ -103,6 +106,7 @@ export function CartesianRoot<TData extends Row>({
 
   const ctx = useChartController({
     chartType,
+    layout,
     scaleType,
     // Safe: the controller only reads row[key] for the configured series keys.
     data: data as Record<string, unknown>[],
@@ -132,15 +136,25 @@ export function CartesianRoot<TData extends Row>({
     else svgChildren.push(child);
   });
 
-  const onMove = (clientX: number) => {
+  const onMove = (clientX: number, clientY: number) => {
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const px = clientX - rect.left - margins.left;
-    const index = ctx.indexAtX(px);
-    ctx.setHoverIndex(index);
-    ctx.setCursorX(clientX - rect.left);
-    onHoverChange?.(index);
+    if (ctx.layout === "horizontal") {
+      const py = clientY - rect.top - margins.top;
+      const index = ctx.indexAtY(py);
+      ctx.setHoverIndex(index);
+      ctx.setCursorY(clientY - rect.top);
+      ctx.setCursorX(clientX - rect.left);
+      onHoverChange?.(index);
+    } else {
+      const px = clientX - rect.left - margins.left;
+      const index = ctx.indexAtX(px);
+      ctx.setHoverIndex(index);
+      ctx.setCursorX(clientX - rect.left);
+      ctx.setCursorY(clientY - rect.top);
+      onHoverChange?.(index);
+    }
   };
 
   return (
@@ -150,7 +164,7 @@ export function CartesianRoot<TData extends Row>({
           ref={ref}
           className={cn("relative h-full w-full", ctx.isMouseInChart && "z-30", className)}
           onPointerEnter={() => ctx.setMouseInChart(true)}
-          onPointerMove={interactive ? (e) => onMove(e.clientX) : undefined}
+          onPointerMove={interactive ? (e) => onMove(e.clientX, e.clientY) : undefined}
           onPointerLeave={() => {
             ctx.setMouseInChart(false);
             ctx.setHoverIndex(null);

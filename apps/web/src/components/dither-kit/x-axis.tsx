@@ -30,6 +30,36 @@ export function XAxis({
   const y = ctx.plot.height + tickMargin;
   const plotWidth = ctx.plot.width;
 
+  if (ctx.layout === "horizontal") {
+    const ticks = ctx.x.ticks ? ctx.x.ticks(4) : [];
+    return (
+      <g className="fill-current font-mono text-[11px] text-muted-foreground select-none">
+        {axisLine && (
+          <line
+            x1={0}
+            y1={ctx.plot.height}
+            x2={plotWidth}
+            y2={ctx.plot.height}
+            stroke="var(--border)"
+            strokeWidth={1}
+          />
+        )}
+        {ticks.map((val) => (
+          <text
+            key={val}
+            x={ctx.x(val)}
+            y={y}
+            textAnchor="middle"
+            dominantBaseline="hanging"
+            fill="currentColor"
+          >
+            {tickFormatter ? tickFormatter(val, 0) : val}
+          </text>
+        ))}
+      </g>
+    );
+  }
+
   const getTickBounds = (xCenter: number, label: string) => {
     // 11px monospace character width is ~7px
     const width = Math.max(16, label.length * 7);

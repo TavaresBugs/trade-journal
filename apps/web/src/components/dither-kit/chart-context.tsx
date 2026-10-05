@@ -10,6 +10,7 @@ import {
   buildBandScale,
   buildXScale,
   buildYScale,
+  buildXValueScale,
   computeBands,
   indexAtBand,
   nearestIndex,
@@ -19,6 +20,7 @@ import type { Dimensions } from "./use-chart-dimensions";
 
 /** Which chart root a part is composed under — drives the boundary guards. */
 export type ChartType = "area" | "bar" | "line" | "pie" | "radar";
+export type ChartLayout = "vertical" | "horizontal";
 
 export type ChartConfig = Record<
   string,
@@ -49,6 +51,7 @@ export type SeriesSpec = {
 
 export type ChartContextValue = {
   chartType: ChartType; // which root this part is under
+  layout?: ChartLayout; // default "vertical"
   scaleType?: "point" | "band";
   config: ChartConfig;
   configKeys: string[]; // series order — drives stacking + legend
@@ -61,15 +64,18 @@ export type ChartContextValue = {
   ready: boolean; // true once measured (width > 0)
 
   xCenter: (index: number) => number; // category centre px within the plot
+  yCenter: (index: number) => number; // category centre py when layout="horizontal"
   bandwidth: number; // category slot width (0 for point/area scales)
   indexAtX: (px: number) => number; // nearest category for a pointer x
+  indexAtY: (py: number) => number; // nearest category for a pointer y
   // Bar geometry in plot px — one source of truth for the canvas + click rects.
   barSlot: (
     index: number,
     seriesIndex: number,
     seriesCount: number,
-  ) => { x: number; width: number };
+  ) => { x: number; width: number; y: number; height: number };
   y: ScaleLinear<number, number>; // value → px within the plot
+  x: ScaleLinear<number, number>; // value → px when layout="horizontal"
   bands: Record<string, [number, number][]>; // per-series [y0, y1] per row
   max: number;
   min: number; // most-negative value (0 when nothing dips below the baseline)
@@ -85,6 +91,8 @@ export type ChartContextValue = {
   markerIndex: number | null; // controlled crosshair override (e.g. committed point)
   cursorX: number;
   setCursorX: (px: number) => void;
+  cursorY: number;
+  setCursorY: (py: number) => void;
   isMouseInChart: boolean;
   setMouseInChart: (over: boolean) => void;
   hovered: boolean; // parent-driven hover (e.g. the whole card) — lifts the fill
@@ -177,6 +185,7 @@ export function useRevision(data: unknown, token: number) {
  */
 export function useChartController({
   chartType,
+  layout = "vertical",
   scaleType,
   data,
   config,
@@ -195,6 +204,7 @@ export function useChartController({
   onSelectionChange,
 }: {
   chartType: ChartType;
+  layout?: ChartLayout;
   scaleType?: "point" | "band";
   data: Row[];
   config: ChartConfig;
@@ -229,6 +239,7 @@ export function useChartController({
   const [focusDataKey, setFocusDataKey] = useState<string | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [cursorX, setCursorX] = useState(0);
+  const [cursorY, setCursorY] = useState(0);
   const [isMouseInChart, setMouseInChart] = useState(false);
   const [seriesSpecs, setSeriesSpecs] = useState<Record<string, SeriesSpec>>({});
 
@@ -298,6 +309,7 @@ export function useChartController({
     [data, configKeys, stackType],
   );
 
+  const isHorizontal = layout === "horizontal";
   const isBand = chartType === "bar" || scaleType === "band";
   const isBar = chartType === "bar";
   // The d3 scale factories are memoized so `y` keeps a stable identity: the
@@ -305,31 +317,58 @@ export function useChartController({
   // xCenter/indexAtX/barSlot below close over these.
   const xPoint = useMemo(() => buildXScale(data.length, plotWidth), [data.length, plotWidth]);
   const xBand = useMemo(() => buildBandScale(data.length, plotWidth), [data.length, plotWidth]);
-  const bandwidth = isBand ? xBand.bandwidth() : 0;
+  const yBand = useMemo(() => buildBandScale(data.length, plotHeight), [data.length, plotHeight]);
+  const xLinear = useMemo(
+    () => buildXValueScale(min, max, plotWidth, { symmetric }),
+    [min, max, plotWidth, symmetric],
+  );
+
+  const bandwidth = isHorizontal ? yBand.bandwidth() : isBand ? xBand.bandwidth() : 0;
   const xCenter = useCallback(
     (i: number) => (isBand ? (xBand(i) ?? 0) + xBand.bandwidth() / 2 : (xPoint(i) ?? 0)),
     [isBand, xBand, xPoint],
+  );
+  const yCenter = useCallback(
+    (i: number) => (yBand(i) ?? 0) + yBand.bandwidth() / 2,
+    [yBand],
   );
   const indexAtX = useCallback(
     (px: number) =>
       isBand ? indexAtBand(px, data.length, plotWidth) : nearestIndex(px, data.length, plotWidth),
     [isBand, data.length, plotWidth],
   );
+  const indexAtY = useCallback(
+    (py: number) => indexAtBand(py, data.length, plotHeight),
+    [data.length, plotHeight],
+  );
   const stacked = stackType === "stacked" || stackType === "percent";
   const barSlot = useCallback(
     (i: number, si: number, n: number) => {
+      if (isHorizontal) {
+        const center = yCenter(i);
+        if (stacked) {
+          const h = bandwidth * 0.9;
+          return { x: 0, width: 0, y: center - h / 2, height: h };
+        }
+        const slot = bandwidth / Math.max(n, 1);
+        const yPos = center - bandwidth / 2 + si * slot + slot * 0.08;
+        const h = slot * 0.84;
+        return { x: 0, width: 0, y: yPos, height: h };
+      }
       const center = xCenter(i);
       if (stacked) {
         const w = bandwidth * 0.9;
-        return { x: center - w / 2, width: w };
+        return { x: center - w / 2, width: w, y: 0, height: 0 };
       }
       const slot = bandwidth / Math.max(n, 1);
       return {
         x: center - bandwidth / 2 + si * slot + slot * 0.08,
         width: slot * 0.84,
+        y: 0,
+        height: 0,
       };
     },
-    [xCenter, stacked, bandwidth],
+    [isHorizontal, yCenter, xCenter, stacked, bandwidth],
   );
   const y = useMemo(
     () => buildYScale(min, max, plotHeight, { symmetric }),
@@ -358,6 +397,9 @@ export function useChartController({
       // Follow the highest hovered node so the card rides the data path, but
       // keep enough headroom that the upward-lifted card never clips the top.
       tooltipTop: (() => {
+        if (isHorizontal) {
+          return hoverIndex != null ? mTop + yCenter(hoverIndex) : mTop + 44;
+        }
         const floor = mTop + 44;
         if (hoverIndex == null) return floor;
         let minY = Number.POSITIVE_INFINITY;
@@ -416,6 +458,7 @@ export function useChartController({
   return useMemo<ChartContextValue>(
     () => ({
       chartType,
+      layout,
       scaleType,
       config,
       configKeys,
@@ -426,10 +469,13 @@ export function useChartController({
       plot: { width: plotWidth, height: plotHeight },
       ready,
       xCenter,
+      yCenter,
       bandwidth,
       indexAtX,
+      indexAtY,
       barSlot,
       y,
+      x: xLinear as unknown as ScaleLinear<number, number>,
       bands,
       max,
       min,
@@ -442,6 +488,8 @@ export function useChartController({
       markerIndex,
       cursorX,
       setCursorX,
+      cursorY,
+      setCursorY,
       isMouseInChart,
       setMouseInChart,
       hovered,
@@ -460,6 +508,7 @@ export function useChartController({
     }),
     [
       chartType,
+      layout,
       scaleType,
       config,
       configKeys,
@@ -470,10 +519,14 @@ export function useChartController({
       plotHeight,
       ready,
       xCenter,
+      yCenter,
       bandwidth,
       indexAtX,
+      indexAtY,
       barSlot,
       y,
+      isHorizontal,
+      xLinear,
       bands,
       max,
       min,
@@ -482,12 +535,10 @@ export function useChartController({
       focusDataKey,
       setFocusDataKey,
       hoverIndex,
-      setHoverIndex,
       markerIndex,
       cursorX,
-      setCursorX,
+      cursorY,
       isMouseInChart,
-      setMouseInChart,
       hovered,
       bloom,
       bloomOnHover,
