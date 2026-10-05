@@ -27,9 +27,9 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
-import { GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DashboardSavedLayouts } from "@/components/dashboard-saved-layouts";
+import { DashboardCardContext } from "@/components/dashboard-card-header";
 import {
   DASHBOARD_LAYOUT_KEY,
   balancedDashboardSpans,
@@ -454,25 +454,22 @@ function SortableCard({
         } as CSSProperties
       }
     >
-      <div
-        data-dashboard-surface
-        className="dashboard-card-surface relative flex h-full min-w-0 flex-col"
+      <DashboardCardContext.Provider
+        value={{
+          id: widget.id,
+          label: widget.label,
+          isDragging,
+          activatorProps: { ...attributes, ...listeners },
+          activatorRef: setActivatorNodeRef,
+        }}
       >
-        <Button
-          ref={setActivatorNodeRef}
-          type="button"
-          size="icon"
-          variant="ghost"
-          {...attributes}
-          {...listeners}
-          aria-label={`Rearrange ${widget.label}`}
-          title={`Drag to rearrange ${widget.label}`}
-          className="absolute left-1.5 top-3 z-[1] h-6 w-5 touch-none cursor-grab text-muted-foreground/60 hover:text-foreground active:cursor-grabbing"
+        <div
+          data-dashboard-surface
+          className="dashboard-card-surface relative flex h-full min-w-0 flex-col"
         >
-          <GripVertical className="h-3.5 w-3.5" />
-        </Button>
-        <div className="min-w-0 flex-1 [&_[data-slot=card-header]]:pl-9">{widget.content}</div>
-      </div>
+          <div className="min-w-0 flex-1 flex flex-col">{widget.content}</div>
+        </div>
+      </DashboardCardContext.Provider>
     </section>
   );
 }

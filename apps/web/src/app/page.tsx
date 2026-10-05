@@ -16,6 +16,7 @@ import { EdgeRadar } from "@/components/charts/edge-radar";
 import { EquityArea, normalizeCumulativePoints } from "@/components/charts/equity-area";
 import { RelativeDrawdownBars } from "@/components/charts/relative-drawdown-bars";
 import { TimeHeatmap } from "@/components/charts/time-heatmap";
+import { DashboardCardHeader, DashboardCardDragHandle } from "@/components/dashboard-card-header";
 import { StatGaugeCard, StatRatioCard } from "@/components/widgets";
 import {
   ArrowUpDown,
@@ -320,23 +321,20 @@ function DashboardContent({
             layoutGroup: "visuals",
             content: (
               <Card className="dashboard-visual-card h-full overflow-visible">
-                <CardHeader className="flex-row items-center justify-between">
-                  <div className="flex min-w-0 items-center gap-1">
-                    <CardTitle>Edge Score</CardTitle>
-                    <HelpHint heading="Edge Score">
-                      A 0–100 score combining win rate, profit factor, average win/loss, drawdown,
-                      recovery, and consistency. Requires at least five closed trades.
-                    </HelpHint>
-                  </div>
-                  <span className="text-2xl font-semibold tracking-tight tnum">
-                    {edgeScore.score === null ? (
-                      "–"
-                    ) : (
-                      <span className="text-brand">{edgeScore.score}</span>
-                    )}
-                    <span className="text-xs text-muted-foreground"> /100</span>
-                  </span>
-                </CardHeader>
+                <DashboardCardHeader
+                  title="Edge Score"
+                  hint="A 0–100 score combining win rate, profit factor, average win/loss, drawdown, recovery, and consistency. Requires at least five closed trades."
+                  headerRight={
+                    <span className="text-2xl font-semibold tracking-tight tnum">
+                      {edgeScore.score === null ? (
+                        "–"
+                      ) : (
+                        <span className="text-brand">{edgeScore.score}</span>
+                      )}
+                      <span className="text-xs text-muted-foreground"> /100</span>
+                    </span>
+                  }
+                />
                 <CardContent className="dashboard-visual-card-content overflow-visible">
                   {edgeScore.score === null ? (
                     <p className="py-8 text-center text-sm text-muted-foreground">
@@ -365,13 +363,10 @@ function DashboardContent({
             layoutGroup: "visuals",
             content: (
               <Card className="dashboard-visual-card h-full overflow-visible">
-                <CardHeader className="flex-row items-center justify-between">
-                  <CardTitle>Daily net cumulative P&L</CardTitle>
-                  <HelpHint heading="Cumulative P&L">
-                    Running total of net profit and loss over the selected period. The drawdown bars
-                    below show declines from the running equity peak.
-                  </HelpHint>
-                </CardHeader>
+                <DashboardCardHeader
+                  title="Daily net cumulative P&L"
+                  hint="Running total of net profit and loss over the selected period. The drawdown bars below show declines from the running equity peak."
+                />
                 <CardContent className="overflow-visible">
                   <EquityArea data={normalizedDailyCum} from={from} to={to} />
                   <RelativeDrawdownBars
@@ -388,13 +383,10 @@ function DashboardContent({
             layoutGroup: "visuals",
             content: (
               <Card className="dashboard-visual-card h-full overflow-visible">
-                <CardHeader className="flex-row items-center justify-between">
-                  <CardTitle>Net daily P&L</CardTitle>
-                  <HelpHint heading="Daily P&L">
-                    Net profit or loss for each trading day. Bars above zero are profitable; bars
-                    below zero are losses.
-                  </HelpHint>
-                </CardHeader>
+                <DashboardCardHeader
+                  title="Net daily P&L"
+                  hint="Net profit or loss for each trading day. Bars above zero are profitable; bars below zero are losses."
+                />
                 <CardContent className="dashboard-visual-card-content overflow-visible">
                   <DailyBars
                     data={data.days.map((d) => ({ date: d.date, netPnl: d.netPnl }))}
@@ -426,17 +418,19 @@ function DashboardContent({
             content: (
               <Card className="h-full">
                 <Tabs defaultValue="recent" className="flex flex-col h-full">
-                  <CardHeader className="flex-row items-center justify-between space-y-0 pb-2.5">
-                    <CardTitle>Activity</CardTitle>
-                    <TabsList className="h-7 p-0.5">
-                      <TabsTrigger value="recent" className="text-xs px-2.5 h-6">
-                        Recent trades
-                      </TabsTrigger>
-                      <TabsTrigger value="open" className="text-xs px-2.5 h-6">
-                        Open positions
-                      </TabsTrigger>
-                    </TabsList>
-                  </CardHeader>
+                  <DashboardCardHeader
+                    title="Activity"
+                    headerRight={
+                      <TabsList className="h-7 p-0.5">
+                        <TabsTrigger value="recent" className="text-xs px-2.5 h-6">
+                          Recent trades
+                        </TabsTrigger>
+                        <TabsTrigger value="open" className="text-xs px-2.5 h-6">
+                          Open positions
+                        </TabsTrigger>
+                      </TabsList>
+                    }
+                  />
                   <CardContent className="pt-0 flex-1">
                     <TabsContent value="recent" className="mt-0 space-y-1">
                       {data.recentTrades.length === 0 && <Empty label="No closed trades yet" />}
@@ -673,13 +667,10 @@ function DashboardContent({
             layoutGroup: "full",
             content: (
               <Card className="dashboard-visual-card h-full overflow-visible">
-                <CardHeader className="flex-row items-center justify-between">
-                  <CardTitle>Trade time performance</CardTitle>
-                  <HelpHint heading="Trade time performance">
-                    Trades grouped by their opening hour. The upper chart shows net P&L; the lower
-                    chart shows trade count.
-                  </HelpHint>
-                </CardHeader>
+                <DashboardCardHeader
+                  title="Trade time performance"
+                  hint="Trades grouped by their opening hour. The upper chart shows net P&L; the lower chart shows trade count."
+                />
                 <CardContent className="overflow-visible">
                   <TimeHeatmap
                     hours={data.buckets.hour.map((b) => ({
@@ -708,20 +699,7 @@ function StatHeader({
   hint: string;
   icon: React.ComponentType<{ className?: string }>;
 }) {
-  return (
-    <CardHeader className="flex-row items-center justify-between space-y-0">
-      <CardTitle>{title}</CardTitle>
-      <Tooltip>
-        <TooltipTrigger className="cursor-help" aria-label={`About ${title}`}>
-          <Icon className="h-3.5 w-3.5 text-muted-foreground/70" />
-        </TooltipTrigger>
-        <TooltipContent>
-          <div className="mb-1 font-semibold">{title}</div>
-          <div className="text-muted-foreground">{hint}</div>
-        </TooltipContent>
-      </Tooltip>
-    </CardHeader>
-  );
+  return <DashboardCardHeader title={title} hint={hint} icon={Icon} />;
 }
 
 function Empty({ label }: { label: string }) {
@@ -816,7 +794,7 @@ function DashboardCalendarCard({
 
   return (
     <Card className="h-full flex flex-col">
-      <CardContent className="p-3 sm:p-5 flex-1 flex flex-col min-h-0">
+      <CardContent className="p-4 flex-1 flex flex-col min-h-0">
         <div
           className={cn(
             "transition-opacity duration-150 flex-1 flex flex-col min-h-0",
@@ -829,7 +807,14 @@ function DashboardCalendarCard({
             monetary={currencies.length <= 1}
             journalDays={activeJournalDays}
             onMonthChange={setMonth}
-            headerLeft={<div className="w-6 sm:w-7" />}
+            headerLeft={
+              <div className="flex items-center gap-2 min-w-0">
+                <DashboardCardDragHandle />
+                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                  Calendar
+                </span>
+              </div>
+            }
             headerRight={
               <Link
                 href={`/calendar?${query}`}
@@ -837,7 +822,7 @@ function DashboardCalendarCard({
                 aria-label="Open full calendar"
                 className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color,transform] duration-150 hover:bg-muted hover:text-foreground active:scale-[0.96]"
               >
-                <CalendarDays className="size-4" />
+                <CalendarDays className="size-[18px]" />
               </Link>
             }
             className="h-full flex-1"

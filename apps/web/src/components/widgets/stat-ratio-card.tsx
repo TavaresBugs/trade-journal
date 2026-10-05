@@ -1,8 +1,8 @@
 "use client";
 
 import type { ComponentType, ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger, HelpHint } from "@/components/ui/tooltip";
+import { Card, CardContent } from "@/components/ui/card";
+import { DashboardCardHeader } from "@/components/dashboard-card-header";
 import { DitherRatioBar } from "@/components/dither-kit";
 import { MonetaryValue } from "@/components/privacy";
 import { cn, fmtMoney, fmtNumber } from "@/lib/utils";
@@ -57,24 +57,11 @@ export function StatRatioCard({
 
   return (
     <Card className={cn("dashboard-visual-card h-full", className)}>
-      <CardHeader className="flex-row items-center justify-between space-y-0 pb-1">
-        <CardTitle>{title}</CardTitle>
-        {hint && (
-          Icon ? (
-            <Tooltip>
-              <TooltipTrigger className="cursor-help" aria-label={`About ${title}`}>
-                <Icon className="h-3.5 w-3.5 text-muted-foreground/70" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="mb-1 font-semibold">{title}</div>
-                <div className="text-muted-foreground">{hint}</div>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <HelpHint heading={title}>{hint}</HelpHint>
-          )
-        )}
-      </CardHeader>
+      <DashboardCardHeader
+        title={title}
+        hint={hint}
+        icon={Icon}
+      />
       <CardContent className="pt-1">
         {variant === "summary" ? (
           <div>

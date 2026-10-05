@@ -65,7 +65,7 @@ export function HelpHint({ heading, children }: { heading: string; children: Rea
         aria-label={`About ${heading}`}
         className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <CircleHelp aria-hidden="true" className="h-3.5 w-3.5" />
+        <CircleHelp aria-hidden="true" className="size-4" />
       </button>
     </HoverHint>
   );
