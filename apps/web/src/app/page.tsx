@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import type {
   CalendarMonth,
   DayStats,
@@ -13,7 +13,7 @@ import { dayKeyOf, relativeDrawdownCurve } from "@luxalgo/journal-core";
 import { CalendarPnl } from "@/components/calendar-pnl";
 import { DailyBars } from "@/components/charts/daily-bars";
 import { EdgeRadar } from "@/components/charts/edge-radar";
-import { EquityArea } from "@/components/charts/equity-area";
+import { EquityArea, normalizeCumulativePoints } from "@/components/charts/equity-area";
 import { RelativeDrawdownBars } from "@/components/charts/relative-drawdown-bars";
 import { TimeHeatmap } from "@/components/charts/time-heatmap";
 import { StatGaugeCard, StatRatioCard } from "@/components/widgets";
@@ -91,8 +91,8 @@ export default function DashboardPage() {
 }
 
 function Dashboard() {
-  const { query } = useFilters();
-  const { data, loading, error, refresh } = useApi<StatsPayload>(`/api/stats?${query}`);
+  const filters = useFilters();
+  const { data, loading, error, refresh } = useApi<StatsPayload>(`/api/stats?${filters.query}`);
 
   return (
     <>
@@ -102,7 +102,9 @@ function Dashboard() {
         loading={loading}
         error={error}
         refresh={refresh}
-        query={query}
+        query={filters.query}
+        from={filters.from}
+        to={filters.to}
       />
     </>
   );
@@ -114,12 +116,16 @@ function DashboardContent({
   error,
   refresh,
   query,
+  from,
+  to,
 }: {
   data: StatsPayload | null;
   loading: boolean;
   error: string | null;
   refresh: () => void;
   query: string;
+  from?: string | null;
+  to?: string | null;
 }) {
   if (loading && !data) return <DashboardSkeleton />;
   if (!data)
@@ -178,6 +184,11 @@ function DashboardContent({
   const worstDay = data.days.length
     ? data.days.reduce((a, b) => (b.netPnl < a.netPnl ? b : a))
     : null;
+
+  const normalizedDailyCum = useMemo(
+    () => normalizeCumulativePoints(data.dailyCumulative, from, to),
+    [data.dailyCumulative, from, to],
+  );
 
   return (
     <>
@@ -357,10 +368,12 @@ function DashboardContent({
                 </CardHeader>
                 <CardContent className="overflow-visible">
                   <EquityArea
-                    data={data.dailyCumulative.map((p) => ({ t: p.t, cumNetPnl: p.cumNetPnl }))}
+                    data={normalizedDailyCum}
+                    from={from}
+                    to={to}
                   />
                   <RelativeDrawdownBars
-                    data={relativeDrawdownCurve(data.dailyCumulative, data.initialBalance)}
+                    data={relativeDrawdownCurve(normalizedDailyCum, data.initialBalance)}
                   />
                 </CardContent>
               </Card>

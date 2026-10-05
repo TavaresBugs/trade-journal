@@ -588,16 +588,15 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
                 <span>{hasTrade ? "AI review" : "AI session review"}</span>
               </CardTitle>
               <Button
-                variant="outline"
                 size="sm"
                 onClick={handleAiAction}
                 disabled={aiBusy}
-                className="gap-1.5 rounded-xl text-xs font-medium"
+                className="gap-1.5 rounded-xl text-xs font-semibold cursor-pointer"
               >
                 {aiBusy ? (
                   <Loader2 className="size-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="size-3.5 text-brand" />
+                  <Sparkles className="size-3.5" />
                 )}
                 <span>{aiBusy ? "Thinking…" : hasTrade ? "Critique this trade" : "AI recap"}</span>
               </Button>

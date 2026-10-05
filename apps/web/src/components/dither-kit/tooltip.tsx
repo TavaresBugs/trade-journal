@@ -8,9 +8,92 @@ import { rgb } from "./palette"
 
 export type TooltipVariant = "default" | "frosted-glass"
 
+export const TOOLTIP_SURFACE_CLASSES =
+  "rounded-xl border border-white/10 bg-[#121216]/80 backdrop-blur-md shadow-2xl"
+
 const VARIANT: Record<TooltipVariant, string> = {
-  default: "bg-popover",
-  "frosted-glass": "bg-popover/70 backdrop-blur-sm",
+  default: TOOLTIP_SURFACE_CLASSES,
+  "frosted-glass": TOOLTIP_SURFACE_CLASSES,
+}
+
+/**
+ * Standardized header for tooltip / hover cards with subtle divider.
+ */
+export function TooltipHeader({
+  title,
+  badge,
+  className,
+}: {
+  title: React.ReactNode
+  badge?: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={cn(
+        "mb-2 flex items-center justify-between gap-3 border-b border-white/10 pb-1 font-mono text-[10px] font-medium tracking-wide text-muted-foreground",
+        className
+      )}
+    >
+      <span>{title}</span>
+      {badge}
+    </div>
+  )
+}
+
+/**
+ * Standardized metric row with square color swatch, label, and formatted value.
+ */
+export function TooltipRow({
+  label,
+  value,
+  color,
+  swatchClassName,
+  valueClassName,
+  dimmed = false,
+}: {
+  label: React.ReactNode
+  value: React.ReactNode
+  color?: string
+  swatchClassName?: string
+  valueClassName?: string
+  dimmed?: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-4 font-mono text-xs tabular-nums",
+        dimmed && "opacity-40"
+      )}
+    >
+      <div className="flex items-center gap-1.5 text-muted-foreground text-[11px]">
+        {color ? (
+          <span
+            className={cn("inline-block size-2 shrink-0 rounded-[1px]", swatchClassName)}
+            style={{ backgroundColor: color }}
+          />
+        ) : swatchClassName ? (
+          <span
+            className={cn("inline-block size-2 shrink-0 rounded-[1px]", swatchClassName)}
+          />
+        ) : null}
+        <span className="leading-none text-muted-foreground">{label}</span>
+      </div>
+      <span
+        className={cn("font-bold leading-none text-xs", valueClassName)}
+        style={color && !valueClassName ? { color } : undefined}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Subtle horizontal divider inside tooltip cards.
+ */
+export function TooltipDivider({ className }: { className?: string }) {
+  return <div className={cn("border-t border-white/10 pt-1 mt-0.5", className)} />
 }
 
 /**
@@ -20,10 +103,12 @@ const VARIANT: Record<TooltipVariant, string> = {
  */
 export function Tooltip({
   labelKey,
+  labelFormatter,
   valueFormatter,
   variant = "default",
 }: {
   labelKey?: string
+  labelFormatter?: (label: string, index: number) => string
   valueFormatter?: (value: number, name: string) => string
   variant?: TooltipVariant
 }) {
@@ -38,7 +123,11 @@ export function Tooltip({
   }
   const index = chart.hoverIndex ?? lastIndex
 
-  const heading = chart.heading(index, labelKey)
+  const rawHeading = chart.heading(index, labelKey)
+  const heading =
+    labelFormatter && rawHeading != null
+      ? labelFormatter(rawHeading, index)
+      : rawHeading
   const items = chart.itemsAt(index)
 
   return (
@@ -68,38 +157,24 @@ export function Tooltip({
             mass: 0.6,
           }}
           className={cn(
-            "pointer-events-none absolute z-50 whitespace-nowrap rounded-lg border px-3 py-2 shadow-lg backdrop-blur-sm",
+            "pointer-events-none absolute z-50 whitespace-nowrap px-3 py-2.5",
             VARIANT[variant]
           )}
         >
-          {heading && (
-            <div className="mb-1.5 border-b border-border/50 pb-1 text-center font-mono text-[10px] tracking-wide text-muted-foreground">
-              {heading}
-            </div>
-          )}
-          <div className="flex flex-col gap-1">
+          {heading && <TooltipHeader title={heading} />}
+          <div className="flex flex-col gap-1.5">
             {items.map((item) => (
-              <div
+              <TooltipRow
                 key={item.name}
-                className="flex items-center gap-2 font-mono text-[11px] tabular-nums"
-                style={{ opacity: item.dimmed ? 0.4 : 1 }}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="inline-block size-2 shrink-0 rounded-[1px]"
-                    style={{ backgroundColor: rgb(item.seed.fill) }}
-                  />
-                  <span className="leading-none text-muted-foreground">{item.label}</span>
-                </div>
-                <span
-                  className="ml-auto pl-3 font-semibold leading-none"
-                  style={{ color: rgb(item.seed.fill) }}
-                >
-                  {valueFormatter
+                label={item.label}
+                value={
+                  valueFormatter
                     ? valueFormatter(item.value, item.name)
-                    : item.value.toLocaleString()}
-                </span>
-              </div>
+                    : item.value.toLocaleString()
+                }
+                color={rgb(item.seed.fill)}
+                dimmed={item.dimmed}
+              />
             ))}
           </div>
         </motion.div>

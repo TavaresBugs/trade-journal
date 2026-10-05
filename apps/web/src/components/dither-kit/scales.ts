@@ -93,18 +93,37 @@ export function indexAtBand(px: number, length: number, plotWidth: number) {
   return Math.min(length - 1, Math.floor(t * length));
 }
 
+export type YScaleOptions = {
+  /** Force domain to be symmetric [-maxAbs, +maxAbs] so zero baseline is fixed at 50% height. */
+  symmetric?: boolean;
+};
+
 /**
  * value → vertical pixel. The domain always includes zero, so charts with only
  * positive values keep a floor at the plot bottom, while diverging data (values
- * below zero) draws below a zero baseline that sits somewhere inside the plot.
+ * below zero) draws below a zero baseline that sits inside the plot.
+ *
+ * Supports symmetric scaling for oscillating bar charts (fixed 50% baseline),
+ * and smart zero-anchored bounds for cumulative curves so tiny negative drawdowns
+ * don't balloon into huge empty black voids via unconstrained d3.nice().
  */
-export function buildYScale(min: number, max: number, plotHeight: number) {
+export function buildYScale(
+  min: number,
+  max: number,
+  plotHeight: number,
+  options: YScaleOptions = {},
+) {
+  if (options.symmetric) {
+    const maxAbs = Math.max(Math.abs(min), Math.abs(max)) || 1;
+    return scaleLinear().domain([-maxAbs, maxAbs]).nice().range([plotHeight, 0]);
+  }
+
   const lo = Math.min(0, min);
   const hi = Math.max(0, max);
   // Guard a degenerate (zero-width) domain so `nice()` and the range map stay
   // finite even when every value is exactly zero.
   return scaleLinear()
-    .domain([lo, hi === lo ? lo + 1 : hi])
+    .domain([lo, hi === lo ? (lo === 0 ? 1 : lo + 1) : hi])
     .nice()
     .range([plotHeight, 0]);
 }

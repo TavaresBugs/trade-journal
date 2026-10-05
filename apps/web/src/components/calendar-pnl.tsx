@@ -6,12 +6,18 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronLeft, ChevronRight, NotebookPen } from "lucide-react";
 import { dayKeyOf, type CalendarMonth } from "@luxalgo/journal-core";
-import { cn, compactMoney, fmtMoney, pnlClass } from "@/lib/utils";
+import { cn, compactMoney, fmtFullDate, fmtMoney, pnlClass } from "@/lib/utils";
 import { Pnl } from "./pnl";
 import { MonetaryValue, usePrivacy } from "./privacy";
 import { useFilters } from "./filter-bar";
 import { DayJournalsDialog } from "./day-journals-dialog";
-import { DitherGradient } from "./dither-kit";
+import {
+  DitherGradient,
+  TOOLTIP_SURFACE_CLASSES,
+  TooltipHeader,
+  TooltipRow,
+  TooltipDivider,
+} from "./dither-kit";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -559,62 +565,59 @@ function CalendarDayCell({
         side="top"
         sideOffset={6}
         className={cn(
-          "journal-hover-card z-[80] min-w-44 whitespace-nowrap rounded-lg border bg-popover/95 p-2.5 shadow-xl backdrop-blur-md",
-          performance === "profit" && "border-profit/40 shadow-[0_0_12px_rgba(52,211,153,0.15)]",
-          performance === "loss" && "border-loss/40 shadow-[0_0_12px_rgba(248,113,113,0.15)]",
-          performance === "journal" && "border-brand/40 shadow-[0_0_12px_rgba(99,102,241,0.15)]",
+          "journal-hover-card z-[80] min-w-44 whitespace-nowrap !p-2.5 !text-xs !max-w-none",
+          TOOLTIP_SURFACE_CLASSES,
         )}
       >
-        <div className="mb-2 flex items-center justify-between border-b border-border/50 pb-1 font-mono text-[10px] tracking-wide text-muted-foreground">
-          <span>{day.date}</span>
-          {isToday && (
-            <span className="rounded bg-primary/20 px-1 py-0.5 text-[8px] font-bold text-primary uppercase">
-              Today
-            </span>
-          )}
-        </div>
+        <TooltipHeader
+          title={fmtFullDate(day.date)}
+          badge={
+            isToday ? (
+              <span className="rounded bg-primary/20 px-1 py-0.5 text-[8px] font-bold text-primary uppercase">
+                Today
+              </span>
+            ) : undefined
+          }
+        />
         {traded ? (
-          <div className="flex flex-col gap-1.5 font-mono text-xs tabular-nums">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-1.5 text-muted-foreground text-[11px]">
-                <span
-                  className={cn(
-                    "inline-block size-2 shrink-0 rounded-[1px]",
-                    performance === "profit"
-                      ? "bg-profit shadow-[0_0_6px_var(--profit)]"
-                      : performance === "loss"
-                        ? "bg-loss shadow-[0_0_6px_var(--loss)]"
-                        : "bg-muted-foreground",
-                  )}
-                />
-                <span>Net P&L</span>
-              </div>
-              <span className={cn("font-bold leading-none text-xs", pnlClass(day.netPnl))}>
-                {!monetary ? (
-                  "Multiple currencies"
-                ) : privacy ? (
-                  "P&L hidden"
-                ) : (
-                  fmtMoney(day.netPnl, currency)
-                )}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-4 text-muted-foreground text-[11px]">
-              <span>Trades</span>
-              <span className="font-semibold text-foreground leading-none">
-                {day.trades} {day.trades === 1 ? "trade" : "trades"}
-              </span>
-            </div>
+          <div className="flex flex-col gap-1.5">
+            <TooltipRow
+              swatchClassName={
+                performance === "profit"
+                  ? "bg-profit shadow-[0_0_6px_var(--profit)]"
+                  : performance === "loss"
+                    ? "bg-loss shadow-[0_0_6px_var(--loss)]"
+                    : "bg-muted-foreground"
+              }
+              label="Net P&L"
+              value={
+                !monetary
+                  ? "Multiple currencies"
+                  : privacy
+                    ? "P&L hidden"
+                    : fmtMoney(day.netPnl, currency)
+              }
+              valueClassName={pnlClass(day.netPnl)}
+            />
+            <TooltipRow
+              swatchClassName="bg-brand shadow-[0_0_6px_var(--brand)]"
+              label="Trades"
+              value={`${day.trades} ${day.trades === 1 ? "trade" : "trades"}`}
+              valueClassName="font-semibold text-foreground"
+            />
             {hasJournal && (
-              <div className="flex items-center gap-1.5 pt-1 mt-0.5 border-t border-border/30 text-[10px] text-brand font-medium">
-                <NotebookPen className="size-3 shrink-0" />
-                <span>Journal note recorded</span>
-              </div>
+              <>
+                <TooltipDivider />
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
+                  <NotebookPen className="size-3 shrink-0 text-brand" />
+                  <span>Journal note recorded</span>
+                </div>
+              </>
             )}
           </div>
         ) : hasJournal ? (
-          <div className="flex items-center gap-1.5 text-xs text-brand font-medium">
-            <NotebookPen className="size-3.5 shrink-0" />
+          <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
+            <NotebookPen className="size-3.5 shrink-0 text-brand" />
             <span>Journal note recorded</span>
           </div>
         ) : (

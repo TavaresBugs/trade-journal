@@ -33,24 +33,37 @@ const buttonVariants = cva(
   },
 );
 
-function Button({
-  className,
-  variant,
-  size,
-  asChild = false,
-  title,
-  ...props
-}: React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
+const Button = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean }
+>(function Button(
+  {
+    className,
+    variant,
+    size,
+    asChild = false,
+    title,
+    children,
+    ...props
+  },
+  ref,
+) {
   const Comp = asChild ? Slot : "button";
   const hint = title || (size === "icon" ? props["aria-label"] : undefined);
+  const ariaLabel = props["aria-label"] ?? (size === "icon" ? title : undefined);
+
   const button = (
     <Comp
-      aria-label={props["aria-label"] ?? (size === "icon" ? title : undefined)}
+      ref={ref}
+      aria-label={ariaLabel}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+    >
+      {children}
+    </Comp>
   );
   return hint ? <HoverHint content={hint}>{button}</HoverHint> : button;
-}
+});
+Button.displayName = "Button";
 
 export { Button, buttonVariants };

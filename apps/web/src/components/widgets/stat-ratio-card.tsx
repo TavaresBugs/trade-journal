@@ -39,7 +39,7 @@ export function StatRatioCard({
   ratio,
   win,
   loss,
-  barHeight = 8,
+  barHeight = 10,
   detailText,
   currency = "USD",
   variant = ratio !== undefined ? "summary" : "split",

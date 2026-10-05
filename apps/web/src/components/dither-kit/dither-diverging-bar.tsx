@@ -166,7 +166,7 @@ export function DitherDivergingBar({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full overflow-hidden rounded-[3px] select-none bg-muted/20 border border-border/30 ${className}`}
+      className={`relative w-full overflow-hidden rounded-none select-none bg-muted/20 border border-border/30 ${className}`}
       style={{ height }}
       role="img"
       aria-label={`Performance: ${numVal > 0 ? "+" : ""}${numVal}`}

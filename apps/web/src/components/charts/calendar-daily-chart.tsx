@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { CalendarInsights } from "@/lib/calendar-insights";
-import { fmtMoney } from "@/lib/utils";
+import { fmtChartDate, fmtFullDate, fmtMoney } from "@/lib/utils";
 import { usePrivacy } from "../privacy";
 import { ChartFrame } from "./chart-frame";
 import {
@@ -53,21 +53,14 @@ export function CalendarDailyChart({
       <BarChart
         data={data}
         config={config}
+        symmetric
         bloom="low"
         bloomOnHover
         margins={STACKED_CHART_MARGINS}
         className="h-full w-full"
       >
         <Grid />
-        <XAxis
-          dataKey="date"
-          tickFormatter={(value) =>
-            String(value ?? "")
-              .slice(5)
-              .replace("-", "/")
-          }
-          maxTicks={8}
-        />
+        <XAxis dataKey="date" tickFormatter={fmtChartDate} minTickGap={24} />
         <YAxis
           tickFormatter={(value) =>
             privateMode ? "••••" : fmtMoney(value, currency).replace(/\.00$/, "")
@@ -78,6 +71,7 @@ export function CalendarDailyChart({
         {data.length >= 8 && <Line dataKey="average" strokeVariant="dashed" />}
         <Tooltip
           labelKey="date"
+          labelFormatter={fmtFullDate}
           valueFormatter={(value) => (privateMode ? "Hidden" : fmtMoney(value, currency))}
         />
       </BarChart>

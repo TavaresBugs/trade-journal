@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { compactMoney, fmtAdaptivePercent } from "../src/lib/utils";
+import {
+  compactMoney,
+  fmtAdaptivePercent,
+  fmtChartDate,
+  fmtFullDate,
+} from "../src/lib/utils";
 
 describe("compactMoney", () => {
   it("formats standard amounts in compact notation with sign", () => {
@@ -43,5 +48,38 @@ describe("fmtAdaptivePercent", () => {
   it("safely handles null and NaN", () => {
     expect(fmtAdaptivePercent(null, 0.01)).toBe("–");
     expect(fmtAdaptivePercent(Number.NaN, 0.01)).toBe("–");
+  });
+});
+
+describe("fmtChartDate", () => {
+  it("formats ISO date strings to compact TradingView style (e.g. Sep 23)", () => {
+    expect(fmtChartDate("2025-09-23")).toBe("Sep 23");
+    expect(fmtChartDate("2026-01-05")).toBe("Jan 5");
+    expect(fmtChartDate("2025-12-31")).toBe("Dec 31");
+  });
+
+  it("handles ISO timestamps with time component", () => {
+    expect(fmtChartDate("2025-09-23T14:30:00Z")).toBe("Sep 23");
+    expect(fmtChartDate("2026-04-16T09:15:22.000Z")).toBe("Apr 16");
+  });
+
+  it("falls back gracefully for non-standard inputs", () => {
+    expect(fmtChartDate("")).toBe("");
+    expect(fmtChartDate(null)).toBe("");
+    expect(fmtChartDate(undefined)).toBe("");
+    expect(fmtChartDate("custom-label")).toBe("custom-lab");
+  });
+});
+
+describe("fmtFullDate", () => {
+  it("formats ISO date strings to full date with year for tooltips (e.g. Sep 23, 2025)", () => {
+    expect(fmtFullDate("2025-09-23")).toBe("Sep 23, 2025");
+    expect(fmtFullDate("2026-01-05")).toBe("Jan 5, 2026");
+    expect(fmtFullDate("2025-12-31T23:59:59Z")).toBe("Dec 31, 2025");
+  });
+
+  it("falls back gracefully for non-standard inputs", () => {
+    expect(fmtFullDate("")).toBe("");
+    expect(fmtFullDate(null)).toBe("");
   });
 });

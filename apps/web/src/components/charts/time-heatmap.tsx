@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { fmtMoney, fmtNumber } from "@/lib/utils";
+import { AnimatePresence, motion } from "motion/react";
+import { cn, fmtMoney, fmtNumber } from "@/lib/utils";
 import { usePrivacy } from "../privacy";
 import { ChartFrame } from "./chart-frame";
 import {
@@ -12,9 +13,11 @@ import {
   Dot,
   Grid,
   ReferenceLine,
-  Tooltip,
   XAxis,
   YAxis,
+  TOOLTIP_SURFACE_CLASSES,
+  TooltipHeader,
+  TooltipRow,
   type ChartConfig,
 } from "@/components/dither-kit";
 
@@ -99,8 +102,10 @@ export function TimeHeatmap({
     );
   }
 
+  const hoveredDatum = hoveredIndex != null ? chartData[hoveredIndex] : null;
+
   return (
-    <div className="flex flex-col w-full" style={{ minHeight: height }}>
+    <div className="relative flex flex-col w-full" style={{ minHeight: height }}>
       {/* Pane 1: Net P&L per Opening Hour (Dither Bars with Bloom) */}
       <div className="flex items-center justify-between px-1 pb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
         <span>Net P&L</span>
@@ -110,6 +115,7 @@ export function TimeHeatmap({
         <BarChart
           data={chartData}
           config={pnlConfig}
+          symmetric
           bloom="low"
           bloomOnHover
           margins={{ top: 10, right: 16, bottom: 10, left: 64 }}
@@ -125,10 +131,6 @@ export function TimeHeatmap({
             }
           />
           <Bar dataKey="netPnl" variant="gradient" />
-          <Tooltip
-            labelKey="hourRange"
-            valueFormatter={tooltipFormatter}
-          />
         </BarChart>
       </ChartFrame>
 
@@ -154,16 +156,71 @@ export function TimeHeatmap({
             <Dot variant="colored-border" r={3} />
           </Line>
           <XAxis dataKey="hourLabel" />
-          <YAxis
-            tickCount={3}
-            tickFormatter={(val: number) => fmtNumber(Number(val), 0)}
-          />
-          <Tooltip
-            labelKey="hourRange"
-            valueFormatter={tooltipFormatter}
-          />
+          <YAxis tickCount={3} tickFormatter={(val: number) => fmtNumber(Number(val), 0)} />
         </LineChart>
       </ChartFrame>
+
+      {/* Single Unified Tooltip across both panes */}
+      <AnimatePresence>
+        {hoveredDatum && (
+          <motion.div
+            key="time-heatmap-unified-tooltip"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              left: `calc(64px + (100% - 80px) * ${(hoveredIndex! + 0.5) / chartData.length})`,
+            }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{
+              type: "spring",
+              stiffness: 520,
+              damping: 38,
+              mass: 0.5,
+            }}
+            className={cn(
+              "pointer-events-none absolute z-50 whitespace-nowrap px-3 py-2.5",
+              TOOLTIP_SURFACE_CLASSES,
+              hoveredIndex! <= 1
+                ? "translate-x-0"
+                : hoveredIndex! >= chartData.length - 2
+                  ? "-translate-x-full"
+                  : "-translate-x-1/2",
+            )}
+            style={{
+              top: `${Math.round(topHeight * 0.42)}px`,
+            }}
+          >
+            <TooltipHeader title={hoveredDatum.hourRange} />
+            <div className="flex flex-col gap-1.5">
+              <TooltipRow
+                swatchClassName={
+                  hoveredDatum.netPnl > 0
+                    ? "bg-profit shadow-[0_0_6px_var(--profit)]"
+                    : hoveredDatum.netPnl < 0
+                      ? "bg-loss shadow-[0_0_6px_var(--loss)]"
+                      : "bg-muted-foreground/60"
+                }
+                label="Net P&L"
+                value={privateMode ? "••••" : fmtMoney(hoveredDatum.netPnl, currency)}
+                valueClassName={
+                  hoveredDatum.netPnl > 0
+                    ? "text-profit"
+                    : hoveredDatum.netPnl < 0
+                      ? "text-loss"
+                      : "text-foreground"
+                }
+              />
+              <TooltipRow
+                swatchClassName="bg-brand shadow-[0_0_6px_var(--brand)]"
+                label="Trades"
+                value={`${hoveredDatum.trades} ${hoveredDatum.trades === 1 ? "trade" : "trades"}`}
+                valueClassName="font-semibold text-foreground"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

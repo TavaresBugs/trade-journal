@@ -31,7 +31,6 @@ export function AiRecap({
   return (
     <div className="space-y-2">
       <Button
-        variant="outline"
         size="sm"
         onClick={() => void generate()}
         disabled={busy || disabled}

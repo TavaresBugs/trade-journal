@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { fmtMoney } from "@/lib/utils";
+import { fmtChartDate, fmtFullDate, fmtMoney } from "@/lib/utils";
 import { usePrivacy } from "../privacy";
 import { ChartFrame } from "./chart-frame";
 import {
@@ -54,17 +54,14 @@ export function DailyBars({
       <BarChart
         data={data}
         config={config}
+        symmetric
         bloom="low"
         bloomOnHover
         margins={STACKED_CHART_MARGINS}
         className="h-full w-full"
       >
         <Grid />
-        <XAxis
-          dataKey="date"
-          tickFormatter={(value) => String(value ?? "").slice(5)}
-          maxTicks={8}
-        />
+        <XAxis dataKey="date" tickFormatter={fmtChartDate} minTickGap={48} />
         <YAxis
           tickFormatter={(value) => (privateMode ? "••••" : fmtMoney(value).replace(".00", ""))}
         />
@@ -72,6 +69,7 @@ export function DailyBars({
         <Bar dataKey="netPnl" variant="gradient" />
         <Tooltip
           labelKey="date"
+          labelFormatter={fmtFullDate}
           valueFormatter={(value) => (privateMode ? "Hidden" : fmtMoney(value))}
         />
       </BarChart>

@@ -13,11 +13,13 @@ export function ReferenceLine({
   label,
   strokeDasharray = "4 4",
   className = "stroke-muted-foreground/60",
+  stroke,
 }: {
   y?: number
   label?: string
   strokeDasharray?: string
   className?: string
+  stroke?: string
 }) {
   const ctx = useChartPart("ReferenceLine")
   if (!ctx.ready) return null
@@ -32,7 +34,8 @@ export function ReferenceLine({
         x2={width}
         y1={py}
         y2={py}
-        className={className}
+        className={stroke ? undefined : className}
+        stroke={stroke}
         strokeDasharray={strokeDasharray}
       />
       {label ? (

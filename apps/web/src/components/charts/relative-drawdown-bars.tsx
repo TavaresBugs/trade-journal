@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { RelativeDrawdownPoint } from "@luxalgo/journal-core";
-import { fmtPercent } from "@/lib/utils";
+import { fmtFullDate, fmtPercent } from "@/lib/utils";
 import { ChartFrame } from "./chart-frame";
 import {
   AreaChart,
@@ -86,6 +86,7 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
               <Area dataKey="drawdownPct" variant="gradient" />
               <Tooltip
                 labelKey="t"
+                labelFormatter={fmtFullDate}
                 valueFormatter={(value) => `-${fmtPercent(Math.abs(value), 2)}`}
               />
             </AreaChart>
@@ -107,6 +108,7 @@ export function RelativeDrawdownBars({ data }: { data: RelativeDrawdownPoint[] }
               <Bar dataKey="drawdownPct" variant="gradient" />
               <Tooltip
                 labelKey="t"
+                labelFormatter={fmtFullDate}
                 valueFormatter={(value) => `-${fmtPercent(Math.abs(value), 2)}`}
               />
             </BarChart>

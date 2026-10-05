@@ -3,42 +3,81 @@
 import { useEffect, useRef } from "react";
 import {
   BAYER,
+  BORDER_ALPHA,
   backingSize,
   bloomLayerStyle,
   clamp01,
-  easeOutCubic,
   OFF_TIER,
-  prefersReducedMotion,
   type BloomInput,
 } from "./dither-paint";
-import { rgb, seedOfColor } from "./palette";
+import { rgb, seedOfColor, type Seed } from "./palette";
 
 export type DitherRatioBarProps = {
   winValue: number | null;
   lossValue: number | null;
-  height?: number; // CSS height in px, default 8
+  height?: number; // CSS height in px, default 10
   bloom?: BloomInput; // default "low"
+  direction?: "outward" | "inward" | "left-to-right"; // default "outward"
   className?: string;
 };
 
 /**
- * Dual-ratio horizontal bar rendered with the retro Dither Kit engine:
- * - Left side: Average Win in glowing green with 4x4 Bayer dither.
- * - Right side: Average Loss in glowing red with 4x4 Bayer dither.
- * - Micro-divider separating the two values.
- * - Additive bloom glow layer for the authentic phosphor aesthetic.
- * - Steady render without annoying re-animations or hover replays.
+ * Horizontal transpose of paintColumn — same formulas, same constants:
+ * density 0 at the value tip → 1 at the baseline, Bayer threshold lowered by
+ * `0.1 * intensity`, alpha lifted by `1 + 0.22 * intensity`, tip capped with
+ * BORDER_ALPHA outlines. `anchor` is the side where the baseline sits.
  */
+function paintHorizontalSection(
+  ctx: CanvasRenderingContext2D,
+  xStart: number,
+  xEnd: number,
+  rows: number,
+  seed: Seed,
+  anchor: "left" | "right",
+  intensity: number,
+  dim: number,
+) {
+  const depth = xEnd - xStart;
+  if (depth <= 0) return;
+
+  for (let x = xStart; x < xEnd; x++) {
+    const density =
+      anchor === "left" ? 1 - (x - xStart) / depth : (x - xStart + 1) / depth;
+    for (let y = 0; y < rows; y++) {
+      const lit = density > (BAYER[y & 3]?.[x & 3] ?? 0) - 0.1 * intensity;
+      const k = (0.3 + density * 0.7) * (1 + 0.22 * intensity);
+      const alpha = clamp01((lit ? k : k * OFF_TIER) * dim);
+      ctx.fillStyle = rgb(seed.fill, 1, alpha);
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  // Cap perpendicular to growth, at the value tip (same as paintColumn's top cap)
+  const tipX = anchor === "left" ? xEnd - 1 : xStart;
+  ctx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * dim);
+  ctx.fillRect(tipX, 0, 1, rows);
+  if (depth > 1) {
+    ctx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * 0.5 * dim);
+    ctx.fillRect(anchor === "left" ? tipX - 1 : tipX + 1, 0, 1, rows);
+  }
+}
+
 export function DitherRatioBar({
   winValue,
   lossValue,
-  height = 8,
+  height = 10,
   bloom = "low",
+  direction = "outward",
   className = "",
 }: DitherRatioBarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bloomRef = useRef<HTMLCanvasElement>(null);
+  // Hover target: 0 = idle, 1 = mouse inside. side: which half is hovered.
+  const hoverRef = useRef<{ inside: boolean; side: "win" | "loss" | null }>({
+    inside: false,
+    side: null,
+  });
 
   const win = winValue !== null && Number.isFinite(winValue) ? Math.max(0, winValue) : 0;
   const loss = lossValue !== null && Number.isFinite(lossValue) ? Math.max(0, Math.abs(lossValue)) : 0;
@@ -55,78 +94,87 @@ export function DitherRatioBar({
     const c = canvas.getContext("2d");
     if (!c) return;
 
-    const render = (w: number) => {
-      const { cols, rows } = backingSize(w, height);
-      canvas.width = cols;
-      canvas.height = rows;
+    let intensity = 0;
+    let raf = 0;
+    let lastCols = 0;
+    let lastRows = 0;
 
-      const bloomCtx = bloomCanvas?.getContext("2d") ?? null;
-      if (bloomCanvas) {
-        bloomCanvas.width = cols;
-        bloomCanvas.height = rows;
+    const winSeed = seedOfColor("green");
+    const lossSeed = seedOfColor("red");
+    const winAnchor = direction === "inward" ? "left" : "right";
+    const lossAnchor = direction === "outward" ? "left" : "right";
+
+    const paint = () => {
+      const { cols, rows } = backingSize(width, height);
+      if (cols !== lastCols || rows !== lastRows) {
+        canvas.width = cols;
+        canvas.height = rows;
+        if (bloomCanvas) {
+          bloomCanvas.width = cols;
+          bloomCanvas.height = rows;
+        }
+        lastCols = cols;
+        lastRows = rows;
       }
-
-      const winSeed = seedOfColor("green");
-      const lossSeed = seedOfColor("red");
-
       const splitCol = Math.round(cols * ratio);
-      const gap = 1;
+      const { inside, side } = hoverRef.current;
+
+      // Same rule as BarChart: hovered item lifts +0.4, the others dim to 0.5.
+      const winActive = inside && side === "win";
+      const lossActive = inside && side === "loss";
+      const winDim = inside && side === "loss" ? 0.5 : 1;
+      const lossDim = inside && side === "win" ? 0.5 : 1;
 
       c.clearRect(0, 0, cols, rows);
+      paintHorizontalSection(
+        c, 0, splitCol, rows, winSeed, winAnchor,
+        intensity + (winActive ? 0.4 : 0), winDim,
+      );
+      c.fillStyle = "rgba(140, 140, 150, 0.45)";
+      c.fillRect(splitCol, 0, 1, rows);
+      paintHorizontalSection(
+        c, splitCol + 1, cols, rows, lossSeed, lossAnchor,
+        intensity + (lossActive ? 0.4 : 0), lossDim,
+      );
 
-      for (let y = 0; y < rows; y++) {
-        const isBorder = y === 0 || y === rows - 1;
-        for (let x = 0; x < cols; x++) {
-          if (x < splitCol) {
-            // WIN SECTION (Green)
-            // Equilibrium point is at splitCol - 1 (strongest / peak saturation & density)
-            // Gradient fades outward toward the left edge (x = 0) with a steeper quadratic falloff
-            const t = splitCol > 1 ? x / (splitCol - 1) : 1;
-            const falloff = Math.pow(t, 2.0);
-            const density = 0.12 + 0.88 * falloff;
-            const lit = density > (BAYER[y & 3]?.[x & 3] ?? 0);
-            const k = 0.25 + density * 0.75;
-            const alpha = clamp01(lit ? k : k * OFF_TIER);
-
-            if (isBorder) {
-              const borderAlpha = clamp01(0.25 + 0.75 * falloff);
-              c.fillStyle = rgb(winSeed.fill, 1, borderAlpha);
-            } else {
-              c.fillStyle = rgb(winSeed.fill, 1, alpha);
-            }
-            c.fillRect(x, y, 1, 1);
-          } else if (x >= splitCol + gap && x < cols) {
-            // LOSS SECTION (Red)
-            // Equilibrium point is at splitCol + gap (strongest / peak saturation & density)
-            // Gradient fades outward toward the right edge (x = cols - 1) with a steeper quadratic falloff
-            const lossWidth = cols - (splitCol + gap);
-            const distFromDivider = x - (splitCol + gap);
-            const t = lossWidth > 1 ? 1 - distFromDivider / (lossWidth - 1) : 1;
-            const falloff = Math.pow(t, 2.0);
-            const density = 0.12 + 0.88 * falloff;
-            const lit = density > (BAYER[y & 3]?.[x & 3] ?? 0);
-            const k = 0.25 + density * 0.75;
-            const alpha = clamp01(lit ? k : k * OFF_TIER);
-
-            if (isBorder) {
-              const borderAlpha = clamp01(0.25 + 0.75 * falloff);
-              c.fillStyle = rgb(lossSeed.fill, 1, borderAlpha);
-            } else {
-              c.fillStyle = rgb(lossSeed.fill, 1, alpha);
-            }
-            c.fillRect(x, y, 1, 1);
-          }
-        }
-      }
-
-      // Single bloom copy (no jitter, no re-run)
+      const bloomCtx = bloomCanvas?.getContext("2d") ?? null;
       if (bloomCtx && bloom !== "off") {
         bloomCtx.clearRect(0, 0, cols, rows);
         bloomCtx.drawImage(canvas, 0, 0);
       }
     };
 
-    render(width);
+    const tick = () => {
+      const target = hoverRef.current.inside ? 1 : 0;
+      if (Math.abs(intensity - target) > 0.001) {
+        intensity += (target - intensity) * 0.16;
+        paint();
+        raf = requestAnimationFrame(tick);
+      } else {
+        intensity = target;
+        paint();
+        raf = 0;
+      }
+    };
+    const kick = () => {
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+
+    const onMove = (e: PointerEvent) => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      hoverRef.current = { inside: true, side: x <= rect.width * ratio ? "win" : "loss" };
+      paint();
+      kick();
+    };
+    const onLeave = () => {
+      hoverRef.current = { inside: false, side: null };
+      kick();
+    };
+
+    paint();
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
 
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -134,14 +182,19 @@ export function DitherRatioBar({
         const newW = Math.round(entry.contentRect.width);
         if (newW > 0 && newW !== width) {
           width = newW;
-          render(width);
+          paint();
         }
       }
     });
-
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [ratio, height, bloom]);
+
+    return () => {
+      observer.disconnect();
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [ratio, height, bloom, direction]);
 
   const bloomStyle = bloomLayerStyle(bloom, bloom !== "off");
 
@@ -150,7 +203,7 @@ export function DitherRatioBar({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full overflow-hidden rounded-[3px] select-none ${className}`}
+      className={`relative w-full overflow-hidden rounded-none select-none ${className}`}
       style={{ height }}
       role="img"
       aria-label={`Average win vs loss ratio: ${(ratio * 100).toFixed(1)}% win to ${((1 - ratio) * 100).toFixed(1)}% loss`}

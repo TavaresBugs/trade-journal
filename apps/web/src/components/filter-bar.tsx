@@ -94,11 +94,10 @@ export function FilterDialogButton({
           <span>Filters{count > 0 ? ` · ${count}` : ""}</span>
         </button>
       ) : (
-        <Button
-          variant={variant}
-          size={size}
+        <button
+          type="button"
           className={cn(
-            "h-8 gap-1.5 border-border bg-background hover:bg-muted/60 text-foreground text-xs font-medium px-3 cursor-pointer",
+            "flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground transition-[background-color,transform] duration-150 hover:bg-muted/60 active:scale-[0.98] cursor-pointer select-none",
             className,
           )}
           title="Filter by dates, symbols, strategy, outcome, and more. All selected conditions must match."
@@ -107,9 +106,9 @@ export function FilterDialogButton({
             setOpen(true);
           }}
         >
-          <SlidersHorizontal className="size-3.5 text-muted-foreground" />
+          <SlidersHorizontal className="size-3.5 text-muted-foreground shrink-0" />
           <span>Filters{count > 0 ? ` · ${count}` : ""}</span>
-        </Button>
+        </button>
       )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
@@ -174,6 +173,7 @@ export function FilterBar({
       {showFilters && (
         <>
           <AccountSelector />
+          <div id="dashboard-layout-slot" className="shrink-0 flex items-center" />
           {hideRangeButtons !== true && (
             <div
               className={cn(

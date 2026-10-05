@@ -17,9 +17,8 @@ export const BAYER = [
 export const CELL = 2 // css px per dither cell — chunky enough to read pixelated
 export const MAX_COLS = 520
 export const MAX_ROWS = 200
-// Opacity of the top border outline (just under solid, so it reads as a soft
-// edge rather than a hard line). See the note on colour vs opacity below.
-export const BORDER_ALPHA = 0.72
+// Opacity of the top border outline (crisp and luminous).
+export const BORDER_ALPHA = 0.92
 // Opacity of a dither "off" cell relative to an "on" cell. The scatter modulates
 // between these two tiers of the *same* colour instead of leaving holes, so the
 // background never shows through as stark white on a light theme.
@@ -46,8 +45,8 @@ export type PaintOpts = {
 
 /**
  * Fill one backing-canvas column `x` from row `top` down to `floor` with the
- * ordered-dither scatter — solid at the floor, dissolving upward so it *fades
- * out toward the value line* — then cap the top with a soft border outline in
+ * ordered-dither scatter — vibrant at the value line, dissolving downward so it
+ * fades out toward the baseline — then cap the top with a soft border outline in
  * the series colour. Density drives opacity (see the note above), so the fade
  * reads correctly against both light and dark backgrounds. The single source of
  * the dither look across area / line / bar.
@@ -69,9 +68,9 @@ export function paintColumn(
     return
   }
   const bias = (variant === "dotted" ? 0.12 : 0) + (stacked ? 0.2 : 0) - sparse
-  for (let y = t; y < f; y++) {
-    // Inverted falloff: 0 at the value line, 1 at the baseline
-    let density = inverted ? (f - y) / depth : (y - t) / depth
+  for (let y = t; y <= f; y++) {
+    // Density gradient: 1.0 at the value line/curve, fading out to 0 at the zero baseline
+    let density = inverted ? (y - t) / depth : (f - y) / depth
     if (stacked) density = 0.5 + 0.5 * density
     if (variant === "hatched" && ((x + y) & 3) >= 2) continue
     const lit =

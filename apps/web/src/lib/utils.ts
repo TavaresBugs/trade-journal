@@ -96,3 +96,57 @@ export const fmtAdaptivePercent = (value: number | null | undefined, maxSpan: nu
   const digits = absSpan < 0.002 ? 2 : absSpan < 0.01 ? 1 : 0;
   return fmtPercent(value, digits);
 };
+
+const MONTH_ABBR = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+/**
+ * Formats an ISO date/timestamp string (e.g. "2025-09-23" or "2025-09-23T14:30:00Z")
+ * into a compact TradingView-style chart axis date: "Sep 23".
+ * Pure string parsing: SSR-safe, zero timezone shifts, retains pure numeric data internally.
+ */
+export const fmtChartDate = (value: unknown): string => {
+  if (!value) return "";
+  const str = String(value);
+  if (str.length >= 10 && str[4] === "-" && str[7] === "-") {
+    const monthNum = parseInt(str.slice(5, 7), 10);
+    const dayNum = parseInt(str.slice(8, 10), 10);
+    const month = MONTH_ABBR[monthNum - 1];
+    if (month && !Number.isNaN(dayNum)) {
+      return `${month} ${dayNum}`;
+    }
+  }
+  return str.slice(0, 10);
+};
+
+/**
+ * Formats an ISO date/timestamp string into a full date with year for hover tooltips: "Sep 23, 2025".
+ * Pure string parsing: SSR-safe, zero timezone shifts.
+ */
+export const fmtFullDate = (value: unknown): string => {
+  if (!value) return "";
+  const str = String(value);
+  if (str.length >= 10 && str[4] === "-" && str[7] === "-") {
+    const year = str.slice(0, 4);
+    const monthNum = parseInt(str.slice(5, 7), 10);
+    const dayNum = parseInt(str.slice(8, 10), 10);
+    const month = MONTH_ABBR[monthNum - 1];
+    if (month && !Number.isNaN(dayNum)) {
+      return `${month} ${dayNum}, ${year}`;
+    }
+  }
+  return str.slice(0, 10);
+};
+

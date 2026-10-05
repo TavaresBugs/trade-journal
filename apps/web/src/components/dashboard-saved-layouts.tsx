@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState, type CSSProperties } from "react";
 import * as Popover from "@radix-ui/react-popover";
-import { Check, ChevronDown, LayoutTemplate, Save, Search, X } from "lucide-react";
+import { Check, ChevronDown, LayoutTemplate, Save, Search, Settings2, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
@@ -10,6 +10,7 @@ import {
   visibleCardIds,
   type DashboardArrangement,
 } from "@/lib/dashboard-layout";
+import { type DashboardWidget, DashboardCardCustomizer } from "./dashboard-customizer";
 
 export function DashboardSavedLayouts({
   layouts,
@@ -17,19 +18,41 @@ export function DashboardSavedLayouts({
   ids,
   onLoad,
   onSave,
+  widgets,
+  onVisibilityChange,
+  onShowAll,
+  onRestore,
 }: {
   layouts: Record<string, DashboardArrangement>;
   current: DashboardArrangement;
   ids: string[];
   onLoad(name: string): void;
   onSave(name: string): boolean;
+  widgets?: DashboardWidget[];
+  onVisibilityChange?(id: string, visible: boolean): void;
+  onShowAll?(): void;
+  onRestore?(): void;
 }) {
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"layouts" | "customize">("layouts");
   const [query, setQuery] = useState("");
   const [name, setName] = useState("");
   const [saved, setSaved] = useState("");
   const titleId = useId();
   const listRef = useRef<HTMLDivElement>(null);
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    setQuery("");
+    setSaved("");
+    if (!next) {
+      setView("layouts");
+    }
+  };
+
+  const handleSetView = (nextView: "layouts" | "customize") => {
+    setView(nextView);
+  };
 
   // Always include the Default layout preset
   const allLayouts: Record<string, DashboardArrangement> = {
@@ -44,22 +67,18 @@ export function DashboardSavedLayouts({
   return (
     <Popover.Root
       open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        setQuery("");
-        setSaved("");
-      }}
+      onOpenChange={handleOpenChange}
     >
       <Popover.Trigger asChild>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="sm"
-          className="dashboard-customize-trigger"
           aria-label="Saved dashboard layouts"
+          className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground transition-[background-color,transform] duration-150 hover:bg-muted/60 active:scale-[0.98] cursor-pointer select-none data-[state=open]:bg-muted/60"
         >
-          <LayoutTemplate /> Layouts <ChevronDown className="dashboard-customize-chevron" />
-        </Button>
+          <LayoutTemplate size={14} className="text-muted-foreground shrink-0" />
+          <span>Layouts</span>
+          <ChevronDown size={13} className="text-muted-foreground shrink-0 transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
+        </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
@@ -69,29 +88,57 @@ export function DashboardSavedLayouts({
           collisionPadding={12}
           aria-labelledby={titleId}
         >
-          <div className="dashboard-customize-heading">
-            <h2 id={titleId}>Saved layouts</h2>
-            <span className="dashboard-customize-count">
-              {names.length} {names.length === 1 ? "layout" : "layouts"}
-            </span>
-            <Popover.Close
-              className="dashboard-customize-icon-button"
-              aria-label="Close saved layouts"
-            >
-              <X size={15} />
-            </Popover.Close>
-          </div>
-          {names.length > 4 && (
-            <div className="dashboard-customize-search">
-              <Search size={14} aria-hidden="true" />
-              <input
-                aria-label="Find a layout"
-                placeholder="Find a layout…"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </div>
-          )}
+          {view === "customize" && widgets && onVisibilityChange && onShowAll && onRestore ? (
+            <DashboardCardCustomizer
+              widgets={widgets}
+              hidden={current.hidden}
+              onVisibilityChange={onVisibilityChange}
+              onShowAll={onShowAll}
+              onRestore={onRestore}
+              onBack={() => handleSetView("layouts")}
+              titleId={titleId}
+            />
+          ) : (
+            <>
+              <div className="dashboard-customize-heading">
+                <h2 id={titleId}>Saved layouts</h2>
+                <span className="dashboard-customize-count">
+                  {names.length} {names.length === 1 ? "layout" : "layouts"}
+                </span>
+                <div className="ml-auto flex items-center gap-1">
+                  {widgets && (
+                    <button
+                      type="button"
+                      className="dashboard-customize-icon-button"
+                      title="Customize visible cards"
+                      aria-label="Customize visible cards"
+                      onClick={() => handleSetView("customize")}
+                    >
+                      <Settings2 size={15} />
+                    </button>
+                  )}
+                  <Popover.Close asChild>
+                    <button
+                      type="button"
+                      className="dashboard-customize-icon-button"
+                      aria-label="Close saved layouts"
+                    >
+                      <X size={14} />
+                    </button>
+                  </Popover.Close>
+                </div>
+              </div>
+              {names.length > 4 && (
+                <div className="dashboard-customize-search">
+                  <Search size={14} aria-hidden="true" />
+                  <input
+                    aria-label="Find a layout"
+                    placeholder="Find a layout…"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                  />
+                </div>
+              )}
           <div
             ref={listRef}
             className="dashboard-customize-results"
@@ -204,8 +251,10 @@ export function DashboardSavedLayouts({
               </p>
             )}
           </form>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        </>
+      )}
+    </Popover.Content>
+  </Popover.Portal>
+</Popover.Root>
   );
 }

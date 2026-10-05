@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   DndContext,
   DragOverlay,
@@ -26,9 +27,8 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
-import { ArrowLeft, ArrowRight, GripVertical } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DashboardCustomizer } from "@/components/dashboard-customizer";
 import { DashboardSavedLayouts } from "@/components/dashboard-saved-layouts";
 import {
   DASHBOARD_LAYOUT_KEY,
@@ -79,7 +79,7 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
   const [state, setState] = useState<DashboardPreferences>({ current: initial, layouts: {} });
   const stateRef = useRef(state);
   const [ready, setReady] = useState(false);
-  const [edit, setEdit] = useState(false);
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -187,19 +187,6 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
   });
   const label = (id: string | number) => byId.get(String(id))?.label ?? "Card";
 
-  function move(from: string, to: string) {
-    update(
-      (previous) => ({
-        ...previous,
-        current: moveDashboardCard(normalizeArrangement(previous.current, ids), from, to),
-      }),
-      `${label(from)} moved. Layout saved.`,
-    );
-  }
-  function moveBy(id: string, delta: number) {
-    const target = visible[visible.indexOf(id) + delta];
-    if (target) move(id, target);
-  }
   function startDrag({ active, activatorEvent }: DragStartEvent) {
     const card = Array.from(gridRef.current?.children ?? []).find(
       (element) => element.getAttribute("data-dashboard-card") === String(active.id),
@@ -270,76 +257,81 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
     );
   }
 
+  useEffect(() => {
+    setSlot(document.getElementById("dashboard-layout-slot"));
+  }, [ready]);
+
+  const layoutsControl = (
+    <DashboardSavedLayouts
+      layouts={state.layouts}
+      current={current}
+      ids={ids}
+      widgets={widgets}
+      onVisibilityChange={(id, visible) => {
+        update((previous) => {
+          const layout = normalizeArrangement(previous.current, ids);
+          return {
+            ...previous,
+            current: {
+              ...layout,
+              hidden: visible
+                ? layout.hidden.filter((hiddenId) => hiddenId !== id)
+                : [...layout.hidden, id],
+            },
+          };
+        });
+      }}
+      onShowAll={showAll}
+      onRestore={() =>
+        update(
+          (previous) => ({ ...previous, current: initial }),
+          "Original card order restored. All cards are shown.",
+        )
+      }
+      onLoad={(name) =>
+        update(
+          (previous) => ({
+            ...previous,
+            current: normalizeArrangement(
+              name === "Default"
+                ? (previous.layouts["Default"] ?? initial)
+                : (previous.layouts[name] ?? initial),
+              ids,
+            ),
+          }),
+          `${name} loaded`,
+        )
+      }
+      onSave={(name) =>
+        update(
+          (previous) => ({
+            ...previous,
+            layouts: {
+              ...previous.layouts,
+              [name]: normalizeArrangement(previous.current, ids),
+            },
+          }),
+          `${name} saved`,
+        )
+      }
+    />
+  );
+
   if (!ready)
     return <div className="p-4 text-sm text-muted-foreground">Loading dashboard layout…</div>;
 
   return (
     <div className="space-y-3 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {slot ? (
+        createPortal(layoutsControl, slot)
+      ) : (
         <div className="flex flex-wrap items-center gap-2">
-          <DashboardSavedLayouts
-            layouts={state.layouts}
-            current={current}
-            ids={ids}
-            onLoad={(name) =>
-              update(
-                (previous) => ({
-                  ...previous,
-                  current: normalizeArrangement(
-                    name === "Default"
-                      ? (previous.layouts["Default"] ?? initial)
-                      : (previous.layouts[name] ?? initial),
-                    ids,
-                  ),
-                }),
-                `${name} loaded`,
-              )
-            }
-            onSave={(name) =>
-              update(
-                (previous) => ({
-                  ...previous,
-                  layouts: {
-                    ...previous.layouts,
-                    [name]: normalizeArrangement(previous.current, ids),
-                  },
-                }),
-                `${name} saved`,
-              )
-            }
-          />
-          <span role="status" className="sr-only">
-            {feedback}
-          </span>
+          {layoutsControl}
         </div>
-        <DashboardCustomizer
-          widgets={widgets}
-          hidden={current.hidden}
-          open={edit}
-          onOpenChange={setEdit}
-          onVisibilityChange={(id, visible) => {
-            update((previous) => {
-              const layout = normalizeArrangement(previous.current, ids);
-              return {
-                ...previous,
-                current: {
-                  ...layout,
-                  hidden: visible
-                    ? layout.hidden.filter((hiddenId) => hiddenId !== id)
-                    : [...layout.hidden, id],
-                },
-              };
-            });
-          }}
-          onShowAll={showAll}
-          onRestore={() =>
-            update(
-              (previous) => ({ ...previous, current: initial }),
-              "Original card order restored. All cards are shown.",
-            )
-          }
-        />
-      </div>
+      )}
+      <span role="status" className="sr-only">
+        {feedback}
+      </span>
       {hiddenCount > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
           <span>
@@ -407,11 +399,7 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
                     tablet: tabletSpans[id]!,
                     desktop: desktopSpans[id]!,
                   }}
-                  edit={edit}
                   exiting={exiting.has(id)}
-                  first={visible.indexOf(id) === 0}
-                  last={visible.indexOf(id) === visible.length - 1}
-                  onMove={(delta) => moveBy(id, delta)}
                 />
               ))}
             </div>
@@ -434,19 +422,11 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
 function SortableCard({
   widget,
   responsiveSpans,
-  edit,
   exiting,
-  first,
-  last,
-  onMove,
 }: {
   widget: Widget;
   responsiveSpans: { compact: number; tablet: number; desktop: number };
-  edit: boolean;
   exiting: boolean;
-  first: boolean;
-  last: boolean;
-  onMove(delta: number): void;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useSortable({
     id: widget.id,
@@ -490,36 +470,6 @@ function SortableCard({
           <GripVertical className="h-3.5 w-3.5" />
         </Button>
         <div className="min-w-0 flex-1 [&_[data-slot=card-header]]:pl-9">{widget.content}</div>
-        {edit && (
-          <div
-            data-dashboard-move-controls
-            className="mt-1 flex items-center justify-end gap-1 rounded border bg-card px-1 py-0.5 text-xs"
-          >
-            <span className="mr-auto pl-1 text-muted-foreground">Move card</span>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6"
-              disabled={first}
-              aria-label={`Move ${widget.label} earlier`}
-              onClick={() => onMove(-1)}
-            >
-              <ArrowLeft className="h-3 w-3" />
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6"
-              disabled={last}
-              aria-label={`Move ${widget.label} later`}
-              onClick={() => onMove(1)}
-            >
-              <ArrowRight className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
       </div>
     </section>
   );
