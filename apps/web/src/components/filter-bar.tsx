@@ -173,7 +173,9 @@ export function FilterBar({
       {showFilters && (
         <>
           <AccountSelector />
-          <div id="dashboard-layout-slot" className="shrink-0 flex items-center" />
+          {pathname === "/" && (
+            <div id="dashboard-layout-slot" className="empty:hidden shrink-0 flex items-center" />
+          )}
           {hideRangeButtons !== true && (
             <div
               className={cn(
