@@ -32,6 +32,7 @@ export interface FormulaHudProps {
   resultSecondary?: React.ReactNode;
   // Additional content (e.g. scenario list)
   children?: React.ReactNode;
+  variant?: "seamless" | "card";
   className?: string;
 }
 
@@ -48,6 +49,7 @@ export function FormulaHud({
   resultLabel,
   resultSecondary,
   children,
+  variant = "seamless",
   className,
 }: FormulaHudProps) {
   const [copied, setCopied] = useState(false);
@@ -69,7 +71,14 @@ export function FormulaHud({
   };
 
   return (
-    <div className={cn("rounded-lg border border-border/80 bg-muted/30 p-3.5", className)}>
+    <div
+      className={cn(
+        variant === "card"
+          ? "rounded-lg border border-border/80 bg-muted/30 p-3.5"
+          : "space-y-3",
+        className,
+      )}
+    >
       {/* HEADER ROW */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
