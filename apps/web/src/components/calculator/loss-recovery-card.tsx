@@ -14,6 +14,7 @@ import {
   ScenarioRuler,
   type ScenarioItem,
 } from "./shared";
+import { DitherGauge } from "@/components/dither-kit";
 
 interface LossRecoveryCardProps {
   initialCapital?: number;
@@ -680,6 +681,72 @@ export function LossRecoveryCard({
             )
           }
         >
+          {/* DITHER COCKPIT RECOVERY ASSESSMENT */}
+          {(() => {
+            const currentDd = mode === "funded" ? safeCushionDd : safeLiveDd;
+            const recoveryNeeded = mode === "funded" ? cushionRecoveryNeeded : liveRecoveryNeeded;
+            const gaugeValue = Math.min(1, Math.max(0, currentDd / 100));
+            const gaugeColor: "green" | "orange" | "red" =
+              currentDd > 40 ? "red" : currentDd > 20 ? "orange" : "green";
+
+            return (
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 p-2.5">
+                <div className="flex items-center gap-3">
+                  <DitherGauge
+                    size={80}
+                    value={gaugeValue}
+                    color={gaugeColor}
+                    bloom="low"
+                    label={mode === "funded" ? "Cushion DD" : "Account DD"}
+                  />
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider font-mono uppercase",
+                          currentDd <= 20 && "bg-profit/15 text-profit border border-profit/30",
+                          currentDd > 20 &&
+                            currentDd <= 40 &&
+                            "bg-amber-500/15 text-amber-500 border border-amber-500/30",
+                          currentDd > 40 && "bg-loss/15 text-loss border border-loss/30",
+                        )}
+                      >
+                        {currentDd <= 20
+                          ? mode === "funded" ? "Manageable Cushion" : "Manageable Loss"
+                          : currentDd <= 40
+                            ? "Steep Asymmetry"
+                            : "Exponential Trap"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      {mode === "funded"
+                        ? `Requires +${cushionRecoveryNeeded}% on remaining $${remainingBuffer.toLocaleString()} buffer to recover.`
+                        : `Requires +${liveRecoveryNeeded}% on remaining $${liveRemainingCapital.toLocaleString()} to break even.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0 font-mono">
+                  <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {mode === "funded" ? "Buffer Recovery" : "Gain Required"}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs font-semibold tnum",
+                      currentDd > 40
+                        ? "text-loss"
+                        : currentDd > 20
+                          ? "text-amber-500"
+                          : "text-profit",
+                    )}
+                  >
+                    +{recoveryNeeded}%
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+
           <ScenarioRuler
             title={
               mode === "funded" ? "Exponential cushion recovery" : "Exponential recovery staircase"

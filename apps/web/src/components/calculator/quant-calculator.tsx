@@ -75,10 +75,12 @@ export function QuantCalculator() {
         {/* TAB 1: RISK & EXECUTION */}
         <TabsContent value="risk" className="space-y-6 mt-0">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <PointsSizingCard
-              values={state.sizing}
-              onChange={(patch) => updateState("sizing", patch)}
-            />
+            <div className="lg:col-span-2">
+              <PointsSizingCard
+                values={state.sizing}
+                onChange={(patch) => updateState("sizing", patch)}
+              />
+            </div>
             <CapitalSurvivalCard
               balance={state.sizing.riskDollars * 50}
               riskPercent={state.survival.riskPercent}
@@ -86,15 +88,13 @@ export function QuantCalculator() {
               onModeChange={(m) => updateState("survival", { mode: m })}
               onChange={(patch) => updateState("survival", patch)}
             />
-            <div className="lg:col-span-2">
-              <LossRecoveryCard
-                initialCapital={state.sizing.riskDollars * 50}
-                drawdownPercent={state.survival.drawdownPercent}
-                mode={state.recovery?.mode ?? "funded"}
-                onModeChange={(m) => updateState("recovery", { mode: m })}
-                onChange={(patch) => updateState("survival", patch)}
-              />
-            </div>
+            <LossRecoveryCard
+              initialCapital={state.sizing.riskDollars * 50}
+              drawdownPercent={state.survival.drawdownPercent}
+              mode={state.recovery?.mode ?? "funded"}
+              onModeChange={(m) => updateState("recovery", { mode: m })}
+              onChange={(patch) => updateState("survival", patch)}
+            />
           </div>
         </TabsContent>
 
