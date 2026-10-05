@@ -5,7 +5,7 @@ import type { ChartConfig, Margins } from "./chart-context"
 import type { BloomInput } from "./dither-paint"
 import { PolarRoot } from "./polar-root"
 import { RadarCanvas } from "./radar-canvas"
-import { RadarFrame } from "./radar-frame"
+import { RadarFrame, type RadarFrameProps } from "./radar-frame"
 
 // `object` rather than `Record<string, unknown>`: interfaces don't get an
 // implicit index signature, so interface-typed rows failed to satisfy the
@@ -27,17 +27,27 @@ export type RadarChartProps<TData extends Row> = {
   bloomOnHover?: boolean
   defaultSelectedDataKey?: string | null
   onSelectionChange?: (key: string | null) => void
+  strokeDasharray?: string
+  levels?: number
+  frameProps?: RadarFrameProps
 }
 
 /** Composable dither **radar** chart. Compose `<Radar>` series, `<Legend>`, … inside. */
 export function RadarChart<TData extends Row>(props: RadarChartProps<TData>) {
+  const { strokeDasharray = "3 3", levels, frameProps, ...rest } = props
   return (
     <PolarRoot
       chartType="radar"
       Canvas={RadarCanvas}
-      backDecoration={<RadarFrame />}
+      backDecoration={
+        <RadarFrame
+          strokeDasharray={strokeDasharray}
+          levels={levels}
+          {...frameProps}
+        />
+      }
       dataKey=""
-      {...props}
+      {...rest}
     />
   )
 }

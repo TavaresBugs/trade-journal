@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CalendarMonth,
   DayStats,
@@ -111,7 +111,7 @@ function Dashboard() {
 }
 
 function DashboardContent({
-  data,
+  data: incomingData,
   loading,
   error,
   refresh,
@@ -127,6 +127,17 @@ function DashboardContent({
   from?: string | null;
   to?: string | null;
 }) {
+  const previousDataRef = useRef<StatsPayload | null>(null);
+  if (incomingData) {
+    previousDataRef.current = incomingData;
+  }
+  const data = incomingData ?? previousDataRef.current;
+
+  const normalizedDailyCum = useMemo(
+    () => (data ? normalizeCumulativePoints(data.dailyCumulative, from, to) : []),
+    [data?.dailyCumulative, from, to],
+  );
+
   if (loading && !data) return <DashboardSkeleton />;
   if (!data)
     return (
@@ -184,11 +195,6 @@ function DashboardContent({
   const worstDay = data.days.length
     ? data.days.reduce((a, b) => (b.netPnl < a.netPnl ? b : a))
     : null;
-
-  const normalizedDailyCum = useMemo(
-    () => normalizeCumulativePoints(data.dailyCumulative, from, to),
-    [data.dailyCumulative, from, to],
-  );
 
   return (
     <>
@@ -367,11 +373,7 @@ function DashboardContent({
                   </HelpHint>
                 </CardHeader>
                 <CardContent className="overflow-visible">
-                  <EquityArea
-                    data={normalizedDailyCum}
-                    from={from}
-                    to={to}
-                  />
+                  <EquityArea data={normalizedDailyCum} from={from} to={to} />
                   <RelativeDrawdownBars
                     data={relativeDrawdownCurve(normalizedDailyCum, data.initialBalance)}
                   />

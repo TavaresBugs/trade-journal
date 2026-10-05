@@ -79,7 +79,9 @@ export function DashboardLayout({ widgets }: { widgets: Widget[] }) {
   const [state, setState] = useState<DashboardPreferences>({ current: initial, layouts: {} });
   const stateRef = useRef(state);
   const [ready, setReady] = useState(false);
-  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const [slot, setSlot] = useState<HTMLElement | null>(() =>
+    typeof document !== "undefined" ? document.getElementById("dashboard-layout-slot") : null,
+  );
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
