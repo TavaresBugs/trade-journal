@@ -84,6 +84,12 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
     );
   }, [effectiveRiskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints, microRatio]);
 
+  // Calculate Risk / Reward percentage width for visual mini bar
+  const rrRatioNum = Number(sizing.riskRewardRatio ?? (isDefaultTarget && stopPoints > 0 ? "2.00" : "1.00"));
+  const safeRrRatio = Number.isFinite(rrRatioNum) && rrRatioNum > 0 ? rrRatioNum : 1;
+  const riskBarWidthPct = Math.max(15, Math.min(85, (1 / (1 + safeRrRatio)) * 100));
+  const rewardBarWidthPct = 100 - riskBarWidthPct;
+
   const handleInstrumentChange = (val: string) => {
     const nextInst =
       QUANT_INSTRUMENTS.find((i) => i.id === val) ??
@@ -342,36 +348,53 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             ) : undefined
           }
         >
-          {/* RISK & TARGET SUMMARY */}
-          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Loss at stop</span>
-              <span className="font-mono font-semibold text-loss tnum">
-                <MonetaryValue>
-                  -{curr}
-                  {sizing.actualRiskDollars.toLocaleString("en-US")}
-                </MonetaryValue>
-              </span>
+          {/* DYNAMIC RISK / REWARD VISUAL MINI BAR & SUMMARY */}
+          <div className="mt-4 space-y-2">
+            {/* Split Visual Bar */}
+            <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-muted/80 p-0.5 gap-0.5">
+              <div
+                className="h-full rounded-l-full bg-loss transition-all duration-300"
+                style={{ width: `${riskBarWidthPct}%` }}
+                title={`Risk: ${riskBarWidthPct.toFixed(0)}%`}
+              />
+              <div
+                className="h-full rounded-r-full bg-profit transition-all duration-300"
+                style={{ width: `${rewardBarWidthPct}%` }}
+                title={`Reward: ${rewardBarWidthPct.toFixed(0)}%`}
+              />
             </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">
-                Target profit{" "}
-                {isDefaultTarget && (
-                  <span className="text-[10px] text-muted-foreground">(2:1)</span>
-                )}
-              </span>
-              <span className="font-mono font-semibold text-profit tnum">
-                <MonetaryValue>
-                  +{curr}
-                  {(sizing.targetDollars ?? 0).toLocaleString("en-US")}
-                </MonetaryValue>
-              </span>
-            </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Risk : Reward</span>
-              <span className="font-mono font-semibold text-foreground tnum">
-                1 : {sizing.riskRewardRatio ?? (isDefaultTarget && stopPoints > 0 ? "2.00" : "0")}
-              </span>
+
+            {/* 3-COLUMN METRICS: Loss (left), R:R (center), Target (right) */}
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="block text-[11px] text-muted-foreground">Loss at stop</span>
+                <span className="font-mono font-semibold text-loss tnum">
+                  <MonetaryValue>
+                    -{curr}
+                    {sizing.actualRiskDollars.toLocaleString("en-US")}
+                  </MonetaryValue>
+                </span>
+              </div>
+              <div className="text-center">
+                <span className="block text-[11px] text-muted-foreground">Risk : Reward</span>
+                <span className="font-mono font-semibold text-foreground tnum">
+                  1 : {sizing.riskRewardRatio ?? (isDefaultTarget && stopPoints > 0 ? "2.00" : "0")}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="block text-[11px] text-muted-foreground">
+                  Target profit{" "}
+                  {isDefaultTarget && (
+                    <span className="text-[10px] text-muted-foreground">(2:1)</span>
+                  )}
+                </span>
+                <span className="font-mono font-semibold text-profit tnum">
+                  <MonetaryValue>
+                    +{curr}
+                    {(sizing.targetDollars ?? 0).toLocaleString("en-US")}
+                  </MonetaryValue>
+                </span>
+              </div>
             </div>
           </div>
         </FormulaHud>
