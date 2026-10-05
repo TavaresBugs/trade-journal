@@ -7,6 +7,7 @@ import { useCalculatorState } from "@/lib/use-calculator-state";
 
 // Tab 1: Risk & Execution
 import { PointsSizingCard } from "./points-sizing-card";
+import { PointsSizingCardCockpit } from "./points-sizing-card-cockpit";
 import { CapitalSurvivalCard } from "./capital-survival-card";
 import { LossRecoveryCard } from "./loss-recovery-card";
 
@@ -86,6 +87,23 @@ export function QuantCalculator() {
               onModeChange={(m) => updateState("survival", { mode: m })}
               onChange={(patch) => updateState("survival", patch)}
             />
+
+            {/* LIVE COMPARISON PROTOTYPE */}
+            <div className="lg:col-span-2 space-y-2 pt-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Preview do Novo Design (Split Cockpit v2)
+                </span>
+                <span className="text-[10px] text-muted-foreground/70">
+                  · Exemplo ativo para comparação de formato e ergonomia
+                </span>
+              </div>
+              <PointsSizingCardCockpit
+                values={state.sizing}
+                onChange={(patch: Partial<typeof state.sizing>) => updateState("sizing", patch)}
+              />
+            </div>
+
             <div className="lg:col-span-2">
               <LossRecoveryCard
                 initialCapital={state.sizing.riskDollars * 50}
