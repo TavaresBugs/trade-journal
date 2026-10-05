@@ -7,6 +7,7 @@ import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/sha
 import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
 import { calculateRealExpectancy } from "@luxalgo/journal-core";
+import { DitherGauge, DitherRatioBar } from "@/components/dither-kit";
 
 interface RealExpectancyCardProps {
   winRate?: number;
@@ -328,6 +329,97 @@ export function RealExpectancyCard({
             </span>
           }
         >
+          {/* DITHER COCKPIT FRICTION & EDGE RETENTION ASSESSMENT */}
+          {(() => {
+            const hasPaperEv = result.paperEv > 0;
+            const retentionRatio = hasPaperEv
+              ? Math.max(0, Math.min(1, result.realEv / result.paperEv))
+              : 0;
+            const gaugeValue = retentionRatio;
+            const gaugeColor: "green" | "orange" | "red" =
+              result.realEv <= 0 ? "red" : retentionRatio >= 0.75 ? "green" : "orange";
+            const frictionPct = hasPaperEv
+              ? Math.min(100, Math.round((result.totalFriction / result.paperEv) * 100))
+              : 100;
+
+            return (
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 p-2.5">
+                <div className="flex items-center gap-3">
+                  <DitherGauge
+                    size={80}
+                    value={gaugeValue}
+                    color={gaugeColor}
+                    bloom="low"
+                    label="Edge Retention"
+                  />
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider font-mono uppercase",
+                          result.realEv <= 0
+                            ? "bg-loss/15 text-loss border border-loss/30"
+                            : retentionRatio >= 0.75
+                              ? "bg-profit/15 text-profit border border-profit/30"
+                              : "bg-amber-500/15 text-amber-500 border border-amber-500/30",
+                        )}
+                      >
+                        {result.realEv <= 0
+                          ? "Friction Trap"
+                          : retentionRatio >= 0.75
+                            ? "Strong Retention"
+                            : "Heavy Friction"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      {result.realEv <= 0
+                        ? `Broker fees and slippage exceed paper gains, creating a -$${Math.abs(result.realEv).toLocaleString()} deficit.`
+                        : `Retains ${(retentionRatio * 100).toFixed(1)}% of gross expectancy after -$${result.totalFriction.toLocaleString()} friction.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0 font-mono">
+                  <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Friction Drag
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs font-semibold tnum",
+                      result.realEv <= 0
+                        ? "text-loss"
+                        : retentionRatio < 0.75
+                          ? "text-amber-500"
+                          : "text-muted-foreground",
+                    )}
+                  >
+                    -{frictionPct}%
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* DITHER RATIO BAR: NET EV (WIN) VS FRICTION (LOSS) */}
+          <div className="mt-3 space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span className="uppercase tracking-wider">Net Return vs Friction Drag</span>
+              <span className="font-mono text-[10px]">
+                {result.realEv > 0
+                  ? `+${(result.realEv / (result.totalFriction || 1)).toFixed(1)}x friction coverage`
+                  : "Negative Edge"}
+              </span>
+            </div>
+            <DitherRatioBar
+              order="loss-win"
+              winValue={Math.max(0, result.realEv)}
+              lossValue={result.totalFriction}
+              height={8}
+              bloom="low"
+              className="rounded-full overflow-hidden"
+            />
+          </div>
+
           {/* 3-COLUMN METRICS BREAKDOWN */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
             <div>

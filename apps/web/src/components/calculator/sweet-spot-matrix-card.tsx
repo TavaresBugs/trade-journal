@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/shared/formula-hud";
 import { cn } from "@/lib/utils";
+import { DitherRatioBar } from "@/components/dither-kit";
 import {
   MATRIX_RR_RATIOS,
   MATRIX_WIN_RATES,
@@ -335,6 +336,26 @@ export function SweetSpotMatrixCard({
             </span>
           }
         >
+          {/* DITHER RETRO RATIO BAR: BREAKEVEN VS EDGE BUFFER */}
+          <div className="mt-3 space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span className="uppercase tracking-wider">System Edge Buffer</span>
+              <span className="font-mono text-[10px]">
+                {safeWr >= beRate
+                  ? `+${(safeWr - beRate).toFixed(1)}% buffer above breakeven`
+                  : `-${(beRate - safeWr).toFixed(1)}% below breakeven threshold`}
+              </span>
+            </div>
+            <DitherRatioBar
+              order="loss-win"
+              winValue={Math.max(0, safeWr - beRate)}
+              lossValue={beRate}
+              height={8}
+              bloom="low"
+              className="rounded-full overflow-hidden"
+            />
+          </div>
+
           {/* 3-COLUMN METRICS BREAKDOWN */}
           <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
             <div>

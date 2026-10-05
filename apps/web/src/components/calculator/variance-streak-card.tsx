@@ -7,6 +7,16 @@ import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/sha
 import { cn } from "@/lib/utils";
 import { CircleHelp } from "lucide-react";
 import { calculateLosingStreakProbability } from "@luxalgo/journal-core";
+import {
+  DitherGauge,
+  DitherRowBar,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  type ChartConfig,
+} from "@/components/dither-kit";
 
 interface VarianceStreakCardProps {
   winRate?: number;
@@ -22,6 +32,7 @@ export function VarianceStreakCard({
   const [localWr, setLocalWr] = useState(winRate);
   const [localSample, setLocalSample] = useState(sampleTrades);
   const [distributionMode, setDistributionMode] = useState<"cumulative" | "exact">("cumulative");
+  const [viewMode, setViewMode] = useState<"rows" | "chart">("rows");
   const [selectedStreak, setSelectedStreak] = useState(6);
   const [isWrFocused, setIsWrFocused] = useState(false);
   const [isSampleFocused, setIsSampleFocused] = useState(false);
@@ -60,6 +71,18 @@ export function VarianceStreakCard({
 
   const selectedRow = streakRows.find((r) => r.streak === selectedStreak);
   const displayProb = selectedRow ? selectedRow.prob : streakProb;
+
+  const chartConfig = {
+    prob: {
+      label: "Streak Probability",
+      color: "red",
+    },
+  } satisfies ChartConfig;
+
+  const chartData = streakRows.map((r) => ({
+    streak: distributionMode === "cumulative" ? `≥${r.streak} L` : `=${r.streak} L`,
+    prob: r.prob,
+  }));
 
   const handleWrChange = (val: number) => {
     setLocalWr(val);
@@ -223,121 +246,232 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
             </span>
           }
         >
-          {/* STREAK DISTRIBUTION BARS (MATCHING EVAL BUDGET & PASS ODDS PATTERN) */}
+          {/* DITHER COCKPIT STREAK RISK */}
+          {(() => {
+            const gaugeValue = Math.min(1, Math.max(0, displayProb / 100));
+            const gaugeColor: "green" | "orange" | "red" =
+              displayProb > 60 ? "red" : displayProb > 25 ? "orange" : "green";
+
+            return (
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 p-2.5">
+                <div className="flex items-center gap-3">
+                  <DitherGauge
+                    size={80}
+                    value={gaugeValue}
+                    color={gaugeColor}
+                    bloom="low"
+                    label="Streak Prob"
+                  />
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider font-mono uppercase",
+                          displayProb <= 25 && "bg-profit/15 text-profit border border-profit/30",
+                          displayProb > 25 &&
+                            displayProb <= 60 &&
+                            "bg-amber-500/15 text-amber-500 border border-amber-500/30",
+                          displayProb > 60 && "bg-loss/15 text-loss border border-loss/30",
+                        )}
+                      >
+                        {displayProb > 60
+                          ? "Statistically Expected"
+                          : displayProb > 25
+                            ? "Moderate Probability"
+                            : "Uncommon Variance"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      {distributionMode === "cumulative"
+                        ? `A run of ≥${selectedStreak} consecutive losses has a ${displayProb}% chance in ${safeSample} trades.`
+                        : `A maximum losing streak of exactly ${selectedStreak} has a ${displayProb}% chance in ${safeSample} trades.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0 font-mono">
+                  <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Selected Run
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs font-semibold tnum",
+                      displayProb > 60
+                        ? "text-loss"
+                        : displayProb > 25
+                          ? "text-amber-500"
+                          : "text-profit",
+                    )}
+                  >
+                    {distributionMode === "cumulative"
+                      ? `≥ ${selectedStreak} losses`
+                      : `${selectedStreak} losses`}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* STREAK DISTRIBUTION (WITH RETRO DITHER BARS & CHART TOGGLE) */}
           <div className="mt-3 border-t border-border/40 pt-2.5">
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1.5 truncate">
                 <span className="uppercase tracking-wider">Streak distribution</span>
                 <span className="font-mono text-[10px] text-muted-foreground/80">
                   ({safeSample} trades)
                 </span>
               </div>
-              <div className="flex items-center rounded border border-border/70 bg-muted/60 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setDistributionMode("cumulative")}
-                  className={cn(
-                    "rounded px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
-                    distributionMode === "cumulative"
-                      ? "bg-accent font-semibold text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  At least (≥)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDistributionMode("exact")}
-                  className={cn(
-                    "rounded px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
-                    distributionMode === "exact"
-                      ? "bg-accent font-semibold text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Exact (=)
-                </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Distribution mode: At least vs Exact */}
+                <div className="flex items-center rounded border border-border/70 bg-muted/60 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setDistributionMode("cumulative")}
+                    className={cn(
+                      "rounded px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
+                      distributionMode === "cumulative"
+                        ? "bg-accent font-semibold text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    ≥ At least
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDistributionMode("exact")}
+                    className={cn(
+                      "rounded px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors",
+                      distributionMode === "exact"
+                        ? "bg-accent font-semibold text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    = Exact
+                  </button>
+                </div>
+
+                {/* View toggle: Rows vs Chart */}
+                <div className="flex items-center rounded border border-border/70 bg-muted/60 p-0.5 font-mono text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("rows")}
+                    className={cn(
+                      "px-1.5 py-0.5 rounded transition-all",
+                      viewMode === "rows"
+                        ? "bg-background text-foreground font-semibold shadow-xs"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Rows
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("chart")}
+                    className={cn(
+                      "px-1.5 py-0.5 rounded transition-all",
+                      viewMode === "chart"
+                        ? "bg-background text-foreground font-semibold shadow-xs"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Chart
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="mt-2 space-y-1 text-xs font-mono tnum">
-              {streakRows.map((row) => {
-                const isSelected = selectedStreak === row.streak;
-                const isDanger = row.prob > 60;
-                const isWarning = row.prob > 25;
-                const barPercent = Math.min(100, Math.max(0, row.prob));
+            {viewMode === "chart" ? (
+              <div className="mt-2 h-44 w-full">
+                <BarChart
+                  layout="horizontal"
+                  data={chartData}
+                  config={chartConfig}
+                  className="h-full w-full"
+                  margins={{ top: 8, right: 24, bottom: 20, left: 60 }}
+                  interactive={true}
+                  bloom="low"
+                >
+                  <Bar dataKey="prob" />
+                  <YAxis dataKey="streak" />
+                  <XAxis tickFormatter={(v) => `${v}%`} />
+                  <Tooltip valueFormatter={(v) => `${v}% chance`} />
+                </BarChart>
+              </div>
+            ) : (
+              <div className="mt-2 space-y-1 text-xs font-mono tnum">
+                {streakRows.map((row) => {
+                  const isSelected = selectedStreak === row.streak;
+                  const isDanger = row.prob > 60;
+                  const isWarning = row.prob > 25;
+                  const barPercent = Math.min(100, Math.max(0, row.prob));
+                  const barColor = isDanger ? "red" : isWarning ? "orange" : "blue";
 
-                const label =
-                  distributionMode === "cumulative"
-                    ? `≥ ${row.streak} consecutive losses`
-                    : `Max streak of exactly ${row.streak} losses`;
+                  const label =
+                    distributionMode === "cumulative"
+                      ? `≥ ${row.streak} consecutive losses`
+                      : `Max streak of exactly ${row.streak} losses`;
 
-                return (
-                  <button
-                    key={row.streak}
-                    type="button"
-                    onClick={() => setSelectedStreak(row.streak)}
-                    className={cn(
-                      "group relative w-full flex items-center justify-between rounded px-2.5 py-1.5 overflow-hidden transition-all text-left active:scale-[0.98]",
-                      isSelected
-                        ? "bg-accent/70 ring-1 ring-primary/40 shadow-xs"
-                        : "hover:bg-muted/40",
-                    )}
-                  >
-                    {/* Translucent Data Bar */}
-                    <div
+                  return (
+                    <button
+                      key={row.streak}
+                      type="button"
+                      onClick={() => setSelectedStreak(row.streak)}
                       className={cn(
-                        "absolute inset-y-0 left-0 transition-all duration-300 pointer-events-none rounded",
-                        isDanger
-                          ? "bg-loss/15"
-                          : isWarning
-                            ? "bg-amber-500/15"
-                            : "bg-muted-foreground/15",
-                      )}
-                      style={{ width: `${barPercent}%` }}
-                    />
-
-                    {/* Left label with dot */}
-                    <div className="relative z-10 flex items-center gap-2 truncate">
-                      <span
-                        className={cn(
-                          "size-1.5 rounded-full shrink-0",
-                          isDanger
-                            ? "bg-loss"
-                            : isWarning
-                              ? "bg-amber-500"
-                              : "bg-muted-foreground/60",
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "truncate text-xs",
-                          isSelected
-                            ? "text-foreground font-semibold"
-                            : "text-foreground font-medium",
-                        )}
-                      >
-                        {label}
-                      </span>
-                    </div>
-
-                    {/* Right probability */}
-                    <span
-                      className={cn(
-                        "relative z-10 shrink-0 font-semibold ml-2 font-mono tnum",
-                        isDanger
-                          ? "text-loss"
-                          : isWarning
-                            ? "text-amber-500"
-                            : "text-muted-foreground",
+                        "group relative w-full flex items-center justify-between rounded px-2.5 py-1.5 overflow-hidden transition-all text-left active:scale-[0.98] min-h-[28px]",
+                        isSelected
+                          ? "ring-1 ring-border/80 bg-muted/30 font-semibold"
+                          : "hover:bg-muted/40",
                       )}
                     >
-                      {row.prob.toFixed(1)}%
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                      {/* Authentic Retro Dither Horizontal Bar */}
+                      <DitherRowBar
+                        percent={barPercent}
+                        color={barColor}
+                        isSelected={isSelected}
+                      />
+
+                      {/* Left label with dot */}
+                      <div className="relative z-10 flex items-center gap-2 truncate">
+                        <span
+                          className={cn(
+                            "size-1.5 rounded-full shrink-0",
+                            isDanger
+                              ? "bg-loss"
+                              : isWarning
+                                ? "bg-amber-500"
+                                : "bg-muted-foreground/60",
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            "truncate text-xs",
+                            isSelected
+                              ? "text-foreground font-semibold"
+                              : "text-foreground font-medium",
+                          )}
+                        >
+                          {label}
+                        </span>
+                      </div>
+
+                      {/* Right probability */}
+                      <span
+                        className={cn(
+                          "relative z-10 shrink-0 font-semibold ml-2 font-mono tnum",
+                          isDanger
+                            ? "text-loss"
+                            : isWarning
+                              ? "text-amber-500"
+                              : "text-muted-foreground",
+                        )}
+                      >
+                        {row.prob.toFixed(1)}%
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </FormulaHud>
       </CardContent>
