@@ -12,6 +12,7 @@ import { JournalAssetDropdown } from "@/components/journal-asset-dropdown";
 import { getQuantInstrument, getSymbolSpec } from "@/lib/assets/symbol-specs";
 import { AssetIcon } from "@/components/ui/asset-icon";
 import { MonetaryValue } from "@/components/privacy";
+import { DitherRatioBar } from "@/components/dither-kit";
 import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
 import { FormulaHud } from "./shared";
@@ -350,17 +351,18 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
         >
           {/* DYNAMIC RISK / REWARD VISUAL MINI BAR & SUMMARY */}
           <div className="mt-4 space-y-2">
-            {/* Split Visual Bar */}
-            <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-muted/80 p-0.5 gap-0.5">
-              <div
-                className="h-full rounded-l-full bg-loss transition-all duration-300"
-                style={{ width: `${riskBarWidthPct}%` }}
-                title={`Risk: ${riskBarWidthPct.toFixed(0)}%`}
-              />
-              <div
-                className="h-full rounded-r-full bg-profit transition-all duration-300"
-                style={{ width: `${rewardBarWidthPct}%` }}
-                title={`Reward: ${rewardBarWidthPct.toFixed(0)}%`}
+            {/* Dither Retro Ratio Bar (Bayer matrix with glow) */}
+            <div className="py-0.5">
+              <DitherRatioBar
+                order="loss-win"
+                winValue={
+                  sizing.targetDollars ??
+                  (isDefaultTarget && stopPoints > 0 ? sizing.actualRiskDollars * 2 : 0)
+                }
+                lossValue={sizing.actualRiskDollars}
+                height={8}
+                bloom="low"
+                className="rounded-full overflow-hidden"
               />
             </div>
 

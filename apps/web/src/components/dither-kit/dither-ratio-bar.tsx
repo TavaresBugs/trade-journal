@@ -18,6 +18,7 @@ export type DitherRatioBarProps = {
   height?: number; // CSS height in px, default 10
   bloom?: BloomInput; // default "low"
   direction?: "outward" | "inward" | "left-to-right"; // default "outward"
+  order?: "win-loss" | "loss-win"; // default "win-loss"
   className?: string;
 };
 
@@ -68,6 +69,7 @@ export function DitherRatioBar({
   height = 10,
   bloom = "low",
   direction = "outward",
+  order = "win-loss",
   className = "",
 }: DitherRatioBarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -83,6 +85,9 @@ export function DitherRatioBar({
   const loss = lossValue !== null && Number.isFinite(lossValue) ? Math.max(0, Math.abs(lossValue)) : 0;
   const total = win + loss;
   const ratio = total > 0 ? win / total : 0.5;
+  const isLossFirst = order === "loss-win";
+  const leftValue = isLossFirst ? loss : win;
+  const leftRatio = total > 0 ? leftValue / total : 0.5;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -99,10 +104,10 @@ export function DitherRatioBar({
     let lastCols = 0;
     let lastRows = 0;
 
-    const winSeed = seedOfColor("green");
-    const lossSeed = seedOfColor("red");
-    const winAnchor = direction === "inward" ? "left" : "right";
-    const lossAnchor = direction === "outward" ? "left" : "right";
+    const leftSeed = seedOfColor(isLossFirst ? "red" : "green");
+    const rightSeed = seedOfColor(isLossFirst ? "green" : "red");
+    const leftAnchor = direction === "inward" ? "left" : "right";
+    const rightAnchor = direction === "outward" ? "left" : "right";
 
     const paint = () => {
       const { cols, rows } = backingSize(width, height);
@@ -116,25 +121,26 @@ export function DitherRatioBar({
         lastCols = cols;
         lastRows = rows;
       }
-      const splitCol = Math.round(cols * ratio);
+      const splitCol = Math.round(cols * leftRatio);
       const { inside, side } = hoverRef.current;
 
-      // Same rule as BarChart: hovered item lifts +0.4, the others dim to 0.5.
-      const winActive = inside && side === "win";
-      const lossActive = inside && side === "loss";
-      const winDim = inside && side === "loss" ? 0.5 : 1;
-      const lossDim = inside && side === "win" ? 0.5 : 1;
+      const leftSideKey = isLossFirst ? "loss" : "win";
+      const rightSideKey = isLossFirst ? "win" : "loss";
+      const leftActive = inside && side === leftSideKey;
+      const rightActive = inside && side === rightSideKey;
+      const leftDim = inside && !leftActive ? 0.5 : 1;
+      const rightDim = inside && !rightActive ? 0.5 : 1;
 
       c.clearRect(0, 0, cols, rows);
       paintHorizontalSection(
-        c, 0, splitCol, rows, winSeed, winAnchor,
-        intensity + (winActive ? 0.4 : 0), winDim,
+        c, 0, splitCol, rows, leftSeed, leftAnchor,
+        intensity + (leftActive ? 0.4 : 0), leftDim,
       );
       c.fillStyle = "rgba(140, 140, 150, 0.45)";
       c.fillRect(splitCol, 0, 1, rows);
       paintHorizontalSection(
-        c, splitCol + 1, cols, rows, lossSeed, lossAnchor,
-        intensity + (lossActive ? 0.4 : 0), lossDim,
+        c, splitCol + 1, cols, rows, rightSeed, rightAnchor,
+        intensity + (rightActive ? 0.4 : 0), rightDim,
       );
 
       const bloomCtx = bloomCanvas?.getContext("2d") ?? null;
@@ -163,7 +169,11 @@ export function DitherRatioBar({
     const onMove = (e: PointerEvent) => {
       const rect = el.getBoundingClientRect();
       const x = e.clientX - rect.left;
-      hoverRef.current = { inside: true, side: x <= rect.width * ratio ? "win" : "loss" };
+      const isLeft = x <= rect.width * leftRatio;
+      hoverRef.current = {
+        inside: true,
+        side: isLeft ? (isLossFirst ? "loss" : "win") : (isLossFirst ? "win" : "loss"),
+      };
       paint();
       kick();
     };
@@ -194,7 +204,7 @@ export function DitherRatioBar({
       el.removeEventListener("pointerleave", onLeave);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [ratio, height, bloom, direction]);
+  }, [leftRatio, height, bloom, direction, isLossFirst]);
 
   const bloomStyle = bloomLayerStyle(bloom, bloom !== "off");
 
