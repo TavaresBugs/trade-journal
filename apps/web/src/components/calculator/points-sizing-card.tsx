@@ -60,13 +60,6 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
     }
   }, [effectiveRiskDollars, isRiskFocused]);
 
-  // If margin doesn't cover 1 contract, update parent state/localStorage to match max loss
-  useEffect(() => {
-    if (costPerContract > 0 && riskDollars < costPerContract) {
-      onChange({ riskDollars: costPerContract });
-    }
-  }, [costPerContract, riskDollars, onChange]);
-
   // If user leaves target points empty or 0, fallback to a 2:1 (2R) hypothetical target
   const isDefaultTarget = !targetPoints || targetPoints <= 0;
   const effectiveTargetPoints = !isDefaultTarget
@@ -186,7 +179,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Market instrument
             </label>
-            <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
+            <span className="h-5 inline-flex items-center justify-center rounded bg-muted/40 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
               {curr}
               {instrument.multiplier}/pt
             </span>

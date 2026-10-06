@@ -128,6 +128,7 @@ function startCartesianLoop({
   const draw = (now: number) => {
     const s = state.current;
     if (!s.ready || cols <= 0 || rows <= 0 || Number.isNaN(cols) || Number.isNaN(rows)) {
+      raf = requestAnimationFrame(draw);
       return;
     }
     raf = requestAnimationFrame(draw);
@@ -206,7 +207,7 @@ function startCartesianLoop({
     // Live hover wins; the controlled markerIndex (e.g. a committed point)
     // is the fallback shown when nothing is hovered.
     const marker = s.hoverIndex != null ? s.hoverIndex : s.markerIndex;
-    const winkDue = !reduce && now - last >= 100;
+    const winkDue = !reduce && (s.isMouseInChart || s.hovered) && now - last >= 100;
     // Repaint when a tweak-driven paint input changes (variant, stacking) so
     // the panel updates the fill live — without resetting the entrance reveal.
     const paintSig = `${s.stackType}|${s.configKeys

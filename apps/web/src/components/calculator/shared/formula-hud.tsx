@@ -34,7 +34,6 @@ export interface FormulaHudProps {
   actions?: React.ReactNode;
   // Additional content (e.g. scenario list)
   children?: React.ReactNode;
-  variant?: "seamless" | "card";
   className?: string;
 }
 
@@ -52,7 +51,6 @@ export function FormulaHud({
   resultLabel,
   resultSecondary,
   children,
-  variant = "seamless",
   className,
 }: FormulaHudProps) {
   const [copied, setCopied] = useState(false);

@@ -407,6 +407,7 @@ export function BarCanvas() {
     const draw = (now: number) => {
       const s = state.current;
       if (!s.ready || cols <= 0 || rows <= 0 || Number.isNaN(cols) || Number.isNaN(rows)) {
+        raf = requestAnimationFrame(draw);
         return;
       }
       raf = requestAnimationFrame(draw);

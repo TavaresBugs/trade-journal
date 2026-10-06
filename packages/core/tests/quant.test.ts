@@ -119,6 +119,9 @@ describe("quant module (packages/core)", () => {
       expect(res.numAttempts).toBe(5);
       expect(typeof res.avgPayoutResult).toBe("number");
       expect(typeof res.avgNetProfit).toBe("number");
+      expect(typeof res.profitableChancePercent).toBe("number");
+      expect(res.profitableChancePercent).toBeGreaterThanOrEqual(0);
+      expect(res.profitableChancePercent).toBeLessThanOrEqual(100);
       expect(res.sampleOutcomes.length).toBeGreaterThan(0);
     });
 
@@ -128,6 +131,7 @@ describe("quant module (packages/core)", () => {
       expect(Number.isNaN(result.avgNetProfit)).toBe(false);
       expect(result.avgPayoutResult).toBe(0);
       expect(result.avgNetProfit).toBe(0);
+      expect(result.profitableChancePercent).toBe(0);
     });
   });
 

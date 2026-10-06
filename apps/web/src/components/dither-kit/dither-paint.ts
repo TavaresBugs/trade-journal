@@ -4,15 +4,10 @@
 
 import type { AreaVariant } from "./chart-context";
 import { rgb, type Seed } from "./palette";
+import { BAYER4 } from "./pixel";
 
-// 4×4 ordered (Bayer) matrix, normalized to 0–1 thresholds — the exact matrix
-// the legacy chart dithers with.
-export const BAYER = [
-  [0, 8, 2, 10],
-  [12, 4, 14, 6],
-  [3, 11, 1, 9],
-  [15, 7, 13, 5],
-].map((row) => row.map((v) => (v + 0.5) / 16));
+// 4×4 ordered (Bayer) matrix, normalized to 0–1 thresholds — unified with pixel.ts
+export const BAYER = BAYER4;
 
 export const CELL = 2; // css px per dither cell — chunky enough to read pixelated
 export const MAX_COLS = 520;
@@ -263,5 +258,6 @@ export const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
 /** Whether the OS asks for reduced motion (snap + steady stars). */
 export function prefersReducedMotion() {
+  if (typeof window === "undefined") return false;
   return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
 }

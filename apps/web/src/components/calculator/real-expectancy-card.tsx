@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/shared/formula-hud";
 import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
 import { calculateRealExpectancy } from "@luxalgo/journal-core";
-import { DitherGauge, DitherRatioBar } from "@/components/dither-kit";
+import { DitherGauge } from "@/components/dither-kit";
 
 interface RealExpectancyCardProps {
   winRate?: number;
@@ -32,45 +32,22 @@ export function RealExpectancyCard({
   slippageDollars = 10,
   onChange,
 }: RealExpectancyCardProps) {
-  const [localWr, setLocalWr] = useState(winRate);
-  const [localRr, setLocalRr] = useState(riskReward);
-  const [localRisk, setLocalRisk] = useState(riskDollars);
-  const [localFee, setLocalFee] = useState(feePerTrade);
-  const [localSlip, setLocalSlip] = useState(slippageDollars);
-
-  useEffect(() => {
-    if (winRate !== undefined) setLocalWr(winRate);
-  }, [winRate]);
-
-  useEffect(() => {
-    if (riskReward !== undefined) setLocalRr(riskReward);
-  }, [riskReward]);
-
-  useEffect(() => {
-    if (riskDollars !== undefined) setLocalRisk(riskDollars);
-  }, [riskDollars]);
-
-  useEffect(() => {
-    if (feePerTrade !== undefined) setLocalFee(feePerTrade);
-  }, [feePerTrade]);
-
-  useEffect(() => {
-    if (slippageDollars !== undefined) setLocalSlip(slippageDollars);
-  }, [slippageDollars]);
-
   const [isWrFocused, setIsWrFocused] = useState(false);
   const [isRrFocused, setIsRrFocused] = useState(false);
   const [isRiskFocused, setIsRiskFocused] = useState(false);
   const [isFeeFocused, setIsFeeFocused] = useState(false);
   const [isSlipFocused, setIsSlipFocused] = useState(false);
 
-  const safeWr = Math.max(1, Math.min(99, localWr || 45));
-  const safeRr = Math.max(0.1, Math.min(20, localRr || 2.5));
-  const safeRisk = Math.max(10, localRisk || 1000);
-  const safeFee = Math.max(0, localFee ?? 5);
-  const safeSlip = Math.max(0, localSlip ?? 10);
+  const safeWr = Math.max(1, Math.min(99, winRate || 45));
+  const safeRr = Math.max(0.1, Math.min(20, riskReward || 2.5));
+  const safeRisk = Math.max(10, riskDollars || 1000);
+  const safeFee = Math.max(0, feePerTrade ?? 5);
+  const safeSlip = Math.max(0, slippageDollars ?? 10);
 
-  const result = calculateRealExpectancy(safeWr, safeRr, safeRisk, safeFee, safeSlip);
+  const result = useMemo(
+    () => calculateRealExpectancy(safeWr, safeRr, safeRisk, safeFee, safeSlip),
+    [safeWr, safeRr, safeRisk, safeFee, safeSlip],
+  );
 
   const handleUpdate = (patch: {
     winRate?: number;
@@ -79,11 +56,6 @@ export function RealExpectancyCard({
     feePerTrade?: number;
     slippageDollars?: number;
   }) => {
-    if (patch.winRate !== undefined) setLocalWr(patch.winRate);
-    if (patch.riskReward !== undefined) setLocalRr(patch.riskReward);
-    if (patch.riskDollars !== undefined) setLocalRisk(patch.riskDollars);
-    if (patch.feePerTrade !== undefined) setLocalFee(patch.feePerTrade);
-    if (patch.slippageDollars !== undefined) setLocalSlip(patch.slippageDollars);
     onChange?.(patch);
   };
 
@@ -143,7 +115,7 @@ export function RealExpectancyCard({
           <Input
             type="number"
             className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            value={localWr || ""}
+            value={winRate || ""}
             placeholder="45"
             onFocus={() => setIsWrFocused(true)}
             onBlur={() => setIsWrFocused(false)}
@@ -165,7 +137,7 @@ export function RealExpectancyCard({
             type="number"
             step="0.1"
             className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            value={localRr || ""}
+            value={riskReward || ""}
             placeholder="2.5"
             onFocus={() => setIsRrFocused(true)}
             onBlur={() => setIsRrFocused(false)}
@@ -186,7 +158,7 @@ export function RealExpectancyCard({
           <Input
             type="number"
             className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            value={localRisk || ""}
+            value={riskDollars || ""}
             placeholder="1000"
             onFocus={() => setIsRiskFocused(true)}
             onBlur={() => setIsRiskFocused(false)}
@@ -209,7 +181,7 @@ export function RealExpectancyCard({
             min="0"
             step="1"
             className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            value={localFee !== undefined ? localFee : ""}
+            value={feePerTrade !== undefined ? feePerTrade : ""}
             placeholder="5"
             onFocus={() => setIsFeeFocused(true)}
             onBlur={() => setIsFeeFocused(false)}
@@ -232,7 +204,7 @@ export function RealExpectancyCard({
             min="0"
             step="1"
             className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            value={localSlip !== undefined ? localSlip : ""}
+            value={slippageDollars !== undefined ? slippageDollars : ""}
             placeholder="10"
             onFocus={() => setIsSlipFocused(true)}
             onBlur={() => setIsSlipFocused(false)}
@@ -407,20 +379,8 @@ export function RealExpectancyCard({
             );
           })()}
 
-          {/* DYNAMIC NET EV VS FRICTION VISUAL MINI BAR & SUMMARY */}
-          <div className="mt-4 space-y-2 border-t border-border/30 pt-3">
-            {/* Dither Retro Ratio Bar (Bayer matrix with glow) */}
-            <div className="py-0.5">
-              <DitherRatioBar
-                order="loss-win"
-                winValue={Math.max(0, result.realEv)}
-                lossValue={result.totalFriction}
-                height={8}
-                bloom="low"
-                className="rounded-full overflow-hidden"
-              />
-            </div>
-
+          {/* DYNAMIC NET EV VS FRICTION SUMMARY */}
+          <div className="mt-4 border-t border-border/30 pt-3">
             {/* 3-COLUMN METRICS: Loss/Friction (left), Edge in R (center), Real Net EV (right) */}
             <div className="grid grid-cols-3 gap-2 text-xs">
               <div>

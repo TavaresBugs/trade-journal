@@ -21,7 +21,6 @@ export interface ScenarioRulerProps {
   title: string;
   items: ScenarioItem[];
   className?: string;
-  defaultView?: "list" | "chart";
 }
 
 function colorOfDot(dotColor: string, isDanger?: boolean): DitherColor {

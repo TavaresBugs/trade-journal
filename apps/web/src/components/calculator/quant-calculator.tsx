@@ -89,11 +89,11 @@ export function QuantCalculator() {
               onChange={(patch) => updateState("survival", patch)}
             />
             <LossRecoveryCard
-              initialCapital={state.sizing.riskDollars * 50}
-              drawdownPercent={state.survival.drawdownPercent}
+              initialCapital={state.recovery?.initialCapital ?? state.sizing.riskDollars * 50}
+              drawdownPercent={state.recovery?.drawdownPercent ?? 30}
               mode={state.recovery?.mode ?? "funded"}
               onModeChange={(m) => updateState("recovery", { mode: m })}
-              onChange={(patch) => updateState("survival", patch)}
+              onChange={(patch) => updateState("recovery", patch)}
             />
           </div>
         </TabsContent>

@@ -58,6 +58,21 @@ export function LossRecoveryCard({
   const [liveCapital, setLiveCapital] = useState(initialCapital || 50000);
   const [liveMaxDd, setLiveMaxDd] = useState(Math.round((initialCapital || 50000) * 0.5));
   const [liveDdPercent, setLiveDdPercent] = useState(drawdownPercent || 30);
+
+  useEffect(() => {
+    if (initialCapital != null && initialCapital > 0) {
+      setLiveCapital(initialCapital);
+      setLiveMaxDd(Math.round(initialCapital * 0.5));
+    }
+  }, [initialCapital]);
+
+  useEffect(() => {
+    if (drawdownPercent != null && drawdownPercent > 0) {
+      setCushionDdPercent(drawdownPercent);
+      setLiveDdPercent(drawdownPercent);
+      setCushionInputStr(String(drawdownPercent));
+    }
+  }, [drawdownPercent]);
   const [liveUnit, setLiveUnit] = useState<"%" | "$">("%");
   const [liveInputStr, setLiveInputStr] = useState(String(drawdownPercent || 30));
 

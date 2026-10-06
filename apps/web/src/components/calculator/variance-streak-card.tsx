@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/shared/formula-hud";
@@ -20,55 +20,43 @@ export function VarianceStreakCard({
   sampleTrades = 100,
   onChange,
 }: VarianceStreakCardProps) {
-  const [localWr, setLocalWr] = useState(winRate);
-  const [localSample, setLocalSample] = useState(sampleTrades);
   const [distributionMode, setDistributionMode] = useState<"cumulative" | "exact">("cumulative");
   const [selectedStreak, setSelectedStreak] = useState(6);
   const [isWrFocused, setIsWrFocused] = useState(false);
   const [isSampleFocused, setIsSampleFocused] = useState(false);
 
-  useEffect(() => {
-    if (winRate !== undefined) {
-      setLocalWr(winRate);
-    }
-  }, [winRate]);
+  const safeWr = Math.max(1, Math.min(99, winRate || 45));
+  const safeSample = Math.max(10, Math.min(1000, sampleTrades || 100));
 
-  useEffect(() => {
-    if (sampleTrades !== undefined) {
-      setLocalSample(sampleTrades);
-    }
-  }, [sampleTrades]);
-
-  const safeWr = Math.max(1, Math.min(99, localWr || 45));
-  const safeSample = Math.max(10, Math.min(1000, localSample || 100));
-
-  const streakProb = calculateLosingStreakProbability(safeWr, safeSample, selectedStreak);
+  const streakProb = useMemo(() => {
+    return calculateLosingStreakProbability(safeWr, safeSample, selectedStreak);
+  }, [safeWr, safeSample, selectedStreak]);
 
   const streaksToEvaluate = [3, 4, 5, 6, 7, 8, 10];
-  const streakRows = streaksToEvaluate.map((k) => {
-    const probAtLeast = calculateLosingStreakProbability(safeWr, safeSample, k);
-    const probAtLeastNext = calculateLosingStreakProbability(safeWr, safeSample, k + 1);
-    const exactProb = Number(Math.max(0, probAtLeast - probAtLeastNext).toFixed(1));
-    const prob = distributionMode === "cumulative" ? probAtLeast : exactProb;
+  const streakRows = useMemo(() => {
+    return streaksToEvaluate.map((k) => {
+      const probAtLeast = calculateLosingStreakProbability(safeWr, safeSample, k);
+      const probAtLeastNext = calculateLosingStreakProbability(safeWr, safeSample, k + 1);
+      const exactProb = Number(Math.max(0, probAtLeast - probAtLeastNext).toFixed(1));
+      const prob = distributionMode === "cumulative" ? probAtLeast : exactProb;
 
-    return {
-      streak: k,
-      cumulativeProb: probAtLeast,
-      exactProb,
-      prob,
-    };
-  });
+      return {
+        streak: k,
+        cumulativeProb: probAtLeast,
+        exactProb,
+        prob,
+      };
+    });
+  }, [safeWr, safeSample, distributionMode]);
 
   const selectedRow = streakRows.find((r) => r.streak === selectedStreak);
   const displayProb = selectedRow ? selectedRow.prob : streakProb;
 
   const handleWrChange = (val: number) => {
-    setLocalWr(val);
     onChange?.({ winRate: val, sampleTrades: safeSample });
   };
 
   const handleSampleChange = (val: number) => {
-    setLocalSample(val);
     onChange?.({ sampleTrades: val, winRate: safeWr });
   };
 
@@ -122,7 +110,7 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
             max="99"
             step="0.5"
             className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            value={localWr || ""}
+            value={winRate || ""}
             placeholder="45"
             onFocus={() => setIsWrFocused(true)}
             onBlur={() => setIsWrFocused(false)}
@@ -146,7 +134,7 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
             max="1000"
             step="25"
             className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            value={localSample || ""}
+            value={sampleTrades || ""}
             placeholder="100"
             onFocus={() => setIsSampleFocused(true)}
             onBlur={() => setIsSampleFocused(false)}

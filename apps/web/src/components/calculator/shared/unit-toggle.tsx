@@ -21,7 +21,7 @@ export function UnitToggle<T extends string>({
     <div
       role="group"
       className={cn(
-        "inline-flex items-center rounded border border-border/70 bg-muted/60 p-0.5 text-[10px] font-mono",
+        "inline-flex items-center rounded bg-muted/40 p-0.5 text-[10px] font-mono",
         className,
       )}
     >

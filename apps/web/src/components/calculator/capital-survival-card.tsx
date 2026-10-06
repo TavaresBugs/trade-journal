@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MonetaryValue } from "@/components/privacy";
@@ -66,6 +66,20 @@ export function CapitalSurvivalCard({
   );
   const [liveRiskUnit, setLiveRiskUnit] = useState<"$" | "%">("%");
   const [liveRiskInputStr, setLiveRiskInputStr] = useState(String(riskPercent || 1.0));
+
+  useEffect(() => {
+    if (balance != null && balance > 0) {
+      setLiveBalance(balance);
+      setLiveMaxDd(Math.round(balance * 0.5));
+    }
+  }, [balance]);
+
+  useEffect(() => {
+    if (riskPercent != null && riskPercent > 0) {
+      setLiveRiskPercent(riskPercent);
+      setLiveRiskInputStr(String(riskPercent));
+    }
+  }, [riskPercent]);
 
   // Focus states for step 2 HUD highlights
   const [isNominalFocused, setIsNominalFocused] = useState(false);

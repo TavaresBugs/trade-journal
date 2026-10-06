@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormulaHud, type FormulaHudCategory } from "@/components/calculator/shared/formula-hud";
@@ -43,7 +43,7 @@ export function SweetSpotMatrixCard({
   const safeRr = Math.max(0.1, Math.min(20, selectedRr || 2.5));
   const lossRate = Number((100 - safeWr).toFixed(1));
 
-  const matrix = generateSweetSpotMatrix();
+  const matrix = useMemo(() => generateSweetSpotMatrix(), []);
   const beRate = calculateBreakevenWinRate(safeRr);
   const p = safeWr / 100;
   const q = 1 - p;
@@ -372,8 +372,8 @@ export function SweetSpotMatrixCard({
                   {isSweetSpot
                     ? "Sweet Spot"
                     : safeWr >= beRate
-                      ? "Margem positiva"
-                      : "Déficit estatístico"}
+                      ? "Positive Edge"
+                      : "Statistical Deficit"}
                 </span>
               </div>
               <div className="text-right">

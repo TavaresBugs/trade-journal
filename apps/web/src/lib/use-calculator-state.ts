@@ -22,6 +22,8 @@ export interface CalculatorState {
   };
   recovery: {
     mode?: AccountSurvivalMode;
+    drawdownPercent?: number;
+    initialCapital?: number;
   };
   ev: {
     avgPayout: number;
@@ -69,6 +71,8 @@ export const DEFAULT_CALCULATOR_STATE: CalculatorState = {
   },
   recovery: {
     mode: "funded",
+    drawdownPercent: 30,
+    initialCapital: 50000,
   },
   ev: {
     avgPayout: 2000,
@@ -179,6 +183,59 @@ export function parseCalculatorState(stored: string | null): CalculatorState {
     const rawRecovery = parsed.recovery;
     const recovery: CalculatorState["recovery"] = {
       mode: rawRecovery?.mode === "live" ? "live" : "funded",
+      drawdownPercent:
+        typeof rawRecovery?.drawdownPercent === "number" &&
+        !Number.isNaN(rawRecovery.drawdownPercent)
+          ? rawRecovery.drawdownPercent
+          : DEFAULT_CALCULATOR_STATE.recovery.drawdownPercent,
+      initialCapital:
+        typeof rawRecovery?.initialCapital === "number" && !Number.isNaN(rawRecovery.initialCapital)
+          ? rawRecovery.initialCapital
+          : DEFAULT_CALCULATOR_STATE.recovery.initialCapital,
+    };
+
+    const rawEv = parsed.ev;
+    const ev: CalculatorState["ev"] = {
+      avgPayout:
+        typeof rawEv?.avgPayout === "number" && !Number.isNaN(rawEv.avgPayout)
+          ? rawEv.avgPayout
+          : DEFAULT_CALCULATOR_STATE.ev.avgPayout,
+      payoutChance:
+        typeof rawEv?.payoutChance === "number" && !Number.isNaN(rawEv.payoutChance)
+          ? rawEv.payoutChance
+          : DEFAULT_CALCULATOR_STATE.ev.payoutChance,
+      cost:
+        typeof rawEv?.cost === "number" && !Number.isNaN(rawEv.cost)
+          ? rawEv.cost
+          : DEFAULT_CALCULATOR_STATE.ev.cost,
+      passRate:
+        typeof rawEv?.passRate === "number" && !Number.isNaN(rawEv.passRate)
+          ? rawEv.passRate
+          : DEFAULT_CALCULATOR_STATE.ev.passRate,
+    };
+
+    const rawSimulator = parsed.simulator;
+    const simulator: CalculatorState["simulator"] = {
+      bankroll:
+        typeof rawSimulator?.bankroll === "number" && !Number.isNaN(rawSimulator.bankroll)
+          ? rawSimulator.bankroll
+          : DEFAULT_CALCULATOR_STATE.simulator.bankroll,
+      evalCost:
+        typeof rawSimulator?.evalCost === "number" && !Number.isNaN(rawSimulator.evalCost)
+          ? rawSimulator.evalCost
+          : DEFAULT_CALCULATOR_STATE.simulator.evalCost,
+      passRate:
+        typeof rawSimulator?.passRate === "number" && !Number.isNaN(rawSimulator.passRate)
+          ? rawSimulator.passRate
+          : DEFAULT_CALCULATOR_STATE.simulator.passRate,
+      payoutChance:
+        typeof rawSimulator?.payoutChance === "number" && !Number.isNaN(rawSimulator.payoutChance)
+          ? rawSimulator.payoutChance
+          : DEFAULT_CALCULATOR_STATE.simulator.payoutChance,
+      avgPayout:
+        typeof rawSimulator?.avgPayout === "number" && !Number.isNaN(rawSimulator.avgPayout)
+          ? rawSimulator.avgPayout
+          : DEFAULT_CALCULATOR_STATE.simulator.avgPayout,
     };
 
     const activeTab =
@@ -193,9 +250,9 @@ export function parseCalculatorState(stored: string | null): CalculatorState {
       strategy,
       survival,
       recovery,
-      ev: { ...DEFAULT_CALCULATOR_STATE.ev, ...parsed.ev },
+      ev,
       sizing,
-      simulator: { ...DEFAULT_CALCULATOR_STATE.simulator, ...parsed.simulator },
+      simulator,
       budget,
     };
   } catch {
@@ -219,6 +276,18 @@ export function useCalculatorState() {
     }
   }, []);
 
+  // Persist state to localStorage asynchronously whenever it changes (after initial hydration)
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(CALCULATOR_STORAGE_KEY, JSON.stringify(state));
+      }
+    } catch {
+      // Handle storage quota or access errors gracefully
+    }
+  }, [state, isLoaded]);
+
   const updateState = <K extends keyof CalculatorState>(
     section: K,
     patch: Partial<CalculatorState[K]>,
@@ -232,50 +301,22 @@ export function useCalculatorState() {
         patch !== null
           ? { ...prevVal, ...patch }
           : patch;
-      const next = {
+      return {
         ...prev,
         [section]: nextVal,
       };
-      try {
-        if (typeof window !== "undefined") {
-          localStorage.setItem(CALCULATOR_STORAGE_KEY, JSON.stringify(next));
-        }
-      } catch {
-        // Handle storage quota or access errors gracefully
-      }
-      return next;
     });
   };
 
   const setActiveTab = (tab: "risk" | "strategy" | "portfolio") => {
-    setState((prev) => {
-      const next = { ...prev, activeTab: tab };
-      try {
-        if (typeof window !== "undefined") {
-          localStorage.setItem(CALCULATOR_STORAGE_KEY, JSON.stringify(next));
-        }
-      } catch {
-        // Handle storage error
-      }
-      return next;
-    });
+    setState((prev) => ({ ...prev, activeTab: tab }));
   };
 
   const resetSection = (section: keyof CalculatorState) => {
-    setState((prev) => {
-      const next = {
-        ...prev,
-        [section]: DEFAULT_CALCULATOR_STATE[section],
-      };
-      try {
-        if (typeof window !== "undefined") {
-          localStorage.setItem(CALCULATOR_STORAGE_KEY, JSON.stringify(next));
-        }
-      } catch {
-        // Handle storage error
-      }
-      return next;
-    });
+    setState((prev) => ({
+      ...prev,
+      [section]: DEFAULT_CALCULATOR_STATE[section],
+    }));
   };
 
   return {
