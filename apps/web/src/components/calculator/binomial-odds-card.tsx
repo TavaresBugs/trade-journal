@@ -8,7 +8,7 @@ import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
 import { FormulaHud } from "./shared";
-import { DitherGauge, DitherRowBar, DitherRatioBar } from "@/components/dither-kit";
+import { DitherGauge, DitherRowBar } from "@/components/dither-kit";
 
 interface BinomialOddsCardProps {
   values: CalculatorState["budget"];
@@ -293,34 +293,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
             );
           })()}
 
-          {/* 3-COLUMN METRICS BREAKDOWN */}
-          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Bankroll</span>
-              <span className="font-mono font-semibold text-foreground">
-                <MonetaryValue>${bankroll.toLocaleString("en-US")}</MonetaryValue>
-              </span>
-            </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Eval attempts</span>
-              <span className="font-mono font-semibold text-foreground">
-                {affordableEvals} {affordableEvals === 1 ? "eval" : "evals"}
-              </span>
-            </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">
-                Risk of ruin (0 passes)
-              </span>
-              <span
-                className={cn(
-                  "font-mono font-semibold tnum",
-                  binomialData.riskOfRuin > 25 ? "text-loss" : "text-profit",
-                )}
-              >
-                {binomialData.riskOfRuin.toFixed(2)}%
-              </span>
-            </div>
-          </div>
+
 
           {/* PASS DISTRIBUTION WITH DUAL TOGGLES & DITHER KIT RENDERING */}
           <div className="mt-3 border-t border-border/40 pt-2.5">

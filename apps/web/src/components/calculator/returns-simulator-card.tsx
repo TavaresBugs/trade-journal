@@ -11,7 +11,7 @@ import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
 import { FormulaHud } from "./shared";
-import { DitherGauge, DitherRatioBar } from "@/components/dither-kit";
+import { DitherGauge } from "@/components/dither-kit";
 
 interface ReturnsSimulatorCardProps {
   values: CalculatorState["simulator"];
@@ -412,63 +412,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             );
           })()}
 
-          {/* DYNAMIC BANKROLL COST VS NET RETURN VISUAL MINI BAR & SUMMARY */}
-          <div className="mt-4 space-y-2 border-t border-border/30 pt-3">
-            {/* Dither Retro Ratio Bar (Bayer matrix with glow) */}
-            <div className="py-0.5">
-              <DitherRatioBar
-                order="loss-win"
-                winValue={Math.max(0, simResults.avgNetProfit)}
-                lossValue={numAttempts * evalCost}
-                height={8}
-                bloom="low"
-                className="rounded-full overflow-hidden"
-              />
-            </div>
 
-            {/* 3-COLUMN METRICS: Loss (left), Capital Multiplier (center), Net Profit (right) */}
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div>
-                <span className="block text-[11px] text-muted-foreground">Bankroll at risk</span>
-                <span className="font-mono font-semibold text-loss tnum">
-                  <MonetaryValue>
-                    -${(numAttempts * evalCost).toLocaleString("en-US")}
-                  </MonetaryValue>
-                </span>
-                <span className="block text-[10px] text-muted-foreground/70">
-                  {numAttempts} {numAttempts === 1 ? "eval" : "evals"} × ${evalCost}
-                </span>
-              </div>
-              <div className="text-center">
-                <span className="block text-[11px] text-muted-foreground">Capital multiplier</span>
-                <span className="font-mono font-semibold text-foreground tnum">
-                  {simResults.avgNetProfit > 0
-                    ? `1 : ${(simResults.avgNetProfit / (numAttempts * evalCost || 1)).toFixed(1)}x`
-                    : "0.0x"}
-                </span>
-                <span className="block text-[10px] text-muted-foreground/70">
-                  {simResults.profitableChancePercent}% win rate
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="block text-[11px] text-muted-foreground">Avg net return</span>
-                <span
-                  className={cn(
-                    "font-mono font-semibold tnum",
-                    simResults.avgNetProfit >= 0 ? "text-profit" : "text-loss",
-                  )}
-                >
-                  <MonetaryValue>
-                    {simResults.avgNetProfit >= 0 ? "+" : "-"}$
-                    {Math.abs(simResults.avgNetProfit).toLocaleString("en-US")}
-                  </MonetaryValue>
-                </span>
-                <span className="block text-[10px] text-muted-foreground/70">
-                  {roiFormatted} ROI
-                </span>
-              </div>
-            </div>
-          </div>
 
           {/* RECENT SAMPLE RUN OUTCOMES */}
           <div className="mt-3 border-t border-border/40 pt-2.5">
