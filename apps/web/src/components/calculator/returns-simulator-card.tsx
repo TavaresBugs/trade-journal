@@ -478,7 +478,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
                 ({simResults.sampleOutcomes.length} attempts)
               </span>
             </div>
-            <div className="mt-2 space-y-1.5 pr-1 text-xs font-mono tnum">
+            <div className="mt-2 space-y-1.5 pr-1 text-xs font-mono tnum max-h-[160px] overflow-y-auto [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
               {simResults.sampleOutcomes.map((out, idx) => (
                 <div
                   key={idx}

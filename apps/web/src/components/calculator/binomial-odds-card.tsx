@@ -362,7 +362,7 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
               </div>
             </div>
 
-            <div className="mt-2 space-y-1 pr-1 text-xs font-mono tnum">
+            <div className="mt-2 space-y-1 pr-1 text-xs font-mono tnum max-h-[160px] overflow-y-auto [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
               {filteredRows.map((row) => {
                 const isRuin = row.passes === 0;
                 const probValue =
