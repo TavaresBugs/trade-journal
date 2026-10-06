@@ -6,6 +6,7 @@ import {
   MoreHorizontal,
   Pencil,
   Archive,
+  ArchiveRestore,
   Trash2,
   Loader2,
 } from "lucide-react";
@@ -46,6 +47,7 @@ function Progress() {
 
   const [date, setDate] = useState("");
   const [open, setOpen] = useState(false);
+  const [archivedOpen, setArchivedOpen] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
   const [title, setTitle] = useState("");
   const [stage, setStage] = useState<string>(STAGES[0]);
@@ -90,6 +92,11 @@ function Progress() {
   // Active unarchived routines count
   const activeRules = useMemo(() => {
     return data?.rules.filter((r) => !r.archivedAt) ?? [];
+  }, [data]);
+
+  // Archived routines
+  const archivedRules = useMemo(() => {
+    return data?.rules.filter((r) => !!r.archivedAt) ?? [];
   }, [data]);
 
   async function act(body: unknown, method: "POST" | "PATCH" | "DELETE" = "POST") {
@@ -146,10 +153,23 @@ function Progress() {
       <FilterBar
         title="Progress"
         actions={
-          <Button size="sm" onClick={() => openAddDialog()}>
-            <Plus className="size-4 mr-1 sm:inline hidden" />
-            Add routine
-          </Button>
+          <div className="flex items-center gap-2">
+            {archivedRules.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setArchivedOpen(true)}
+                className="gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <Archive className="size-3.5" />
+                <span>Archived ({archivedRules.length})</span>
+              </Button>
+            )}
+            <Button size="sm" onClick={() => openAddDialog()} className="cursor-pointer">
+              <Plus className="size-4 mr-1 sm:inline hidden" />
+              Add routine
+            </Button>
+          </div>
         }
       />
 
@@ -234,9 +254,21 @@ function Progress() {
           {/* Card 4: Active Habits */}
           <Card className="p-3 sm:p-4">
             <div className="flex flex-col justify-between h-full">
-              <span className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Active Habits
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Active Habits
+                </span>
+                {archivedRules.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setArchivedOpen(true)}
+                    className="text-[10px] text-muted-foreground hover:text-foreground font-mono flex items-center gap-1 hover:underline cursor-pointer"
+                  >
+                    <Archive className="size-2.5" />
+                    <span>{archivedRules.length} archived</span>
+                  </button>
+                )}
+              </div>
               <div className="my-1">
                 <span className="font-mono text-xl sm:text-2xl font-bold tabular-nums text-foreground">
                   {activeRules.length}
@@ -508,6 +540,99 @@ function Progress() {
               >
                 {busy && <Loader2 className="size-3 animate-spin" />}
                 <span>{editingRoutine ? "Save" : "Add"}</span>
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Archived Routines Dialog - Minimalist */}
+        <Dialog open={archivedOpen} onOpenChange={setArchivedOpen}>
+          <DialogContent className="sm:max-w-[420px] p-5 gap-3.5 rounded-xl border border-border/60 bg-card shadow-xl">
+            <div className="flex items-center justify-between pb-1">
+              <DialogTitle className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
+                <Archive className="size-4 text-muted-foreground" />
+                <span>Archived routines</span>
+                <span className="text-xs text-muted-foreground font-mono font-normal">
+                  ({archivedRules.length})
+                </span>
+              </DialogTitle>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Archived routines preserve historical check data without appearing in daily tracking.
+            </p>
+
+            <div className="space-y-2 max-h-[300px] overflow-y-auto divide-y divide-border/30 pt-1">
+              {archivedRules.map((r) => (
+                <div key={r.id} className="pt-2.5 first:pt-0 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-foreground truncate">{r.title}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {r.stage.replace(" trading", "")} · Archived {r.archivedAt?.slice(0, 10)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-[11px] gap-1 cursor-pointer"
+                      title="Restore routine"
+                      onClick={async () => {
+                        await act({ id: r.id, archivedAt: null }, "PATCH");
+                        if (archivedRules.length <= 1) setArchivedOpen(false);
+                      }}
+                    >
+                      <ArchiveRestore className="size-3" />
+                      <span>Restore</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="size-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                      title="Edit routine"
+                      onClick={() => {
+                        setArchivedOpen(false);
+                        openEditDialog(r);
+                      }}
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="size-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
+                      title="Delete permanently"
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `Permanently delete "${r.title}"? All check history will be completely erased.`,
+                          )
+                        ) {
+                          void act({ id: r.id, permanent: true }, "DELETE");
+                          if (archivedRules.length <= 1) setArchivedOpen(false);
+                        }
+                      }}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {archivedRules.length === 0 && (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  No archived routines.
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-1 border-t border-border/40">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs cursor-pointer"
+                onClick={() => setArchivedOpen(false)}
+              >
+                Close
               </Button>
             </div>
           </DialogContent>
