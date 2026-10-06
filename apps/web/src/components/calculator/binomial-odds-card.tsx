@@ -8,17 +8,7 @@ import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
 import { FormulaHud } from "./shared";
-import {
-  DitherGauge,
-  DitherRowBar,
-  DitherRatioBar,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  type ChartConfig,
-} from "@/components/dither-kit";
+import { DitherGauge, DitherRowBar, DitherRatioBar } from "@/components/dither-kit";
 
 interface BinomialOddsCardProps {
   values: CalculatorState["budget"];
@@ -32,7 +22,6 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
   const [isCostFocused, setIsCostFocused] = useState(false);
   const [isPassFocused, setIsPassFocused] = useState(false);
   const [distributionMode, setDistributionMode] = useState<"cumulative" | "exact">("cumulative");
-  const [viewMode, setViewMode] = useState<"rows" | "chart">("rows");
 
   // Cap at 30 attempts for binomial numerical stability and responsive rendering
   const affordableEvals = Math.max(1, Math.floor(bankroll / (evalCost || 1)));
@@ -42,13 +31,6 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
     return getBinomialDistribution(budgetEvalCount, passRate);
   }, [budgetEvalCount, passRate]);
 
-  const chartConfig = {
-    prob: {
-      label: "Pass Probability",
-      color: "green",
-    },
-  } satisfies ChartConfig;
-
   const filteredRows = useMemo(() => {
     return binomialData.rows.filter((row) =>
       distributionMode === "cumulative"
@@ -56,31 +38,6 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
         : row.probability > 0 || row.passes === 0,
     );
   }, [binomialData.rows, distributionMode]);
-
-  const chartData = useMemo(() => {
-    return filteredRows.slice(0, 10).map((row) => {
-      const isRuin = row.passes === 0;
-      const probValue =
-        distributionMode === "cumulative"
-          ? isRuin
-            ? binomialData.riskOfRuin
-            : row.cumulativeProbability
-          : row.probability;
-
-      const label = isRuin
-        ? "0 Passes"
-        : distributionMode === "cumulative"
-          ? row.passes === budgetEvalCount
-            ? `All ${budgetEvalCount} P`
-            : `≥${row.passes} P`
-          : `=${row.passes} P`;
-
-      return {
-        label,
-        prob: Number(probValue.toFixed(1)),
-      };
-    });
-  }, [filteredRows, distributionMode, binomialData.riskOfRuin, budgetEvalCount]);
 
   const copyText = `Binomial Pass Odds: Bankroll: $${bankroll.toLocaleString("en-US")} | Eval Cost: $${evalCost} | Affordable Evals: ${affordableEvals} | Pass ≥1 Eval: ${binomialData.atLeastOne.toFixed(2)}% | Risk of Ruin (0 passes): ${binomialData.riskOfRuin.toFixed(2)}% | Base Pass Rate: ${passRate}%`;
 
@@ -402,115 +359,68 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
                     = Exact
                   </button>
                 </div>
-
-                {/* View toggle: Rows vs Chart */}
-                <div className="flex items-center rounded border border-border/70 bg-muted/60 p-0.5 font-mono text-[10px]">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("rows")}
-                    className={cn(
-                      "px-1.5 py-0.5 rounded transition-all",
-                      viewMode === "rows"
-                        ? "bg-background text-foreground font-semibold shadow-xs"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    Rows
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("chart")}
-                    className={cn(
-                      "px-1.5 py-0.5 rounded transition-all",
-                      viewMode === "chart"
-                        ? "bg-background text-foreground font-semibold shadow-xs"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    Chart
-                  </button>
-                </div>
               </div>
             </div>
 
-            {viewMode === "chart" ? (
-              <div className="mt-2 h-44 w-full">
-                <BarChart
-                  layout="horizontal"
-                  data={chartData}
-                  config={chartConfig}
-                  className="h-full w-full"
-                  margins={{ top: 8, right: 24, bottom: 20, left: 65 }}
-                  interactive={true}
-                  bloom="low"
-                >
-                  <Bar dataKey="prob" />
-                  <YAxis dataKey="label" />
-                  <XAxis tickFormatter={(v) => `${v}%`} />
-                  <Tooltip valueFormatter={(v) => `${v}% chance`} />
-                </BarChart>
-              </div>
-            ) : (
-              <div className="mt-2 space-y-1 pr-1 text-xs font-mono tnum">
-                {filteredRows.map((row) => {
-                  const isRuin = row.passes === 0;
-                  const probValue =
-                    distributionMode === "cumulative"
-                      ? isRuin
-                        ? binomialData.riskOfRuin
-                        : row.cumulativeProbability
-                      : row.probability;
+            <div className="mt-2 space-y-1 pr-1 text-xs font-mono tnum">
+              {filteredRows.map((row) => {
+                const isRuin = row.passes === 0;
+                const probValue =
+                  distributionMode === "cumulative"
+                    ? isRuin
+                      ? binomialData.riskOfRuin
+                      : row.cumulativeProbability
+                    : row.probability;
 
-                  const label =
-                    distributionMode === "cumulative"
-                      ? isRuin
-                        ? "0 passes (risk of ruin)"
-                        : row.passes === budgetEvalCount
-                          ? `Pass all ${budgetEvalCount} evals`
-                          : `Pass ≥ ${row.passes} ${row.passes === 1 ? "eval" : "evals"}`
-                      : isRuin
-                        ? "0 passes (risk of ruin)"
-                        : `Exactly ${row.passes} ${row.passes === 1 ? "pass" : "passes"}`;
+                const label =
+                  distributionMode === "cumulative"
+                    ? isRuin
+                      ? "0 passes (risk of ruin)"
+                      : row.passes === budgetEvalCount
+                        ? `Pass all ${budgetEvalCount} evals`
+                        : `Pass ≥ ${row.passes} ${row.passes === 1 ? "eval" : "evals"}`
+                    : isRuin
+                      ? "0 passes (risk of ruin)"
+                      : `Exactly ${row.passes} ${row.passes === 1 ? "pass" : "passes"}`;
 
-                  const barPercent = Math.min(100, Math.max(0, probValue));
+                const barPercent = Math.min(100, Math.max(0, probValue));
 
-                  return (
-                    <div
-                      key={row.passes}
-                      className="group relative flex items-center justify-between rounded px-2.5 py-1.5 overflow-hidden transition-colors hover:bg-muted/40 min-h-[28px]"
-                    >
-                      {/* Authentic Retro Dither Horizontal Bar */}
-                      <DitherRowBar percent={barPercent} color={isRuin ? "red" : "green"} />
+                return (
+                  <div
+                    key={row.passes}
+                    className="group relative flex items-center justify-between rounded px-2.5 py-1.5 overflow-hidden transition-colors hover:bg-muted/40 min-h-[28px]"
+                  >
+                    {/* Authentic Retro Dither Horizontal Bar */}
+                    <DitherRowBar percent={barPercent} color={isRuin ? "red" : "green"} />
 
-                      <div className="relative z-10 flex items-center gap-1.5 truncate">
-                        <span
-                          className={cn(
-                            "size-1.5 rounded-full shrink-0",
-                            isRuin ? "bg-loss/70" : "bg-profit",
-                          )}
-                        />
-                        <span
-                          className={cn(
-                            "truncate text-xs",
-                            isRuin ? "text-muted-foreground" : "text-foreground font-medium",
-                          )}
-                        >
-                          {label}
-                        </span>
-                      </div>
+                    <div className="relative z-10 flex items-center gap-1.5 truncate">
                       <span
                         className={cn(
-                          "relative z-10 shrink-0 font-semibold ml-2 font-mono",
-                          isRuin ? "text-loss" : "text-profit",
+                          "size-1.5 rounded-full shrink-0",
+                          isRuin ? "bg-loss/70" : "bg-profit",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "truncate text-xs",
+                          isRuin ? "text-muted-foreground" : "text-foreground font-medium",
                         )}
                       >
-                        {probValue.toFixed(2)}%
+                        {label}
                       </span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                    <span
+                      className={cn(
+                        "relative z-10 shrink-0 font-semibold ml-2 font-mono",
+                        isRuin ? "text-loss" : "text-profit",
+                      )}
+                    >
+                      {probValue.toFixed(2)}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </FormulaHud>
       </CardContent>

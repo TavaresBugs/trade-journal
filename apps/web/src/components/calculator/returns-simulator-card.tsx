@@ -6,6 +6,7 @@ import { runReturnsSimulation, type SimulationOutcome } from "@luxalgo/journal-c
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { HoverHint } from "@/components/ui/tooltip";
 import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
@@ -199,45 +200,36 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             }}
           />
         </div>
-
-        {/* SIMULATE BUTTON */}
-        <div className="pt-1">
-          <Button
-            type="button"
-            disabled={isSimulating}
-            variant="outline"
-            className="h-9 w-full border-border/80 bg-muted/40 font-mono text-xs font-medium tracking-tight text-foreground transition-all hover:bg-accent hover:text-foreground"
-            onClick={handleRunSimulation}
-          >
-            {isSimulating ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Simulating 1,000 attempts...
-              </>
-            ) : (
-              <>
-                <Play className="h-3.5 w-3.5 text-profit" />
-                Run Monte Carlo simulation (1,000 runs)
-              </>
-            )}
-          </Button>
-        </div>
       </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
         <FormulaHud
           title="Simulation results (1,000 runs)"
-          category={{
-            label: "Monte Carlo",
-            color: simResults.avgNetProfit >= 0 ? "text-profit" : "text-loss",
-            border: simResults.avgNetProfit >= 0 ? "border-profit/50" : "border-loss/50",
-            bg: simResults.avgNetProfit >= 0 ? "bg-profit/20" : "bg-loss/20",
-            heading: "Monte Carlo Portfolio Simulation",
-            advice:
-              "Simulates 1,000 randomized cycles of evaluation attempts, qualification odds, and payout distributions to project expected net equity.",
-          }}
           copyText={copyText}
+          actions={
+            <HoverHint
+              heading="Monte Carlo Simulation"
+              content="Simulates 1,000 randomized cycles of evaluation attempts, qualification odds, and payout distributions to project expected net equity."
+              side="top"
+            >
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
+                onClick={handleRunSimulation}
+                disabled={isSimulating}
+              >
+                {isSimulating ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Play className="h-3.5 w-3.5 text-profit" />
+                )}
+                <span>{isSimulating ? "Simulating..." : "Run Monte Carlo"}</span>
+              </Button>
+            </HoverHint>
+          }
           theoryNumerator="n × Pass% × Payout% × Avg"
           theoryDenominator="− n × Eval Cost ($)"
           valueNumerator={

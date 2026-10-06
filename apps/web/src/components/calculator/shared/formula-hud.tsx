@@ -30,6 +30,8 @@ export interface FormulaHudProps {
   resultValue: React.ReactNode;
   resultLabel: string;
   resultSecondary?: React.ReactNode;
+  // Additional header actions (e.g. run button)
+  actions?: React.ReactNode;
   // Additional content (e.g. scenario list)
   children?: React.ReactNode;
   variant?: "seamless" | "card";
@@ -41,6 +43,7 @@ export function FormulaHud({
   category,
   copyText,
   onCopy,
+  actions,
   theoryNumerator,
   theoryDenominator,
   valueNumerator,
@@ -78,7 +81,7 @@ export function FormulaHud({
           <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
             {title}
           </span>
-          {category && (
+          {category && category.label && (
             <HoverHint heading={category.heading} content={category.advice}>
               <button
                 type="button"
@@ -104,24 +107,27 @@ export function FormulaHud({
             </HoverHint>
           )}
         </div>
-        {(copyText || onCopy) && (
-          <HoverHint content="Copy metrics to clipboard">
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
-              onClick={handleCopy}
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-profit" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              {copied ? "Copied" : "Copy"}
-            </Button>
-          </HoverHint>
-        )}
+        <div className="flex items-center gap-1.5">
+          {actions}
+          {(copyText || onCopy) && (
+            <HoverHint content="Copy metrics to clipboard">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]"
+                onClick={handleCopy}
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-profit" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+            </HoverHint>
+          )}
+        </div>
       </div>
 
       {/* MAIN ROW: THREE-STEP PROGRESSION */}
