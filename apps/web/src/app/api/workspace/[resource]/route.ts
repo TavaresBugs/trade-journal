@@ -173,6 +173,41 @@ export const PATCH = handler(async (request: Request, { params }: Context) => {
     db.update(noteTemplates).set(updates).where(eq(noteTemplates.id, b.id)).run();
     return ok({ updated: true });
   }
+  if (resource === "progress") {
+    const existing = db.select().from(progressRules).where(eq(progressRules.id, b.id)).get();
+    requireValue(existing, "Routine not found.");
+    const updates: {
+      title?: string;
+      stage?: string;
+      weekdaysJson?: string;
+      archivedAt?: string | null;
+    } = {};
+    if (b.title !== undefined) {
+      requireValue(text(b.title, 200) && b.title.trim(), "Enter a routine title.");
+      updates.title = b.title.trim();
+    }
+    if (b.stage !== undefined) {
+      requireValue(
+        ["Before trading", "During trading", "After trading"].includes(b.stage),
+        "Invalid routine stage.",
+      );
+      updates.stage = b.stage;
+    }
+    if (b.weekdays !== undefined) {
+      requireValue(
+        Array.isArray(b.weekdays) &&
+          b.weekdays.length > 0 &&
+          b.weekdays.every((n: unknown) => Number.isInteger(n) && Number(n) >= 0 && Number(n) <= 6),
+        "Select at least one weekday.",
+      );
+      updates.weekdaysJson = JSON.stringify([...new Set(b.weekdays)]);
+    }
+    if (b.archivedAt !== undefined) {
+      updates.archivedAt = b.archivedAt === null ? null : today();
+    }
+    db.update(progressRules).set(updates).where(eq(progressRules.id, b.id)).run();
+    return ok({ updated: true });
+  }
   return bad("Unknown resource", 404);
 });
 
@@ -181,9 +216,14 @@ export const DELETE = handler(async (request: Request, { params }: Context) => {
   const b = await request.json();
   requireValue(text(b.id, 200), "Invalid id.");
   if (resource === "templates") db.delete(noteTemplates).where(eq(noteTemplates.id, b.id)).run();
-  else if (resource === "progress")
-    db.update(progressRules).set({ archivedAt: today() }).where(eq(progressRules.id, b.id)).run();
-  else if (resource === "missed")
+  else if (resource === "progress") {
+    if (b.permanent === true) {
+      db.delete(progressChecks).where(eq(progressChecks.ruleId, b.id)).run();
+      db.delete(progressRules).where(eq(progressRules.id, b.id)).run();
+    } else {
+      db.update(progressRules).set({ archivedAt: today() }).where(eq(progressRules.id, b.id)).run();
+    }
+  } else if (resource === "missed")
     db.update(missedTrades)
       .set({ archivedAt: b.restore ? null : nowIso() })
       .where(eq(missedTrades.id, b.id))

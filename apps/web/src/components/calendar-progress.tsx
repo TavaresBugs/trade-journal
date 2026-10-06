@@ -2,16 +2,17 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, fmtFullDate } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { HoverHint } from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Button } from "./ui/button";
 import { progressScore, type Routine, type RoutineCheck } from "@/lib/progress";
+import { DitherGradient, TOOLTIP_SURFACE_CLASSES, TooltipHeader, TooltipRow } from "./dither-kit";
 
 const MONTH_NAMES = [
   "January",
@@ -131,24 +132,29 @@ export function CalendarProgress({
       const weekDays = days.slice(i, i + 7);
       let weekTotal = 0;
       let weekCompleted = 0;
+      let hasElapsedDays = false;
       for (const d of weekDays) {
         if (d.inMonth) {
-          weekTotal += d.score.total;
-          weekCompleted += d.score.completed;
+          const isPastOrToday = !today || d.date <= today;
+          if (isPastOrToday) {
+            hasElapsedDays = true;
+            weekTotal += d.score.total;
+            weekCompleted += d.score.completed;
+          }
         }
       }
       result.push({
         days: weekDays,
         weekTotal,
         weekCompleted,
-        weekScore: weekTotal > 0 ? weekCompleted / weekTotal : null,
+        weekScore: hasElapsedDays && weekTotal > 0 ? weekCompleted / weekTotal : null,
       });
     }
 
     return result;
-  }, [viewMonth, rules, checks]);
+  }, [viewMonth, rules, checks, today]);
 
-  // Monthly summary metrics
+  // Monthly summary metrics - bounded strictly to elapsed days (<= today)
   const monthMetrics = useMemo(() => {
     let totalScheduled = 0;
     let totalCompleted = 0;
@@ -159,8 +165,9 @@ export function CalendarProgress({
     for (let d = 1; d <= daysInMonth; d++) {
       const currDate = new Date(Date.UTC(viewMonth.year, viewMonth.month - 1, d));
       const dateStr = currDate.toISOString().slice(0, 10);
+      const isPastOrToday = !today || dateStr <= today;
       const score = progressScore(rules, checks, dateStr);
-      if (score.total > 0) {
+      if (score.total > 0 && isPastOrToday) {
         activeDays++;
         totalScheduled += score.total;
         totalCompleted += score.completed;
@@ -179,7 +186,7 @@ export function CalendarProgress({
       activeDays,
       totalCompleted,
     };
-  }, [viewMonth, rules, checks]);
+  }, [viewMonth, rules, checks, today]);
 
   const isCurrentMonth =
     today &&
@@ -332,27 +339,37 @@ export function CalendarProgress({
           Weekly summary
         </div>
         <div className="grid grid-cols-2 gap-1.5">
-          {weeks.map((week, weekIndex) => (
-            <div
-              key={weekIndex}
-              className={cn(
-                "flex flex-col items-center justify-center rounded-lg bg-muted/20 p-2 ring-1 ring-border/40 text-center gap-0.5",
-                weekIndex === 4 && weeks.length === 5 ? "col-span-2" : "",
-              )}
-            >
-              <span className="text-[8px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-                Week {weekIndex + 1}
-              </span>
-              <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
-                {week.weekTotal > 0 ? `${Math.round(week.weekScore! * 100)}%` : "—"}
-              </span>
-              {week.weekTotal > 0 && (
-                <span className="text-[8px] text-muted-foreground uppercase tracking-wider">
-                  {week.weekCompleted} of {week.weekTotal} done
+          {weeks.map((week, weekIndex) => {
+            const hasElapsed = week.weekScore !== null && week.weekTotal > 0;
+            const isPerfect = hasElapsed && week.weekScore === 1;
+            return (
+              <div
+                key={weekIndex}
+                className={cn(
+                  "flex flex-col items-center justify-center rounded-lg bg-muted/20 p-2 ring-1 ring-border/40 text-center gap-0.5",
+                  isPerfect && "ring-profit/30 bg-profit/5",
+                  weekIndex === 4 && weeks.length === 5 ? "col-span-2" : "",
+                )}
+              >
+                <span className="text-[8px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+                  Week {weekIndex + 1}
                 </span>
-              )}
-            </div>
-          ))}
+                <span
+                  className={cn(
+                    "font-mono text-xs font-semibold tabular-nums",
+                    isPerfect ? "text-profit" : "text-foreground",
+                  )}
+                >
+                  {hasElapsed ? `${Math.round(week.weekScore! * 100)}%` : "—"}
+                </span>
+                {hasElapsed && (
+                  <span className="text-[8px] text-muted-foreground uppercase tracking-wider">
+                    {week.weekCompleted} of {week.weekTotal} done
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -417,120 +434,389 @@ function CalendarProgressWeekRow({
 }) {
   return (
     <>
-      {week.days.map((day) => {
-        const isToday = day.date === today;
-        const isSelected = day.date === selectedDate;
-        const hasRoutines = day.score.total > 0;
-        const isPerfect = hasRoutines && day.score.score === 1;
-        const isPartial = hasRoutines && day.score.score! > 0 && day.score.score! < 1;
+      {week.days.map((day) => (
+        <CalendarProgressDayCell
+          key={day.date}
+          day={day}
+          today={today}
+          isSelected={day.date === selectedDate}
+          onSelectDate={onSelectDate}
+        />
+      ))}
+      <CalendarProgressWeekTotalCell week={week} />
+    </>
+  );
+}
 
-        const tooltipContent = hasRoutines
-          ? `${day.score.completed} of ${day.score.total} routines completed (${Math.round(day.score.score! * 100)}%)`
-          : "No routines scheduled";
+function CalendarProgressDayCell({
+  day,
+  today,
+  isSelected,
+  onSelectDate,
+}: {
+  day: DayInfo;
+  today: string;
+  isSelected: boolean;
+  onSelectDate: (date: string) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
 
-        return (
-          <HoverHint
-            key={day.date}
-            heading={isToday ? `${day.date} (Today)` : day.date}
-            content={tooltipContent}
-          >
-            <button
-              type="button"
-              aria-label={`${day.date}: ${day.score.completed}/${day.score.total} routines complete`}
-              data-today={isToday ? "true" : undefined}
-              onClick={() => onSelectDate(day.date)}
+  const isToday = day.date === today;
+  const isFuture = Boolean(today && day.date > today);
+  const isPast = Boolean(today && day.date < today);
+  const hasRoutines = day.score.total > 0;
+  const total = day.score.total;
+  const completed = day.score.completed;
+  const score = day.score.score;
+
+  const isPerfect = hasRoutines && !isFuture && score === 1;
+  const isPartial = hasRoutines && !isFuture && score !== null && score > 0 && score < 1;
+  const isMissed = isPast && hasRoutines && completed === 0;
+  const isPendingToday = isToday && hasRoutines && completed === 0;
+
+  const performance = isPerfect ? "profit" : isPartial ? "journal" : undefined;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={() => onSelectDate(day.date)}
+          onPointerEnter={() => setHovered(true)}
+          onPointerLeave={() => setHovered(false)}
+          aria-label={
+            isFuture
+              ? `${day.date}: ${total} routine${total === 1 ? "" : "s"} scheduled`
+              : hasRoutines
+                ? `${day.date}: ${completed}/${total} routines complete (${Math.round((score ?? 0) * 100)}%)`
+                : `${day.date}: No routines scheduled`
+          }
+          data-performance={performance}
+          data-today={isToday ? "true" : undefined}
+          data-hovered={hovered ? "true" : undefined}
+          className={cn(
+            "journal-calendar-day journal-calendar-day-link relative overflow-hidden flex flex-col min-w-0 rounded-md border text-left cursor-pointer transition-all duration-150 active:scale-[0.98] !p-0",
+            !day.inMonth && "opacity-30 hover:opacity-75",
+            isSelected
+              ? "ring-2 ring-foreground border-foreground shadow-xs font-medium"
+              : isToday
+                ? "ring-1 ring-brand border-brand/60"
+                : isPerfect
+                  ? "border-profit/40 bg-card"
+                  : isPartial
+                    ? "border-brand/40 bg-card"
+                    : isFuture
+                      ? "border-border/30 bg-card/40"
+                      : "border-border/40 bg-card",
+            hovered &&
+              (isPerfect
+                ? "border-profit ring-1 ring-profit/60 glow-profit"
+                : isPartial
+                  ? "border-brand ring-1 ring-brand/60 glow-brand"
+                  : "border-foreground/50"),
+          )}
+          style={{
+            padding: 0,
+            ...(isPerfect
+              ? {
+                  background: `linear-gradient(to top, color-mix(in oklab, var(--profit-fill) ${hovered ? 32 : 18}%, var(--card)) 0%, var(--card) 90%)`,
+                }
+              : isPartial
+                ? {
+                    background: `linear-gradient(to top, color-mix(in oklab, var(--brand) ${hovered ? 24 : 12}%, var(--card)) 0%, var(--card) 90%)`,
+                  }
+                : undefined),
+          }}
+        >
+          {isPerfect && (
+            <DitherGradient
+              from="green"
+              to="transparent"
+              direction="up"
+              cell={2}
+              opacity={hovered ? 0.3 : 0.18}
+              bloom={hovered ? "low" : "off"}
+              className="absolute -inset-1"
+            />
+          )}
+          {isPartial && (
+            <DitherGradient
+              from="blue"
+              to="transparent"
+              direction="up"
+              cell={2}
+              opacity={hovered ? 0.22 : 0.12}
+              bloom={hovered ? "low" : "off"}
+              className="absolute -inset-1"
+            />
+          )}
+
+          <div className="journal-calendar-day-content relative z-10 flex flex-col justify-between h-full w-full pointer-events-none select-none">
+            {/* Day Number Header */}
+            <div
               className={cn(
-                "journal-calendar-day journal-calendar-day-link flex flex-col min-w-0 rounded-md border text-left cursor-pointer transition-all",
-                !day.inMonth && "opacity-35 hover:opacity-75",
-                isSelected
-                  ? "ring-2 ring-foreground border-foreground shadow-xs font-medium"
-                  : isToday
-                    ? "ring-1 ring-brand border-brand/60"
-                    : "border-border/60 hover:border-foreground/50",
-                isPerfect && "border-brand/40",
+                "flex items-center justify-between w-full",
+                isToday || isSelected ? "font-semibold text-foreground" : "text-muted-foreground",
               )}
-              style={
-                hasRoutines
-                  ? {
-                      backgroundColor: isPerfect
-                        ? "color-mix(in srgb, var(--brand) 22%, var(--card))"
-                        : isPartial
-                          ? `color-mix(in srgb, var(--brand) ${10 + Math.round(day.score.score! * 30)}%, var(--card))`
-                          : "var(--muted)/20",
-                    }
-                  : {
-                      backgroundColor: "var(--muted)/15",
-                    }
-              }
             >
-              {/* Day Number Header */}
-              <div
+              <span
                 className={cn(
-                  "flex items-center justify-between",
-                  isToday || isSelected ? "font-semibold text-foreground" : "text-muted-foreground",
+                  "text-shadow-oled transition-colors",
+                  hovered && "text-foreground font-semibold",
+                  isFuture && "text-muted-foreground/60",
                 )}
               >
-                <span>{day.dayNumber}</span>
-                {isPerfect && (
-                  <Check className="h-3 w-3 shrink-0 text-brand" aria-label="100% completed" />
-                )}
-              </div>
-
-              {/* Completion Indicators */}
-              {hasRoutines ? (
-                <>
-                  <div className="journal-calendar-full tnum font-medium">
-                    <span
-                      className={cn(
-                        isPerfect
-                          ? "text-brand font-semibold"
-                          : isPartial
-                            ? "text-foreground font-medium"
-                            : "text-muted-foreground",
-                      )}
-                    >
-                      {Math.round(day.score.score! * 100)}%
-                    </span>
-                  </div>
-                  <div className="journal-calendar-compact tnum font-medium">
-                    <span
-                      className={cn(
-                        isPerfect ? "text-brand font-semibold" : "text-muted-foreground",
-                      )}
-                    >
-                      {Math.round(day.score.score! * 100)}%
-                    </span>
-                  </div>
-                  <div className="journal-calendar-trades text-muted-foreground">
-                    {day.score.completed} of {day.score.total}
-                  </div>
-                </>
-              ) : (
-                <div className="journal-calendar-full text-muted-foreground text-[10px] mt-auto">
-                  —
-                </div>
+                {day.dayNumber}
+              </span>
+              {isPerfect && (
+                <Check
+                  className="size-3 shrink-0 text-profit drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                  aria-label="100% completed"
+                />
               )}
-            </button>
-          </HoverHint>
-        );
-      })}
+              {isFuture && hasRoutines && (
+                <span
+                  className="size-1 rounded-full bg-muted-foreground/40 shrink-0"
+                  aria-label="Routines scheduled"
+                />
+              )}
+            </div>
 
-      {/* Week Total Desktop Column */}
-      <div className="journal-calendar-week flex rounded-md bg-muted/40 p-1.5 text-right">
-        <span className="journal-calendar-week-label text-muted-foreground">Week total</span>
-        {week.weekTotal > 0 ? (
-          <>
-            <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
+            {/* Bottom Content / Indicators */}
+            {isPerfect && (
+              <div className="flex flex-col mt-auto">
+                <div className="journal-calendar-full tnum font-mono text-xs font-bold leading-none text-profit text-shadow-oled">
+                  100%
+                </div>
+                <div className="journal-calendar-compact tnum font-mono text-xs font-bold leading-none text-profit text-shadow-oled">
+                  100%
+                </div>
+                <div
+                  className={cn(
+                    "journal-calendar-trades font-medium mt-0.5 text-shadow-oled transition-colors",
+                    hovered ? "text-foreground/95" : "text-muted-foreground/90",
+                  )}
+                >
+                  {completed}/{total} done
+                </div>
+              </div>
+            )}
+
+            {isPartial && (
+              <div className="flex flex-col mt-auto">
+                <div className="journal-calendar-full tnum font-mono text-xs font-bold leading-none text-foreground text-shadow-oled">
+                  {Math.round(score! * 100)}%
+                </div>
+                <div className="journal-calendar-compact tnum font-mono text-xs font-bold leading-none text-foreground text-shadow-oled">
+                  {Math.round(score! * 100)}%
+                </div>
+                <div
+                  className={cn(
+                    "journal-calendar-trades font-medium mt-0.5 text-shadow-oled transition-colors",
+                    hovered ? "text-foreground/95" : "text-muted-foreground/90",
+                  )}
+                >
+                  {completed}/{total} done
+                </div>
+              </div>
+            )}
+
+            {isMissed && (
+              <div className="flex flex-col mt-auto">
+                <div className="journal-calendar-full tnum font-mono text-[10px] font-semibold leading-none text-muted-foreground/60 text-shadow-oled">
+                  0%
+                </div>
+                <div className="journal-calendar-compact tnum font-mono text-[10px] font-semibold leading-none text-muted-foreground/60 text-shadow-oled">
+                  0%
+                </div>
+                <div className="journal-calendar-trades font-normal mt-0.5 text-muted-foreground/50 text-[9px]">
+                  0/{total}
+                </div>
+              </div>
+            )}
+
+            {isPendingToday && (
+              <div className="flex flex-col mt-auto">
+                <div className="journal-calendar-full tnum font-mono text-xs font-semibold leading-none text-primary/80 text-shadow-oled">
+                  0%
+                </div>
+                <div className="journal-calendar-compact tnum font-mono text-xs font-semibold leading-none text-primary/80 text-shadow-oled">
+                  0%
+                </div>
+                <div className="journal-calendar-trades font-medium mt-0.5 text-muted-foreground/80 text-[10px]">
+                  {total} pending
+                </div>
+              </div>
+            )}
+          </div>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={6}
+        className={cn(
+          "journal-hover-card z-[80] min-w-44 whitespace-nowrap !p-2.5 !text-xs !max-w-none",
+          TOOLTIP_SURFACE_CLASSES,
+        )}
+      >
+        <TooltipHeader
+          title={fmtFullDate(day.date)}
+          badge={
+            isToday ? (
+              <span className="rounded bg-primary/20 px-1 py-0.5 text-[8px] font-bold text-primary uppercase">
+                Today
+              </span>
+            ) : isPerfect ? (
+              <span className="rounded bg-profit/20 px-1 py-0.5 text-[8px] font-bold text-profit uppercase">
+                Completed
+              </span>
+            ) : isFuture && hasRoutines ? (
+              <span className="rounded bg-muted px-1 py-0.5 text-[8px] font-semibold text-muted-foreground uppercase">
+                Upcoming
+              </span>
+            ) : undefined
+          }
+        />
+        {isFuture ? (
+          hasRoutines ? (
+            <TooltipRow
+              swatchClassName="bg-muted-foreground/60 shadow-[0_0_6px_rgba(255,255,255,0.1)]"
+              label="Scheduled"
+              value={`${total} routine${total === 1 ? "" : "s"} planned`}
+              valueClassName="font-medium text-foreground"
+            />
+          ) : (
+            <span className="text-xs text-muted-foreground">No routines scheduled</span>
+          )
+        ) : isPerfect ? (
+          <div className="flex flex-col gap-1.5">
+            <TooltipRow
+              swatchClassName="bg-profit shadow-[0_0_6px_var(--profit)]"
+              label="Completion"
+              value="100%"
+              valueClassName="font-semibold text-profit"
+            />
+            <TooltipRow
+              swatchClassName="bg-brand shadow-[0_0_6px_var(--brand)]"
+              label="Routines"
+              value={`${completed} of ${total} done`}
+              valueClassName="font-semibold text-foreground"
+            />
+          </div>
+        ) : isPartial ? (
+          <div className="flex flex-col gap-1.5">
+            <TooltipRow
+              swatchClassName="bg-brand shadow-[0_0_6px_var(--brand)]"
+              label="Completion"
+              value={`${Math.round(score! * 100)}%`}
+              valueClassName="font-semibold text-foreground"
+            />
+            <TooltipRow
+              swatchClassName="bg-brand/60"
+              label="Routines"
+              value={`${completed} of ${total} done`}
+              valueClassName="font-medium text-muted-foreground"
+            />
+          </div>
+        ) : isMissed ? (
+          <div className="flex flex-col gap-1.5">
+            <TooltipRow
+              swatchClassName="bg-muted-foreground/50"
+              label="Completion"
+              value="0%"
+              valueClassName="font-medium text-muted-foreground"
+            />
+            <TooltipRow
+              swatchClassName="bg-muted-foreground/50"
+              label="Routines"
+              value={`0 of ${total} done`}
+              valueClassName="font-normal text-muted-foreground"
+            />
+          </div>
+        ) : isPendingToday ? (
+          <div className="flex flex-col gap-1.5">
+            <TooltipRow
+              swatchClassName="bg-primary/80"
+              label="Status"
+              value={`${total} pending`}
+              valueClassName="font-semibold text-primary"
+            />
+            <TooltipRow
+              swatchClassName="bg-muted-foreground/50"
+              label="Progress"
+              value={`0 of ${total} done`}
+              valueClassName="font-normal text-muted-foreground"
+            />
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">No routines scheduled</span>
+        )}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function CalendarProgressWeekTotalCell({ week }: { week: WeekInfo }) {
+  const [hovered, setHovered] = useState(false);
+  const hasElapsed = week.weekScore !== null && week.weekTotal > 0;
+  const isPerfect = hasElapsed && week.weekScore === 1;
+
+  return (
+    <div
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      className={cn(
+        "journal-calendar-week relative overflow-hidden flex flex-col rounded-md bg-card border border-border/40 !p-0 transition-all duration-150",
+        hasElapsed &&
+          (isPerfect
+            ? "border-profit/40 hover:border-profit/90 hover:glow-profit"
+            : "border-brand/40 hover:border-brand/90 hover:glow-brand"),
+      )}
+      style={{
+        padding: 0,
+        background: hasElapsed
+          ? `linear-gradient(to top, color-mix(in oklab, ${isPerfect ? "var(--profit-fill)" : "var(--brand)"} ${hovered ? "20%" : "10%"}, var(--card)) 0%, var(--card) 90%)`
+          : undefined,
+      }}
+    >
+      {hasElapsed && (
+        <DitherGradient
+          from={isPerfect ? "green" : "blue"}
+          to="transparent"
+          direction="up"
+          cell={2}
+          opacity={hovered ? 0.36 : 0.18}
+          bloom={hovered ? "low" : "off"}
+          className="absolute -inset-1"
+        />
+      )}
+      <div className="relative z-10 flex flex-col justify-between w-full h-full p-1.5 pointer-events-none select-none">
+        <span className="journal-calendar-week-label text-muted-foreground text-shadow-oled">
+          Week total
+        </span>
+        {hasElapsed ? (
+          <div className="flex flex-col mt-auto">
+            <span
+              className={cn(
+                "font-mono text-xs font-bold tabular-nums text-shadow-oled",
+                isPerfect ? "text-profit" : "text-foreground",
+              )}
+            >
               {Math.round(week.weekScore! * 100)}%
             </span>
-            <span className="text-muted-foreground text-[10px]">
+            <span
+              className={cn(
+                "text-[10px] font-medium mt-0.5 text-shadow-oled transition-colors",
+                hovered ? "text-foreground/95" : "text-muted-foreground/90",
+              )}
+            >
               {week.weekCompleted}/{week.weekTotal} done
             </span>
-          </>
+          </div>
         ) : (
-          <span className="text-muted-foreground">–</span>
+          <span className="text-muted-foreground mt-auto">–</span>
         )}
       </div>
-    </>
+    </div>
   );
 }
