@@ -116,9 +116,7 @@ export function ScenarioRuler({
             <Bar dataKey="buffer" />
             <YAxis dataKey="scenario" />
             <XAxis tickFormatter={(v) => `${v}%`} />
-            <Tooltip
-              valueFormatter={(v) => `${v}% survival buffer`}
-            />
+            <Tooltip valueFormatter={(v) => `${v}% survival buffer`} />
           </BarChart>
         </div>
       ) : (

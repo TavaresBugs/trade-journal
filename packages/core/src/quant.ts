@@ -489,6 +489,8 @@ export interface SimulationResults {
   numAttempts: number;
   avgPayoutResult: number;
   avgNetProfit: number;
+  profitableCyclesCount: number;
+  profitableChancePercent: number;
   sampleOutcomes: SimulationOutcome[];
 }
 
@@ -591,6 +593,7 @@ export function runReturnsSimulation(
 
   let aggregateNetPnl = 0;
   let aggregatePayouts = 0;
+  let profitableCyclesCount = 0;
   const sampleOutcomes: SimulationOutcome[] = [];
 
   for (let s = 0; s < totalSimulations; s++) {
@@ -633,6 +636,10 @@ export function runReturnsSimulation(
       }
     }
 
+    if (simPnl > 0) {
+      profitableCyclesCount++;
+    }
+
     aggregateNetPnl += simPnl;
     aggregatePayouts += simPayouts;
   }
@@ -640,11 +647,14 @@ export function runReturnsSimulation(
   const safeSims = Math.max(1, totalSimulations);
   const avgPayoutResult = Math.round(aggregatePayouts / safeSims);
   const avgNetProfit = Math.round(aggregateNetPnl / safeSims);
+  const profitableChancePercent = Number(((profitableCyclesCount / safeSims) * 100).toFixed(1));
 
   return {
     numAttempts,
     avgPayoutResult,
     avgNetProfit,
+    profitableCyclesCount,
+    profitableChancePercent,
     sampleOutcomes: sampleOutcomes.slice(0, 10),
   };
 }

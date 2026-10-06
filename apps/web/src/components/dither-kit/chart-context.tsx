@@ -328,10 +328,7 @@ export function useChartController({
     (i: number) => (isBand ? (xBand(i) ?? 0) + xBand.bandwidth() / 2 : (xPoint(i) ?? 0)),
     [isBand, xBand, xPoint],
   );
-  const yCenter = useCallback(
-    (i: number) => (yBand(i) ?? 0) + yBand.bandwidth() / 2,
-    [yBand],
-  );
+  const yCenter = useCallback((i: number) => (yBand(i) ?? 0) + yBand.bandwidth() / 2, [yBand]);
   const indexAtX = useCallback(
     (px: number) =>
       isBand ? indexAtBand(px, data.length, plotWidth) : nearestIndex(px, data.length, plotWidth),
@@ -398,7 +395,7 @@ export function useChartController({
       // keep enough headroom that the upward-lifted card never clips the top.
       tooltipTop: (() => {
         if (isHorizontal) {
-          return hoverIndex != null ? mTop + yCenter(hoverIndex) : mTop + 44;
+          return hoverIndex != null ? Math.max(mTop + 54, mTop + yCenter(hoverIndex)) : mTop + 54;
         }
         const floor = mTop + 44;
         if (hoverIndex == null) return floor;

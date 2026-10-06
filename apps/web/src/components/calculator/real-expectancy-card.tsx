@@ -120,130 +120,128 @@ export function RealExpectancyCard({
   const copyText = `Real Expectancy Analysis: Win Rate: ${safeWr}% | RR: 1:${safeRr} | Risk: $${safeRisk} | Paper EV: $${result.paperEv} | Friction: -$${result.totalFriction} | Real Net EV: $${result.realEv} (${result.netRMultiple >= 0 ? "+" : ""}${result.netRMultiple}R/trade) | Status: ${expectancyCategory.label}`;
 
   return (
-    <Card className="flex flex-col justify-between">
-      <div>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
-            Real Expectancy & Friction
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Compare theoretical Paper EV with Real Net EV after deducting broker commissions,
-            exchange fees, and execution slippage.
-          </p>
-        </CardHeader>
+    <Card className="flex flex-col">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+          Real Expectancy & Friction
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Compare theoretical Paper EV with Real Net EV after deducting broker commissions, exchange
+          fees, and execution slippage.
+        </p>
+      </CardHeader>
 
-        <CardContent className="space-y-3.5">
-          {/* 1º: WIN RATE (%) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Win rate (%)
-            </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={localWr || ""}
-              placeholder="45"
-              onFocus={() => setIsWrFocused(true)}
-              onBlur={() => setIsWrFocused(false)}
-              onChange={(e) => handleUpdate({ winRate: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
+      <CardContent className="space-y-3.5">
+        {/* 1º: WIN RATE (%) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Win rate (%)
+          </label>
+          <Input
+            type="number"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={localWr || ""}
+            placeholder="45"
+            onFocus={() => setIsWrFocused(true)}
+            onBlur={() => setIsWrFocused(false)}
+            onChange={(e) => handleUpdate({ winRate: Number(e.target.value) })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
 
-          {/* 2º: RISK TO REWARD (RR) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Risk to reward (1:X)
-            </label>
-            <Input
-              type="number"
-              step="0.1"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={localRr || ""}
-              placeholder="2.5"
-              onFocus={() => setIsRrFocused(true)}
-              onBlur={() => setIsRrFocused(false)}
-              onChange={(e) => handleUpdate({ riskReward: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
+        {/* 2º: RISK TO REWARD (RR) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Risk to reward (1:X)
+          </label>
+          <Input
+            type="number"
+            step="0.1"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={localRr || ""}
+            placeholder="2.5"
+            onFocus={() => setIsRrFocused(true)}
+            onBlur={() => setIsRrFocused(false)}
+            onChange={(e) => handleUpdate({ riskReward: Number(e.target.value) })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
 
-          {/* 3º: RISK DOLLARS ($) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Dollar risk per trade ($)
-            </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={localRisk || ""}
-              placeholder="1000"
-              onFocus={() => setIsRiskFocused(true)}
-              onBlur={() => setIsRiskFocused(false)}
-              onChange={(e) => handleUpdate({ riskDollars: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
+        {/* 3º: RISK DOLLARS ($) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Dollar risk per trade ($)
+          </label>
+          <Input
+            type="number"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={localRisk || ""}
+            placeholder="1000"
+            onFocus={() => setIsRiskFocused(true)}
+            onBlur={() => setIsRiskFocused(false)}
+            onChange={(e) => handleUpdate({ riskDollars: Number(e.target.value) })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
 
-          {/* 4º: FEE PER TRADE ($) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Fee per trade ($)
-            </label>
-            <Input
-              type="number"
-              min="0"
-              step="1"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={localFee !== undefined ? localFee : ""}
-              placeholder="5"
-              onFocus={() => setIsFeeFocused(true)}
-              onBlur={() => setIsFeeFocused(false)}
-              onChange={(e) => handleUpdate({ feePerTrade: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
+        {/* 4º: FEE PER TRADE ($) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Fee per trade ($)
+          </label>
+          <Input
+            type="number"
+            min="0"
+            step="1"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={localFee !== undefined ? localFee : ""}
+            placeholder="5"
+            onFocus={() => setIsFeeFocused(true)}
+            onBlur={() => setIsFeeFocused(false)}
+            onChange={(e) => handleUpdate({ feePerTrade: Number(e.target.value) })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
 
-          {/* 5º: SLIPPAGE PER TRADE ($) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Slippage per trade ($)
-            </label>
-            <Input
-              type="number"
-              min="0"
-              step="1"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={localSlip !== undefined ? localSlip : ""}
-              placeholder="10"
-              onFocus={() => setIsSlipFocused(true)}
-              onBlur={() => setIsSlipFocused(false)}
-              onChange={(e) => handleUpdate({ slippageDollars: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
-        </CardContent>
-      </div>
+        {/* 5º: SLIPPAGE PER TRADE ($) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Slippage per trade ($)
+          </label>
+          <Input
+            type="number"
+            min="0"
+            step="1"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={localSlip !== undefined ? localSlip : ""}
+            placeholder="10"
+            onFocus={() => setIsSlipFocused(true)}
+            onBlur={() => setIsSlipFocused(false)}
+            onChange={(e) => handleUpdate({ slippageDollars: Number(e.target.value) })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
+      </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
@@ -343,7 +341,7 @@ export function RealExpectancyCard({
               : 100;
 
             return (
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 p-2.5">
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/30 pt-3">
                 <div className="flex items-center gap-3">
                   <DitherGauge
                     size={80}
@@ -356,12 +354,22 @@ export function RealExpectancyCard({
                     <div className="flex items-center gap-1.5">
                       <span
                         className={cn(
-                          "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider font-mono uppercase",
+                          "size-1.5 rounded-full shrink-0",
                           result.realEv <= 0
-                            ? "bg-loss/15 text-loss border border-loss/30"
+                            ? "bg-loss"
                             : retentionRatio >= 0.75
-                              ? "bg-profit/15 text-profit border border-profit/30"
-                              : "bg-amber-500/15 text-amber-500 border border-amber-500/30",
+                              ? "bg-profit"
+                              : "bg-amber-500",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "font-mono text-xs font-semibold uppercase tracking-wider",
+                          result.realEv <= 0
+                            ? "text-loss"
+                            : retentionRatio >= 0.75
+                              ? "text-profit"
+                              : "text-amber-500",
                         )}
                       >
                         {result.realEv <= 0

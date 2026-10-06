@@ -86,7 +86,9 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
   }, [effectiveRiskDollars, stopPoints, instrument.multiplier, effectiveTargetPoints, microRatio]);
 
   // Calculate Risk / Reward percentage width for visual mini bar
-  const rrRatioNum = Number(sizing.riskRewardRatio ?? (isDefaultTarget && stopPoints > 0 ? "2.00" : "1.00"));
+  const rrRatioNum = Number(
+    sizing.riskRewardRatio ?? (isDefaultTarget && stopPoints > 0 ? "2.00" : "1.00"),
+  );
   const safeRrRatio = Number.isFinite(rrRatioNum) && rrRatioNum > 0 ? rrRatioNum : 1;
   const riskBarWidthPct = Math.max(15, Math.min(85, (1 / (1 + safeRrRatio)) * 100));
   const rewardBarWidthPct = 100 - riskBarWidthPct;
@@ -162,139 +164,137 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
   ]);
 
   return (
-    <Card className="flex flex-col justify-between">
-      <div>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
-              Position & Risk Sizing
-            </CardTitle>
+    <Card className="flex flex-col">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
+            Position & Risk Sizing
+          </CardTitle>
+          <span className="font-mono text-[11px] text-muted-foreground">
+            Futures · Quant Sizing
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground [text-wrap:pretty]">
+          Determine exact contracts from your technical chart stop and dollar risk.
+        </p>
+      </CardHeader>
+
+      <CardContent className="space-y-3.5">
+        {/* 1º: MARKET INSTRUMENT */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Market instrument
+            </label>
             <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-              Futures · Quant Sizing
+              {curr}
+              {instrument.multiplier}/pt
             </span>
           </div>
-          <p className="text-xs text-muted-foreground [text-wrap:pretty]">
-            Determine exact contracts from your technical chart stop and dollar risk.
-          </p>
-        </CardHeader>
-
-        <CardContent className="space-y-3.5">
-          {/* 1º: MARKET INSTRUMENT */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Market instrument
-              </label>
-              <span className="h-5 inline-flex items-center justify-center rounded border border-border/70 bg-muted/60 px-1.5 pt-[1px] font-mono text-[10px] font-medium leading-none text-muted-foreground">
-                {curr}
-                {instrument.multiplier}/pt
-              </span>
-            </div>
-            <div className="w-36">
-              <JournalAssetDropdown
-                currentAsset={instrument.id}
-                onSelectAsset={(val) => {
-                  if (val) handleInstrumentChange(val);
-                }}
-                triggerVariant="form"
-                alignCenter={true}
-                hideGeneralJournal={true}
-                showValues={true}
-                allowClear={false}
-                onlyCalculable={true}
-                align="end"
-                className="h-9 font-mono font-semibold"
-              />
-            </div>
+          <div className="w-36">
+            <JournalAssetDropdown
+              currentAsset={instrument.id}
+              onSelectAsset={(val) => {
+                if (val) handleInstrumentChange(val);
+              }}
+              triggerVariant="form"
+              alignCenter={true}
+              hideGeneralJournal={true}
+              showValues={true}
+              allowClear={false}
+              onlyCalculable={true}
+              align="end"
+              className="h-9 font-mono font-semibold"
+            />
           </div>
+        </div>
 
-          {/* 2º: MAX RISK */}
-          <div className="flex items-center justify-between gap-4">
+        {/* 2º: MAX RISK */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Max risk ({curr})
+          </label>
+          <Input
+            type="number"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={isRiskFocused ? riskInputText : effectiveRiskDollars || ""}
+            placeholder={costPerContract > 0 ? String(costPerContract) : "500"}
+            onFocus={() => {
+              setIsRiskFocused(true);
+              setRiskInputText(effectiveRiskDollars > 0 ? String(effectiveRiskDollars) : "");
+            }}
+            onChange={(e) => {
+              const text = e.target.value;
+              setRiskInputText(text);
+              const val = Number(text);
+              if (val >= costPerContract) {
+                onChange({ riskDollars: val });
+              }
+            }}
+            onBlur={() => {
+              setIsRiskFocused(false);
+              const val = Number(riskInputText);
+              if (costPerContract > 0 && val < costPerContract) {
+                // If margin does not cover 1 contract, snap input to the exact max loss
+                onChange({ riskDollars: costPerContract });
+                setRiskInputText(String(costPerContract));
+              } else if (val >= costPerContract) {
+                onChange({ riskDollars: val });
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
+
+        {/* 3º: STOP LOSS (PTS) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Stop loss (pts)
+          </label>
+          <Input
+            type="number"
+            step={instrument.tickSize}
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={stopPoints || ""}
+            placeholder="20.00"
+            onFocus={() => setIsStopFocused(true)}
+            onBlur={() => setIsStopFocused(false)}
+            onChange={(e) => handleStopPointsChange(Number(e.target.value))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
+
+        {/* 4º: TAKE PROFIT TARGET (OPTIONAL) */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col">
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Max risk ({curr})
+              Take profit target (pts)
             </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={isRiskFocused ? riskInputText : effectiveRiskDollars || ""}
-              placeholder={costPerContract > 0 ? String(costPerContract) : "500"}
-              onFocus={() => {
-                setIsRiskFocused(true);
-                setRiskInputText(effectiveRiskDollars > 0 ? String(effectiveRiskDollars) : "");
-              }}
-              onChange={(e) => {
-                const text = e.target.value;
-                setRiskInputText(text);
-                const val = Number(text);
-                if (val >= costPerContract) {
-                  onChange({ riskDollars: val });
-                }
-              }}
-              onBlur={() => {
-                setIsRiskFocused(false);
-                const val = Number(riskInputText);
-                if (costPerContract > 0 && val < costPerContract) {
-                  // If margin does not cover 1 contract, snap input to the exact max loss
-                  onChange({ riskDollars: costPerContract });
-                  setRiskInputText(String(costPerContract));
-                } else if (val >= costPerContract) {
-                  onChange({ riskDollars: val });
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
+            <span className="text-[10px] text-muted-foreground/70">Optional · 2:1 default</span>
           </div>
-
-          {/* 3º: STOP LOSS (PTS) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Stop loss (pts)
-            </label>
-            <Input
-              type="number"
-              step={instrument.tickSize}
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={stopPoints || ""}
-              placeholder="20.00"
-              onFocus={() => setIsStopFocused(true)}
-              onBlur={() => setIsStopFocused(false)}
-              onChange={(e) => handleStopPointsChange(Number(e.target.value))}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
-
-          {/* 4º: TAKE PROFIT TARGET (OPTIONAL) */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Take profit target (pts)
-              </label>
-              <span className="text-[10px] text-muted-foreground/70">Optional · 2:1 default</span>
-            </div>
-            <Input
-              type="number"
-              step={instrument.tickSize}
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={targetPoints || ""}
-              placeholder={stopPoints > 0 ? (stopPoints * 2).toFixed(2) : "Optional"}
-              onChange={(e) => onChange({ targetPoints: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
-        </CardContent>
-      </div>
+          <Input
+            type="number"
+            step={instrument.tickSize}
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={targetPoints || ""}
+            placeholder={stopPoints > 0 ? (stopPoints * 2).toFixed(2) : "Optional"}
+            onChange={(e) => onChange({ targetPoints: Number(e.target.value) })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
+      </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">

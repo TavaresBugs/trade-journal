@@ -377,200 +377,159 @@ export function CapitalSurvivalCard({
   });
 
   return (
-    <Card className="flex flex-col justify-between">
-      <div>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
-              Capital Survival &amp; Ruin Risk
-            </CardTitle>
-            <AccountModeToggle mode={mode} onChange={handleModeChange} />
-          </div>
-          <p className="text-xs text-muted-foreground [text-wrap:pretty]">
-            {mode === "funded"
-              ? "Calculates survival against your actual Drawdown Buffer, exposing the real cushion before breach."
-              : "Calculates survival on your personal capital, where risk directly impacts ruin probability."}
-          </p>
-        </CardHeader>
+    <Card className="flex flex-col">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
+            Capital Survival &amp; Ruin Risk
+          </CardTitle>
+          <AccountModeToggle mode={mode} onChange={handleModeChange} />
+        </div>
+        <p className="text-xs text-muted-foreground [text-wrap:pretty]">
+          {mode === "funded"
+            ? "Calculates survival against your actual Drawdown Buffer, exposing the real cushion before breach."
+            : "Calculates survival on your personal capital, where risk directly impacts ruin probability."}
+        </p>
+      </CardHeader>
 
-        <CardContent className="space-y-3.5">
-          {mode === "funded" ? (
-            <>
-              {/* 1º: NOMINAL ACCOUNT SIZE */}
-              <div className="flex items-center justify-between gap-4">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Nominal account ($)
-                </label>
-                <Input
-                  type="number"
-                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={nominalBalance || ""}
-                  placeholder="50000"
-                  onFocus={() => setIsNominalFocused(true)}
-                  onBlur={() => setIsNominalFocused(false)}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setNominalBalance(val);
-                    if (fundedRiskUnit === "%acc" && val > 0) {
-                      const num = parseFloat(fundedRiskInputStr);
-                      if (!isNaN(num)) {
-                        setFundedRiskDollars(Math.round(val * (num / 100)));
-                      }
+      <CardContent className="space-y-3.5">
+        {mode === "funded" ? (
+          <>
+            {/* 1º: NOMINAL ACCOUNT SIZE */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Nominal account ($)
+              </label>
+              <Input
+                type="number"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={nominalBalance || ""}
+                placeholder="50000"
+                onFocus={() => setIsNominalFocused(true)}
+                onBlur={() => setIsNominalFocused(false)}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setNominalBalance(val);
+                  if (fundedRiskUnit === "%acc" && val > 0) {
+                    const num = parseFloat(fundedRiskInputStr);
+                    if (!isNaN(num)) {
+                      setFundedRiskDollars(Math.round(val * (num / 100)));
                     }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      (e.target as HTMLInputElement).blur();
-                    }
-                  }}
-                />
-              </div>
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+            </div>
 
-              {/* 2º: MAX DRAWDOWN */}
-              <div className="flex items-center justify-between gap-4">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Max drawdown ($)
-                </label>
-                <Input
-                  type="number"
-                  step="100"
-                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={maxDrawdown || ""}
-                  placeholder="3000"
-                  onFocus={() => setIsDdFocused(true)}
-                  onBlur={() => setIsDdFocused(false)}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setMaxDrawdown(val);
-                    if (fundedRiskUnit === "%dd" && val > 0) {
-                      const num = parseFloat(fundedRiskInputStr);
-                      if (!isNaN(num)) {
-                        setFundedRiskDollars(Math.round(val * (num / 100)));
-                      }
+            {/* 2º: MAX DRAWDOWN */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Max drawdown ($)
+              </label>
+              <Input
+                type="number"
+                step="100"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={maxDrawdown || ""}
+                placeholder="3000"
+                onFocus={() => setIsDdFocused(true)}
+                onBlur={() => setIsDdFocused(false)}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setMaxDrawdown(val);
+                  if (fundedRiskUnit === "%dd" && val > 0) {
+                    const num = parseFloat(fundedRiskInputStr);
+                    if (!isNaN(num)) {
+                      setFundedRiskDollars(Math.round(val * (num / 100)));
                     }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      (e.target as HTMLInputElement).blur();
-                    }
-                  }}
-                />
-              </div>
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+            </div>
 
-              {/* 3º: RISK PER TRADE WITH INTERACTIVE TOGGLE */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Risk per trade
-                    </label>
-                    <UnitToggle
-                      units={["$", "%dd", "%acc"] as const}
-                      value={fundedRiskUnit}
-                      onChange={handleFundedUnitChange}
-                      labels={{ "%dd": "% DD", "%acc": "% Acc" }}
-                    />
-                  </div>
-                  <span className="text-[11px] font-mono text-muted-foreground">
-                    {fundedRiskUnit === "$" && (
-                      <>
-                        {fundedResult.nominalRiskPercent}% nominal ·{" "}
-                        <span
-                          className={cn(
-                            "font-semibold",
-                            fundedResult.cushionRiskPercent > 15
-                              ? "text-loss"
-                              : fundedResult.cushionRiskPercent > 10
-                                ? "text-amber-500"
-                                : "text-profit",
-                          )}
-                        >
-                          {fundedResult.cushionRiskPercent}% of DD cushion
-                        </span>
-                      </>
-                    )}
-                    {fundedRiskUnit === "%dd" && (
-                      <>
-                        =${safeFundedRisk.toLocaleString()} per trade ·{" "}
-                        <span className="text-muted-foreground">
-                          {fundedResult.nominalRiskPercent}% of nominal
-                        </span>
-                      </>
-                    )}
-                    {fundedRiskUnit === "%acc" && (
-                      <>
-                        =${safeFundedRisk.toLocaleString()} per trade ·{" "}
-                        <span
-                          className={cn(
-                            "font-semibold",
-                            fundedResult.cushionRiskPercent > 15
-                              ? "text-loss"
-                              : fundedResult.cushionRiskPercent > 10
-                                ? "text-amber-500"
-                                : "text-profit",
-                          )}
-                        >
-                          {fundedResult.cushionRiskPercent}% of DD cushion
-                        </span>
-                      </>
-                    )}
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">
-                    {fundedRiskUnit === "$" ? "$" : "%"}
-                  </span>
-                  <Input
-                    type="number"
-                    step={fundedRiskUnit === "$" ? "25" : "0.5"}
-                    className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pl-6 pr-2"
-                    value={fundedRiskInputStr}
-                    placeholder={
-                      fundedRiskUnit === "$" ? "300" : fundedRiskUnit === "%dd" ? "10.0" : "0.6"
-                    }
-                    onFocus={() => setIsFundedRiskFocused(true)}
-                    onBlur={() => setIsFundedRiskFocused(false)}
-                    onChange={(e) => handleFundedRiskInputChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        (e.target as HTMLInputElement).blur();
-                      }
-                    }}
+            {/* 3º: RISK PER TRADE WITH INTERACTIVE TOGGLE */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Risk per trade
+                  </label>
+                  <UnitToggle
+                    units={["$", "%dd", "%acc"] as const}
+                    value={fundedRiskUnit}
+                    onChange={handleFundedUnitChange}
+                    labels={{ "%dd": "% DD", "%acc": "% Acc" }}
                   />
                 </div>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  {fundedRiskUnit === "$" && (
+                    <>
+                      {fundedResult.nominalRiskPercent}% nominal ·{" "}
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          fundedResult.cushionRiskPercent > 15
+                            ? "text-loss"
+                            : fundedResult.cushionRiskPercent > 10
+                              ? "text-amber-500"
+                              : "text-profit",
+                        )}
+                      >
+                        {fundedResult.cushionRiskPercent}% of DD cushion
+                      </span>
+                    </>
+                  )}
+                  {fundedRiskUnit === "%dd" && (
+                    <>
+                      =${safeFundedRisk.toLocaleString()} per trade ·{" "}
+                      <span className="text-muted-foreground">
+                        {fundedResult.nominalRiskPercent}% of nominal
+                      </span>
+                    </>
+                  )}
+                  {fundedRiskUnit === "%acc" && (
+                    <>
+                      =${safeFundedRisk.toLocaleString()} per trade ·{" "}
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          fundedResult.cushionRiskPercent > 15
+                            ? "text-loss"
+                            : fundedResult.cushionRiskPercent > 10
+                              ? "text-amber-500"
+                              : "text-profit",
+                        )}
+                      >
+                        {fundedResult.cushionRiskPercent}% of DD cushion
+                      </span>
+                    </>
+                  )}
+                </span>
               </div>
-            </>
-          ) : (
-            <>
-              {/* LIVE (CASH) MODE INPUTS */}
-              {/* 1º: ACCOUNT BALANCE */}
-              <div className="flex items-center justify-between gap-4">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Account balance ($)
-                </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">
+                  {fundedRiskUnit === "$" ? "$" : "%"}
+                </span>
                 <Input
                   type="number"
-                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={liveBalance || ""}
-                  placeholder="50000"
-                  onFocus={() => setIsLiveBalanceFocused(true)}
-                  onBlur={() => setIsLiveBalanceFocused(false)}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    setLiveBalance(v);
-                    if (v > 0) {
-                      setLiveMaxDd(Math.round(v * 0.5));
-                      if (liveRiskUnit === "%") {
-                        const d = Math.round(v * (liveRiskPercent / 100));
-                        setLiveDollarRisk(d);
-                      } else {
-                        const p = Number(((liveDollarRisk / v) * 100).toFixed(2));
-                        setLiveRiskPercent(p);
-                        onChange?.({ riskPercent: p });
-                      }
-                    }
-                    onChange?.({ balance: v });
-                  }}
+                  step={fundedRiskUnit === "$" ? "25" : "0.5"}
+                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pl-6 pr-2"
+                  value={fundedRiskInputStr}
+                  placeholder={
+                    fundedRiskUnit === "$" ? "300" : fundedRiskUnit === "%dd" ? "10.0" : "0.6"
+                  }
+                  onFocus={() => setIsFundedRiskFocused(true)}
+                  onBlur={() => setIsFundedRiskFocused(false)}
+                  onChange={(e) => handleFundedRiskInputChange(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       (e.target as HTMLInputElement).blur();
@@ -578,104 +537,143 @@ export function CapitalSurvivalCard({
                   }}
                 />
               </div>
-
-              {/* 2º: MAX DRAWDOWN LIMIT */}
-              <div className="flex items-center justify-between gap-4">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Max drawdown limit ($)
-                </label>
-                <Input
-                  type="number"
-                  step="100"
-                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={liveMaxDd || ""}
-                  placeholder="25000"
-                  onFocus={() => setIsDdFocused(true)}
-                  onBlur={() => setIsDdFocused(false)}
-                  onChange={(e) => setLiveMaxDd(Number(e.target.value))}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      (e.target as HTMLInputElement).blur();
+            </div>
+          </>
+        ) : (
+          <>
+            {/* LIVE (CASH) MODE INPUTS */}
+            {/* 1º: ACCOUNT BALANCE */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Account balance ($)
+              </label>
+              <Input
+                type="number"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={liveBalance || ""}
+                placeholder="50000"
+                onFocus={() => setIsLiveBalanceFocused(true)}
+                onBlur={() => setIsLiveBalanceFocused(false)}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setLiveBalance(v);
+                  if (v > 0) {
+                    setLiveMaxDd(Math.round(v * 0.5));
+                    if (liveRiskUnit === "%") {
+                      const d = Math.round(v * (liveRiskPercent / 100));
+                      setLiveDollarRisk(d);
+                    } else {
+                      const p = Number(((liveDollarRisk / v) * 100).toFixed(2));
+                      setLiveRiskPercent(p);
+                      onChange?.({ riskPercent: p });
                     }
-                  }}
-                />
-              </div>
+                  }
+                  onChange?.({ balance: v });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+            </div>
 
-              {/* 3º: RISK PER TRADE WITH INTERACTIVE TOGGLE */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Risk per trade
-                    </label>
-                    <UnitToggle
-                      units={["$", "%"] as const}
-                      value={liveRiskUnit}
-                      onChange={handleLiveUnitChange}
-                    />
-                  </div>
-                  <span className="text-[11px] font-mono text-muted-foreground">
-                    {liveRiskUnit === "$" ? (
-                      <>
-                        {safeLiveRisk.toFixed(2)}% of balance ·{" "}
-                        <span
-                          className={cn(
-                            "font-semibold",
-                            liveRuinProbability > 15
-                              ? "text-loss"
-                              : liveRuinProbability > 5
-                                ? "text-amber-500"
-                                : "text-profit",
-                          )}
-                        >
-                          {liveRuinProbability}% 50% DD risk
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        =$<MonetaryValue>{liveDollarRisk.toLocaleString("en-US")}</MonetaryValue>{" "}
-                        per trade ·{" "}
-                        <span
-                          className={cn(
-                            "font-semibold",
-                            liveRuinProbability > 15
-                              ? "text-loss"
-                              : liveRuinProbability > 5
-                                ? "text-amber-500"
-                                : "text-profit",
-                          )}
-                        >
-                          {liveRuinProbability}% 50% DD risk
-                        </span>
-                      </>
-                    )}
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">
-                    {liveRiskUnit === "$" ? "$" : "%"}
-                  </span>
-                  <Input
-                    type="number"
-                    step={liveRiskUnit === "$" ? "25" : "0.25"}
-                    className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pl-6 pr-2"
-                    value={liveRiskInputStr}
-                    placeholder={liveRiskUnit === "$" ? "250" : "1.0"}
-                    onFocus={() => setIsLiveRiskFocused(true)}
-                    onBlur={() => setIsLiveRiskFocused(false)}
-                    onChange={(e) => handleLiveRiskInputChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        (e.target as HTMLInputElement).blur();
-                      }
-                    }}
+            {/* 2º: MAX DRAWDOWN LIMIT */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Max drawdown limit ($)
+              </label>
+              <Input
+                type="number"
+                step="100"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={liveMaxDd || ""}
+                placeholder="25000"
+                onFocus={() => setIsDdFocused(true)}
+                onBlur={() => setIsDdFocused(false)}
+                onChange={(e) => setLiveMaxDd(Number(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+            </div>
+
+            {/* 3º: RISK PER TRADE WITH INTERACTIVE TOGGLE */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Risk per trade
+                  </label>
+                  <UnitToggle
+                    units={["$", "%"] as const}
+                    value={liveRiskUnit}
+                    onChange={handleLiveUnitChange}
                   />
                 </div>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  {liveRiskUnit === "$" ? (
+                    <>
+                      {safeLiveRisk.toFixed(2)}% of balance ·{" "}
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          liveRuinProbability > 15
+                            ? "text-loss"
+                            : liveRuinProbability > 5
+                              ? "text-amber-500"
+                              : "text-profit",
+                        )}
+                      >
+                        {liveRuinProbability}% 50% DD risk
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      =$<MonetaryValue>{liveDollarRisk.toLocaleString("en-US")}</MonetaryValue> per
+                      trade ·{" "}
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          liveRuinProbability > 15
+                            ? "text-loss"
+                            : liveRuinProbability > 5
+                              ? "text-amber-500"
+                              : "text-profit",
+                        )}
+                      >
+                        {liveRuinProbability}% 50% DD risk
+                      </span>
+                    </>
+                  )}
+                </span>
               </div>
-            </>
-          )}
-        </CardContent>
-      </div>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">
+                  {liveRiskUnit === "$" ? "$" : "%"}
+                </span>
+                <Input
+                  type="number"
+                  step={liveRiskUnit === "$" ? "25" : "0.25"}
+                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pl-6 pr-2"
+                  value={liveRiskInputStr}
+                  placeholder={liveRiskUnit === "$" ? "250" : "1.0"}
+                  onFocus={() => setIsLiveRiskFocused(true)}
+                  onBlur={() => setIsLiveRiskFocused(false)}
+                  onChange={(e) => handleLiveRiskInputChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
@@ -755,7 +753,7 @@ export function CapitalSurvivalCard({
               ruinProb > 15 ? "red" : ruinProb > 5 ? "orange" : "green";
 
             return (
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 p-2.5">
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/30 pt-3">
                 <div className="flex items-center gap-3">
                   <DitherGauge
                     size={80}
@@ -768,12 +766,18 @@ export function CapitalSurvivalCard({
                     <div className="flex items-center gap-1.5">
                       <span
                         className={cn(
-                          "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider font-mono uppercase",
-                          ruinProb <= 5 && "bg-profit/15 text-profit border border-profit/30",
-                          ruinProb > 5 &&
-                            ruinProb <= 15 &&
-                            "bg-amber-500/15 text-amber-500 border border-amber-500/30",
-                          ruinProb > 15 && "bg-loss/15 text-loss border border-loss/30",
+                          "size-1.5 rounded-full shrink-0",
+                          ruinProb <= 5 ? "bg-profit" : ruinProb <= 15 ? "bg-amber-500" : "bg-loss",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "font-mono text-xs font-semibold uppercase tracking-wider",
+                          ruinProb <= 5
+                            ? "text-profit"
+                            : ruinProb <= 15
+                              ? "text-amber-500"
+                              : "text-loss",
                         )}
                       >
                         {ruinProb <= 5

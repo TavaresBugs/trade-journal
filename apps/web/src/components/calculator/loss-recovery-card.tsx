@@ -347,155 +347,110 @@ export function LossRecoveryCard({
   });
 
   return (
-    <Card className="flex flex-col justify-between">
-      <div>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
-              Loss Recovery Asymmetry
-            </CardTitle>
-            <AccountModeToggle mode={mode} onChange={handleModeChange} />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {mode === "funded"
-              ? "The cushion trap: drawdowns consume your strict trailing/EOD buffer, creating severe recovery asymmetry."
-              : "Losses and gains are not equal: the mathematical asymmetry required to recover back to breakeven."}
-          </p>
-        </CardHeader>
+    <Card className="flex flex-col">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+            Loss Recovery Asymmetry
+          </CardTitle>
+          <AccountModeToggle mode={mode} onChange={handleModeChange} />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {mode === "funded"
+            ? "The cushion trap: drawdowns consume your strict trailing/EOD buffer, creating severe recovery asymmetry."
+            : "Losses and gains are not equal: the mathematical asymmetry required to recover back to breakeven."}
+        </p>
+      </CardHeader>
 
-        <CardContent className="space-y-3.5">
-          {mode === "funded" ? (
-            <>
-              {/* 1º: NOMINAL ACCOUNT ($) */}
-              <div className="flex items-center justify-between gap-4">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Nominal account ($)
-                </label>
-                <Input
-                  type="number"
-                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={nominalBalance || ""}
-                  placeholder="50000"
-                  onFocus={() => setIsNominalFocused(true)}
-                  onBlur={() => setIsNominalFocused(false)}
-                  onChange={(e) => setNominalBalance(Number(e.target.value))}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      (e.target as HTMLInputElement).blur();
-                    }
-                  }}
-                />
-              </div>
+      <CardContent className="space-y-3.5">
+        {mode === "funded" ? (
+          <>
+            {/* 1º: NOMINAL ACCOUNT ($) */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Nominal account ($)
+              </label>
+              <Input
+                type="number"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={nominalBalance || ""}
+                placeholder="50000"
+                onFocus={() => setIsNominalFocused(true)}
+                onBlur={() => setIsNominalFocused(false)}
+                onChange={(e) => setNominalBalance(Number(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+            </div>
 
-              {/* 2º: MAX DRAWDOWN LIMIT ($) */}
-              <div className="flex items-center justify-between gap-4">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Max drawdown ($)
-                </label>
-                <Input
-                  type="number"
-                  step="100"
-                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={maxDrawdown || ""}
-                  placeholder="3000"
-                  onFocus={() => setIsMaxDdFocused(true)}
-                  onBlur={() => setIsMaxDdFocused(false)}
-                  onChange={(e) => setMaxDrawdown(Number(e.target.value))}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      (e.target as HTMLInputElement).blur();
-                    }
-                  }}
-                />
-              </div>
+            {/* 2º: MAX DRAWDOWN LIMIT ($) */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Max drawdown ($)
+              </label>
+              <Input
+                type="number"
+                step="100"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={maxDrawdown || ""}
+                placeholder="3000"
+                onFocus={() => setIsMaxDdFocused(true)}
+                onBlur={() => setIsMaxDdFocused(false)}
+                onChange={(e) => setMaxDrawdown(Number(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+            </div>
 
-              {/* 3º: CUSHION DRAWDOWN (% or $) */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Cushion drawdown
-                    </label>
-                    <UnitToggle
-                      units={["%", "$"] as const}
-                      value={cushionUnit}
-                      onChange={handleFundedUnitChange}
-                    />
-                  </div>
-                  <span className="text-[11px] font-mono text-muted-foreground">
-                    -${cushionDollarLoss.toLocaleString("en-US")} loss ·{" "}
-                    <span
-                      className={cn(
-                        "font-semibold",
-                        safeCushionDd > 40
-                          ? "text-loss"
-                          : safeCushionDd > 20
-                            ? "text-amber-500"
-                            : "text-profit",
-                      )}
-                    >
-                      {safeCushionDd}% of DD cushion
-                    </span>{" "}
-                    (-{nominalLossPercent}% nominal)
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">
-                    {cushionUnit === "%" ? "%" : "$"}
-                  </span>
-                  <Input
-                    type="number"
-                    step={cushionUnit === "%" ? "5" : "100"}
-                    className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pl-6 pr-2"
-                    value={cushionInputStr}
-                    placeholder={cushionUnit === "%" ? "30" : "900"}
-                    onFocus={() => setIsCushionFocused(true)}
-                    onBlur={() => setIsCushionFocused(false)}
-                    onChange={(e) => handleFundedInputChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        (e.target as HTMLInputElement).blur();
-                      }
-                    }}
+            {/* 3º: CUSHION DRAWDOWN (% or $) */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Cushion drawdown
+                  </label>
+                  <UnitToggle
+                    units={["%", "$"] as const}
+                    value={cushionUnit}
+                    onChange={handleFundedUnitChange}
                   />
                 </div>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  -${cushionDollarLoss.toLocaleString("en-US")} loss ·{" "}
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      safeCushionDd > 40
+                        ? "text-loss"
+                        : safeCushionDd > 20
+                          ? "text-amber-500"
+                          : "text-profit",
+                    )}
+                  >
+                    {safeCushionDd}% of DD cushion
+                  </span>{" "}
+                  (-{nominalLossPercent}% nominal)
+                </span>
               </div>
-            </>
-          ) : (
-            <>
-              {/* LIVE CASH MODE */}
-              {/* 1º: ACCOUNT BALANCE ($) */}
-              <div className="flex items-center justify-between gap-4">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Account balance ($)
-                </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">
+                  {cushionUnit === "%" ? "%" : "$"}
+                </span>
                 <Input
                   type="number"
-                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={liveCapital || ""}
-                  placeholder="50000"
-                  onFocus={() => setIsLiveCapitalFocused(true)}
-                  onBlur={() => setIsLiveCapitalFocused(false)}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    setLiveCapital(v);
-                    if (v > 0) {
-                      setLiveMaxDd(Math.round(v * 0.5));
-                      if (liveUnit === "$") {
-                        const num = parseFloat(liveInputStr);
-                        if (!isNaN(num)) {
-                          const p = Number(((num / v) * 100).toFixed(1));
-                          setLiveDdPercent(p);
-                          onChange?.({ drawdownPercent: p, initialCapital: v });
-                        }
-                      } else {
-                        const num = parseFloat(liveInputStr);
-                        if (!isNaN(num)) {
-                          onChange?.({ drawdownPercent: num, initialCapital: v });
-                        }
-                      }
-                    }
-                  }}
+                  step={cushionUnit === "%" ? "5" : "100"}
+                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pl-6 pr-2"
+                  value={cushionInputStr}
+                  placeholder={cushionUnit === "%" ? "30" : "900"}
+                  onFocus={() => setIsCushionFocused(true)}
+                  onBlur={() => setIsCushionFocused(false)}
+                  onChange={(e) => handleFundedInputChange(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       (e.target as HTMLInputElement).blur();
@@ -503,84 +458,127 @@ export function LossRecoveryCard({
                   }}
                 />
               </div>
-
-              {/* 2º: MAX DRAWDOWN LIMIT ($) */}
-              <div className="flex items-center justify-between gap-4">
-                <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Max drawdown limit ($)
-                </label>
-                <Input
-                  type="number"
-                  step="100"
-                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  value={liveMaxDd || ""}
-                  placeholder="25000"
-                  onFocus={() => setIsLiveMaxDdFocused(true)}
-                  onBlur={() => setIsLiveMaxDdFocused(false)}
-                  onChange={(e) => setLiveMaxDd(Number(e.target.value))}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      (e.target as HTMLInputElement).blur();
-                    }
-                  }}
-                />
-              </div>
-
-              {/* 3º: CURRENT DRAWDOWN (% or $) */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Account drawdown
-                    </label>
-                    <UnitToggle
-                      units={["%", "$"] as const}
-                      value={liveUnit}
-                      onChange={handleLiveUnitChange}
-                    />
-                  </div>
-                  <span className="text-[11px] font-mono text-muted-foreground">
-                    -${liveDollarLoss.toLocaleString("en-US")} loss ·{" "}
-                    <span
-                      className={cn(
-                        "font-semibold",
-                        liveLimitLossPercent > 40
-                          ? "text-loss"
-                          : liveLimitLossPercent > 20
-                            ? "text-amber-500"
-                            : "text-profit",
-                      )}
-                    >
-                      {liveLimitLossPercent}% of DD limit
-                    </span>{" "}
-                    (${remainingLiveBuffer.toLocaleString("en-US")} buffer left)
-                  </span>
-                </div>
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">
-                    {liveUnit === "%" ? "%" : "$"}
-                  </span>
-                  <Input
-                    type="number"
-                    step={liveUnit === "%" ? "5" : "500"}
-                    className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pl-6 pr-2"
-                    value={liveInputStr}
-                    placeholder={liveUnit === "%" ? "30" : "15000"}
-                    onFocus={() => setIsLiveDdFocused(true)}
-                    onBlur={() => setIsLiveDdFocused(false)}
-                    onChange={(e) => handleLiveInputChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        (e.target as HTMLInputElement).blur();
+            </div>
+          </>
+        ) : (
+          <>
+            {/* LIVE CASH MODE */}
+            {/* 1º: ACCOUNT BALANCE ($) */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Account balance ($)
+              </label>
+              <Input
+                type="number"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={liveCapital || ""}
+                placeholder="50000"
+                onFocus={() => setIsLiveCapitalFocused(true)}
+                onBlur={() => setIsLiveCapitalFocused(false)}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setLiveCapital(v);
+                  if (v > 0) {
+                    setLiveMaxDd(Math.round(v * 0.5));
+                    if (liveUnit === "$") {
+                      const num = parseFloat(liveInputStr);
+                      if (!isNaN(num)) {
+                        const p = Number(((num / v) * 100).toFixed(1));
+                        setLiveDdPercent(p);
+                        onChange?.({ drawdownPercent: p, initialCapital: v });
                       }
-                    }}
+                    } else {
+                      const num = parseFloat(liveInputStr);
+                      if (!isNaN(num)) {
+                        onChange?.({ drawdownPercent: num, initialCapital: v });
+                      }
+                    }
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+            </div>
+
+            {/* 2º: MAX DRAWDOWN LIMIT ($) */}
+            <div className="flex items-center justify-between gap-4">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Max drawdown limit ($)
+              </label>
+              <Input
+                type="number"
+                step="100"
+                className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={liveMaxDd || ""}
+                placeholder="25000"
+                onFocus={() => setIsLiveMaxDdFocused(true)}
+                onBlur={() => setIsLiveMaxDdFocused(false)}
+                onChange={(e) => setLiveMaxDd(Number(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+            </div>
+
+            {/* 3º: CURRENT DRAWDOWN (% or $) */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Account drawdown
+                  </label>
+                  <UnitToggle
+                    units={["%", "$"] as const}
+                    value={liveUnit}
+                    onChange={handleLiveUnitChange}
                   />
                 </div>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  -${liveDollarLoss.toLocaleString("en-US")} loss ·{" "}
+                  <span
+                    className={cn(
+                      "font-semibold",
+                      liveLimitLossPercent > 40
+                        ? "text-loss"
+                        : liveLimitLossPercent > 20
+                          ? "text-amber-500"
+                          : "text-profit",
+                    )}
+                  >
+                    {liveLimitLossPercent}% of DD limit
+                  </span>{" "}
+                  (${remainingLiveBuffer.toLocaleString("en-US")} buffer left)
+                </span>
               </div>
-            </>
-          )}
-        </CardContent>
-      </div>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">
+                  {liveUnit === "%" ? "%" : "$"}
+                </span>
+                <Input
+                  type="number"
+                  step={liveUnit === "%" ? "5" : "500"}
+                  className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pl-6 pr-2"
+                  value={liveInputStr}
+                  placeholder={liveUnit === "%" ? "30" : "15000"}
+                  onFocus={() => setIsLiveDdFocused(true)}
+                  onBlur={() => setIsLiveDdFocused(false)}
+                  onChange={(e) => handleLiveInputChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
@@ -690,7 +688,7 @@ export function LossRecoveryCard({
               currentDd > 40 ? "red" : currentDd > 20 ? "orange" : "green";
 
             return (
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 p-2.5">
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/30 pt-3">
                 <div className="flex items-center gap-3">
                   <DitherGauge
                     size={80}
@@ -703,16 +701,28 @@ export function LossRecoveryCard({
                     <div className="flex items-center gap-1.5">
                       <span
                         className={cn(
-                          "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider font-mono uppercase",
-                          currentDd <= 20 && "bg-profit/15 text-profit border border-profit/30",
-                          currentDd > 20 &&
-                            currentDd <= 40 &&
-                            "bg-amber-500/15 text-amber-500 border border-amber-500/30",
-                          currentDd > 40 && "bg-loss/15 text-loss border border-loss/30",
+                          "size-1.5 rounded-full shrink-0",
+                          currentDd <= 20
+                            ? "bg-profit"
+                            : currentDd <= 40
+                              ? "bg-amber-500"
+                              : "bg-loss",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "font-mono text-xs font-semibold uppercase tracking-wider",
+                          currentDd <= 20
+                            ? "text-profit"
+                            : currentDd <= 40
+                              ? "text-amber-500"
+                              : "text-loss",
                         )}
                       >
                         {currentDd <= 20
-                          ? mode === "funded" ? "Manageable Cushion" : "Manageable Loss"
+                          ? mode === "funded"
+                            ? "Manageable Cushion"
+                            : "Manageable Loss"
                           : currentDd <= 40
                             ? "Steep Asymmetry"
                             : "Exponential Trap"}

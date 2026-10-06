@@ -8,6 +8,7 @@ import { MonetaryValue } from "@/components/privacy";
 import { cn } from "@/lib/utils";
 import type { CalculatorState } from "@/lib/use-calculator-state";
 import { FormulaHud } from "./shared";
+import { DitherRatioBar } from "@/components/dither-kit";
 
 interface EvCalculatorCardProps {
   values: CalculatorState["ev"];
@@ -50,105 +51,103 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
   const copyText = `EV: ${evFormatted}/eval (${roiFormatted} ROI) | Payout: $${avgPayout.toLocaleString("en-US")} (${payoutChance}%) | Cost: $${cost} | Pass: ${passRate}% (Breakeven: ${breakevenPassRate}%)`;
 
   return (
-    <Card className="flex flex-col justify-between">
-      <div>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
-            EV Calculator
-          </CardTitle>
-          <p className="text-xs text-muted-foreground [text-wrap:pretty]">
-            Expected Value per Eval:{" "}
-            <span className="font-mono text-[11px] font-medium text-foreground/80">
-              (Pass Rate × Payout Chance × Avg Payout) − Eval Cost
-            </span>
-          </p>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-x-8 gap-y-3.5 sm:grid-cols-2">
-          {/* 1º: EVAL PASS RATE (%) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Eval pass rate (%)
-            </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={passRate || ""}
-              placeholder="40"
-              onFocus={() => setIsPassFocused(true)}
-              onBlur={() => setIsPassFocused(false)}
-              onChange={(e) => onChange({ passRate: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
+    <Card className="flex flex-col">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
+          EV Calculator
+        </CardTitle>
+        <p className="text-xs text-muted-foreground [text-wrap:pretty]">
+          Expected Value per Eval:{" "}
+          <span className="font-mono text-[11px] font-medium text-foreground/80">
+            (Pass Rate × Payout Chance × Avg Payout) − Eval Cost
+          </span>
+        </p>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 gap-x-8 gap-y-3.5 sm:grid-cols-2">
+        {/* 1º: EVAL PASS RATE (%) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Eval pass rate (%)
+          </label>
+          <Input
+            type="number"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={passRate || ""}
+            placeholder="40"
+            onFocus={() => setIsPassFocused(true)}
+            onBlur={() => setIsPassFocused(false)}
+            onChange={(e) => onChange({ passRate: Number(e.target.value) })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
 
-          {/* 2º: PAYOUT CHANCE (%) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Payout chance (%)
-            </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={payoutChance || ""}
-              placeholder="40"
-              onFocus={() => setIsPayoutChanceFocused(true)}
-              onBlur={() => setIsPayoutChanceFocused(false)}
-              onChange={(e) => onChange({ payoutChance: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
+        {/* 2º: PAYOUT CHANCE (%) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Payout chance (%)
+          </label>
+          <Input
+            type="number"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={payoutChance || ""}
+            placeholder="40"
+            onFocus={() => setIsPayoutChanceFocused(true)}
+            onBlur={() => setIsPayoutChanceFocused(false)}
+            onChange={(e) => onChange({ payoutChance: Number(e.target.value) })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
 
-          {/* 3º: AVERAGE PAYOUT ($) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Average payout ($)
-            </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={avgPayout || ""}
-              placeholder="2000"
-              onFocus={() => setIsAvgPayoutFocused(true)}
-              onBlur={() => setIsAvgPayoutFocused(false)}
-              onChange={(e) => onChange({ avgPayout: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
+        {/* 3º: AVERAGE PAYOUT ($) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Average payout ($)
+          </label>
+          <Input
+            type="number"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={avgPayout || ""}
+            placeholder="2000"
+            onFocus={() => setIsAvgPayoutFocused(true)}
+            onBlur={() => setIsAvgPayoutFocused(false)}
+            onChange={(e) => onChange({ avgPayout: Number(e.target.value) })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
 
-          {/* 4º: EVAL COST ($) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Eval cost ($)
-            </label>
-            <Input
-              type="number"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={cost || ""}
-              placeholder="89"
-              onFocus={() => setIsCostFocused(true)}
-              onBlur={() => setIsCostFocused(false)}
-              onChange={(e) => onChange({ cost: Number(e.target.value) })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
-        </CardContent>
-      </div>
+        {/* 4º: EVAL COST ($) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Eval cost ($)
+          </label>
+          <Input
+            type="number"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={cost || ""}
+            placeholder="89"
+            onFocus={() => setIsCostFocused(true)}
+            onBlur={() => setIsCostFocused(false)}
+            onChange={(e) => onChange({ cost: Number(e.target.value) })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
+      </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
@@ -269,6 +268,26 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
                 </MonetaryValue>
               </span>
             </div>
+          </div>
+
+          {/* DITHER RATIO BAR: COST DRAG VS EXPECTED PAYOFF */}
+          <div className="mt-3 space-y-1.5 border-t border-border/40 pt-2.5">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span className="uppercase tracking-wider">Cost Drag vs Expected Payoff</span>
+              <span className="font-mono text-[10px]">
+                {evResult > 0
+                  ? `+${(evResult / (cost || 1)).toFixed(1)}x payoff coverage (${roiFormatted} ROI)`
+                  : "Negative Expectancy"}
+              </span>
+            </div>
+            <DitherRatioBar
+              order="loss-win"
+              winValue={Math.max(0, evResult)}
+              lossValue={cost}
+              height={8}
+              bloom="low"
+              className="rounded-full overflow-hidden"
+            />
           </div>
         </FormulaHud>
       </CardContent>

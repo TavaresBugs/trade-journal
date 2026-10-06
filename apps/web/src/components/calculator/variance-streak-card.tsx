@@ -121,68 +121,66 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
   }: ${displayProb}% | Fallacy Alert: Each trade is independent (${safeWr}% win prob).`;
 
   return (
-    <Card className="flex flex-col justify-between">
-      <div>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
-            Variance & Streak Predictor
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Calculate the exact statistical probability of consecutive losing streaks and inoculate
-            against the Gambler&apos;s Fallacy.
-          </p>
-        </CardHeader>
+    <Card className="flex flex-col">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
+          Variance & Streak Predictor
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Calculate the exact statistical probability of consecutive losing streaks and inoculate
+          against the Gambler&apos;s Fallacy.
+        </p>
+      </CardHeader>
 
-        <CardContent className="space-y-3.5">
-          {/* 1º: WIN RATE (%) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Win rate (%)
-            </label>
-            <Input
-              type="number"
-              min="1"
-              max="99"
-              step="0.5"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={localWr || ""}
-              placeholder="45"
-              onFocus={() => setIsWrFocused(true)}
-              onBlur={() => setIsWrFocused(false)}
-              onChange={(e) => handleWrChange(Number(e.target.value))}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
+      <CardContent className="space-y-3.5">
+        {/* 1º: WIN RATE (%) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Win rate (%)
+          </label>
+          <Input
+            type="number"
+            min="1"
+            max="99"
+            step="0.5"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={localWr || ""}
+            placeholder="45"
+            onFocus={() => setIsWrFocused(true)}
+            onBlur={() => setIsWrFocused(false)}
+            onChange={(e) => handleWrChange(Number(e.target.value))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
 
-          {/* 2º: SAMPLE SIZE (TRADES) */}
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Sample size (trades)
-            </label>
-            <Input
-              type="number"
-              min="10"
-              max="1000"
-              step="25"
-              className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              value={localSample || ""}
-              placeholder="100"
-              onFocus={() => setIsSampleFocused(true)}
-              onBlur={() => setIsSampleFocused(false)}
-              onChange={(e) => handleSampleChange(Number(e.target.value))}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          </div>
-        </CardContent>
-      </div>
+        {/* 2º: SAMPLE SIZE (TRADES) */}
+        <div className="flex items-center justify-between gap-4">
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Sample size (trades)
+          </label>
+          <Input
+            type="number"
+            min="10"
+            max="1000"
+            step="25"
+            className="h-9 w-36 text-center font-mono tnum [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            value={localSample || ""}
+            placeholder="100"
+            onFocus={() => setIsSampleFocused(true)}
+            onBlur={() => setIsSampleFocused(false)}
+            onChange={(e) => handleSampleChange(Number(e.target.value))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
+      </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
       <CardContent className="border-t border-border/70 pt-4">
@@ -253,7 +251,7 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
               displayProb > 60 ? "red" : displayProb > 25 ? "orange" : "green";
 
             return (
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/20 p-2.5">
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/30 pt-3">
                 <div className="flex items-center gap-3">
                   <DitherGauge
                     size={80}
@@ -266,12 +264,22 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
                     <div className="flex items-center gap-1.5">
                       <span
                         className={cn(
-                          "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider font-mono uppercase",
-                          displayProb <= 25 && "bg-profit/15 text-profit border border-profit/30",
-                          displayProb > 25 &&
-                            displayProb <= 60 &&
-                            "bg-amber-500/15 text-amber-500 border border-amber-500/30",
-                          displayProb > 60 && "bg-loss/15 text-loss border border-loss/30",
+                          "size-1.5 rounded-full shrink-0",
+                          displayProb <= 25
+                            ? "bg-profit"
+                            : displayProb <= 60
+                              ? "bg-amber-500"
+                              : "bg-loss",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "font-mono text-xs font-semibold uppercase tracking-wider",
+                          displayProb <= 25
+                            ? "text-profit"
+                            : displayProb <= 60
+                              ? "text-amber-500"
+                              : "text-loss",
                         )}
                       >
                         {displayProb > 60
@@ -424,11 +432,7 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
                       )}
                     >
                       {/* Authentic Retro Dither Horizontal Bar */}
-                      <DitherRowBar
-                        percent={barPercent}
-                        color={barColor}
-                        isSelected={isSelected}
-                      />
+                      <DitherRowBar percent={barPercent} color={barColor} isSelected={isSelected} />
 
                       {/* Left label with dot */}
                       <div className="relative z-10 flex items-center gap-2 truncate">

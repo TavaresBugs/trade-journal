@@ -71,14 +71,7 @@ export function FormulaHud({
   };
 
   return (
-    <div
-      className={cn(
-        variant === "card"
-          ? "rounded-lg border border-border/80 bg-muted/30 p-3.5"
-          : "space-y-3",
-        className,
-      )}
-    >
+    <div className={cn("space-y-3", className)}>
       {/* HEADER ROW */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -90,13 +83,23 @@ export function FormulaHud({
               <button
                 type="button"
                 className={cn(
-                  "h-4 inline-flex items-center rounded border px-1.5 font-mono text-[9px] font-semibold cursor-help transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  category.border,
-                  category.bg,
+                  "inline-flex items-center gap-1.5 rounded-full bg-muted/30 px-2 py-0.5 font-mono text-[10px] font-medium cursor-help transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                   category.color,
                 )}
               >
-                {category.label}
+                <span
+                  className={cn(
+                    "size-1.5 rounded-full shrink-0",
+                    category.color?.includes("profit")
+                      ? "bg-profit"
+                      : category.color?.includes("loss")
+                        ? "bg-loss"
+                        : category.color?.includes("amber")
+                          ? "bg-amber-500"
+                          : "bg-primary",
+                  )}
+                />
+                <span>{category.label}</span>
               </button>
             </HoverHint>
           )}

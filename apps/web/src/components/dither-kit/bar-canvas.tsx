@@ -170,7 +170,9 @@ export function BarCanvas() {
             const activeIndex = s.hoverIndex ?? s.markerIndex;
             const active = activeIndex === i;
             const hoverDim =
-              activeIndex != null && !active && (s.isMouseInChart || s.markerIndex != null) ? 0.5 : 1;
+              activeIndex != null && !active && (s.isMouseInChart || s.markerIndex != null)
+                ? 0.5
+                : 1;
 
             const slot = s.barSlot(i, si, barKeys.length);
             const center = (slot.y + slot.height / 2) * fy;
@@ -239,7 +241,9 @@ export function BarCanvas() {
             const activeIndex = s.hoverIndex ?? s.markerIndex;
             const active = activeIndex === i;
             const hoverDim =
-              activeIndex != null && !active && (s.isMouseInChart || s.markerIndex != null) ? 0.5 : 1;
+              activeIndex != null && !active && (s.isMouseInChart || s.markerIndex != null)
+                ? 0.5
+                : 1;
 
             const slot = s.barSlot(i, si, barKeys.length);
             const center = (slot.x + slot.width / 2) * fx;
@@ -342,8 +346,14 @@ export function BarCanvas() {
             const my = Math.round((slot.y + slot.height / 2) * fy);
             const mx = Math.round(rawTarget);
 
-            // Horizontal guide line from baseline to mx
-            c.fillStyle = rgb(pointSeed.fill, 1, 0.55);
+            // Subtle full-width horizontal hover beam across the active row band
+            c.fillStyle = rgb(pointSeed.fill, 1, 0.12);
+            for (let x = 0; x < cols; x++) {
+              c.fillRect(x, my, 1, 1);
+            }
+
+            // High-contrast guide line from baseline to mx
+            c.fillStyle = rgb(pointSeed.fill, 1, 0.65);
             const startX = Math.min(Math.round(base), mx);
             const endX = Math.max(Math.round(base), mx);
             for (let x = startX; x <= endX; x++) {
@@ -458,7 +468,7 @@ export function BarCanvas() {
 
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [cols, rows, width]);
+  }, [cols, rows, width, height]);
 
   const bloomActive = ctx.bloomOnHover ? ctx.isMouseInChart || ctx.hovered : true;
   const bloom = bloomLayerStyle(ctx.bloom, bloomActive);
