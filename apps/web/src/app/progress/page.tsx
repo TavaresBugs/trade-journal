@@ -251,7 +251,7 @@ function Progress() {
                     <Plus className="size-3.5" />
                   </Button>
                 </CardHeader>
-                <CardContent className="space-y-2 pt-1">
+                <CardContent className="space-y-0.5 pt-0 px-2 sm:px-3 pb-3">
                   {stageRules.map((r) => {
                     const isChecked =
                       data?.checks.some(
@@ -262,12 +262,9 @@ function Progress() {
                     return (
                       <div
                         key={r.id}
-                        className={cn(
-                          "group flex items-center justify-between gap-2 p-2 rounded-lg border border-border/40 bg-card/60 transition-colors hover:bg-muted/20",
-                          isChecked && "border-profit/20 bg-profit/5",
-                        )}
+                        className="group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-colors hover:bg-muted/40"
                       >
-                        <label className="flex items-center gap-2.5 text-xs font-medium min-w-0 cursor-pointer select-none flex-1">
+                        <label className="flex items-center gap-2.5 text-xs font-medium min-w-0 cursor-pointer select-none flex-1 py-0.5">
                           <Checkbox
                             className="size-4 shrink-0"
                             checked={isChecked}
@@ -295,7 +292,7 @@ function Progress() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="size-6 p-0 text-muted-foreground opacity-60 group-hover:opacity-100 transition-opacity"
+                              className="size-6 p-0 text-muted-foreground opacity-40 group-hover:opacity-100 transition-opacity"
                             >
                               <MoreHorizontal className="size-3.5" />
                               <span className="sr-only">Actions</span>
