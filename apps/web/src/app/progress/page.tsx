@@ -547,8 +547,8 @@ function Progress() {
 
         {/* Archived Routines Dialog - Minimalist */}
         <Dialog open={archivedOpen} onOpenChange={setArchivedOpen}>
-          <DialogContent className="sm:max-w-[420px] p-5 gap-3.5 rounded-xl border border-border/60 bg-card shadow-xl">
-            <div className="flex items-center justify-between pb-1">
+          <DialogContent className="sm:max-w-[400px] p-5 gap-3 rounded-xl border border-border/60 bg-card shadow-xl">
+            <div className="flex items-center justify-between pb-0.5">
               <DialogTitle className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
                 <Archive className="size-4 text-muted-foreground" />
                 <span>Archived routines</span>
@@ -562,33 +562,36 @@ function Progress() {
               Archived routines preserve historical check data without appearing in daily tracking.
             </p>
 
-            <div className="space-y-2 max-h-[300px] overflow-y-auto divide-y divide-border/30 pt-1">
+            <div className="max-h-[300px] overflow-y-auto divide-y divide-border/40 pt-1">
               {archivedRules.map((r) => (
-                <div key={r.id} className="pt-2.5 first:pt-0 flex items-center justify-between gap-3">
+                <div
+                  key={r.id}
+                  className="py-2.5 first:pt-1 last:pb-0 flex items-center justify-between gap-3"
+                >
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-foreground truncate">{r.title}</p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
                       {r.stage.replace(" trading", "")} · Archived {r.archivedAt?.slice(0, 10)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="h-7 px-2 text-[11px] gap-1 cursor-pointer"
+                      className="size-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
                       title="Restore routine"
                       onClick={async () => {
                         await act({ id: r.id, archivedAt: null }, "PATCH");
                         if (archivedRules.length <= 1) setArchivedOpen(false);
                       }}
                     >
-                      <ArchiveRestore className="size-3" />
-                      <span>Restore</span>
+                      <ArchiveRestore className="size-3.5" />
+                      <span className="sr-only">Restore</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="size-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                      className="size-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
                       title="Edit routine"
                       onClick={() => {
                         setArchivedOpen(false);
@@ -596,11 +599,12 @@ function Progress() {
                       }}
                     >
                       <Pencil className="size-3.5" />
+                      <span className="sr-only">Edit</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="size-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
+                      className="size-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                       title="Delete permanently"
                       onClick={() => {
                         if (
@@ -614,6 +618,7 @@ function Progress() {
                       }}
                     >
                       <Trash2 className="size-3.5" />
+                      <span className="sr-only">Delete</span>
                     </Button>
                   </div>
                 </div>
@@ -623,17 +628,6 @@ function Progress() {
                   No archived routines.
                 </div>
               )}
-            </div>
-
-            <div className="flex justify-end pt-1 border-t border-border/40">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs cursor-pointer"
-                onClick={() => setArchivedOpen(false)}
-              >
-                Close
-              </Button>
             </div>
           </DialogContent>
         </Dialog>
