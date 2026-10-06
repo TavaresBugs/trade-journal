@@ -1,14 +1,19 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import { Plus, MoreHorizontal, Pencil, Archive, Trash2 } from "lucide-react";
+import {
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  Archive,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import { FilterBar } from "@/components/filter-bar";
-import { Field, fieldClass } from "@/components/filter-fields";
-import { OptionSelect } from "@/components/ui/option-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +26,7 @@ import { scheduledRules, progressScore, type Routine, type RoutineCheck } from "
 import { CalendarProgress } from "@/components/calendar-progress";
 import { cn } from "@/lib/utils";
 
-const STAGES = ["Before trading", "During trading", "After trading"];
+const STAGES = ["Before trading", "During trading", "After trading"] as const;
 const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function ProgressPage() {
@@ -43,7 +48,7 @@ function Progress() {
   const [open, setOpen] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
   const [title, setTitle] = useState("");
-  const [stage, setStage] = useState(STAGES[0]!);
+  const [stage, setStage] = useState<string>(STAGES[0]);
   const [weekdays, setWeekdays] = useState([1, 2, 3, 4, 5]);
   const [failure, setFailure] = useState("");
   const [busy, setBusy] = useState(false);
@@ -118,6 +123,22 @@ function Progress() {
     setWeekdays(routine.weekdays);
     setFailure("");
     setOpen(true);
+  }
+
+  async function handleSave() {
+    if (!title.trim() || !weekdays.length || busy) return;
+    if (editingRoutine) {
+      if (await act({ id: editingRoutine.id, title: title.trim(), stage, weekdays }, "PATCH")) {
+        setOpen(false);
+        setEditingRoutine(null);
+        setTitle("");
+      }
+    } else {
+      if (await act({ title: title.trim(), stage, weekdays }, "POST")) {
+        setOpen(false);
+        setTitle("");
+      }
+    }
   }
 
   return (
@@ -389,36 +410,55 @@ function Progress() {
           </CardContent>
         </Card>
 
-        {/* Add / Edit Routine Dialog */}
+        {/* Add / Edit Routine Dialog - Minimalist */}
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingRoutine ? "Edit daily routine" : "Add a daily routine"}
-              </DialogTitle>
-            </DialogHeader>
-            <Field label="Routine">
+          <DialogContent className="sm:max-w-[360px] p-5 gap-3.5 rounded-xl border border-border/60 bg-card shadow-xl">
+            <DialogTitle className="text-sm font-semibold tracking-tight text-foreground">
+              {editingRoutine ? "Edit routine" : "New routine"}
+            </DialogTitle>
+
+            <div className="space-y-3 pt-0.5">
+              {/* Routine Title */}
               <input
-                className={fieldClass}
+                id="routine-title"
+                autoFocus
+                className="w-full h-9 rounded-lg border border-border/60 bg-muted/20 px-3 text-xs text-foreground placeholder:text-muted-foreground/50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 value={title}
-                placeholder="Review the economic calendar"
+                placeholder="Routine name..."
                 onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && title.trim() && weekdays.length && !busy) {
+                    e.preventDefault();
+                    void handleSave();
+                  }
+                }}
               />
-            </Field>
-            <Field label="When">
-              <OptionSelect
-                className={fieldClass}
-                value={stage}
-                onValueChange={(next) => setStage(next)}
-              >
-                {STAGES.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </OptionSelect>
-            </Field>
-            <div className="space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Active Days</span>
-              <div className="flex flex-wrap gap-2">
+
+              {/* Stage Segmented Control */}
+              <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg border border-border/50 bg-muted/20 text-xs">
+                {STAGES.map((s) => {
+                  const isSelected = stage === s;
+                  const label = s.replace(" trading", "");
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setStage(s)}
+                      className={cn(
+                        "py-1 rounded-md text-[11px] font-medium transition-all text-center cursor-pointer select-none",
+                        isSelected
+                          ? "bg-background text-foreground shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Active Days */}
+              <div className="grid grid-cols-7 gap-1">
                 {WEEKDAY_NAMES.map((day, i) => {
                   const isSelected = weekdays.includes(i);
                   return (
@@ -426,13 +466,15 @@ function Progress() {
                       key={day}
                       type="button"
                       onClick={() =>
-                        setWeekdays(isSelected ? weekdays.filter((n) => n !== i) : [...weekdays, i])
+                        setWeekdays(
+                          isSelected ? weekdays.filter((n) => n !== i) : [...weekdays, i].sort(),
+                        )
                       }
                       className={cn(
-                        "px-2.5 py-1 text-xs font-medium rounded-md border transition-all",
+                        "h-7 rounded-md text-[11px] font-mono transition-colors text-center cursor-pointer select-none",
                         isSelected
-                          ? "bg-foreground text-background border-foreground font-semibold shadow-xs"
-                          : "border-border/60 text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                          ? "bg-foreground text-background font-semibold"
+                          : "bg-muted/20 text-muted-foreground hover:bg-muted/40 hover:text-foreground",
                       )}
                     >
                       {day}
@@ -440,35 +482,32 @@ function Progress() {
                   );
                 })}
               </div>
+
+              {failure && (
+                <p role="alert" className="text-xs text-destructive">
+                  {failure}
+                </p>
+              )}
             </div>
-            {failure && (
-              <p role="alert" className="text-xs text-destructive">
-                {failure}
-              </p>
-            )}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs cursor-pointer"
+                onClick={() => setOpen(false)}
+              >
                 Cancel
               </Button>
               <Button
                 size="sm"
+                className="h-8 text-xs cursor-pointer gap-1.5"
                 disabled={!title.trim() || !weekdays.length || busy}
-                onClick={async () => {
-                  if (editingRoutine) {
-                    if (await act({ id: editingRoutine.id, title, stage, weekdays }, "PATCH")) {
-                      setOpen(false);
-                      setEditingRoutine(null);
-                      setTitle("");
-                    }
-                  } else {
-                    if (await act({ title, stage, weekdays }, "POST")) {
-                      setOpen(false);
-                      setTitle("");
-                    }
-                  }
-                }}
+                onClick={() => void handleSave()}
               >
-                {editingRoutine ? "Save changes" : "Add routine"}
+                {busy && <Loader2 className="size-3 animate-spin" />}
+                <span>{editingRoutine ? "Save" : "Add"}</span>
               </Button>
             </div>
           </DialogContent>
