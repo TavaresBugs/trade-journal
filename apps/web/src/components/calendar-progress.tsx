@@ -56,6 +56,7 @@ export function CalendarProgress({
   today,
   selectedDate,
   onSelectDate,
+  headerRight,
   className,
 }: {
   rules: Routine[];
@@ -63,6 +64,7 @@ export function CalendarProgress({
   today: string;
   selectedDate: string;
   onSelectDate: (date: string) => void;
+  headerRight?: React.ReactNode;
   className?: string;
 }) {
   const initialYear = Number(selectedDate?.slice(0, 4) || today?.slice(0, 4) || CURRENT_YEAR);
@@ -287,8 +289,8 @@ export function CalendarProgress({
           </button>
         </div>
 
-        {/* Right side: Today Quick Jump */}
-        <div className="flex justify-end items-center">
+        {/* Right side: Today Quick Jump & Header Right Actions */}
+        <div className="flex justify-end items-center gap-2">
           {!isCurrentMonth && today && (
             <Button
               type="button"
@@ -305,6 +307,7 @@ export function CalendarProgress({
               Today
             </Button>
           )}
+          {headerRight}
         </div>
       </div>
 

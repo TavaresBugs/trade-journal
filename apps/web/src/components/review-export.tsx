@@ -21,10 +21,14 @@ export function ReviewExport({
   document,
   containsFinancialData = false,
   className,
+  buttonClassName,
+  align = "start",
 }: {
   document: ReviewDocument;
   containsFinancialData?: boolean;
   className?: string;
+  buttonClassName?: string;
+  align?: "start" | "end" | "center";
 }) {
   const privateMode = usePrivacy();
   const concealed = privateMode && containsFinancialData;
@@ -71,7 +75,7 @@ export function ReviewExport({
             size="sm"
             variant="outline"
             disabled={isBusy || concealed}
-            className="rounded-xl text-xs gap-1.5 h-8 px-2.5 transition-colors"
+            className={cn("rounded-xl text-xs gap-1.5 h-8 px-2.5 transition-colors", buttonClassName)}
             title="Export review as PDF or PNG"
           >
             {isBusy ? (
@@ -89,7 +93,7 @@ export function ReviewExport({
             <ChevronDown className="size-3 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="rounded-xl min-w-[150px]">
+        <DropdownMenuContent align={align} className="rounded-xl min-w-[150px]">
           <DropdownMenuItem
             onClick={() => void run(false)}
             disabled={isBusy || concealed}

@@ -125,24 +125,10 @@ function Progress() {
       <FilterBar
         title="Progress"
         actions={
-          <div className="flex items-center gap-2">
-            <ReviewExport
-              document={{
-                title: `Routine review · ${selected}`,
-                lines: [
-                  `Completed: ${score?.completed ?? 0}/${score?.total ?? 0}`,
-                  ...rules.map(
-                    (r) =>
-                      `${data?.checks.some((c) => c.date === selected && c.ruleId === r.id && c.done) ? "[done]" : "[ ]"} ${r.stage}: ${r.title}`,
-                  ),
-                ],
-              }}
-            />
-            <Button size="sm" onClick={() => openAddDialog()}>
-              <Plus className="size-4 mr-1 sm:inline hidden" />
-              Add routine
-            </Button>
-          </div>
+          <Button size="sm" onClick={() => openAddDialog()}>
+            <Plus className="size-4 mr-1 sm:inline hidden" />
+            Add routine
+          </Button>
         }
       />
 
@@ -376,7 +362,7 @@ function Progress() {
           })}
         </div>
 
-        {/* Routine Calendar - Sole date selector and adherence visualizer */}
+        {/* Routine Calendar - Sole date selector, adherence visualizer and review export */}
         <Card>
           <CardContent className="p-4 sm:p-5">
             <CalendarProgress
@@ -385,6 +371,23 @@ function Progress() {
               today={data?.today ?? ""}
               selectedDate={selected}
               onSelectDate={setDate}
+              headerRight={
+                <ReviewExport
+                  className="space-y-0"
+                  buttonClassName="h-7 px-2.5 rounded-lg"
+                  align="end"
+                  document={{
+                    title: `Routine review · ${selected}`,
+                    lines: [
+                      `Completed: ${score?.completed ?? 0}/${score?.total ?? 0}`,
+                      ...rules.map(
+                        (r) =>
+                          `${data?.checks.some((c) => c.date === selected && c.ruleId === r.id && c.done) ? "[done]" : "[ ]"} ${r.stage}: ${r.title}`,
+                      ),
+                    ],
+                  }}
+                />
+              }
             />
           </CardContent>
         </Card>
