@@ -168,7 +168,7 @@ function Progress() {
                 )}
               </div>
               <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                {score?.completed ?? 0} of {score?.total ?? 0} routines ({selected})
+                {score?.completed ?? 0} of {score?.total ?? 0} routines completed
               </span>
             </div>
           </Card>
@@ -264,7 +264,7 @@ function Progress() {
                         key={r.id}
                         className="group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-colors hover:bg-muted/40"
                       >
-                        <label className="flex items-center gap-2.5 text-xs font-medium min-w-0 cursor-pointer select-none flex-1 py-0.5">
+                        <label className="flex items-center gap-2.5 text-xs font-medium min-w-0 cursor-pointer select-none flex-1">
                           <Checkbox
                             className="size-4 shrink-0"
                             checked={isChecked}
@@ -278,7 +278,7 @@ function Progress() {
                           />
                           <span
                             className={cn(
-                              "truncate transition-colors",
+                              "truncate transition-colors leading-none -translate-y-[1.5px]",
                               isChecked ? "line-through text-muted-foreground" : "text-foreground",
                             )}
                           >
