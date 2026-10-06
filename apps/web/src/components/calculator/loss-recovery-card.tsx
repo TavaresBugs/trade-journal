@@ -347,7 +347,7 @@ export function LossRecoveryCard({
   });
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
@@ -581,7 +581,7 @@ export function LossRecoveryCard({
       </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
-      <CardContent className="border-t border-border/70 pt-4">
+      <CardContent className="border-t border-border/70 pt-4 mt-auto">
         <FormulaHud
           title={mode === "funded" ? "Required cushion recovery" : "Required recovery gain"}
           category={currentCategory}

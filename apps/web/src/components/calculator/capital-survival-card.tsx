@@ -377,7 +377,7 @@ export function CapitalSurvivalCard({
   });
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
@@ -676,7 +676,7 @@ export function CapitalSurvivalCard({
       </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
-      <CardContent className="border-t border-border/70 pt-4">
+      <CardContent className="border-t border-border/70 pt-4 mt-auto">
         <FormulaHud
           title={mode === "funded" ? "Drawdown cushion survival" : "Personal survival probability"}
           category={{

@@ -99,7 +99,7 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
   }: ${displayProb}% | Fallacy Alert: Each trade is independent (${safeWr}% win prob).`;
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
           Variance & Streak Predictor
@@ -161,7 +161,7 @@ Gambler's Fallacy Inoculation: Even after a run of losses, each future trade rem
       </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
-      <CardContent className="border-t border-border/70 pt-4">
+      <CardContent className="border-t border-border/70 pt-4 mt-auto">
         <FormulaHud
           title="Streak probability"
           category={streakCategory}

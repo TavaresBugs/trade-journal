@@ -164,7 +164,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
   ]);
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
@@ -297,7 +297,7 @@ export function PointsSizingCard({ values, onChange }: PointsSizingCardProps) {
       </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
-      <CardContent className="border-t border-border/70 pt-4">
+      <CardContent className="border-t border-border/70 pt-4 mt-auto">
         <FormulaHud
           title="Recommended entry size"
           category={{

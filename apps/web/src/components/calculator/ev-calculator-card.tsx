@@ -51,7 +51,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
   const copyText = `EV: ${evFormatted}/eval (${roiFormatted} ROI) | Payout: $${avgPayout.toLocaleString("en-US")} (${payoutChance}%) | Cost: $${cost} | Pass: ${passRate}% (Breakeven: ${breakevenPassRate}%)`;
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case [text-wrap:balance]">
           EV Calculator
@@ -150,7 +150,7 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
       </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
-      <CardContent className="border-t border-border/70 pt-4">
+      <CardContent className="border-t border-border/70 pt-4 mt-auto">
         <FormulaHud
           title="Expected value outcome"
           category={{
@@ -239,55 +239,55 @@ export function EvCalculatorCard({ values, onChange }: EvCalculatorCardProps) {
             ) : undefined
           }
         >
-          {/* 3-COLUMN METRICS BREAKDOWN */}
-          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Breakeven pass</span>
-              <span className="font-mono font-semibold text-foreground tnum">
-                {breakevenPassRate > 0 && breakevenPassRate <= 100
-                  ? `${breakevenPassRate}%`
-                  : "N/A"}
-              </span>
+          {/* DYNAMIC COST DRAG VS PAYOFF VISUAL MINI BAR & SUMMARY */}
+          <div className="mt-4 space-y-2">
+            {/* Dither Retro Ratio Bar (Bayer matrix with glow) */}
+            <div className="py-0.5">
+              <DitherRatioBar
+                order="loss-win"
+                winValue={Math.max(0, expectedPayoutPerPass)}
+                lossValue={cost}
+                height={8}
+                bloom="low"
+                className="rounded-full overflow-hidden"
+              />
             </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Edge buffer</span>
-              <span
-                className={cn(
-                  "font-mono font-semibold tnum",
-                  edgeBuffer >= 0 ? "text-profit" : "text-loss",
-                )}
-              >
-                {edgeBuffer >= 0 ? `+${edgeBuffer.toFixed(1)}%` : `${edgeBuffer.toFixed(1)}%`}
-              </span>
-            </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Expected payout</span>
-              <span className="font-mono font-semibold text-profit tnum">
-                <MonetaryValue>
-                  +${Math.round(expectedPayoutPerPass).toLocaleString("en-US")}
-                </MonetaryValue>
-              </span>
-            </div>
-          </div>
 
-          {/* DITHER RATIO BAR: COST DRAG VS EXPECTED PAYOFF */}
-          <div className="mt-3 space-y-1.5 border-t border-border/40 pt-2.5">
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="uppercase tracking-wider">Cost Drag vs Expected Payoff</span>
-              <span className="font-mono text-[10px]">
-                {evResult > 0
-                  ? `+${(evResult / (cost || 1)).toFixed(1)}x payoff coverage (${roiFormatted} ROI)`
-                  : "Negative Expectancy"}
-              </span>
+            {/* 3-COLUMN METRICS: Cost Drag (left), Edge Buffer (center), Expected Payout (right) */}
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="block text-[11px] text-muted-foreground">Cost drag (fee)</span>
+                <span className="font-mono font-semibold text-loss tnum">
+                  <MonetaryValue>-${cost.toLocaleString("en-US")}</MonetaryValue>
+                </span>
+              </div>
+              <div className="text-center">
+                <span className="block text-[11px] text-muted-foreground">
+                  Edge buffer{" "}
+                  {breakevenPassRate > 0 && breakevenPassRate <= 100 && (
+                    <span className="text-[10px] text-muted-foreground/70">
+                      (BE {breakevenPassRate}%)
+                    </span>
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    "font-mono font-semibold tnum",
+                    edgeBuffer >= 0 ? "text-profit" : "text-loss",
+                  )}
+                >
+                  {edgeBuffer >= 0 ? `+${edgeBuffer.toFixed(1)}%` : `${edgeBuffer.toFixed(1)}%`}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="block text-[11px] text-muted-foreground">Expected payout</span>
+                <span className="font-mono font-semibold text-profit tnum">
+                  <MonetaryValue>
+                    +${Math.round(expectedPayoutPerPass).toLocaleString("en-US")}
+                  </MonetaryValue>
+                </span>
+              </div>
             </div>
-            <DitherRatioBar
-              order="loss-win"
-              winValue={Math.max(0, evResult)}
-              lossValue={cost}
-              height={8}
-              bloom="low"
-              className="rounded-full overflow-hidden"
-            />
           </div>
         </FormulaHud>
       </CardContent>

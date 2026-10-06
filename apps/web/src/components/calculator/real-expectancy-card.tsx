@@ -117,10 +117,13 @@ export function RealExpectancyCard({
           advice: `Both theoretical paper expectancy (-$${Math.abs(result.paperEv).toLocaleString()}) and real net expectancy (-$${Math.abs(result.realEv).toLocaleString()}) are negative. The system loses capital on every trade.`,
         };
 
+  const hasPaperEv = result.paperEv > 0;
+  const retentionRatio = hasPaperEv ? Math.max(0, Math.min(1, result.realEv / result.paperEv)) : 0;
+
   const copyText = `Real Expectancy Analysis: Win Rate: ${safeWr}% | RR: 1:${safeRr} | Risk: $${safeRisk} | Paper EV: $${result.paperEv} | Friction: -$${result.totalFriction} | Real Net EV: $${result.realEv} (${result.netRMultiple >= 0 ? "+" : ""}${result.netRMultiple}R/trade) | Status: ${expectancyCategory.label}`;
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
           Real Expectancy & Friction
@@ -244,7 +247,7 @@ export function RealExpectancyCard({
       </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
-      <CardContent className="border-t border-border/70 pt-4">
+      <CardContent className="border-t border-border/70 pt-4 mt-auto">
         <FormulaHud
           title="Real net expectancy"
           category={expectancyCategory}
@@ -329,10 +332,6 @@ export function RealExpectancyCard({
         >
           {/* DITHER COCKPIT FRICTION & EDGE RETENTION ASSESSMENT */}
           {(() => {
-            const hasPaperEv = result.paperEv > 0;
-            const retentionRatio = hasPaperEv
-              ? Math.max(0, Math.min(1, result.realEv / result.paperEv))
-              : 0;
             const gaugeValue = retentionRatio;
             const gaugeColor: "green" | "orange" | "red" =
               result.realEv <= 0 ? "red" : retentionRatio >= 0.75 ? "green" : "orange";
@@ -408,56 +407,63 @@ export function RealExpectancyCard({
             );
           })()}
 
-          {/* DITHER RATIO BAR: NET EV (WIN) VS FRICTION (LOSS) */}
-          <div className="mt-3 space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="uppercase tracking-wider">Net Return vs Friction Drag</span>
-              <span className="font-mono text-[10px]">
-                {result.realEv > 0
-                  ? `+${(result.realEv / (result.totalFriction || 1)).toFixed(1)}x friction coverage`
-                  : "Negative Edge"}
-              </span>
+          {/* DYNAMIC NET EV VS FRICTION VISUAL MINI BAR & SUMMARY */}
+          <div className="mt-4 space-y-2 border-t border-border/30 pt-3">
+            {/* Dither Retro Ratio Bar (Bayer matrix with glow) */}
+            <div className="py-0.5">
+              <DitherRatioBar
+                order="loss-win"
+                winValue={Math.max(0, result.realEv)}
+                lossValue={result.totalFriction}
+                height={8}
+                bloom="low"
+                className="rounded-full overflow-hidden"
+              />
             </div>
-            <DitherRatioBar
-              order="loss-win"
-              winValue={Math.max(0, result.realEv)}
-              lossValue={result.totalFriction}
-              height={8}
-              bloom="low"
-              className="rounded-full overflow-hidden"
-            />
-          </div>
 
-          {/* 3-COLUMN METRICS BREAKDOWN */}
-          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Paper gross EV</span>
-              <span className="font-mono font-semibold text-foreground tnum">
-                <MonetaryValue>
-                  {result.paperEv >= 0
-                    ? `+$${result.paperEv.toLocaleString()}`
-                    : `-$${Math.abs(result.paperEv).toLocaleString()}`}
-                </MonetaryValue>
-              </span>
-            </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Friction per trade</span>
-              <span className="font-mono font-semibold text-loss tnum">
-                <MonetaryValue>-${result.totalFriction.toLocaleString()}</MonetaryValue>
-              </span>
-            </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Net edge in R</span>
-              <span
-                className={cn(
-                  "font-mono font-semibold tnum",
-                  result.netRMultiple >= 0 ? "text-profit" : "text-loss",
-                )}
-              >
-                {result.netRMultiple >= 0
-                  ? `+${result.netRMultiple} R`
-                  : `${result.netRMultiple} R`}
-              </span>
+            {/* 3-COLUMN METRICS: Loss/Friction (left), Edge in R (center), Real Net EV (right) */}
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="block text-[11px] text-muted-foreground">Friction per trade</span>
+                <span className="font-mono font-semibold text-loss tnum">
+                  <MonetaryValue>-${result.totalFriction.toLocaleString()}</MonetaryValue>
+                </span>
+                <span className="block text-[10px] text-muted-foreground/70">Fee + Slippage</span>
+              </div>
+              <div className="text-center">
+                <span className="block text-[11px] text-muted-foreground">Net edge in R</span>
+                <span
+                  className={cn(
+                    "font-mono font-semibold tnum",
+                    result.netRMultiple >= 0 ? "text-profit" : "text-loss",
+                  )}
+                >
+                  {result.netRMultiple >= 0
+                    ? `+${result.netRMultiple} R`
+                    : `${result.netRMultiple} R`}
+                </span>
+                <span className="block text-[10px] text-muted-foreground/70">
+                  Retains {(retentionRatio * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="block text-[11px] text-muted-foreground">Real net EV</span>
+                <span
+                  className={cn(
+                    "font-mono font-semibold tnum",
+                    result.realEv >= 0 ? "text-profit" : "text-loss",
+                  )}
+                >
+                  <MonetaryValue>
+                    {result.realEv >= 0
+                      ? `+$${result.realEv.toLocaleString()}`
+                      : `-$${Math.abs(result.realEv).toLocaleString()}`}
+                  </MonetaryValue>
+                </span>
+                <span className="block text-[10px] text-muted-foreground/70">
+                  Gross ${result.paperEv.toLocaleString()}
+                </span>
+              </div>
             </div>
           </div>
         </FormulaHud>

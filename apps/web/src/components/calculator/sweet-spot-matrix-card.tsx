@@ -108,7 +108,7 @@ export function SweetSpotMatrixCard({
   const copyText = `System Matrix: Win Rate: ${selectedWr}% | RR: 1:${selectedRr} | Expectancy: ${currentRMultiple >= 0 ? "+" : ""}${currentRMultiple}R/trade | Breakeven Win Rate: ${beRate}% | Status: ${hudCategory.label}`;
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
           System Design & Sweet Spot Matrix
@@ -286,7 +286,7 @@ export function SweetSpotMatrixCard({
       </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
-      <CardContent className="border-t border-border/70 pt-4">
+      <CardContent className="border-t border-border/70 pt-4 mt-auto">
         <FormulaHud
           title="Selected system edge"
           category={hudCategory}
@@ -333,68 +333,65 @@ export function SweetSpotMatrixCard({
             </span>
           }
         >
-          {/* DITHER RETRO RATIO BAR: BREAKEVEN VS EDGE BUFFER */}
-          <div className="mt-3 space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="uppercase tracking-wider">System Edge Buffer</span>
-              <span className="font-mono text-[10px]">
-                {safeWr >= beRate
-                  ? `+${(safeWr - beRate).toFixed(1)}% buffer above breakeven`
-                  : `-${(beRate - safeWr).toFixed(1)}% below breakeven threshold`}
-              </span>
+          {/* DYNAMIC SYSTEM EDGE VS RISK EXPOSURE VISUAL MINI BAR & SUMMARY */}
+          <div className="mt-4 space-y-2">
+            {/* Dither Retro Ratio Bar (Bayer matrix with glow) */}
+            <div className="py-0.5">
+              <DitherRatioBar
+                order="loss-win"
+                winValue={Math.max(0, safeWr * safeRr)}
+                lossValue={lossRate}
+                height={8}
+                bloom="low"
+                className="rounded-full overflow-hidden"
+              />
             </div>
-            <DitherRatioBar
-              order="loss-win"
-              winValue={Math.max(0, safeWr - beRate)}
-              lossValue={beRate}
-              height={8}
-              bloom="low"
-              className="rounded-full overflow-hidden"
-            />
-          </div>
 
-          {/* 3-COLUMN METRICS BREAKDOWN */}
-          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Breakeven threshold</span>
-              <span className="font-mono font-semibold text-foreground tnum">{beRate}%</span>
-              <span className="block text-[10px] text-muted-foreground/70">1 / (1 + RR)</span>
-            </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">
-                Edge buffer (Win% − BE)
-              </span>
-              <span
-                className={cn(
-                  "font-mono font-semibold tnum",
-                  safeWr >= beRate ? "text-profit" : "text-loss",
-                )}
-              >
-                {safeWr >= beRate ? "+" : ""}
-                {(safeWr - beRate).toFixed(1)}%
-              </span>
-              <span className="block text-[10px] text-muted-foreground/70">
-                {safeWr >= beRate ? "Margem positiva" : "Déficit estatístico"}
-              </span>
-            </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Realistic status</span>
-              <span className="font-mono font-semibold text-foreground">
-                {isSweetSpot
-                  ? "Sweet Spot"
-                  : safeRr >= 6.0
-                    ? "Hard to execute"
-                    : isProfitable
-                      ? "Valid edge"
-                      : "Negative edge"}
-              </span>
-              <span className="block text-[10px] text-muted-foreground/70">
-                {isSweetSpot
-                  ? "Realistic sweet spot"
-                  : isProfitable
-                    ? "Positive expectancy"
-                    : "Negative edge"}
-              </span>
+            {/* 3-COLUMN METRICS: Loss Exposure (left), Edge Buffer (center), Gross Reward (right) */}
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="block text-[11px] text-muted-foreground">Loss drag (Loss%)</span>
+                <span className="font-mono font-semibold text-loss tnum">-{lossRate}%</span>
+                <span className="block text-[10px] text-muted-foreground/70">1R stop exposure</span>
+              </div>
+              <div className="text-center">
+                <span className="block text-[11px] text-muted-foreground">
+                  Edge buffer{" "}
+                  <span className="text-[10px] text-muted-foreground/70">(BE {beRate}%)</span>
+                </span>
+                <span
+                  className={cn(
+                    "font-mono font-semibold tnum",
+                    safeWr >= beRate ? "text-profit" : "text-loss",
+                  )}
+                >
+                  {safeWr >= beRate ? "+" : ""}
+                  {(safeWr - beRate).toFixed(1)}%
+                </span>
+                <span className="block text-[10px] text-muted-foreground/70">
+                  {isSweetSpot
+                    ? "Sweet Spot"
+                    : safeWr >= beRate
+                      ? "Margem positiva"
+                      : "Déficit estatístico"}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="block text-[11px] text-muted-foreground">
+                  Gross payoff (Win% × RR)
+                </span>
+                <span
+                  className={cn(
+                    "font-mono font-semibold tnum",
+                    currentRMultiple >= 0 ? "text-profit" : "text-loss",
+                  )}
+                >
+                  +{(safeWr * safeRr).toFixed(0)}%
+                </span>
+                <span className="block text-[10px] text-muted-foreground/70">
+                  {safeRr}R profit target
+                </span>
+              </div>
             </div>
           </div>
         </FormulaHud>

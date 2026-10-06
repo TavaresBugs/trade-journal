@@ -84,7 +84,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
   const copyText = `Simulation (1,000 runs): Bankroll: $${bankroll.toLocaleString("en-US")} | Net Profit: ${netFormatted} (${roiFormatted} ROI) | Avg Payout: $${simResults.avgPayout.toLocaleString("en-US")} | Eval Cost: $${evalCost} | Pass: ${passRate}% | Payout Chance: ${payoutChance}%`;
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold tracking-tight text-foreground normal-case">
           Returns Simulator
@@ -203,7 +203,7 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
       </CardContent>
 
       {/* PROMINENT HUD OUTPUT */}
-      <CardContent className="border-t border-border/70 pt-4">
+      <CardContent className="border-t border-border/70 pt-4 mt-auto">
         <FormulaHud
           title="Simulation results (1,000 runs)"
           copyText={copyText}
@@ -412,51 +412,62 @@ export function ReturnsSimulatorCard({ values, onChange }: ReturnsSimulatorCardP
             );
           })()}
 
-          {/* 3-COLUMN METRICS BREAKDOWN */}
-          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2.5 text-xs">
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Bankroll</span>
-              <span className="font-mono font-semibold text-foreground">
-                <MonetaryValue>${bankroll.toLocaleString("en-US")}</MonetaryValue>
-              </span>
+          {/* DYNAMIC BANKROLL COST VS NET RETURN VISUAL MINI BAR & SUMMARY */}
+          <div className="mt-4 space-y-2 border-t border-border/30 pt-3">
+            {/* Dither Retro Ratio Bar (Bayer matrix with glow) */}
+            <div className="py-0.5">
+              <DitherRatioBar
+                order="loss-win"
+                winValue={Math.max(0, simResults.avgNetProfit)}
+                lossValue={numAttempts * evalCost}
+                height={8}
+                bloom="low"
+                className="rounded-full overflow-hidden"
+              />
             </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Attempts simulated</span>
-              <span className="font-mono font-semibold text-foreground tnum">
-                {numAttempts} {numAttempts === 1 ? "eval" : "evals"}
-              </span>
-            </div>
-            <div>
-              <span className="block text-[11px] text-muted-foreground">Profitable cycles</span>
-              <span
-                className={cn(
-                  "font-mono font-semibold tnum",
-                  simResults.profitableChancePercent >= 50 ? "text-profit" : "text-loss",
-                )}
-              >
-                {simResults.profitableChancePercent}% ({simResults.profitableCyclesCount}/1k)
-              </span>
-            </div>
-          </div>
 
-          {/* DITHER RATIO BAR: BANKROLL COST VS NET RETURN */}
-          <div className="mt-3 space-y-1.5 border-t border-border/40 pt-2.5">
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="uppercase tracking-wider">Bankroll Cost vs Net Return</span>
-              <span className="font-mono text-[10px]">
-                {simResults.avgNetProfit > 0
-                  ? `+${(simResults.avgNetProfit / (numAttempts * evalCost || 1)).toFixed(1)}x capital multiplier`
-                  : "Capital Deficit"}
-              </span>
+            {/* 3-COLUMN METRICS: Loss (left), Capital Multiplier (center), Net Profit (right) */}
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="block text-[11px] text-muted-foreground">Bankroll at risk</span>
+                <span className="font-mono font-semibold text-loss tnum">
+                  <MonetaryValue>
+                    -${(numAttempts * evalCost).toLocaleString("en-US")}
+                  </MonetaryValue>
+                </span>
+                <span className="block text-[10px] text-muted-foreground/70">
+                  {numAttempts} {numAttempts === 1 ? "eval" : "evals"} × ${evalCost}
+                </span>
+              </div>
+              <div className="text-center">
+                <span className="block text-[11px] text-muted-foreground">Capital multiplier</span>
+                <span className="font-mono font-semibold text-foreground tnum">
+                  {simResults.avgNetProfit > 0
+                    ? `1 : ${(simResults.avgNetProfit / (numAttempts * evalCost || 1)).toFixed(1)}x`
+                    : "0.0x"}
+                </span>
+                <span className="block text-[10px] text-muted-foreground/70">
+                  {simResults.profitableChancePercent}% win rate
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="block text-[11px] text-muted-foreground">Avg net return</span>
+                <span
+                  className={cn(
+                    "font-mono font-semibold tnum",
+                    simResults.avgNetProfit >= 0 ? "text-profit" : "text-loss",
+                  )}
+                >
+                  <MonetaryValue>
+                    {simResults.avgNetProfit >= 0 ? "+" : "-"}$
+                    {Math.abs(simResults.avgNetProfit).toLocaleString("en-US")}
+                  </MonetaryValue>
+                </span>
+                <span className="block text-[10px] text-muted-foreground/70">
+                  {roiFormatted} ROI
+                </span>
+              </div>
             </div>
-            <DitherRatioBar
-              order="loss-win"
-              winValue={Math.max(0, simResults.avgNetProfit)}
-              lossValue={numAttempts * evalCost}
-              height={8}
-              bloom="low"
-              className="rounded-full overflow-hidden"
-            />
           </div>
 
           {/* RECENT SAMPLE RUN OUTCOMES */}
