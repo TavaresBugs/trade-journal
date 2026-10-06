@@ -276,17 +276,8 @@ export function BinomialOddsCard({ values, onChange }: BinomialOddsCardProps) {
                   <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
                     Risk of Ruin
                   </span>
-                  <span
-                    className={cn(
-                      "text-xs font-semibold tnum",
-                      binomialData.riskOfRuin > 40
-                        ? "text-loss"
-                        : binomialData.riskOfRuin > 15
-                          ? "text-amber-500"
-                          : "text-profit",
-                    )}
-                  >
-                    {binomialData.riskOfRuin.toFixed(1)}% (0 passes)
+                  <span className="text-xs font-semibold tnum text-loss">
+                    {binomialData.riskOfRuin.toFixed(1)}%
                   </span>
                 </div>
               </div>
