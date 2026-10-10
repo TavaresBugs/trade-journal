@@ -99,6 +99,7 @@ export function enhanceVelaBottombarJoin(container: HTMLElement): () => void {
     isTracking = true;
 
     function findMenu(): HTMLElement | null {
+      if (typeof document === "undefined") return null;
       const menuId = tzBtn.getAttribute("aria-controls");
       if (menuId) {
         const el = document.getElementById(menuId);
@@ -108,7 +109,7 @@ export function enhanceVelaBottombarJoin(container: HTMLElement): () => void {
       if (byLabel) return byLabel;
 
       const root = tzBtn.closest(".vela-ui") || document.body;
-      const menus = root.querySelectorAll<HTMLElement>(".vela-menu");
+      const menus = root?.querySelectorAll<HTMLElement>(".vela-menu") ?? [];
       for (const m of Array.from(menus)) {
         if (!m.hidden && m.getAttribute("data-state") === "open") {
           return m;

@@ -2,15 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import {
-  BAYER,
-  BORDER_ALPHA,
   backingSize,
   bloomLayerStyle,
-  clamp01,
-  OFF_TIER,
+  paintHorizontalSpan,
   type BloomInput,
 } from "./dither-paint";
-import { rgb, seedOfColor, type Seed } from "./palette";
+import { seedOfColor } from "./palette";
 
 export type DitherRatioBarProps = {
   winValue: number | null;
@@ -21,47 +18,6 @@ export type DitherRatioBarProps = {
   order?: "win-loss" | "loss-win"; // default "win-loss"
   className?: string;
 };
-
-/**
- * Horizontal transpose of paintColumn — same formulas, same constants:
- * density 0 at the value tip → 1 at the baseline, Bayer threshold lowered by
- * `0.1 * intensity`, alpha lifted by `1 + 0.22 * intensity`, tip capped with
- * BORDER_ALPHA outlines. `anchor` is the side where the baseline sits.
- */
-function paintHorizontalSection(
-  ctx: CanvasRenderingContext2D,
-  xStart: number,
-  xEnd: number,
-  rows: number,
-  seed: Seed,
-  anchor: "left" | "right",
-  intensity: number,
-  dim: number,
-) {
-  const depth = xEnd - xStart;
-  if (depth <= 0) return;
-
-  for (let x = xStart; x < xEnd; x++) {
-    const density =
-      anchor === "left" ? 1 - (x - xStart) / depth : (x - xStart + 1) / depth;
-    for (let y = 0; y < rows; y++) {
-      const lit = density > (BAYER[y & 3]?.[x & 3] ?? 0) - 0.1 * intensity;
-      const k = (0.3 + density * 0.7) * (1 + 0.22 * intensity);
-      const alpha = clamp01((lit ? k : k * OFF_TIER) * dim);
-      ctx.fillStyle = rgb(seed.fill, 1, alpha);
-      ctx.fillRect(x, y, 1, 1);
-    }
-  }
-
-  // Cap perpendicular to growth, at the value tip (same as paintColumn's top cap)
-  const tipX = anchor === "left" ? xEnd - 1 : xStart;
-  ctx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * dim);
-  ctx.fillRect(tipX, 0, 1, rows);
-  if (depth > 1) {
-    ctx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * 0.5 * dim);
-    ctx.fillRect(anchor === "left" ? tipX - 1 : tipX + 1, 0, 1, rows);
-  }
-}
 
 export function DitherRatioBar({
   winValue,
@@ -132,16 +88,20 @@ export function DitherRatioBar({
       const rightDim = inside && !rightActive ? 0.5 : 1;
 
       c.clearRect(0, 0, cols, rows);
-      paintHorizontalSection(
-        c, 0, splitCol, rows, leftSeed, leftAnchor,
-        intensity + (leftActive ? 0.4 : 0), leftDim,
-      );
+      paintHorizontalSpan(c, 0, splitCol, 0, rows, leftSeed, {
+        anchor: leftAnchor,
+        intensity: intensity + (leftActive ? 0.4 : 0),
+        dim: leftDim,
+        doubleCap: true,
+      });
       c.fillStyle = "rgba(140, 140, 150, 0.45)";
       c.fillRect(splitCol, 0, 1, rows);
-      paintHorizontalSection(
-        c, splitCol + 1, cols, rows, rightSeed, rightAnchor,
-        intensity + (rightActive ? 0.4 : 0), rightDim,
-      );
+      paintHorizontalSpan(c, splitCol + 1, cols, 0, rows, rightSeed, {
+        anchor: rightAnchor,
+        intensity: intensity + (rightActive ? 0.4 : 0),
+        dim: rightDim,
+        doubleCap: true,
+      });
 
       const bloomCtx = bloomCanvas?.getContext("2d") ?? null;
       if (bloomCtx && bloom !== "off") {

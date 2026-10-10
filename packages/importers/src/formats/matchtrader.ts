@@ -24,6 +24,8 @@ export const matchtrader: ImportFormat = {
     const executions: ImportedExecution[] = [];
     let skippedRows = 0;
 
+    const positionLegs = new Map<string, number>();
+
     while ((match = trRegex.exec(content)) !== null) {
       const tdRegex = /<td\b[^>]*>(.*?)<\/td>/gis;
       const cols: string[] = [];
@@ -81,8 +83,12 @@ export const matchtrader: ImportFormat = {
           : "forex";
 
       const acctPrefix = account ? `${account}:` : "";
+      const leg = positionLegs.get(id) ?? 0;
+      positionLegs.set(id, leg + 1);
+
+      const legSuffix = leg > 0 ? `:${leg}` : "";
       const idPrefix = id
-        ? `matchtrader:${acctPrefix}${id}`
+        ? `matchtrader:${acctPrefix}${id}${legSuffix}`
         : `matchtrader:${acctPrefix}${executions.length}`;
 
       executions.push({
@@ -96,6 +102,7 @@ export const matchtrader: ImportFormat = {
         importMetadata: {
           id: `${idPrefix}:entry`,
           order: executions.length,
+          group: id ? `matchtrader:${acctPrefix}${id}` : undefined,
           preserveFee: false,
         },
       });
@@ -111,6 +118,7 @@ export const matchtrader: ImportFormat = {
         importMetadata: {
           id: `${idPrefix}:exit`,
           order: executions.length,
+          group: id ? `matchtrader:${acctPrefix}${id}` : undefined,
           reportedGrossPnl: profit,
           preserveFee: fee > 0,
         },

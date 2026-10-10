@@ -149,6 +149,132 @@ export function paintRow(
   }
 }
 
+export type HorizontalSpanOptions = {
+  variant?: AreaVariant | "gradient";
+  intensity?: number;
+  dim?: number;
+  alphaScale?: number;
+  stacked?: boolean;
+  sparse?: number;
+  anchor?: "left" | "right";
+  slope?: "falloff" | "rise";
+  minDensity?: number;
+  maxDensity?: number;
+  cap?: "tip" | "start" | "end" | "both" | "none";
+  doubleCap?: boolean;
+  capAlpha?: number;
+  topBottomBorders?: boolean;
+};
+
+/**
+ * Shared horizontal span ordered-dither painter:
+ * Unifies the Bayer threshold loop across horizontal bars (ratio, diverging, row-bar).
+ * Fills from `startX` to `endX` (horizontal) and `startY` to `endY` (vertical).
+ *
+ * Density calculation:
+ * - When `anchor === "left"`: density is max at startX and falls off toward endX (or rises if slope="rise").
+ * - When `anchor === "right"`: density is max at endX and falls off toward startX (or rises if slope="rise").
+ * Supports hatch/gradient/solid/dotted variants, OFF_TIER alpha modulation,
+ * 1px cap borders (and optional secondary cap), and optional top/bottom borders.
+ */
+export function paintHorizontalSpan(
+  ctx: CanvasRenderingContext2D,
+  startX: number,
+  endX: number,
+  startY: number,
+  endY: number,
+  seed: Seed,
+  options: HorizontalSpanOptions = {},
+) {
+  const sX = Math.round(startX);
+  const eX = Math.round(endX);
+  const sY = Math.round(startY);
+  const eY = Math.round(endY);
+  const span = eX - sX;
+  const rows = eY - sY;
+  if (span <= 0 || rows <= 0) return;
+
+  const {
+    variant = "gradient",
+    intensity = 0,
+    dim = 1,
+    alphaScale = 1,
+    stacked = false,
+    sparse = 0,
+    anchor = "left",
+    slope = "falloff",
+    minDensity = 0,
+    maxDensity = 1,
+    cap = "tip",
+    doubleCap = false,
+    capAlpha = 1,
+    topBottomBorders = false,
+  } = options;
+
+  const bias = (variant === "dotted" ? 0.12 : 0) + (stacked ? 0.2 : 0) - sparse;
+
+  for (let x = sX; x < eX; x++) {
+    // Determine distance from baseline based on anchor and slope
+    const dist =
+      anchor === "left"
+        ? slope === "rise"
+          ? span - 1 - (x - sX)
+          : x - sX
+        : slope === "rise"
+          ? x - sX
+          : eX - 1 - x;
+
+    const t = span > 1 ? 1 - dist / span : 1;
+    let density = minDensity + (maxDensity - minDensity) * t;
+    if (stacked) density = 0.5 + 0.5 * density;
+
+    for (let y = sY; y < eY; y++) {
+      if (variant === "hatched" && ((x + y) & 3) >= 2) continue;
+      const lit =
+        variant === "solid" ||
+        density > (BAYER[y & 3]?.[x & 3] ?? 0) - 0.1 * intensity - bias;
+      if (variant === "dotted" && !lit) continue;
+
+      const k = (0.3 + density * 0.7) * (1 + 0.22 * intensity);
+      const alpha = clamp01((lit ? k : k * OFF_TIER) * dim * alphaScale);
+      ctx.fillStyle = rgb(seed.fill, 1, alpha);
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  // Top and bottom borders if requested
+  if (topBottomBorders) {
+    ctx.fillStyle = rgb(seed.fill, 1, 0.4 * dim);
+    ctx.fillRect(sX, sY, span, 1);
+    ctx.fillRect(sX, eY - 1, span, 1);
+  }
+
+  // Cap border(s) perpendicular to horizontal growth
+  if (cap !== "none") {
+    const tipX = anchor === "left" ? eX - 1 : sX;
+    const shouldCapStart = cap === "start" || cap === "both" || (cap === "tip" && tipX === sX);
+    const shouldCapEnd = cap === "end" || cap === "both" || (cap === "tip" && tipX === eX - 1);
+
+    if (shouldCapStart) {
+      ctx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * dim * capAlpha);
+      ctx.fillRect(sX, sY, 1, rows);
+      if (doubleCap && span > 1) {
+        ctx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * 0.5 * dim * capAlpha);
+        ctx.fillRect(sX + 1, sY, 1, rows);
+      }
+    }
+
+    if (shouldCapEnd) {
+      ctx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * dim * capAlpha);
+      ctx.fillRect(eX - 1, sY, 1, rows);
+      if (doubleCap && span > 1) {
+        ctx.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * 0.5 * dim * capAlpha);
+        ctx.fillRect(eX - 2, sY, 1, rows);
+      }
+    }
+  }
+}
+
 /** Linear-resample a per-index fraction array to `cols` columns. */
 export function resample(src: number[], cols: number): number[] {
   const out = new Array<number>(cols);

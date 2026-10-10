@@ -5,6 +5,8 @@ import {
   getMultipliers,
   getTimeZone,
   getImportTimeZone,
+  getVelaPreferences,
+  setVelaPreferences,
   aiKeyEnvironment,
   aiModelSetting,
   getAiProvider,
@@ -15,14 +17,17 @@ import {
 import { AI_PROVIDERS, AI_PROVIDER_NAMES, isAiProvider, type AiProvider } from "@/lib/ai-settings";
 import { isTimeZone } from "@/lib/timezone";
 
-export const GET = handler(() =>
-  ok({
+export const GET = handler(() => {
+  const velaPrefs = getVelaPreferences();
+  return ok({
     timeZone: getTimeZone(),
     importTimeZone: getImportTimeZone(),
     multipliers: getMultipliers(),
+    velaDrawingFavorites: velaPrefs.velaDrawingFavorites,
+    velaDrawingPrefs: velaPrefs.velaDrawingPrefs,
     ...getAiSettings(),
-  }),
-);
+  });
+});
 
 interface SettingsBody {
   timeZone?: string;
@@ -34,6 +39,8 @@ interface SettingsBody {
   googleKey?: string | null;
   aiProvider?: AiProvider;
   aiModel?: string;
+  velaDrawingFavorites?: string[];
+  velaDrawingPrefs?: Record<string, unknown>;
 }
 
 export const PATCH = handler(async (request: Request) => {
@@ -79,6 +86,21 @@ export const PATCH = handler(async (request: Request) => {
         ),
       "Contract multipliers must be positive numbers.",
     );
+  if (body.velaDrawingFavorites !== undefined) {
+    requireValue(
+      Array.isArray(body.velaDrawingFavorites) &&
+        body.velaDrawingFavorites.every((item) => typeof item === "string"),
+      "Enter valid drawing favorites.",
+    );
+  }
+  if (body.velaDrawingPrefs !== undefined) {
+    requireValue(
+      body.velaDrawingPrefs !== null &&
+        typeof body.velaDrawingPrefs === "object" &&
+        !Array.isArray(body.velaDrawingPrefs),
+      "Enter valid drawing tool preferences.",
+    );
+  }
   db.transaction(() => {
     // A display-only change must not silently alter the legacy import default.
     if (body.timeZone !== undefined || body.importTimeZone !== undefined)
@@ -99,5 +121,13 @@ export const PATCH = handler(async (request: Request) => {
     if (body.aiProvider !== undefined) setSetting("aiProvider", body.aiProvider);
     if (body.aiModel !== undefined) setSetting(aiModelSetting(provider), body.aiModel.trim());
   });
+  if (body.velaDrawingFavorites !== undefined || body.velaDrawingPrefs !== undefined) {
+    db.transaction(() => {
+      setVelaPreferences({
+        velaDrawingFavorites: body.velaDrawingFavorites,
+        velaDrawingPrefs: body.velaDrawingPrefs,
+      });
+    });
+  }
   return ok({ saved: true });
 });

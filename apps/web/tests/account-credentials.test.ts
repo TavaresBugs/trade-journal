@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -9,9 +9,12 @@ const scratch = mkdtempSync(join(tmpdir(), "journal-credentials-test-"));
 process.env.JOURNAL_DATA_DIR = scratch;
 
 const { db, accounts } = await import("../src/db");
+const { decryptJson } = await import("../src/server/crypto");
+const { handler, RequestError } = await import("../src/server/api");
 const {
   deleteAccountCredentials,
   getAccountCredentials,
+  getAccountCredentialsInternal,
   getAllAccountsCredentials,
   removeEnvContent,
   saveAccountCredentials,
@@ -80,8 +83,12 @@ describe("Account Platform Credentials Service", () => {
     expect(res).not.toBeNull();
     expect(res?.credentials).not.toBeNull();
     expect(res?.credentials?.username).toBe("LTT3UY7S8I9");
-    expect(res?.credentials?.password).toBe("SecretPassword123!");
+    expect(res?.credentials?.hasPassword).toBe(true);
+    expect(res?.credentials?.password).toBeUndefined();
     expect(res?.credentials?.platforms).toEqual(["ninjatrader", "tradovate", "tradingview"]);
+
+    const internal = getAccountCredentialsInternal(testAccountId);
+    expect(internal?.credentials?.password).toBe("SecretPassword123!");
   });
 
   it("reads credentials defined via ACCOUNT_CREDENTIALS JSON map", () => {
@@ -97,8 +104,12 @@ describe("Account Platform Credentials Service", () => {
     expect(res).not.toBeNull();
     expect(res?.credentials).not.toBeNull();
     expect(res?.credentials?.username).toBe("JSON_USER_99");
-    expect(res?.credentials?.password).toBe("JSON_PASS_99");
+    expect(res?.credentials?.hasPassword).toBe(true);
+    expect(res?.credentials?.password).toBeUndefined();
     expect(res?.credentials?.platforms).toEqual(["ninjatrader", "tradingview"]);
+
+    const internal = getAccountCredentialsInternal(testAccountId);
+    expect(internal?.credentials?.password).toBe("JSON_PASS_99");
   });
 
   it("returns null when the account does not exist in the database", () => {
@@ -106,7 +117,7 @@ describe("Account Platform Credentials Service", () => {
     expect(res).toBeNull();
   });
 
-  it("saves credentials to DB and process.env, returning the updated credentials", () => {
+  it("saves credentials to DB and process.env, returning masked credentials", () => {
     const saved = saveAccountCredentials(testAccountId, {
       username: "MY_NEW_TRADER",
       password: "SuperSecretPassword!",
@@ -115,16 +126,19 @@ describe("Account Platform Credentials Service", () => {
 
     expect(saved).not.toBeNull();
     expect(saved?.credentials?.username).toBe("MY_NEW_TRADER");
-    expect(saved?.credentials?.password).toBe("SuperSecretPassword!");
+    expect(saved?.credentials?.hasPassword).toBe(true);
+    expect(saved?.credentials?.password).toBeUndefined();
     expect(saved?.credentials?.platforms).toEqual(["ninjatrader", "tradovate"]);
 
     // In-memory process.env check
     expect(process.env.ACCOUNT_LFE999888777_USERNAME).toBe("MY_NEW_TRADER");
     expect(process.env.ACCOUNT_LFE999888777_PASSWORD).toBe("SuperSecretPassword!");
 
-    // Instant getAccountCredentials check
+    // Instant getAccountCredentials check (masked)
     const fetched = getAccountCredentials(testAccountId);
     expect(fetched?.credentials?.username).toBe("MY_NEW_TRADER");
+    expect(fetched?.credentials?.hasPassword).toBe(true);
+    expect(fetched?.credentials?.password).toBeUndefined();
 
     // Even if process.env is cleared, DB credentialsEnc persists it
     delete process.env.ACCOUNT_LFE999888777_USERNAME;
@@ -133,7 +147,12 @@ describe("Account Platform Credentials Service", () => {
 
     const fromDb = getAccountCredentials(testAccountId);
     expect(fromDb?.credentials?.username).toBe("MY_NEW_TRADER");
-    expect(fromDb?.credentials?.password).toBe("SuperSecretPassword!");
+    expect(fromDb?.credentials?.hasPassword).toBe(true);
+    expect(fromDb?.credentials?.password).toBeUndefined();
+
+    const fromDbInternal = getAccountCredentialsInternal(testAccountId);
+    expect(fromDbInternal?.credentials?.username).toBe("MY_NEW_TRADER");
+    expect(fromDbInternal?.credentials?.password).toBe("SuperSecretPassword!");
   });
 
   it("updateEnvContent updates existing keys and appends new ones safely", () => {
@@ -266,5 +285,149 @@ describe("Account Platform Credentials Service", () => {
 
     // Cleanup twin 2 from DB
     db.delete(accounts).where(eq(accounts.id, twin2Id)).run();
+  });
+
+  it("persists credentials in SQLite with AES-256-GCM encryption (iv.ciphertext.authTag) and never stores plaintext", () => {
+    saveAccountCredentials(testAccountId, {
+      username: "ENCRYPTED_USER",
+      password: "SuperSecretPassword123!",
+      platforms: ["ninjatrader", "tradovate"],
+    });
+
+    const row = db.select().from(accounts).where(eq(accounts.id, testAccountId)).get();
+    expect(row?.credentialsEnc).toBeDefined();
+
+    // Must NOT contain plaintext username or password
+    expect(row!.credentialsEnc!).not.toContain("SuperSecretPassword123!");
+    expect(row!.credentialsEnc!).not.toContain("ENCRYPTED_USER");
+
+    // Must match iv.ciphertext.authTag format (3 base64 segments joined by dot)
+    const parts = row!.credentialsEnc!.split(".");
+    expect(parts).toHaveLength(3);
+    for (const part of parts) {
+      expect(part).toMatch(/^[A-Za-z0-9+/=]+$/);
+    }
+
+    // Decrypting with decryptJson restores the payload
+    const decrypted = decryptJson<{ username: string; password: string; platforms: string[] }>(
+      row!.credentialsEnc!,
+    );
+    expect(decrypted.username).toBe("ENCRYPTED_USER");
+    expect(decrypted.password).toBe("SuperSecretPassword123!");
+    expect(decrypted.platforms).toEqual(["ninjatrader", "tradovate"]);
+  });
+
+  it("gracefully decrypts legacy plaintext JSON in SQLite credentialsEnc", () => {
+    // Simulate legacy plain JSON stored before encryption was implemented
+    const legacyPayload = JSON.stringify({
+      username: "LEGACY_USER_01",
+      password: "LegacyPassword999!",
+      platforms: ["tradovate"],
+    });
+
+    db.update(accounts)
+      .set({ credentialsEnc: legacyPayload })
+      .where(eq(accounts.id, testAccountId))
+      .run();
+
+    // Masked public getter
+    const publicRes = getAccountCredentials(testAccountId);
+    expect(publicRes).not.toBeNull();
+    expect(publicRes?.credentials?.username).toBe("LEGACY_USER_01");
+    expect(publicRes?.credentials?.hasPassword).toBe(true);
+    expect(publicRes?.credentials?.password).toBeUndefined();
+
+    // Internal getter with raw password
+    const internalRes = getAccountCredentialsInternal(testAccountId);
+    expect(internalRes).not.toBeNull();
+    expect(internalRes?.credentials?.username).toBe("LEGACY_USER_01");
+    expect(internalRes?.credentials?.password).toBe("LegacyPassword999!");
+  });
+
+  it("rejects CRLF / newline injection in saveAccountCredentials and updateEnvContent", () => {
+    // 1. Username with newline
+    expect(() =>
+      saveAccountCredentials(testAccountId, {
+        username: "admin\nINJECTED_VAR=1",
+        password: "safe_password",
+      }),
+    ).toThrowError(/newline/i);
+
+    // 2. Username with carriage return
+    expect(() =>
+      saveAccountCredentials(testAccountId, {
+        username: "admin\rINJECTED_VAR=1",
+        password: "safe_password",
+      }),
+    ).toThrowError(/newline/i);
+
+    // 3. Password with newline
+    expect(() =>
+      saveAccountCredentials(testAccountId, {
+        username: "valid_admin",
+        password: "secret\nATTACK=pwned",
+      }),
+    ).toThrowError(/newline/i);
+
+    // 4. Password with CRLF
+    expect(() =>
+      saveAccountCredentials(testAccountId, {
+        username: "valid_admin",
+        password: "secret\r\nATTACK=pwned",
+      }),
+    ).toThrowError(/newline/i);
+
+    // 5. updateEnvContent with key containing newline
+    expect(() =>
+      updateEnvContent("SOME_KEY=1\n", {
+        "ATTACK\nKEY": "value",
+      }),
+    ).toThrowError(/newline/i);
+
+    // 6. updateEnvContent with value containing newline
+    expect(() =>
+      updateEnvContent("SOME_KEY=1\n", {
+        VALID_KEY: "val\nINJECTED_ENV=2",
+      }),
+    ).toThrowError(/newline/i);
+
+    // 7. updateEnvContent with carriage return
+    expect(() =>
+      updateEnvContent("SOME_KEY=1\n", {
+        VALID_KEY: "val\rINJECTED_ENV=2",
+      }),
+    ).toThrowError(/newline/i);
+  });
+
+  it("api handler sanitizes unexpected 500 errors and preserves RequestError", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    // Test unexpected internal error (e.g., SQLite constraint/schema error)
+    const buggyRoute = handler(async () => {
+      throw new Error("SQLITE_ERROR: no such column: sensitive_schema_leak at /var/app/db.sqlite");
+    }, { public: true });
+
+    const response500 = await buggyRoute();
+    expect(response500.status).toBe(500);
+    const body500 = await response500.json();
+    expect(body500).toEqual({ error: "An unexpected error occurred." });
+    expect(JSON.stringify(body500)).not.toContain("SQLITE_ERROR");
+    expect(JSON.stringify(body500)).not.toContain("sensitive_schema_leak");
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Internal API error:",
+      expect.any(Error),
+    );
+
+    consoleErrorSpy.mockRestore();
+
+    // Test explicit RequestError (e.g., 400 validation error)
+    const validationRoute = handler(async () => {
+      throw new RequestError("Username and password cannot contain newline characters", 400);
+    }, { public: true });
+
+    const response400 = await validationRoute();
+    expect(response400.status).toBe(400);
+    const body400 = await response400.json();
+    expect(body400).toEqual({ error: "Username and password cannot contain newline characters" });
   });
 });

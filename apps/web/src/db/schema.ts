@@ -148,6 +148,7 @@ export const trades = sqliteTable(
     profitTarget: real("profit_target"),
     reviewedAt: text("reviewed_at"),
     drawingsJson: text("drawings_json"),
+    linkedJournalDate: text("linked_journal_date"),
   },
   (table) => [
     index("trades_account_closed").on(table.accountId, table.closedAt),
@@ -155,6 +156,7 @@ export const trades = sqliteTable(
     index("trades_opened").on(table.openedAt),
     index("trades_account_opened").on(table.accountId, table.openedAt),
     index("trades_account_symbol_opened").on(table.accountId, table.symbol, table.openedAt),
+    index("trades_linked_journal").on(table.linkedJournalDate),
   ],
 );
 

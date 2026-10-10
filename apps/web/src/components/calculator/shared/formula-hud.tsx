@@ -6,11 +6,53 @@ import { Button } from "@/components/ui/button";
 import { HoverHint } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+export type FormulaHudSemanticVariant = "profit" | "loss" | "warning" | "neutral" | "brand";
+
+export interface FormulaHudVariantStyles {
+  dotClass: string;
+  badgeClass: string;
+}
+
+export const FORMULA_HUD_VARIANT_STYLES: Record<FormulaHudSemanticVariant, FormulaHudVariantStyles> = {
+  profit: {
+    dotClass: "bg-profit",
+    badgeClass: "text-profit",
+  },
+  loss: {
+    dotClass: "bg-loss",
+    badgeClass: "text-loss",
+  },
+  warning: {
+    dotClass: "bg-amber-500",
+    badgeClass: "text-amber-500",
+  },
+  brand: {
+    dotClass: "bg-primary",
+    badgeClass: "text-primary",
+  },
+  neutral: {
+    dotClass: "bg-muted-foreground",
+    badgeClass: "text-muted-foreground",
+  },
+};
+
+export function resolveFormulaHudVariant(category?: FormulaHudCategory): FormulaHudSemanticVariant {
+  if (!category) return "neutral";
+  if (category.variant) return category.variant;
+  const col = category.color ?? "";
+  if (col.includes("profit")) return "profit";
+  if (col.includes("loss")) return "loss";
+  if (col.includes("amber") || col.includes("warn")) return "warning";
+  if (col.includes("primary") || col.includes("brand")) return "brand";
+  return "neutral";
+}
+
 export interface FormulaHudCategory {
   label: React.ReactNode;
-  color: string;
-  border: string;
-  bg: string;
+  variant?: FormulaHudSemanticVariant;
+  color?: string;
+  border?: string;
+  bg?: string;
   heading?: string;
   advice?: string;
 }
@@ -79,31 +121,30 @@ export function FormulaHud({
           <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
             {title}
           </span>
-          {category && category.label && (
-            <HoverHint heading={category.heading} content={category.advice}>
-              <button
-                type="button"
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full bg-muted/30 px-2 py-0.5 font-mono text-[10px] font-medium cursor-help transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  category.color,
-                )}
-              >
-                <span
+          {category && category.label && (() => {
+            const variant = resolveFormulaHudVariant(category);
+            const styles = FORMULA_HUD_VARIANT_STYLES[variant];
+            return (
+              <HoverHint heading={category.heading} content={category.advice}>
+                <button
+                  type="button"
                   className={cn(
-                    "size-1.5 rounded-full shrink-0",
-                    category.color?.includes("profit")
-                      ? "bg-profit"
-                      : category.color?.includes("loss")
-                        ? "bg-loss"
-                        : category.color?.includes("amber")
-                          ? "bg-amber-500"
-                          : "bg-primary",
+                    "inline-flex items-center gap-1.5 rounded-full bg-muted/30 px-2 py-0.5 font-mono text-[10px] font-medium cursor-help transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    styles.badgeClass,
+                    category.color,
                   )}
-                />
-                <span>{category.label}</span>
-              </button>
-            </HoverHint>
-          )}
+                >
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full shrink-0",
+                      styles.dotClass,
+                    )}
+                  />
+                  <span>{category.label}</span>
+                </button>
+              </HoverHint>
+            );
+          })()}
         </div>
         <div className="flex items-center gap-1.5">
           {actions}

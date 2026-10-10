@@ -73,13 +73,15 @@ CREATE TABLE IF NOT EXISTS trades (
   stop_loss REAL,
   profit_target REAL,
   reviewed_at TEXT,
-  drawings_json TEXT
+  drawings_json TEXT,
+  linked_journal_date TEXT
 );
 CREATE INDEX IF NOT EXISTS trades_account_closed ON trades (account_id, closed_at);
 CREATE INDEX IF NOT EXISTS trades_symbol ON trades (symbol);
 CREATE INDEX IF NOT EXISTS trades_opened ON trades (opened_at);
 CREATE INDEX IF NOT EXISTS trades_account_opened ON trades (account_id, opened_at);
 CREATE INDEX IF NOT EXISTS trades_account_symbol_opened ON trades (account_id, symbol, opened_at);
+CREATE INDEX IF NOT EXISTS trades_linked_journal ON trades (linked_journal_date);
 
 CREATE TABLE IF NOT EXISTS market_csv_datasets (
  id TEXT PRIMARY KEY, name TEXT NOT NULL, symbol TEXT NOT NULL,

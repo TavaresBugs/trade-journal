@@ -1,13 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import {
-  BAYER,
-  BORDER_ALPHA,
-  clamp01,
-  OFF_TIER,
-} from "./dither-paint";
-import { type DitherColor, rgb, seedOfColor } from "./palette";
+import { paintHorizontalSpan } from "./dither-paint";
+import { type DitherColor, seedOfColor } from "./palette";
 
 export type DitherRowBarProps = {
   percent: number; // 0 to 100
@@ -52,26 +47,17 @@ export function DitherRowBar({
     const intensity = isSelected ? 0.35 : 0;
 
     c.clearRect(0, 0, cols, rows);
-
-    // Paint dithered row with density gradient towards the tip
-    for (let x = 0; x < targetCols; x++) {
-      const density = 0.35 + 0.65 * (x / targetCols);
-      for (let y = 0; y < rows; y++) {
-        const lit = density > (BAYER[y & 3]?.[x & 3] ?? 0) - 0.1 * intensity;
-        const k = (0.3 + density * 0.7) * (1 + 0.22 * intensity);
-        const alpha = clamp01((lit ? k : k * OFF_TIER) * dim * 0.32);
-        c.fillStyle = rgb(seed.fill, 1, alpha);
-        c.fillRect(x, y, 1, 1);
-      }
-    }
-
-    // 1px cap outline at the value edge
-    c.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * dim * 0.85);
-    c.fillRect(targetCols - 1, 0, 1, rows);
-    if (targetCols > 2) {
-      c.fillStyle = rgb(seed.fill, 1, BORDER_ALPHA * 0.4 * dim);
-      c.fillRect(targetCols - 2, 0, 1, rows);
-    }
+    paintHorizontalSpan(c, 0, targetCols, 0, rows, seed, {
+      anchor: "right",
+      minDensity: 0.35,
+      maxDensity: 1.0,
+      dim,
+      intensity,
+      alphaScale: 0.32,
+      cap: "end",
+      doubleCap: targetCols > 2,
+      capAlpha: 0.85,
+    });
   }, [percent, color, isSelected]);
 
   return (

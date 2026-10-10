@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm";
-import { accounts, db, executions, trades } from "@/db";
+import { and, eq, inArray } from "drizzle-orm";
+import { accounts, attachments, db, executions, notes, tradeRuleChecks, trades } from "@/db";
 import { bad, handler, ok } from "@/server/api";
 import { deleteAccountCredentials } from "@/server/account-credentials";
 import { rebuildAccount } from "@/server/rebuild";
@@ -41,7 +41,29 @@ export const DELETE = handler(async (_request: Request, { params }: Params) => {
   // Safely clean credentials from .env and memory with twin account collision protection
   const credentialsCleanup = deleteAccountCredentials(id);
 
+  const tradeRows = db
+    .select({ key: trades.key })
+    .from(trades)
+    .where(eq(trades.accountId, id))
+    .all();
+  const tradeKeys = tradeRows.map((r) => r.key);
+
   db.transaction((tx) => {
+    if (tradeKeys.length > 0) {
+      for (let i = 0; i < tradeKeys.length; i += 500) {
+        const chunk = tradeKeys.slice(i, i + 500);
+        tx.delete(attachments)
+          .where(and(eq(attachments.ownerType, "trade"), inArray(attachments.ownerId, chunk)))
+          .run();
+        tx.delete(tradeRuleChecks)
+          .where(inArray(tradeRuleChecks.tradeKey, chunk))
+          .run();
+        tx.update(notes)
+          .set({ tradeKey: null })
+          .where(inArray(notes.tradeKey, chunk))
+          .run();
+      }
+    }
     tx.delete(trades).where(eq(trades.accountId, id)).run();
     tx.delete(executions).where(eq(executions.accountId, id)).run();
     tx.delete(accounts).where(eq(accounts.id, id)).run();

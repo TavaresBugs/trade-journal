@@ -1,9 +1,10 @@
 import { registerIcon, injectStyles } from "@luxalgo/vela/ui";
 import { registerWidgetAction, type WidgetContext } from "@luxalgo/vela/widget";
+import { VELA_ICONS } from "./vela-icons";
 
-export const SLIDERS_ICON_SVG = `<svg viewBox="0 0 20 20" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v14m5-14v14m5-14v14M3 7h4m1 6h4m1-8h4"/></svg>`;
+export const SLIDERS_ICON_SVG = VELA_ICONS.sliders;
 
-export const COPY_PRICE_ICON_SVG = `<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>`;
+export const COPY_PRICE_ICON_SVG = VELA_ICONS.copyPrice;
 
 export const VELA_CONTEXT_MENU_CSS = `
 .quant-chart-chrome .vela-menu:not(.quant-drawing-menu) .vela-menu-item > .vela-icon,

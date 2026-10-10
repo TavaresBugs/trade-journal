@@ -56,10 +56,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RuleChecklist } from "@/components/rule-checklist";
 import { useAutosave } from "@/lib/use-autosave";
 import { postJson, useApi } from "@/lib/use-api";
-import { cn, fmtDuration, fmtMoney, fmtNumber, fmtPercent } from "@/lib/utils";
+import { cn, fmtAmount, fmtDuration, fmtMoney, fmtNumber, fmtPercent } from "@/lib/utils";
 import { formatTimestamp } from "@/lib/timezone";
 import { dayKeyOf, type IntradayPoint, type TradeMetrics } from "@luxalgo/journal-core";
 import { TimeframeScreenshotGrid } from "@/components/screenshots/timeframe-screenshot-grid";
+import { TradePlanningModal, formatFeeDisplay } from "@/components/trade-planning-modal";
 
 export interface TradeDetail {
   riskAmount: number | null;
@@ -91,6 +92,8 @@ export interface TradeDetail {
   stopLoss: number | null;
   profitTarget: number | null;
   reviewedAt: string | null;
+  executionCount?: number;
+  linkedJournalDate?: string | null;
 }
 
 export interface ExecutionRow {
@@ -112,6 +115,7 @@ export interface TradeRowLite {
   avgEntry: number;
   avgExit: number | null;
   fees: number;
+  linkedJournalDate?: string | null;
 }
 
 export interface DayPayload {
@@ -126,6 +130,8 @@ export interface DayPayload {
   reviewedAt: string | null;
   tagsJson: string | null;
   mistakesJson: string | null;
+  attachmentsCount?: number;
+  hasDayJournal?: boolean;
 }
 
 export interface JournalViewProps {
@@ -306,6 +312,7 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
   // Loading / Error states
   const totalTrades = dayData?.trades?.length ?? 0;
   const [journalsDialogOpen, setJournalsDialogOpen] = useState(false);
+  const [isPlanningModalOpen, setIsPlanningModalOpen] = useState(false);
   const tradeIndex = useMemo(() => {
     if (!dayData?.trades || !activeTradeKey) return 0;
     const idx = dayData.trades.findIndex((t) => t.key === activeTradeKey);
@@ -373,7 +380,11 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
                 </span>
               </div>
               <div className="flex items-center gap-1.5 self-center">
-                <DirectionBadge direction={trade.direction} size="xs" />
+                <DirectionBadge
+                  direction={trade.direction}
+                  size="xs"
+                  className="h-5 px-2 text-[10px] leading-none"
+                />
                 <Badge
                   variant={
                     trade.status === "win"
@@ -382,7 +393,7 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
                         ? "loss"
                         : "secondary"
                   }
-                  className="text-[11px] font-semibold tracking-wider px-2 py-0.5 uppercase"
+                  className="h-5 px-2 text-[10px] font-semibold tracking-wider uppercase leading-none inline-flex items-center justify-center rounded-md border-transparent"
                 >
                   {trade.status}
                 </Badge>
@@ -535,7 +546,13 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
             - Face B (Clean Journal): Hero e Market Data são OMITIDOS! Screenshots sobe para o topo.
         */}
         <div className="min-w-0 space-y-3 xl:col-span-2">
-          {hasTrade && trade && <TradeHeroCard trade={trade} timeZone={timeZone} />}
+          {hasTrade && trade && (
+            <TradeHeroCard
+              trade={trade}
+              timeZone={timeZone}
+              onOpenPlanning={() => setIsPlanningModalOpen(true)}
+            />
+          )}
 
           {/* Timeframe Screenshots (sempre presente em ambas as faces) */}
           <TimeframeScreenshotGrid date={effectiveDate} />
@@ -625,6 +642,24 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
         onOpenChange={setJournalsDialogOpen}
         onJournalCreated={refreshDay}
       />
+
+      {hasTrade && trade && (
+        <TradePlanningModal
+          isOpen={isPlanningModalOpen}
+          onClose={() => setIsPlanningModalOpen(false)}
+          trade={trade}
+          dayJournalTitle={
+            currentJournalAsset ? `${currentJournalAsset} Journal` : "Session Journal"
+          }
+          dayDate={effectiveDate}
+          hasDayJournal={Boolean(
+            dayData?.note || dayData?.symbol || (dayData?.attachmentsCount ?? 0) > 0,
+          )}
+          onSave={async (patches) => {
+            await patchTrade(patches);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -633,9 +668,50 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
  * TradeHeroCard: Renderiza o card com Net P&L em destaque (+% notional) e 10 métricas financeiras.
  * Omitido no modo Clean Journal.
  */
-function TradeHeroCard({ trade, timeZone }: { trade: TradeDetail; timeZone: string }) {
+export interface TradeHeroCardProps {
+  trade: TradeDetail;
+  timeZone: string;
+  mae?: number | null;
+  mfe?: number | null;
+  onOpenPlanning?: () => void;
+}
+
+export function TradeHeroCard({
+  trade,
+  timeZone,
+  mae: propMae,
+  mfe: propMfe,
+  onOpenPlanning,
+}: TradeHeroCardProps) {
+  // Connect to saved excursion estimates if not provided directly
+  const { data: marketData } = useApi<{
+    saved: {
+      estimate: { mae: number | null; mfe: number | null };
+    } | null;
+  }>(
+    propMae === undefined && propMfe === undefined
+      ? `/api/trades/${encodeURIComponent(trade.key)}/market-data`
+      : null,
+  );
+
+  const effectiveMae = propMae !== undefined ? propMae : (marketData?.saved?.estimate?.mae ?? null);
+  const effectiveMfe = propMfe !== undefined ? propMfe : (marketData?.saved?.estimate?.mfe ?? null);
+
   return (
-    <Card>
+    <Card className="relative">
+      {onOpenPlanning && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onOpenPlanning}
+          className="absolute top-2.5 right-2.5 size-7 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-lg transition-colors cursor-pointer"
+          title="Edit trade details & planning"
+        >
+          <Pencil className="size-3.5" />
+          <span className="sr-only">Edit trade details</span>
+        </Button>
+      )}
+
       <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 py-4 px-4 sm:px-5">
         {/* Hero Net P&L Column */}
         <div className="flex flex-col justify-center shrink-0 sm:pr-6 sm:border-r sm:border-border/70 min-w-[110px] sm:min-w-[120px]">
@@ -659,28 +735,62 @@ function TradeHeroCard({ trade, timeZone }: { trade: TradeDetail; timeZone: stri
             )}
         </div>
 
-        {/* 5 Logical Paired Columns across the remaining width */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-3.5 lg:gap-x-5 gap-y-3 flex-1 min-w-0">
-          {/* Col 1: Financials */}
-          <Meta label="Gross" value={fmtMoney(trade.grossPnl)} monetary />
-          {/* Col 2: Sizing & Timing */}
+        {/* 6 Logical Paired Columns across the remaining width */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-3.5 lg:gap-x-4 gap-y-3 flex-1 min-w-0 pr-8 sm:pr-0">
+          {/* Col 1 (top): Financials (Gross P&L with semantic profit/loss coloring) */}
+          <Meta label="Gross">
+            <Pnl
+              value={trade.grossPnl}
+              currency={trade.currency}
+              className="font-mono text-sm font-semibold whitespace-nowrap"
+            />
+          </Meta>
+          {/* Col 2 (top): Sizing & Timing */}
           <Meta label="Volume" value={fmtNumber(trade.quantity, 4)} />
-          {/* Col 3: Price Entry */}
+          {/* Col 3 (top): Price Entry */}
           <Meta label="Avg entry" value={fmtNumber(trade.avgEntry)} monetary />
-          {/* Col 4: Planned Multiple */}
+          {/* Col 4 (top): Planned Multiple */}
           <Meta
             label="Planned R"
             value={trade.plannedR === null ? "–" : `${fmtNumber(trade.plannedR)}R`}
           />
-          {/* Col 5: Entry Time */}
+          {/* Col 5 (top): MFE (Maximum Favorable Excursion) */}
+          <Meta label="MFE">
+            <span
+              className={cn(
+                "tnum font-mono text-sm font-semibold whitespace-nowrap",
+                effectiveMfe !== null && effectiveMfe > 0 ? "text-profit" : "text-muted-foreground",
+              )}
+            >
+              {effectiveMfe !== null ? (
+                <MonetaryValue>
+                  {effectiveMfe > 0
+                    ? fmtMoney(effectiveMfe, trade.currency).replace(/^\+?/, "+")
+                    : fmtAmount(0, trade.currency)}
+                </MonetaryValue>
+              ) : (
+                "–"
+              )}
+            </span>
+          </Meta>
+          {/* Col 6 (top): Entry Time */}
           <Meta
             label="Entry"
             value={formatTimestamp(trade.openedAt, timeZone).slice(0, 16)}
             className="text-xs sm:text-[13px]"
           />
 
-          {/* Col 1 (bottom): Fees */}
-          <Meta label="Fees" value={fmtMoney(trade.fees)} monetary />
+          {/* Col 1 (bottom): Fees (always negative deduction or zero, never positive sign) */}
+          <Meta label="Fees">
+            <span
+              className={cn(
+                "tnum font-mono text-sm font-semibold whitespace-nowrap",
+                trade.fees > 0 ? "text-loss/80" : "text-muted-foreground",
+              )}
+            >
+              <MonetaryValue>{formatFeeDisplay(trade.fees, trade.currency)}</MonetaryValue>
+            </span>
+          </Meta>
           {/* Col 2 (bottom): Duration */}
           <Meta label="Duration" value={fmtDuration(trade.durationMs)} />
           {/* Col 3 (bottom): Price Exit */}
@@ -693,8 +803,35 @@ function TradeHeroCard({ trade, timeZone }: { trade: TradeDetail; timeZone: stri
           <Meta
             label="Realized R"
             value={trade.realizedR === null ? "–" : `${fmtNumber(trade.realizedR)}R`}
+            className={cn(
+              trade.realizedR !== null &&
+                (trade.realizedR > 0
+                  ? "text-profit"
+                  : trade.realizedR < 0
+                    ? "text-loss"
+                    : "text-muted-foreground"),
+            )}
           />
-          {/* Col 5 (bottom): Exit Time */}
+          {/* Col 5 (bottom): MAE (Maximum Adverse Excursion) */}
+          <Meta label="MAE">
+            <span
+              className={cn(
+                "tnum font-mono text-sm font-semibold whitespace-nowrap",
+                effectiveMae !== null && effectiveMae > 0 ? "text-loss" : "text-muted-foreground",
+              )}
+            >
+              {effectiveMae !== null ? (
+                <MonetaryValue>
+                  {effectiveMae > 0
+                    ? fmtAmount(-Math.abs(effectiveMae), trade.currency)
+                    : fmtAmount(0, trade.currency)}
+                </MonetaryValue>
+              ) : (
+                "–"
+              )}
+            </span>
+          </Meta>
+          {/* Col 6 (bottom): Exit Time */}
           <Meta
             label="Exit"
             value={trade.closedAt ? formatTimestamp(trade.closedAt, timeZone).slice(0, 16) : "open"}
@@ -711,24 +848,29 @@ function Meta({
   value,
   monetary = false,
   className,
+  valueClassName,
+  children,
 }: {
   label: string;
-  value: string;
+  value?: string | number | null;
   monetary?: boolean;
   className?: string;
+  valueClassName?: string;
+  children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-0.5 min-w-0">
+    <div className={cn("flex flex-col gap-0.5 min-w-0", className)}>
       <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground whitespace-nowrap">
         {label}
       </div>
       <div
         className={cn(
           "tnum font-mono text-sm font-semibold text-foreground whitespace-nowrap",
-          className,
+          valueClassName,
         )}
       >
-        {monetary ? <MonetaryValue>{value}</MonetaryValue> : value}
+        {children ??
+          (monetary && typeof value === "string" ? <MonetaryValue>{value}</MonetaryValue> : value)}
       </div>
     </div>
   );
@@ -764,7 +906,12 @@ function UnifiedReviewCard({
     }
   };
 
-  const initialNotes = hasTrade ? (trade?.notes ?? "") : (dayData?.note ?? "");
+  const isLinkedToJournal = Boolean(hasTrade && trade?.linkedJournalDate);
+  const initialNotes = isLinkedToJournal
+    ? dayData?.note || trade?.notes || ""
+    : hasTrade
+      ? (trade?.notes ?? "")
+      : (dayData?.note ?? "");
   const initialRating = hasTrade ? (trade?.rating ?? null) : (dayData?.rating ?? null);
   const initialReviewedAt = hasTrade ? (trade?.reviewedAt ?? null) : (dayData?.reviewedAt ?? null);
   const initialTags = safeParseArray(hasTrade ? trade?.tagsJson : dayData?.tagsJson).join(", ");
@@ -1077,9 +1224,11 @@ function UnifiedReviewCard({
                   ? "Note is saved to local journal"
                   : isError
                     ? saveStatus
-                    : hasTrade
-                      ? "Annotations stay with this trade"
-                      : "Annotations stay with this day"}
+                    : isLinkedToJournal
+                      ? "Session notes · Shared across trades linked to this journal"
+                      : hasTrade
+                        ? "Annotations stay with this trade"
+                        : "Annotations stay with this day"}
             </span>
 
             <div className="flex items-center gap-2 shrink-0">

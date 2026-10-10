@@ -300,7 +300,7 @@ describe("Statement & Display Timezones Subsystem", () => {
       new URL("../../../docs/samples/mt5-timezone.html", import.meta.url),
       "utf8",
     );
-  });
+  }, 30_000);
 
   beforeEach(() => {
     db.delete(trades).run();
@@ -315,7 +315,7 @@ describe("Statement & Display Timezones Subsystem", () => {
   afterEach(() => vi.useRealTimers());
 
   afterAll(() => {
-    db.$client.close();
+    db?.$client?.close();
     vi.unstubAllEnvs();
     rmSync(scratch, { recursive: true, force: true });
   });

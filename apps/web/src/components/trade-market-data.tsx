@@ -1023,17 +1023,6 @@ function HistoricalMarketChart({
           </p>
         </div>
       </div>
-
-      <details className="text-xs text-muted-foreground">
-        <summary className="cursor-pointer font-medium hover:text-foreground transition-colors">
-          Data coverage & estimate limits
-        </summary>
-        <ul className="mt-2 list-disc space-y-1 pl-4">
-          {[...history.warnings, ...history.estimate.warnings].map((warning) => (
-            <li key={warning}>{warning}</li>
-          ))}
-        </ul>
-      </details>
     </div>
   );
 }

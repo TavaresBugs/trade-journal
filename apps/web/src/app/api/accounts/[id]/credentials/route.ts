@@ -32,7 +32,13 @@ export const POST = handler(async (request: Request, { params }: Params) => {
   }
 
   const password = typeof body?.password === "string" ? body.password : "";
-  const platforms = Array.isArray(body?.platforms) ? body.platforms : undefined;
+  if (/[\r\n]/.test(username) || /[\r\n]/.test(password)) {
+    return bad("Username and password cannot contain newline characters", 400);
+  }
+
+  const platforms = Array.isArray(body?.platforms)
+    ? body.platforms.filter((p: unknown): p is string => typeof p === "string")
+    : undefined;
 
   const result = saveAccountCredentials(id, {
     username,

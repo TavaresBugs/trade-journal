@@ -1,8 +1,9 @@
 import { tradeRisk, tradeR, plannedR } from "@luxalgo/journal-core";
 import { eq } from "drizzle-orm";
-import { db, trades, playbooks, accounts } from "@/db";
+import { db, trades, playbooks, accounts, journalDays } from "@/db";
 import { bad, handler, ok, requireValue } from "@/server/api";
-import { deleteExecutionsForTrades, listExecutions } from "@/server/executions";
+import { listExecutions } from "@/server/executions";
+import { deleteTradeWithCleanup } from "@/server/trades";
 import { nowIso } from "@/server/ids";
 import { getTradeByKey, rowToTrade } from "@/server/trades-query";
 import { getTimeZone } from "@/server/settings";
@@ -45,6 +46,7 @@ interface AnnotateBody {
   profitTarget?: number | null;
   reviewed?: boolean;
   drawingsJson?: string | null;
+  linkedJournalDate?: string | null;
 }
 
 export const PATCH = handler(async (request: Request, { params }: Params) => {
@@ -85,7 +87,40 @@ export const PATCH = handler(async (request: Request, { params }: Params) => {
     "Playbook not found.",
   );
   const patch: Partial<typeof trades.$inferInsert> = {};
-  if (body.notes !== undefined) patch.notes = body.notes;
+  const effectiveJournalDate =
+    body.linkedJournalDate !== undefined ? body.linkedJournalDate : row.linkedJournalDate;
+
+  // Inherit session note if newly linked and trade has no existing note
+  if (body.linkedJournalDate && body.notes === undefined && !row.notes) {
+    const existingDay = db
+      .select({ note: journalDays.note })
+      .from(journalDays)
+      .where(eq(journalDays.date, body.linkedJournalDate))
+      .get();
+    if (existingDay?.note) {
+      patch.notes = existingDay.note;
+    }
+  }
+
+  if (body.notes !== undefined) {
+    patch.notes = body.notes;
+    // When trade is linked to a session journal, sync note with the session journal and all sibling trades
+    if (effectiveJournalDate) {
+      const noteStr = body.notes ?? "";
+      db.insert(journalDays)
+        .values({ date: effectiveJournalDate, note: noteStr, updatedAt: nowIso() })
+        .onConflictDoUpdate({
+          target: journalDays.date,
+          set: { note: noteStr, updatedAt: nowIso() },
+        })
+        .run();
+      db.update(trades)
+        .set({ notes: body.notes })
+        .where(eq(trades.linkedJournalDate, effectiveJournalDate))
+        .run();
+    }
+  }
+
   if (body.tags !== undefined) patch.tagsJson = JSON.stringify(body.tags);
   if (body.mistakes !== undefined) patch.mistakesJson = JSON.stringify(body.mistakes);
   if (body.playbookId !== undefined) patch.playbookId = body.playbookId;
@@ -94,6 +129,7 @@ export const PATCH = handler(async (request: Request, { params }: Params) => {
   if (body.profitTarget !== undefined) patch.profitTarget = body.profitTarget;
   if (body.reviewed !== undefined) patch.reviewedAt = body.reviewed ? nowIso() : null;
   if (body.drawingsJson !== undefined) patch.drawingsJson = body.drawingsJson;
+  if (body.linkedJournalDate !== undefined) patch.linkedJournalDate = body.linkedJournalDate;
 
   if (!Object.keys(patch).length) return ok({ updated: true });
   db.update(trades).set(patch).where(eq(trades.key, decoded)).run();
@@ -102,9 +138,6 @@ export const PATCH = handler(async (request: Request, { params }: Params) => {
 
 export const DELETE = handler(async (_request: Request, { params }: Params) => {
   const { key } = await params;
-  const row = getTradeByKey(key);
-  if (!row) return bad("Trade not found", 404);
-  // Deleting a trade means deleting its executions; the rebuild removes the row.
-  deleteExecutionsForTrades(row.accountId, JSON.parse(row.executionIdsJson) as string[]);
-  return ok({ deleted: true });
+  const result = deleteTradeWithCleanup(key);
+  return ok({ deleted: true, ...result });
 });

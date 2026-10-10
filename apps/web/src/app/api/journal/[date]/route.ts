@@ -137,7 +137,13 @@ const saveJournalDay = async (request: Request, date: string) => {
     updatedAt: nowIso(),
   };
 
-  if (noteContent !== undefined) patch.note = noteContent;
+  if (noteContent !== undefined) {
+    patch.note = noteContent;
+    db.update(tradesTable)
+      .set({ notes: noteContent })
+      .where(eq(tradesTable.linkedJournalDate, date))
+      .run();
+  }
   if (body.symbol !== undefined) patch.symbol = body.symbol ? normalizeSymbol(body.symbol) : null;
   if (body.rating !== undefined) patch.rating = body.rating;
   if (body.reviewed !== undefined) patch.reviewedAt = body.reviewed ? nowIso() : null;

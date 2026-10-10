@@ -68,15 +68,52 @@ export function loadDrawingFavorites(): string[] {
   return [];
 }
 
+let pendingFavoritesTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingFavoritesPayload: string[] | null = null;
+let pendingFavoritesFetchFn: typeof fetch | undefined = undefined;
+
+let pendingPrefsTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingPrefsPayload: DrawingToolPrefs | Record<string, unknown> | null = null;
+let pendingPrefsFetchFn: typeof fetch | undefined = undefined;
+
 /**
- * Saves favorite drawing tools list to local storage.
+ * Saves favorite drawing tools list to local storage AND debounced (300ms) sync to /api/settings.
  */
-export function saveDrawingFavorites(favorites: string[]): void {
+export function saveDrawingFavorites(
+  favorites: string[],
+  options?: { fetchImpl?: typeof fetch; debounceMs?: number },
+): void {
   const storage = getStorage();
-  if (!storage) return;
-  try {
-    storage.setItem(VELA_DRAWING_FAVORITES_KEY, JSON.stringify(favorites));
-  } catch {}
+  if (storage) {
+    try {
+      storage.setItem(VELA_DRAWING_FAVORITES_KEY, JSON.stringify(favorites));
+    } catch {}
+  }
+
+  const fn = options?.fetchImpl ?? (typeof fetch !== "undefined" ? fetch : undefined);
+  if (!fn) return;
+
+  const debounceMs = options?.debounceMs ?? 300;
+  pendingFavoritesPayload = favorites;
+  pendingFavoritesFetchFn = fn;
+  if (pendingFavoritesTimer) {
+    clearTimeout(pendingFavoritesTimer);
+  }
+  pendingFavoritesTimer = setTimeout(() => {
+    pendingFavoritesTimer = null;
+    const payload = pendingFavoritesPayload;
+    pendingFavoritesPayload = null;
+    pendingFavoritesFetchFn = undefined;
+    if (payload) {
+      try {
+        void fn("/api/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ velaDrawingFavorites: payload }),
+        }).catch(() => {});
+      } catch {}
+    }
+  }, debounceMs);
 }
 
 /**
@@ -108,16 +145,46 @@ export function loadDrawingToolPrefs(): DrawingToolPrefs {
 }
 
 /**
- * Updates drawing tool preferences in local storage with the provided patch.
+ * Updates drawing tool preferences in local storage with the provided patch
+ * AND debounced (300ms) sync to /api/settings.
  */
-export function saveDrawingToolPrefs(patch: DrawingToolPrefs): void {
+export function saveDrawingToolPrefs(
+  patch: DrawingToolPrefs,
+  options?: { fetchImpl?: typeof fetch; debounceMs?: number },
+): void {
+  const current = loadDrawingToolPrefs();
+  const updated: DrawingToolPrefs = { ...current, ...patch };
   const storage = getStorage();
-  if (!storage) return;
-  try {
-    const current = loadDrawingToolPrefs();
-    const updated: DrawingToolPrefs = { ...current, ...patch };
-    storage.setItem(VELA_DRAWING_PREFS_KEY, JSON.stringify(updated));
-  } catch {}
+  if (storage) {
+    try {
+      storage.setItem(VELA_DRAWING_PREFS_KEY, JSON.stringify(updated));
+    } catch {}
+  }
+
+  const fn = options?.fetchImpl ?? (typeof fetch !== "undefined" ? fetch : undefined);
+  if (!fn) return;
+
+  const debounceMs = options?.debounceMs ?? 300;
+  pendingPrefsPayload = updated;
+  pendingPrefsFetchFn = fn;
+  if (pendingPrefsTimer) {
+    clearTimeout(pendingPrefsTimer);
+  }
+  pendingPrefsTimer = setTimeout(() => {
+    pendingPrefsTimer = null;
+    const payload = pendingPrefsPayload;
+    pendingPrefsPayload = null;
+    pendingPrefsFetchFn = undefined;
+    if (payload) {
+      try {
+        void fn("/api/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ velaDrawingPrefs: payload }),
+        }).catch(() => {});
+      } catch {}
+    }
+  }, debounceMs);
 }
 
 /**
@@ -219,9 +286,51 @@ export function saveTradeDrawings(
 }
 
 /**
+ * Immediately flushes any pending debounced remote save for favorites/preferences.
+ */
+export function flushPendingPreferencesSave(fetchFn?: typeof fetch): void {
+  if (pendingFavoritesTimer) {
+    clearTimeout(pendingFavoritesTimer);
+    pendingFavoritesTimer = null;
+    const payload = pendingFavoritesPayload;
+    const fn = fetchFn ?? pendingFavoritesFetchFn ?? (typeof fetch !== "undefined" ? fetch : undefined);
+    pendingFavoritesPayload = null;
+    pendingFavoritesFetchFn = undefined;
+    if (payload && fn) {
+      try {
+        void fn("/api/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ velaDrawingFavorites: payload }),
+        }).catch(() => {});
+      } catch {}
+    }
+  }
+
+  if (pendingPrefsTimer) {
+    clearTimeout(pendingPrefsTimer);
+    pendingPrefsTimer = null;
+    const payload = pendingPrefsPayload;
+    const fn = fetchFn ?? pendingPrefsFetchFn ?? (typeof fetch !== "undefined" ? fetch : undefined);
+    pendingPrefsPayload = null;
+    pendingPrefsFetchFn = undefined;
+    if (payload && fn) {
+      try {
+        void fn("/api/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ velaDrawingPrefs: payload }),
+        }).catch(() => {});
+      } catch {}
+    }
+  }
+}
+
+/**
  * Immediately flushes any pending debounced remote save for a trade (or all trades).
  */
 export function flushPendingTradeDrawingsSave(tradeKey?: string): void {
+  flushPendingPreferencesSave();
   if (tradeKey) {
     const pending = pendingSaves.get(tradeKey);
     if (pending) {
@@ -335,7 +444,10 @@ export function attachVelaDrawingsPersistence(
 
     const handleFavs = ({ favorites }: any = {}) => {
       if (!isHydrating && Array.isArray(favorites)) {
-        saveDrawingFavorites(favorites);
+        saveDrawingFavorites(favorites, {
+          fetchImpl: options?.fetchImpl,
+          debounceMs: options?.debounceMs,
+        });
       }
     };
     const unsubFavs = instance.on("drawing:favorites", handleFavs);
@@ -347,7 +459,10 @@ export function attachVelaDrawingsPersistence(
 
     const handleSnap = ({ mode }: any = {}) => {
       if (!isHydrating && mode) {
-        saveDrawingToolPrefs({ snapMode: mode });
+        saveDrawingToolPrefs(
+          { snapMode: mode },
+          { fetchImpl: options?.fetchImpl, debounceMs: options?.debounceMs },
+        );
       }
     };
     const unsubSnap = instance.on("drawing:snap", handleSnap);
@@ -359,7 +474,10 @@ export function attachVelaDrawingsPersistence(
 
     const handleStay = ({ on }: any = {}) => {
       if (!isHydrating && typeof on === "boolean") {
-        saveDrawingToolPrefs({ stayMode: on });
+        saveDrawingToolPrefs(
+          { stayMode: on },
+          { fetchImpl: options?.fetchImpl, debounceMs: options?.debounceMs },
+        );
       }
     };
     const unsubStay = instance.on("drawing:stay", handleStay);

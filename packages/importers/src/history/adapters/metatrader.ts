@@ -26,6 +26,7 @@ import { parseImportTimestamp } from "../timestamps";
 import { isSlHeader, isTpHeader, mapHeaders, normalizeHeader, parseDirectionValue } from "../aliases";
 import { parseNumericCell, sanitizeRetainedText } from "../csv";
 import { issue, sortTrades, type ColumnMapping, type ImportIssue, type ImportedTrade } from "../model";
+import { inferMetaTraderColumns } from "../infer";
 import type {
   AdapterContext,
   AdapterMatch,
@@ -83,6 +84,16 @@ export const metaTraderAdapter: SourceAdapter = {
       };
     }
 
+    const inferred = inferMetaTraderColumns(table.records);
+    if (inferred !== null) {
+      return {
+        confidence: "exact",
+        signals: [
+          "detected MetaTrader statement by language-agnostic cell value inference",
+        ],
+      };
+    }
+
     return null;
   },
 
@@ -112,22 +123,42 @@ export const metaTraderAdapter: SourceAdapter = {
         ) &&
           !table.records.some((r) => POSITION_TYPES.test((r.cells[2] ?? "").trim()))));
 
-    const mapping: ColumnMapping = isCanonical13Col
-      ? {
-          entryTime: 0,
-          tradeId: 1,
-          symbol: 2,
-          direction: 3,
-          quantity: 4,
-          entryPrice: 5,
-          stopPrice: 6,
-          exitTime: 8,
-          exitPrice: 9,
-          fees: 10,
-          swap: 11,
-          pnl: 12,
-        }
-      : mapHeaders(table.header, table.records).mapping;
+    const inferred = inferMetaTraderColumns(table.records);
+    const directionTokens = inferred?.directionTokens;
+
+    let mapping: ColumnMapping;
+    if (isCanonical13Col) {
+      mapping = {
+        entryTime: 0,
+        tradeId: 1,
+        symbol: 2,
+        direction: 3,
+        quantity: 4,
+        entryPrice: 5,
+        stopPrice: 6,
+        exitTime: 8,
+        exitPrice: 9,
+        fees: 10,
+        swap: 11,
+        pnl: 12,
+      };
+    } else {
+      const headerMapped = mapHeaders(table.header, table.records).mapping;
+      const hasCoreFields =
+        headerMapped.entryTime !== undefined &&
+        headerMapped.exitTime !== undefined &&
+        headerMapped.entryPrice !== undefined &&
+        headerMapped.exitPrice !== undefined &&
+        (headerMapped.direction !== undefined || headerMapped.eventType !== undefined);
+
+      if (hasCoreFields) {
+        mapping = headerMapped;
+      } else if (inferred !== null) {
+        mapping = inferred.mapping;
+      } else {
+        mapping = headerMapped;
+      }
+    }
 
     if (ctx.mappingOverride !== undefined) Object.assign(mapping, ctx.mappingOverride);
     const cell = (record: { cells: string[] }, field: keyof typeof mapping): string => {
@@ -135,16 +166,40 @@ export const metaTraderAdapter: SourceAdapter = {
       return index === undefined ? "" : (record.cells[index] ?? "").trim();
     };
 
+    const isDirectionToken = (raw: string): boolean => {
+      if (POSITION_TYPES.test(raw)) return true;
+      if (directionTokens) {
+        const lower = raw.trim().toLowerCase();
+        return (
+          (directionTokens.buy !== undefined && lower === directionTokens.buy.trim().toLowerCase()) ||
+          (directionTokens.sell !== undefined && lower === directionTokens.sell.trim().toLowerCase())
+        );
+      }
+      return false;
+    };
+
+    const getDirection = (raw: string): "long" | "short" | null => {
+      if (directionTokens) {
+        const lower = raw.trim().toLowerCase();
+        if (directionTokens.buy && lower === directionTokens.buy.trim().toLowerCase()) return "long";
+        if (directionTokens.sell && lower === directionTokens.sell.trim().toLowerCase()) return "short";
+      }
+      return parseDirectionValue(raw);
+    };
+
     const closed: ImportedTrade[] = [];
     const open: ImportedTrade[] = [];
     let skippedRows = 0;
 
     // The Type column is found by position in canonical 13-col, or by name/mapping in other layouts
-    const typeIndex = isCanonical13Col
-      ? 3
-      : table.header.findIndex((h) => normalizeHeader(h) === "type" || normalizeHeader(h) === "tipo") !== -1
-        ? table.header.findIndex((h) => normalizeHeader(h) === "type" || normalizeHeader(h) === "tipo")
-        : (mapping.direction ?? mapping.eventType);
+    const typeIndex =
+      mapping.direction !== undefined
+        ? mapping.direction
+        : isCanonical13Col
+          ? 3
+          : table.header.findIndex((h) => normalizeHeader(h) === "type" || normalizeHeader(h) === "tipo") !== -1
+            ? table.header.findIndex((h) => normalizeHeader(h) === "type" || normalizeHeader(h) === "tipo")
+            : mapping.eventType;
 
     for (const record of table.records) {
       const typeRaw = typeIndex === undefined ? "" : (record.cells[typeIndex] ?? "").trim();
@@ -177,7 +232,7 @@ export const metaTraderAdapter: SourceAdapter = {
       // Every real MT5 report ends with a totals row whose Type is empty; it is
       // not a trade and not worth a warning.
       if (typeRaw === "") continue;
-      if (!POSITION_TYPES.test(typeRaw)) {
+      if (!isDirectionToken(typeRaw)) {
         skippedRows++;
         issues.push(
           issue(
@@ -190,7 +245,7 @@ export const metaTraderAdapter: SourceAdapter = {
         continue;
       }
 
-      const direction = parseDirectionValue(typeRaw);
+      const direction = getDirection(typeRaw);
       const entryTime = parseImportTimestamp(
         cell(record, "entryTime"),
         ctx.dateOrder,

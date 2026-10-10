@@ -11,7 +11,9 @@ import type { ImportFormat, ParsedImport } from "../types";
 export const thinkorswim: ImportFormat = {
   id: "thinkorswim",
   label: "ThinkorSwim / Charles Schwab (account statement)",
-  detect: (_headers, content) => /Account Trade History/i.test(content),
+  detect: (_headers, content) =>
+    /Account Trade History/i.test(content) ||
+    (/(exec time|exectime)/i.test(content) && /(pos effect|poseffect|order type)/i.test(content)),
   parse: (content, options): ParsedImport => {
     // Extract Account ID if present in header
     let account: string | undefined;
@@ -23,21 +25,32 @@ export const thinkorswim: ImportFormat = {
     }
 
     const lines = content.split(/\r?\n/);
-    const start = lines.findIndex((line) => /Account Trade History/i.test(line));
-    if (start === -1) {
-      return {
-        format: "thinkorswim",
-        executions: [],
-        skippedRows: 0,
-        warnings: ["No 'Account Trade History' section found."],
-        account,
-        sourceAccounts: account ? [account] : [],
-      };
+    let start = lines.findIndex((line) => /Account Trade History/i.test(line));
+    let loopStartIndex = 0;
+
+    if (start !== -1) {
+      loopStartIndex = start + 1;
+    } else {
+      const headerIdx = lines.findIndex(
+        (line) => /exec time/i.test(line) && /spread|pos effect|order type|symbol/i.test(line),
+      );
+      if (headerIdx !== -1) {
+        loopStartIndex = headerIdx;
+      } else {
+        return {
+          format: "thinkorswim",
+          executions: [],
+          skippedRows: 0,
+          warnings: ["No 'Account Trade History' section found."],
+          account,
+          sourceAccounts: account ? [account] : [],
+        };
+      }
     }
 
     const section: string[] = [];
     let headerSeen = false;
-    for (let i = start + 1; i < lines.length; i++) {
+    for (let i = loopStartIndex; i < lines.length; i++) {
       const line = lines[i]!;
       if (!headerSeen) {
         if (/exec time/i.test(line)) {
@@ -49,18 +62,59 @@ export const thinkorswim: ImportFormat = {
       // Sections are separated by blank lines or a new section title row (real
       // statements follow trade history with Options / Futures / Equities /
       // Profits and Losses — cross-checked against TradeNote's parser).
-      const firstCell = (line.split(",")[0] ?? "").trim();
+      const cells = line.split(",").map((c) => c.trim());
+      const firstNonEmpty = cells.find((c) => c.length > 0) ?? "";
       if (
         line.trim() === "" ||
         /^([A-Za-z ]+History|Profits and Losses|Account Summary|Options|Futures( Statements)?|Equities|Forex)$/i.test(
-          firstCell,
+          firstNonEmpty,
         )
       )
         break;
       section.push(line);
     }
 
-    const records = toRecords(parseCsv(section.join("\n")));
+    const parsedRows = parseCsv(section.join("\n"));
+    if (parsedRows.length === 0) {
+      return {
+        format: "thinkorswim",
+        executions: [],
+        skippedRows: 0,
+        warnings: ["No 'Account Trade History' section found."],
+        account,
+        sourceAccounts: account ? [account] : [],
+      };
+    }
+
+    const header = parsedRows[0] ?? [];
+    const headerHasEmptyFirst = (header[0] ?? "").trim() === "" && header.length > 1;
+    const normalizedHeader = headerHasEmptyFirst ? header.slice(1) : header;
+
+    const normalizedRows: string[][] = [normalizedHeader];
+    for (let r = 1; r < parsedRows.length; r++) {
+      const row = parsedRows[r]!;
+      if (row.length === 0 || (row.length === 1 && row[0]?.trim() === "")) continue;
+      if ((row[0] ?? "").trim() === "" && row.length > 1) {
+        normalizedRows.push(row.slice(1));
+      } else {
+        normalizedRows.push(row);
+      }
+    }
+
+    const records = toRecords(normalizedRows);
+
+    // Support signed quantities (+1000, -2000) when Side is absent or empty
+    for (const row of records) {
+      if (!row.side || row.side.trim() === "") {
+        const rawQty = (row.qty ?? row.quantity ?? "").trim();
+        if (rawQty.startsWith("+")) {
+          row.side = "BUY";
+        } else if (rawQty.startsWith("-")) {
+          row.side = "SELL";
+        }
+      }
+    }
+
     const { executions, skippedRows } = rowsToFills(
       records,
       {

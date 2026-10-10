@@ -4,7 +4,7 @@ import { HoverHint, Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, NotebookPen } from "lucide-react";
+import { NotebookPen } from "lucide-react";
 import { dayKeyOf, type CalendarMonth } from "@luxalgo/journal-core";
 import { cn, compactMoney, fmtFullDate, fmtMoney, pnlClass } from "@/lib/utils";
 import { Pnl } from "./pnl";
@@ -18,30 +18,7 @@ import {
   TooltipRow,
   TooltipDivider,
 } from "./dither-kit";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-const CURRENT_YEAR = new Date().getFullYear();
-const YEARS = Array.from({ length: 11 }, (_, i) => CURRENT_YEAR - 5 + i);
+import { CalendarNavHeader } from "./calendar-nav-header";
 
 /**
  * The P&L calendar — an HTML grid, not a chart. Each traded day prints its
@@ -104,100 +81,13 @@ export function CalendarPnl({
     <div className={cn("journal-calendar min-w-0 w-full flex flex-col flex-1", className)}>
       {/* Month, Year Dropdowns & Nav Arrows Header - Centered with balanced actions */}
       {onMonthChange && (
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center pb-3 px-1 min-h-8">
-          {/* Left balance spacer */}
-          <div className="flex items-center justify-start min-w-0">{headerLeft}</div>
-
-          {/* Center: Month & Year Nav */}
-          <div className="flex items-center justify-center gap-1">
-            {/* Previous Month Button < */}
-            <button
-              type="button"
-              aria-label="Previous month"
-              className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color,transform] duration-150 hover:bg-muted hover:text-foreground active:scale-[0.96]"
-              onClick={() => {
-                const prev = new Date(Date.UTC(calendar.year, calendar.month - 2, 1));
-                onMonthChange({ year: prev.getUTCFullYear(), month: prev.getUTCMonth() + 1 });
-              }}
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-
-            {/* Month Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted active:scale-[0.98]"
-                >
-                  <span>{MONTH_NAMES[calendar.month - 1] ?? `Month ${calendar.month}`}</span>
-                  <ChevronDown className="size-3 text-muted-foreground opacity-70" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="min-w-36">
-                {MONTH_NAMES.map((name, idx) => (
-                  <DropdownMenuItem
-                    key={name}
-                    className={cn(
-                      "text-xs font-medium cursor-pointer",
-                      idx + 1 === calendar.month && "bg-accent font-bold text-accent-foreground",
-                    )}
-                    onClick={() => {
-                      onMonthChange({ year: calendar.year, month: idx + 1 });
-                    }}
-                  >
-                    {name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Year Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted active:scale-[0.98]"
-                >
-                  <span>{calendar.year}</span>
-                  <ChevronDown className="size-3 text-muted-foreground opacity-70" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="min-w-24 max-h-60 overflow-y-auto">
-                {YEARS.map((yr) => (
-                  <DropdownMenuItem
-                    key={yr}
-                    className={cn(
-                      "text-xs font-medium cursor-pointer",
-                      yr === calendar.year && "bg-accent font-bold text-accent-foreground",
-                    )}
-                    onClick={() => {
-                      onMonthChange({ year: yr, month: calendar.month });
-                    }}
-                  >
-                    {yr}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Next Month Button > */}
-            <button
-              type="button"
-              aria-label="Next month"
-              className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color,transform] duration-150 hover:bg-muted hover:text-foreground active:scale-[0.96]"
-              onClick={() => {
-                const next = new Date(Date.UTC(calendar.year, calendar.month, 1));
-                onMonthChange({ year: next.getUTCFullYear(), month: next.getUTCMonth() + 1 });
-              }}
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-
-          {/* Right side: Filters on mobile */}
-          <div className="flex justify-end items-center">{headerRight ?? headerAction}</div>
-        </div>
+        <CalendarNavHeader
+          year={calendar.year}
+          month={calendar.month}
+          onMonthChange={onMonthChange}
+          headerLeft={headerLeft}
+          headerRight={headerRight ?? headerAction}
+        />
       )}
 
       {/* Calendar Grid: 7 days on mobile, 8 columns on desktop (7 days + Week total) */}

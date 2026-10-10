@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { parseAuto, detectFormat } from "../src/detect";
 import { buildRoundTrips, type Execution } from "@luxalgo/journal-core";
 import type { ImportedExecution } from "../src/types";
+import { applyChaos, splitIntoBatches } from "./helpers/csv-fixtures";
 
 const FIXTURES_DIR = join(__dirname, "fixtures", "tradovate-lucid");
 
@@ -45,23 +46,27 @@ describe("Tradovate / Lucid Trading — Chaos & Stress Test Battery", () => {
     expect(totalFilled).toBe(166);
   });
 
+  it("handles multi-batch splitting cleanly preserving cumulative fill counts", () => {
+    const rawContent = loadFixture("Orders.csv");
+    const batches = splitIntoBatches(rawContent, 4);
+    expect(batches).toHaveLength(4);
+
+    let cumulativeFills = 0;
+    for (const batch of batches) {
+      const parsed = parseAuto(batch, { timeZone: "America/Chicago" });
+      expect(parsed).not.toBeNull();
+      cumulativeFills += parsed?.executions.length ?? 0;
+    }
+    expect(cumulativeFills).toBe(76);
+  });
+
   it("resists aggressive duplication: parsing duplicated content maintains unique executions", () => {
     const rawContent = loadFixture("Orders.csv");
-    const lines = rawContent.split(/\r?\n/);
-    const header = lines[0];
-    const dataLines = lines.slice(1).filter((l) => l.trim().length > 0);
-
-    // Create a 3x duplicated file with interleaved and appended copies
-    const triplicatedContent = [
-      header,
-      ...dataLines,
-      ...dataLines,
-      ...dataLines,
-    ].join("\n");
+    const triplicatedContent = applyChaos(rawContent, { duplicateCount: 3 });
 
     const parsed = parseAuto(triplicatedContent, { timeZone: "America/Chicago" });
     expect(parsed).not.toBeNull();
-    // In raw parser, all filled rows in the CSV are parsed
+    // In raw parser, all filled rows in the CSV are parsed (76 * 3)
     expect(parsed?.executions.length).toBe(76 * 3);
 
     // Deduplication by unique fill signature (symbol, side, price, executedAt)
@@ -120,19 +125,33 @@ describe("Tradovate / Lucid Trading — Chaos & Stress Test Battery", () => {
 
   it("safely rejects canceled, rejected, and malformed rows without crashing", () => {
     const rawContent = loadFixture("Orders.csv");
-    const corruptedRows = [
-      rawContent,
-      "999999999999,LFE0506847043001,999999999999, Buy,MESM6,MES,Micro E-mini S&P 500,,,,999999999999, Canceled,-2,0,0.25,,999999999999,05/01/2026 12:20:25,5/1/26,1,Tradingview, Limit,27811.50,,27811.5,,,,,,,USD",
-      "888888888888,LFE0506847043001,888888888888, Sell,MESM6,MES,Micro E-mini S&P 500,,,,888888888888, Rejected,-2,0,0.25,,888888888888,05/01/2026 12:20:25,5/1/26,1,Tradingview, Limit,27811.50,,27811.5,,,,,,,USD",
-      ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
-      "CORRUPTED_LINE_WITHOUT_COMMAS",
-      "777777777777,LFE0506847043001,777777777777, Buy,MESM6,MES,Micro E-mini S&P 500,NaN,NaN,INVALID_TIMESTAMP,777777777777, Filled,-2,0,0.25,,777777777777,05/01/2026 12:20:25,5/1/26,1,Tradingview, Limit,27811.50,,27811.5,,,,,,,USD",
-    ].join("\n");
+    const corruptedContent = applyChaos(rawContent, {
+      corruptedRows: [
+        "999999999999,LFE0506847043001,999999999999, Buy,MESM6,MES,Micro E-mini S&P 500,,,,999999999999, Canceled,-2,0,0.25,,999999999999,05/01/2026 12:20:25,5/1/26,1,Tradingview, Limit,27811.50,,27811.5,,,,,,,USD",
+        "888888888888,LFE0506847043001,888888888888, Sell,MESM6,MES,Micro E-mini S&P 500,,,,888888888888, Rejected,-2,0,0.25,,888888888888,05/01/2026 12:20:25,5/1/26,1,Tradingview, Limit,27811.50,,27811.5,,,,,,,USD",
+        ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,",
+        "CORRUPTED_LINE_WITHOUT_COMMAS",
+        "777777777777,LFE0506847043001,777777777777, Buy,MESM6,MES,Micro E-mini S&P 500,NaN,NaN,INVALID_TIMESTAMP,777777777777, Filled,-2,0,0.25,,777777777777,05/01/2026 12:20:25,5/1/26,1,Tradingview, Limit,27811.50,,27811.5,,,,,,,USD",
+      ],
+    });
 
-    const parsed = parseAuto(corruptedRows, { timeZone: "America/Chicago" });
+    const parsed = parseAuto(corruptedContent, { timeZone: "America/Chicago" });
     expect(parsed).not.toBeNull();
     // Still exactly 76 filled valid rows from Orders.csv! Corrupted & canceled rows are discarded.
     expect(parsed?.executions.length).toBe(76);
+  });
+
+  it("handles UTF-8 BOM and CRLF line endings transparently", () => {
+    const rawContent = loadFixture("Orders.csv");
+    const bomCrlfContent = applyChaos(rawContent, {
+      injectBOM: true,
+      crlf: true,
+    });
+
+    const parsed = parseAuto(bomCrlfContent, { timeZone: "America/Chicago" });
+    expect(parsed).not.toBeNull();
+    expect(parsed?.executions.length).toBe(76);
+    expect(parsed?.account).toBe("LFE0506847043001");
   });
 
   it("reconciles with Lucid Trading site down to the exact penny", () => {

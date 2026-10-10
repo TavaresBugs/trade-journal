@@ -10,6 +10,7 @@
  */
 
 import { setChromeTriggerState } from "./vela-chrome-join";
+import { VELA_ICONS } from "./vela-icons";
 
 export interface VelaScreenshotMenuOptions {
   topbarContainer: HTMLElement;
@@ -41,15 +42,15 @@ export function computeScreenshotJoinGeometry(width: number, height: number) {
 
 // ── Icons matching official Vela 1:1 ──────────────────────────────────────────
 
-export const CAMERA_ICON_SVG = `<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 4 6.5 2.5h3L10.5 4h3A1 1 0 0 1 14.5 5v7.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"></path><circle cx="8" cy="8.5" r="2.6"></circle></svg>`;
+export const CAMERA_ICON_SVG = VELA_ICONS.camera;
 
-export const DOWNLOAD_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download size-4 shrink-0"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>`;
+export const DOWNLOAD_ICON_SVG = VELA_ICONS.download;
 
-export const CLIPBOARD_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy size-4 shrink-0"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>`;
+export const CLIPBOARD_ICON_SVG = VELA_ICONS.clipboard;
 
-export const CROP_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan size-4 shrink-0"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>`;
+export const CROP_ICON_SVG = VELA_ICONS.crop;
 
-export const CHECKMARK_ICON_SVG = `<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m2.8 8.4 3.4 3.4 7-7.6"/></svg>`;
+export const CHECKMARK_ICON_SVG = VELA_ICONS.checkmark;
 
 // ── Styles injection ─────────────────────────────────────────────────────────
 

@@ -2,14 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import {
-  BAYER,
   backingSize,
   bloomLayerStyle,
-  clamp01,
-  OFF_TIER,
+  paintHorizontalSpan,
   type BloomInput,
 } from "./dither-paint";
-import { rgb, seedOfColor } from "./palette";
+import { seedOfColor } from "./palette";
 
 export type DitherDivergingBarProps = {
   value: number; // positive = green extends right, negative = red extends left
@@ -80,61 +78,27 @@ export function DitherDivergingBar({
         const seed = seedOfColor("green");
         const startX = splitCol + 1;
         const endX = Math.min(cols, splitCol + 1 + Math.max(1, fillLen));
-        const span = endX - startX;
-
-        for (let x = startX; x < endX; x++) {
-          const dist = x - startX;
-          // Linear falloff: 1.0 at center baseline divider, 0.0 at outer tip
-          const t = span > 1 ? 1 - dist / span : 1;
-          const density = 0.15 + 0.85 * t;
-
-          for (let y = 0; y < rows; y++) {
-            const lit = density > (BAYER[y & 3]?.[x & 3] ?? 0);
-            const k = 0.3 + density * 0.7;
-            const alpha = clamp01(lit ? k : k * OFF_TIER);
-            c.fillStyle = rgb(seed.fill, 1, alpha);
-            c.fillRect(x, y, 1, 1);
-          }
-        }
-
-        // Value edge cap (outer tip 1px border outline, exactly like paintColumn)
-        c.fillStyle = rgb(seed.fill, 1, 0.9);
-        c.fillRect(endX - 1, 0, 1, rows);
-
-        // Top and bottom borders in seed color
-        c.fillStyle = rgb(seed.fill, 1, 0.4);
-        c.fillRect(startX, 0, span, 1);
-        c.fillRect(startX, rows - 1, span, 1);
+        paintHorizontalSpan(c, startX, endX, 0, rows, seed, {
+          anchor: "left",
+          minDensity: 0.15,
+          maxDensity: 1.0,
+          topBottomBorders: true,
+          cap: "tip",
+          doubleCap: false,
+        });
       } else if (numVal < 0 && fillLen > 0) {
         // NEGATIVE (Red, extending left up to splitCol)
         const seed = seedOfColor("red");
         const startX = Math.max(0, splitCol - Math.max(1, fillLen));
         const endX = splitCol;
-        const span = endX - startX;
-
-        for (let x = startX; x < endX; x++) {
-          const dist = endX - 1 - x;
-          // Linear falloff: 1.0 at center baseline divider, 0.0 at outer tip
-          const t = span > 1 ? 1 - dist / span : 1;
-          const density = 0.15 + 0.85 * t;
-
-          for (let y = 0; y < rows; y++) {
-            const lit = density > (BAYER[y & 3]?.[x & 3] ?? 0);
-            const k = 0.3 + density * 0.7;
-            const alpha = clamp01(lit ? k : k * OFF_TIER);
-            c.fillStyle = rgb(seed.fill, 1, alpha);
-            c.fillRect(x, y, 1, 1);
-          }
-        }
-
-        // Value edge cap (outer tip 1px border outline, exactly like paintColumn)
-        c.fillStyle = rgb(seed.fill, 1, 0.9);
-        c.fillRect(startX, 0, 1, rows);
-
-        // Top and bottom borders in seed color
-        c.fillStyle = rgb(seed.fill, 1, 0.4);
-        c.fillRect(startX, 0, span, 1);
-        c.fillRect(startX, rows - 1, span, 1);
+        paintHorizontalSpan(c, startX, endX, 0, rows, seed, {
+          anchor: "right",
+          minDensity: 0.15,
+          maxDensity: 1.0,
+          topBottomBorders: true,
+          cap: "tip",
+          doubleCap: false,
+        });
       }
 
       // Single bloom copy

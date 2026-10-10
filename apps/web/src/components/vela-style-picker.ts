@@ -11,6 +11,7 @@ import {
   setChromeTriggerState,
   ChromeJoinInstance,
 } from "./vela-chrome-join";
+import { VELA_ICONS } from "./vela-icons";
 
 export interface StylePickerOptions {
   container: HTMLElement;
@@ -28,32 +29,32 @@ export const STYLES: StyleDef[] = [
   {
     id: "candles",
     label: "Candles",
-    iconSvg: `<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2v2M4.5 12v2M11.5 2v1.5M11.5 11v3"></path><rect x="2.8" y="4" width="3.4" height="8" rx="0.6" fill="currentColor" fill-opacity="0.25"></rect><rect x="9.8" y="3.5" width="3.4" height="7.5" rx="0.6" fill="currentColor"></rect></svg>`,
+    iconSvg: VELA_ICONS.candles,
   },
   {
     id: "bars",
     label: "Bars",
-    iconSvg: `<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5v11M2.5 5h2M4.5 11h2"></path><path d="M11.5 2.5v11M9.5 4.5h2M11.5 10.5h2"></path></svg>`,
+    iconSvg: VELA_ICONS.bars,
   },
   {
     id: "line",
     label: "Line",
-    iconSvg: `<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 11.5 5.5 7l3 2.5 5-6"></path></svg>`,
+    iconSvg: VELA_ICONS.line,
   },
   {
     id: "area",
     label: "Area",
-    iconSvg: `<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 11.5 5.5 7l3 2.5 5-6"></path><path d="M1.5 11.5 5.5 7l3 2.5 5-6V13.5h-12z" fill="currentColor" fill-opacity="0.25" stroke="none"></path></svg>`,
+    iconSvg: VELA_ICONS.area,
   },
   {
     id: "baseline",
     label: "Baseline",
-    iconSvg: `<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8h13" stroke-dasharray="2 2"></path><path d="M2.5 8 5.25 4.5 8 8h-5.5z" fill="currentColor" fill-opacity="0.25" stroke="none"></path><path d="M2.5 8 5.25 4.5 8 8"></path><path d="M8 8l2.75 3.5L13.5 8h-5.5z" fill="currentColor" fill-opacity="0.25" stroke="none"></path><path d="M8 8l2.75 3.5L13.5 8"></path></svg>`,
+    iconSvg: VELA_ICONS.baseline,
   },
   {
     id: "heikinashi",
     label: "Heikin Ashi",
-    iconSvg: `<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12v2M11.5 2v2"></path><rect x="2.8" y="5" width="3.4" height="7" rx="0.6" fill="currentColor" fill-opacity="0.25"></rect><rect x="9.8" y="4" width="3.4" height="7" rx="0.6" fill="currentColor"></rect></svg>`,
+    iconSvg: VELA_ICONS.heikinAshi,
   },
 ];
 

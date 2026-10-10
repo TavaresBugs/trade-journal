@@ -2,8 +2,17 @@ import { accounts, db } from "@/db";
 import { and, asc, eq, isNull, ne } from "drizzle-orm";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { decryptJson, encryptJson } from "./crypto";
+import { RequestError } from "./api";
 
 export interface AccountPlatformCredentials {
+  username: string;
+  hasPassword: boolean;
+  password?: string;
+  platforms: string[];
+}
+
+export interface InternalAccountPlatformCredentials {
   username: string;
   password?: string;
   platforms: string[];
@@ -21,15 +30,26 @@ export interface AccountCredentialsResult {
   suggestedEnvKey: string;
 }
 
+export interface InternalAccountCredentialsResult {
+  credentials: InternalAccountPlatformCredentials | null;
+  account: {
+    id: string;
+    name: string;
+    accountNumber?: string | null;
+    platform?: string | null;
+    broker?: string | null;
+  };
+  suggestedEnvKey: string;
+}
+
 /**
- * Searches process.env for credentials matching an account.
- * Supports:
- * 1. ACCOUNT_<NUMBER>_USERNAME and ACCOUNT_<NUMBER>_PASSWORD
- * 2. ACCOUNT_<ID>_USERNAME and ACCOUNT_<ID>_PASSWORD
- * 3. ACCOUNT_CREDENTIALS (JSON string with records keyed by account number or ID)
- * 4. Stored credentials in account.credentialsEnc (if valid JSON)
+ * Searches process.env and SQLite for raw credentials matching an account.
+ * Internal-only helper for broker sync and backend routines requiring plaintext password.
+ * NEVER expose this function's result to client API callers.
  */
-export function getAccountCredentials(accountId: string): AccountCredentialsResult | null {
+export function getAccountCredentialsInternal(
+  accountId: string,
+): InternalAccountCredentialsResult | null {
   const account = db.select().from(accounts).where(eq(accounts.id, accountId)).get();
   if (!account) return null;
 
@@ -118,16 +138,24 @@ export function getAccountCredentials(accountId: string): AccountCredentialsResu
     }
   }
 
-  // 3. Fallback: Check account.credentialsEnc in DB if it happens to be valid JSON
+  // 3. Fallback: Check account.credentialsEnc in DB
   if (account.credentialsEnc) {
+    // 3a. Try AES-256-GCM decryptJson
     try {
-      const parsed = JSON.parse(account.credentialsEnc);
-      if (parsed && typeof parsed === "object" && (parsed.username || parsed.user)) {
+      const decrypted = decryptJson<{
+        username?: string;
+        user?: string;
+        password?: string;
+        pass?: string;
+        platforms?: string[];
+      }>(account.credentialsEnc);
+
+      if (decrypted && typeof decrypted === "object" && (decrypted.username || decrypted.user)) {
         return {
           credentials: {
-            username: String(parsed.username || parsed.user),
-            password: String(parsed.password || parsed.pass || ""),
-            platforms: Array.isArray(parsed.platforms) ? parsed.platforms : defaultPlatforms,
+            username: String(decrypted.username || decrypted.user),
+            password: String(decrypted.password || decrypted.pass || ""),
+            platforms: Array.isArray(decrypted.platforms) ? decrypted.platforms : defaultPlatforms,
           },
           account: {
             id: account.id,
@@ -140,7 +168,29 @@ export function getAccountCredentials(accountId: string): AccountCredentialsResu
         };
       }
     } catch {
-      // Not raw JSON
+      // 3b. Graceful fallback if legacy plaintext JSON exists
+      try {
+        const parsed = JSON.parse(account.credentialsEnc);
+        if (parsed && typeof parsed === "object" && (parsed.username || parsed.user)) {
+          return {
+            credentials: {
+              username: String(parsed.username || parsed.user),
+              password: String(parsed.password || parsed.pass || ""),
+              platforms: Array.isArray(parsed.platforms) ? parsed.platforms : defaultPlatforms,
+            },
+            account: {
+              id: account.id,
+              name: account.name,
+              accountNumber: account.accountNumber,
+              platform: account.platform,
+              broker: account.broker,
+            },
+            suggestedEnvKey,
+          };
+        }
+      } catch {
+        // Not valid JSON either
+      }
     }
   }
 
@@ -154,6 +204,28 @@ export function getAccountCredentials(accountId: string): AccountCredentialsResu
       broker: account.broker,
     },
     suggestedEnvKey,
+  };
+}
+
+/**
+ * Searches process.env and SQLite for credentials matching an account.
+ * NEVER returns plaintext passwords to client callers — passwords are masked
+ * into `hasPassword: boolean`.
+ */
+export function getAccountCredentials(accountId: string): AccountCredentialsResult | null {
+  const internal = getAccountCredentialsInternal(accountId);
+  if (!internal) return null;
+
+  return {
+    account: internal.account,
+    suggestedEnvKey: internal.suggestedEnvKey,
+    credentials: internal.credentials
+      ? {
+          username: internal.credentials.username,
+          platforms: internal.credentials.platforms,
+          hasPassword: Boolean(internal.credentials.password),
+        }
+      : null,
   };
 }
 
@@ -188,12 +260,20 @@ export interface SaveAccountCredentialsInput {
 /**
  * Updates or appends environment key/value pairs in an .env file content string.
  * Preserves all other variables and existing line structure.
+ * Rejects any key or value containing CRLF (\r or \n) to prevent environment injection.
  */
 export function updateEnvContent(
   existingContent: string,
   keyValues: Record<string, string>,
   sectionComment?: string,
 ): string {
+  // Validate against CRLF injection
+  for (const [key, value] of Object.entries(keyValues)) {
+    if (/[\r\n]/.test(key) || /[\r\n]/.test(value)) {
+      throw new RequestError("Environment key and value cannot contain newline characters", 400);
+    }
+  }
+
   let content = existingContent;
   const missingKeys: [string, string][] = [];
 
@@ -301,14 +381,30 @@ export function getEnvLocalFilePaths(): string[] {
 
 /**
  * Saves platform credentials for an account:
- * 1. Updates in-memory process.env
- * 2. Writes / updates .env.local on disk
- * 3. Persists to accounts.credentialsEnc in SQLite
+ * 1. Validates input against CRLF injection
+ * 2. Updates in-memory process.env
+ * 3. Encrypts payload with AES-256-GCM and persists to accounts.credentialsEnc in SQLite
+ * 4. Writes / updates .env.local on disk
+ * 5. Returns masked credentials ({ hasPassword: boolean }) without plaintext password
  */
 export function saveAccountCredentials(
   accountId: string,
   input: SaveAccountCredentialsInput,
 ): AccountCredentialsResult | null {
+  // Strictly validate that username, password, and platforms contain NO newline characters (\r or \n)
+  if (
+    /[\r\n]/.test(input.username) ||
+    (input.password && /[\r\n]/.test(input.password)) ||
+    input.platforms?.some((p) => typeof p === "string" && /[\r\n]/.test(p))
+  ) {
+    throw new RequestError("Username, password, and platforms cannot contain newline characters", 400);
+  }
+
+  const cleanUsername = input.username.trim();
+  if (!cleanUsername) {
+    throw new RequestError("Username is required", 400);
+  }
+
   const account = db.select().from(accounts).where(eq(accounts.id, accountId)).get();
   if (!account) return null;
 
@@ -317,7 +413,6 @@ export function saveAccountCredentials(
   const normalizedId = account.id.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
   const suggestedEnvKey = normalizedNumber ? `ACCOUNT_${normalizedNumber}` : `ACCOUNT_${normalizedId}`;
 
-  const cleanUsername = input.username.trim();
   const cleanPassword = (input.password || "").trim();
   const normPlatform = (account.platform || "").toLowerCase();
   const defaultPlatforms =
@@ -341,8 +436,8 @@ export function saveAccountCredentials(
   process.env[`${suggestedEnvKey}_PASSWORD`] = cleanPassword;
   process.env[`${suggestedEnvKey}_PLATFORMS`] = platforms.join(",");
 
-  // 2. Persist to database accounts.credentialsEnc
-  const credentialsPayload = JSON.stringify({
+  // 2. Persist AES-256-GCM encrypted payload to database accounts.credentialsEnc
+  const credentialsPayload = encryptJson({
     username: cleanUsername,
     password: cleanPassword,
     platforms,
@@ -369,14 +464,16 @@ export function saveAccountCredentials(
       writeFileSync(envPath, updated, "utf-8");
     }
   } catch (err) {
+    if (err instanceof RequestError) throw err;
     console.error("Warning: Could not write to .env.local file:", err);
   }
 
+  // 4. Return masked result (plaintext password is never returned to client callers)
   return {
     credentials: {
       username: cleanUsername,
-      password: cleanPassword,
       platforms,
+      hasPassword: Boolean(cleanPassword),
     },
     account: {
       id: account.id,

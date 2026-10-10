@@ -46,7 +46,8 @@ const parseTrades = (content: string, options: ImportOptions): ParsedImport => {
     const symbol = rawContract.replace(/^\//, "").trim().toUpperCase();
 
     const rawQty = pick(row, ["size", "quantity", "qty"]);
-    const quantity = Math.abs(parseQuantity(rawQty));
+    const rawParsed = parseMoney(rawQty);
+    const quantity = Number.isFinite(rawParsed) && rawParsed > 0 ? parseQuantity(rawQty) : 0;
 
     const rawEntryPrice = pick(row, ["entryprice", "entry price", "openprice"]);
     const entryPrice = parseMoney(rawEntryPrice);
@@ -69,7 +70,10 @@ const parseTrades = (content: string, options: ImportOptions): ParsedImport => {
     const typeText = (pick(row, ["type", "direction", "side"]) ?? "").trim().toLowerCase();
     const isLong =
       /long|buy/i.test(typeText) ||
-      (!/short|sell/i.test(typeText) && entryPrice < exitPrice === pnl > 0);
+      (!/short|sell/i.test(typeText) &&
+        (Number.isFinite(pnl) && pnl !== 0
+          ? (entryPrice < exitPrice) === (pnl > 0)
+          : entryPrice < exitPrice));
 
     if (
       !symbol ||

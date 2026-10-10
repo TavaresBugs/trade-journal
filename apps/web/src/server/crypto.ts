@@ -34,7 +34,9 @@ export const encryptJson = (value: unknown): string => {
 };
 
 export const decryptJson = <T>(envelope: string): T => {
-  const [iv, encrypted, tag] = envelope.split(".");
+  const parts = envelope.split(".");
+  if (parts.length !== 3) throw new Error("Malformed credential envelope");
+  const [iv, encrypted, tag] = parts;
   if (!iv || !encrypted || !tag) throw new Error("Malformed credential envelope");
   const decipher = createDecipheriv("aes-256-gcm", keyMaterial(), Buffer.from(iv, "base64"));
   decipher.setAuthTag(Buffer.from(tag, "base64"));

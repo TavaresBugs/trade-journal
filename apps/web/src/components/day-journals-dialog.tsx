@@ -25,6 +25,7 @@ interface DayTradeItem {
   durationMs?: number | null;
   stopLoss?: number | null;
   profitTarget?: number | null;
+  linkedJournalDate?: string | null;
 }
 
 interface DayJournalData {
@@ -110,24 +111,39 @@ export function DayJournalsDialog({
     router.push(`/journal/${date}?t=${targetIndex}&new=true`);
   };
 
+  const areAllTradesLinked = trades.length > 0 && trades.every((t) => t.linkedJournalDate === date);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-[#111216] border-[#202229] p-5 sm:p-6 text-zinc-100 shadow-2xl rounded-2xl">
+      <DialogContent className="sm:max-w-2xl p-5 sm:p-6 border-border/70 shadow-2xl rounded-2xl">
         <DialogHeader className="sr-only">
           <DialogTitle>Journals for {formattedDate}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Header without duplicate counters (counts live in footer only) */}
-          <div className="flex items-start justify-between pb-3 pr-10 border-b border-[#202229]">
+          <div className="flex items-start justify-between pb-3 pr-10 border-b border-border/50">
             <div>
-              <h3 className="text-base font-semibold text-zinc-100 tracking-tight capitalize">
+              <h3 className="text-base font-semibold text-foreground tracking-tight capitalize">
                 {formattedDate}
               </h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Trade history and notes recorded on this date
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {data?.symbol
+                  ? `${data.symbol} Session · ${trades.length} trade${trades.length === 1 ? "" : "s"}${attachmentsCount > 0 ? ` · ${attachmentsCount} screenshot${attachmentsCount === 1 ? "" : "s"}` : ""}`
+                  : "Trade history and notes recorded on this date"}
               </p>
             </div>
+            {hasDayJournal && areAllTradesLinked && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDayOverview}
+                className="h-7 text-xs gap-1.5 border-border/70 text-muted-foreground hover:text-foreground shrink-0 rounded-lg"
+              >
+                <BookOpen className="size-3 text-sky-400" />
+                <span>Session Notes</span>
+              </Button>
+            )}
           </div>
 
           {/* Loading, Error, Empty State or Minimal Table */}
@@ -177,8 +193,8 @@ export function DayJournalsDialog({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#202229]/30">
-                  {/* Day Journal / Session note integrated as a row in the table when present */}
-                  {hasDayJournal && (
+                  {/* Day Journal / Session note row: shown when present and not all trades are already linked to this session */}
+                  {hasDayJournal && !areAllTradesLinked && (
                     <tr
                       onClick={handleDayOverview}
                       className="group hover:bg-white/[0.025] transition-colors cursor-pointer"
@@ -271,6 +287,14 @@ export function DayJournalsDialog({
                       }
                     }
 
+                    // Session link hierarchy (linked to the day's session journal when mixed with unlinked trades)
+                    const isLinked = Boolean(
+                      hasDayJournal &&
+                      trade.linkedJournalDate &&
+                      trade.linkedJournalDate === date &&
+                      !areAllTradesLinked,
+                    );
+
                     return (
                       <tr
                         key={trade.key || idx}
@@ -278,11 +302,19 @@ export function DayJournalsDialog({
                         className="group hover:bg-white/[0.025] transition-colors cursor-pointer"
                       >
                         {/* TRADE (Indicator + Icon + Asset + Time) */}
-                        <td className="py-2.5 pl-1">
-                          <div className="flex items-center gap-2.5">
+                        <td className={cn("py-2.5", isLinked ? "pl-4 sm:pl-5" : "pl-1")}>
+                          <div className="flex items-center gap-2">
+                            {isLinked && (
+                              <span
+                                className="text-zinc-600 font-mono text-xs select-none shrink-0"
+                                title="Linked to Session Journal"
+                              >
+                                ↳
+                              </span>
+                            )}
                             <div
                               className={cn(
-                                "w-0.5 h-7 rounded-full transition-colors",
+                                "w-0.5 h-7 rounded-full transition-colors shrink-0",
                                 isOpen
                                   ? "bg-zinc-600"
                                   : isWin

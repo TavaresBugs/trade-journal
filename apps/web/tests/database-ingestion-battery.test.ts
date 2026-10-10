@@ -50,7 +50,16 @@ function resetToRealDbClone() {
     ATTACH DATABASE '${realDbPath}' AS realDb;
     INSERT INTO accounts SELECT * FROM realDb.accounts;
     INSERT INTO executions SELECT * FROM realDb.executions;
-    INSERT INTO trades SELECT * FROM realDb.trades;
+  `);
+  const targetCols = new Set(
+    (db.$client.pragma("table_info(trades)") as { name: string }[]).map((c) => c.name),
+  );
+  const tradeCols = (db.$client.pragma("realDb.table_info(trades)") as { name: string }[])
+    .map((c) => c.name)
+    .filter((name) => targetCols.has(name))
+    .join(", ");
+  db.$client.exec(`
+    INSERT INTO trades (${tradeCols}) SELECT ${tradeCols} FROM realDb.trades;
     INSERT INTO journal_days SELECT * FROM realDb.journal_days;
     INSERT INTO import_sources SELECT * FROM realDb.import_sources;
     DETACH DATABASE realDb;

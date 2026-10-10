@@ -312,14 +312,52 @@ export function headerScore(cells: readonly string[]): number {
 
 /**
  * Checks if a row meets the invariant MetaTrader Positions header geometry:
- * col 6 has S/L, col 7 has T/P, and the next record has dual timestamps at col 0 and 8.
+ * 1. Col 6 has S/L, Col 7 has T/P, and the next record has dual timestamps at col 0 and 8 (or 1 and 8).
+ * 2. Or language-agnostic: the header row has >= 10 columns, and nextRow has dual timestamps
+ *    and ticket ID (MT5 or MT4 geometry).
  */
 export function isPositionsHeader(cells: readonly string[], nextRow?: CsvRecord): boolean {
-  if (cells.length < 8 || !isSlHeader(cells[6]) || !isTpHeader(cells[7])) return false;
-  if (!nextRow) return false;
-  const col0 = nextRow.cells[0] ?? "";
-  const col8 = nextRow.cells[8] ?? "";
-  return Number.isFinite(parseImportTimestamp(col0)) && Number.isFinite(parseImportTimestamp(col8));
+  if (cells.length < 8 || !nextRow) return false;
+
+  // 1. Invariant Latin S/L & T/P header
+  if (isSlHeader(cells[6]) && isTpHeader(cells[7])) {
+    const col0 = nextRow.cells[0] ?? "";
+    const col8 = nextRow.cells[8] ?? "";
+    const col1 = nextRow.cells[1] ?? "";
+    if (
+      (Number.isFinite(parseImportTimestamp(col0)) && Number.isFinite(parseImportTimestamp(col8))) ||
+      (Number.isFinite(parseImportTimestamp(col1)) && Number.isFinite(parseImportTimestamp(col8)))
+    ) {
+      return true;
+    }
+  }
+
+  // 2. Language-agnostic detection for non-Latin / translated headers
+  if (cells.length >= 10) {
+    const headerCell0 = (cells[0] ?? "").trim();
+    // Header row cell 0 must NOT be a timestamp (data rows start with timestamp in MT5 or ticket in MT4)
+    if (!Number.isFinite(parseImportTimestamp(headerCell0))) {
+      const next0 = nextRow.cells[0] ?? "";
+      const next1 = nextRow.cells[1] ?? "";
+      const next8 = nextRow.cells[8] ?? "";
+
+      // MT5 closed positions: Col 0 is timestamp, Col 8 is timestamp, Col 1 is ticket (>= 6 digits)
+      const isMt5Data =
+        Number.isFinite(parseImportTimestamp(next0)) &&
+        Number.isFinite(parseImportTimestamp(next8)) &&
+        /^\d{6,}$/.test(next1.trim());
+
+      // MT4 closed positions: Col 1 is timestamp, Col 8 is timestamp, Col 0 is ticket (>= 6 digits)
+      const isMt4Data =
+        /^\d{6,}$/.test(next0.trim()) &&
+        Number.isFinite(parseImportTimestamp(next1)) &&
+        Number.isFinite(parseImportTimestamp(next8));
+
+      if (isMt5Data || isMt4Data) return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -373,7 +411,12 @@ export function chooseStatementSection(
         const trimmed = truncateAtSectionBoundary(after, (cells) =>
           isSectionTitleRow(cells) ||
           (cells.length >= 8 && isSlHeader(cells[6]) && isTpHeader(cells[7])) ||
-          headerScore(cells) >= 3,
+          headerScore(cells) >= 3 ||
+          (cells.length >= 8 &&
+            cells.filter((c) => c.trim() !== "").length >= 6 &&
+            cells.every(
+              (c) => !/^\d{4}[./-]\d{1,2}/.test(c.trim()) && !/^\d{6,}$/.test(c.trim()),
+            )),
         );
         if (trimmed.records.length > 0) {
           issues.push(

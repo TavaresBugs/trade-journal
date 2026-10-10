@@ -98,7 +98,7 @@ export const quantower: ImportFormat = {
         importMetadata: {
           id: execId,
           group: positionId ? `quantower:pos:${positionId}` : undefined,
-          order: index,
+          order: tradeId && !Number.isNaN(Number(tradeId)) ? Number(tradeId) : index,
           reportedGrossPnl: Number.isFinite(grossPnl) ? grossPnl : undefined,
           preserveFee: fee > 0,
         },

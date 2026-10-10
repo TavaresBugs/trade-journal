@@ -1,7 +1,7 @@
 import { eq, inArray } from "drizzle-orm";
 import { db, trades } from "@/db";
 import { bad, handler, ok } from "@/server/api";
-import { deleteExecutionsForTrades } from "@/server/executions";
+import { deleteTradesWithCleanup } from "@/server/trades";
 import { nowIso } from "@/server/ids";
 
 interface BulkBody {
@@ -14,6 +14,11 @@ interface BulkBody {
 export const POST = handler(async (request: Request) => {
   const body = (await request.json()) as BulkBody;
   if (!Array.isArray(body.keys) || body.keys.length === 0) return bad("keys are required");
+  if (body.action === "delete") {
+    const result = deleteTradesWithCleanup(body.keys);
+    return ok({ deleted: result.deletedTradeCount, ...result });
+  }
+
   const rows = db.select().from(trades).where(inArray(trades.key, body.keys)).all();
 
   switch (body.action) {
@@ -46,17 +51,6 @@ export const POST = handler(async (request: Request) => {
         .where(inArray(trades.key, body.keys))
         .run();
       return ok({ updated: rows.length });
-    case "delete": {
-      const byAccount = new Map<string, string[]>();
-      for (const row of rows) {
-        const ids = JSON.parse(row.executionIdsJson) as string[];
-        byAccount.set(row.accountId, [...(byAccount.get(row.accountId) ?? []), ...ids]);
-      }
-      for (const [accountId, executionIds] of byAccount) {
-        deleteExecutionsForTrades(accountId, executionIds);
-      }
-      return ok({ deleted: rows.length });
-    }
     default:
       return bad("Unknown action");
   }

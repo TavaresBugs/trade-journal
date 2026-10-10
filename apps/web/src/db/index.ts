@@ -240,11 +240,21 @@ const createDb = () => {
     }
   }
 
-  // Additive upgrade: trades table gains drawings_json column for per-trade plotted drawings.
+  // Additive upgrade: trades table gains stop_loss, profit_target, drawings_json, and linked_journal_date columns and index.
   const tradeColumns = sqlite.pragma("table_info(trades)") as { name: string }[];
+  if (!tradeColumns.some((column) => column.name === "stop_loss")) {
+    sqlite.exec("ALTER TABLE trades ADD COLUMN stop_loss REAL");
+  }
+  if (!tradeColumns.some((column) => column.name === "profit_target")) {
+    sqlite.exec("ALTER TABLE trades ADD COLUMN profit_target REAL");
+  }
   if (!tradeColumns.some((column) => column.name === "drawings_json")) {
     sqlite.exec("ALTER TABLE trades ADD COLUMN drawings_json TEXT");
   }
+  if (!tradeColumns.some((column) => column.name === "linked_journal_date")) {
+    sqlite.exec("ALTER TABLE trades ADD COLUMN linked_journal_date TEXT");
+  }
+  sqlite.exec("CREATE INDEX IF NOT EXISTS trades_linked_journal ON trades (linked_journal_date)");
 
   return drizzle(sqlite, { schema });
 };
@@ -257,9 +267,19 @@ export const ensureTradesDrawingsColumn = (targetDb: any = db): void => {
     const sqlite = (targetDb as any)?.session?.client ?? (targetDb as any)?.$client;
     if (sqlite && typeof sqlite.pragma === "function") {
       const tradeColumns = sqlite.pragma("table_info(trades)") as { name: string }[];
+      if (!tradeColumns.some((column) => column.name === "stop_loss")) {
+        sqlite.exec("ALTER TABLE trades ADD COLUMN stop_loss REAL");
+      }
+      if (!tradeColumns.some((column) => column.name === "profit_target")) {
+        sqlite.exec("ALTER TABLE trades ADD COLUMN profit_target REAL");
+      }
       if (!tradeColumns.some((column) => column.name === "drawings_json")) {
         sqlite.exec("ALTER TABLE trades ADD COLUMN drawings_json TEXT");
       }
+      if (!tradeColumns.some((column) => column.name === "linked_journal_date")) {
+        sqlite.exec("ALTER TABLE trades ADD COLUMN linked_journal_date TEXT");
+      }
+      sqlite.exec("CREATE INDEX IF NOT EXISTS trades_linked_journal ON trades (linked_journal_date)");
       return;
     }
   } catch {}
@@ -269,9 +289,19 @@ export const ensureTradesDrawingsColumn = (targetDb: any = db): void => {
       const sqlite = new Database(join(dir, "journal.db"));
       try {
         const tradeColumns = sqlite.pragma("table_info(trades)") as { name: string }[];
+        if (!tradeColumns.some((column) => column.name === "stop_loss")) {
+          sqlite.exec("ALTER TABLE trades ADD COLUMN stop_loss REAL");
+        }
+        if (!tradeColumns.some((column) => column.name === "profit_target")) {
+          sqlite.exec("ALTER TABLE trades ADD COLUMN profit_target REAL");
+        }
         if (!tradeColumns.some((column) => column.name === "drawings_json")) {
           sqlite.exec("ALTER TABLE trades ADD COLUMN drawings_json TEXT");
         }
+        if (!tradeColumns.some((column) => column.name === "linked_journal_date")) {
+          sqlite.exec("ALTER TABLE trades ADD COLUMN linked_journal_date TEXT");
+        }
+        sqlite.exec("CREATE INDEX IF NOT EXISTS trades_linked_journal ON trades (linked_journal_date)");
       } finally {
         sqlite.close();
       }

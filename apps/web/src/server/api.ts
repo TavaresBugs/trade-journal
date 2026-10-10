@@ -73,8 +73,10 @@ export const handler =
       }
       return await fn(...args);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Internal error";
-      const status = error instanceof RequestError ? error.status : 500;
-      return NextResponse.json({ error: message }, { status });
+      if (error instanceof RequestError) {
+        return NextResponse.json({ error: error.message }, { status: error.status });
+      }
+      console.error("Internal API error:", error);
+      return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
     }
   };

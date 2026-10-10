@@ -5,6 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
 import { HoverHint } from "./ui/tooltip";
 import { PRIVACY_KEY, LEGACY_LAYOUT_KEY, privacyPreference } from "@/lib/privacy-preference";
+import { cn, fmtMoney } from "@/lib/utils";
 
 const PrivacyContext = createContext({ enabled: true, ready: false, error: "", toggle: () => {} });
 export const usePrivacy = () => useContext(PrivacyContext).enabled;
@@ -98,6 +99,40 @@ export function PrivacyToggle({
 
 export function MonetaryValue({ children }: { children: ReactNode }) {
   return usePrivacy() ? <span aria-label="Monetary value hidden">••••</span> : children;
+}
+
+export interface SignedMonetaryValueProps {
+  value: number;
+  currency?: string;
+  className?: string;
+}
+
+/**
+ * Renders a signed monetary value with privacy mode protection.
+ * The sign (+ or -) is computed INSIDE the component, ensuring that
+ * when privacy mode is active, the sign is masked (never leaks "-••••" or "+••••").
+ * Enforces `font-mono tnum` for stable tabular alignment.
+ */
+export function SignedMonetaryValue({
+  value,
+  currency = "USD",
+  className,
+}: SignedMonetaryValueProps) {
+  const enabled = usePrivacy();
+  if (enabled) {
+    return (
+      <span className={cn("font-mono tnum", className)} aria-label="Monetary value hidden">
+        ••••
+      </span>
+    );
+  }
+
+  const numVal = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return (
+    <span className={cn("font-mono tnum", className)}>
+      {fmtMoney(numVal, currency)}
+    </span>
+  );
 }
 
 export function MonetaryField({

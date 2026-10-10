@@ -112,3 +112,47 @@ export const getAiSettings = (): AiSettingsPayload => {
     aiConnections,
   };
 };
+
+export interface VelaPreferences {
+  velaDrawingFavorites: string[];
+  velaDrawingPrefs: Record<string, unknown>;
+}
+
+export const getVelaPreferences = (): VelaPreferences => {
+  let velaDrawingFavorites: string[] = [];
+  const rawFavorites = getSetting("velaDrawingFavorites");
+  if (rawFavorites) {
+    try {
+      const parsed = JSON.parse(rawFavorites);
+      if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
+        velaDrawingFavorites = parsed;
+      }
+    } catch {}
+  }
+
+  let velaDrawingPrefs: Record<string, unknown> = {};
+  const rawPrefs = getSetting("velaDrawingPrefs");
+  if (rawPrefs) {
+    try {
+      const parsed = JSON.parse(rawPrefs);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        velaDrawingPrefs = parsed;
+      }
+    } catch {}
+  }
+
+  return { velaDrawingFavorites, velaDrawingPrefs };
+};
+
+export const setVelaPreferences = (prefs: {
+  velaDrawingFavorites?: string[];
+  velaDrawingPrefs?: Record<string, unknown>;
+}): void => {
+  if (prefs.velaDrawingFavorites !== undefined) {
+    setSetting("velaDrawingFavorites", JSON.stringify(prefs.velaDrawingFavorites));
+  }
+  if (prefs.velaDrawingPrefs !== undefined) {
+    setSetting("velaDrawingPrefs", JSON.stringify(prefs.velaDrawingPrefs));
+  }
+};
+

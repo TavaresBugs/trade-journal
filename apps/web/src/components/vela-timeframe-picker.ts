@@ -48,24 +48,13 @@ const GROUPS: { title: string; timeframes: TfItem[] }[] = [
   },
 ];
 
-const STAR_SVG = `
-<svg viewBox="0 0 16 16" width="1em" height="1em" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M8 2.2l1.75 3.55 3.9.55-2.8 2.75.65 3.9L8 11.1l-3.5 1.85.65-3.9-2.8-2.75 3.9-.55z"></path>
-</svg>
-`;
+import { VELA_ICONS } from "./vela-icons";
 
-const STAR_OUTLINE_SVG = `
-<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M8 2.2l1.75 3.55 3.9.55-2.8 2.75.65 3.9L8 11.1l-3.5 1.85.65-3.9-2.8-2.75 3.9-.55z"></path>
-</svg>
-`;
+const STAR_SVG = VELA_ICONS.star;
 
-const CLOCK_SVG = `
-<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-  <circle cx="8" cy="8" r="6"></circle>
-  <path d="M8 4.5v3.5l2.5 1.5"></path>
-</svg>
-`;
+const STAR_OUTLINE_SVG = VELA_ICONS.starOutline;
+
+const CLOCK_SVG = VELA_ICONS.clock;
 
 export function attachVelaTimeframePicker(opts: TimeframePickerOptions): () => void {
   const { container } = opts;

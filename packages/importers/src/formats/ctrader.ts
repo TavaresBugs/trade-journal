@@ -115,8 +115,16 @@ export const ctrader: ImportFormat = {
         "amount",
         "closingquantity",
       ])?.trim();
-      const numMatch = rawVolume?.match(/^[+-]?[\d.,]+/);
-      const quantity = Math.abs(parseQuantity(numMatch ? numMatch[0] : rawVolume));
+      const isUnits = /units?/i.test(rawVolume ?? "");
+      const cleanVol = rawVolume
+        ?.replace(/[\s\u00A0]+/g, " ")
+        .replace(/\s*(?:units?|lots?|stakes?)\s*$/i, "")
+        .trim();
+      const numMatch = cleanVol?.match(/^[+-]?[\d.,\s]+/);
+      let quantity = Math.abs(parseQuantity(numMatch ? numMatch[0] : cleanVol));
+      if (isUnits && Number.isFinite(quantity) && quantity >= 1000) {
+        quantity = quantity / 100_000;
+      }
       if (!Number.isFinite(quantity) || quantity <= 0) {
         skippedRows++;
         return;
@@ -224,13 +232,18 @@ export const ctrader: ImportFormat = {
         }
 
         // Determine if long or short
-        let isLong = true;
-        if (rawOpeningDir) {
+        let isLong: boolean | null = null;
+        if (rawOpeningDir && parseSide(rawOpeningDir)) {
           isLong = parseSide(rawOpeningDir) === "buy";
-        } else if (rawClosingDir) {
+        } else if (rawClosingDir && parseSide(rawClosingDir)) {
           isLong = parseSide(rawClosingDir) === "sell";
-        } else if (rawDir) {
+        } else if (rawDir && parseSide(rawDir)) {
           isLong = parseSide(rawDir) === "buy";
+        }
+
+        if (isLong === null) {
+          skippedRows++;
+          return;
         }
 
         const idBase = rawDealId || rawPositionId || `deal-${index}`;
