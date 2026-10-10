@@ -59,6 +59,18 @@ export function estimateFingerprint(trade: AnnotatedTrade, context?: Fingerprint
     .digest("hex");
 }
 
+export const RESOLUTION_PRECEDENCE_RANK: Record<string, number> = {
+  "1m": 1,
+  "3m": 2,
+  "5m": 3,
+  "15m": 4,
+  "1h": 5,
+  "4h": 6,
+  "1d": 7,
+  "1w": 8,
+  "1mo": 9,
+};
+
 export function saveEstimate(
   trade: AnnotatedTrade,
   history: TradeMarketResult,
@@ -76,6 +88,20 @@ export function saveEstimate(
       .get()
   )
     return;
+
+  // Monotonic fidelity rule: lower-precision estimates cannot overwrite higher-precision (e.g. 1m) canonical estimates
+  const existing = db
+    .select({ resolution: tradeExcursions.resolution })
+    .from(tradeExcursions)
+    .where(eq(tradeExcursions.tradeKey, trade.key))
+    .get();
+
+  if (existing?.resolution) {
+    const existingRank = RESOLUTION_PRECEDENCE_RANK[existing.resolution] ?? 99;
+    const incomingRank = RESOLUTION_PRECEDENCE_RANK[history.resolution] ?? 99;
+    if (incomingRank > existingRank) return;
+  }
+
   const values = {
     tradeKey: trade.key,
     fingerprint,

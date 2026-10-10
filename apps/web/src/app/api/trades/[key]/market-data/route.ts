@@ -5,7 +5,7 @@ import { connectionKey, providerFor } from "@/server/market-data/connections";
 import { MarketDataError } from "@/server/market-data/provider";
 import { getTradeByKey, rowToTrade } from "@/server/trades-query";
 import { listExecutions } from "@/server/executions";
-import { isResolution } from "@/lib/market-data";
+import { isResolution, RESOLUTIONS, type Resolution } from "@/lib/market-data";
 import { estimateExcursions } from "@/lib/excursions";
 
 import { estimateFingerprint, saveEstimate, savedEstimates } from "@/server/market-data/estimates";
@@ -47,6 +47,14 @@ export const POST = handler(
       body.estimateOnly === undefined || typeof body.estimateOnly === "boolean",
       "Invalid response mode.",
     );
+    requireValue(
+      body.contextPadding === undefined ||
+        (typeof body.contextPadding === "number" &&
+          Number.isFinite(body.contextPadding) &&
+          body.contextPadding >= 10 &&
+          body.contextPadding <= 500),
+      "Invalid context padding.",
+    );
     requireValue(Boolean(row.closedAt), "Market replay is available for closed trades only.");
     requireValue(
       row.assetClass !== "option",
@@ -78,13 +86,21 @@ export const POST = handler(
         );
       const trade = rowToTrade(row);
       const fingerprint = estimateFingerprint(trade);
+      const resolution = body.resolution as Resolution;
+      const step = RESOLUTIONS[resolution] ?? 60_000;
+      // Fetch context candles before open and after close
+      const contextPadding = Math.max(10, Math.min(500, Number(body.contextPadding) || 25));
+      const padMs = contextPadding * step;
+      const queryFrom = Math.max(0, from - padMs);
+      const queryTo = Math.min(Date.now(), to + padMs);
+
       const history = await provider.history(
         {
           symbol: body.symbol.trim(),
           dataset: body.dataset || undefined,
-          resolution: body.resolution,
-          from,
-          to,
+          resolution,
+          from: queryFrom,
+          to: queryTo,
           signal: request.signal,
         },
         connectionKey(provider.id),

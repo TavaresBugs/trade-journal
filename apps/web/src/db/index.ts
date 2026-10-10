@@ -83,15 +83,202 @@ const createDb = () => {
           `ALTER TABLE market_csv_datasets ADD COLUMN ${name} INTEGER NOT NULL DEFAULT 0`,
         );
     }
+    if (!csvColumns.some((column) => column.name === "compatible_symbols_json")) {
+      sqlite.exec("ALTER TABLE market_csv_datasets ADD COLUMN compatible_symbols_json TEXT");
+    }
     sqlite.exec(`UPDATE market_csv_datasets SET
       bar_count = json_array_length(bars_json),
       first_time = json_extract(bars_json, '$[0].time'),
       last_time = json_extract(bars_json, '$[#-1].time') WHERE bar_count = 0`);
   })();
+
+  // Additive upgrade: ensure time-series candle tables exist
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS market_candles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      symbol TEXT NOT NULL,
+      resolution TEXT NOT NULL,
+      time INTEGER NOT NULL,
+      open REAL NOT NULL,
+      high REAL NOT NULL,
+      low REAL NOT NULL,
+      close REAL NOT NULL,
+      volume REAL,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      price_basis TEXT NOT NULL DEFAULT 'raw',
+      batch_id TEXT
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS market_candles_unique_bar ON market_candles(symbol, resolution, time);
+    DROP INDEX IF EXISTS market_candles_lookup;
+    CREATE INDEX IF NOT EXISTS market_candles_batch ON market_candles(batch_id);
+
+    CREATE TABLE IF NOT EXISTS market_series_summary (
+      symbol TEXT NOT NULL,
+      resolution TEXT NOT NULL,
+      bar_count INTEGER NOT NULL DEFAULT 0,
+      first_time INTEGER NOT NULL,
+      last_time INTEGER NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      price_basis TEXT NOT NULL DEFAULT 'raw',
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (symbol, resolution)
+    );
+    CREATE INDEX IF NOT EXISTS market_series_summary_resolution ON market_series_summary(resolution, symbol);
+
+    CREATE TABLE IF NOT EXISTS market_candle_batches (
+      id TEXT PRIMARY KEY,
+      symbol TEXT NOT NULL,
+      resolution TEXT NOT NULL,
+      name TEXT NOT NULL,
+      bar_count INTEGER NOT NULL,
+      new_bar_count INTEGER NOT NULL,
+      duplicate_bar_count INTEGER NOT NULL,
+      first_time INTEGER NOT NULL,
+      last_time INTEGER NOT NULL,
+      imported_at TEXT NOT NULL
+    );
+  `);
+
+  // Migrate legacy market_csv_datasets if market_candles is empty
+  const tables = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[];
+  if (tables.some((t) => t.name === "market_csv_datasets")) {
+    const candleCountRow = sqlite.prepare("SELECT COUNT(*) as count FROM market_candles").get() as { count: number };
+    if (candleCountRow.count === 0) {
+      const legacyRows = sqlite.prepare("SELECT * FROM market_csv_datasets").all() as Array<{
+        id: string;
+        name: string;
+        symbol: string;
+        resolution: string;
+        currency: string;
+        price_basis: string;
+        bars_json: string;
+        imported_at: string;
+      }>;
+      if (legacyRows.length > 0) {
+        sqlite.transaction(() => {
+          const insertCandle = sqlite.prepare(`
+            INSERT INTO market_candles (symbol, resolution, time, open, high, low, close, volume, currency, price_basis, batch_id)
+            VALUES (@symbol, @resolution, @time, @open, @high, @low, @close, @volume, @currency, @priceBasis, @batchId)
+            ON CONFLICT(symbol, resolution, time) DO NOTHING
+          `);
+          const insertBatch = sqlite.prepare(`
+            INSERT INTO market_candle_batches (id, symbol, resolution, name, bar_count, new_bar_count, duplicate_bar_count, first_time, last_time, imported_at)
+            VALUES (@id, @symbol, @resolution, @name, @barCount, @newBarCount, @duplicateBarCount, @firstTime, @lastTime, @importedAt)
+          `);
+          const upsertSummary = sqlite.prepare(`
+            INSERT INTO market_series_summary (symbol, resolution, bar_count, first_time, last_time, currency, price_basis, updated_at)
+            VALUES (@symbol, @resolution, @barCount, @firstTime, @lastTime, @currency, @priceBasis, @updatedAt)
+            ON CONFLICT(symbol, resolution) DO UPDATE SET
+              bar_count = excluded.bar_count,
+              first_time = excluded.first_time,
+              last_time = excluded.last_time,
+              currency = excluded.currency,
+              price_basis = excluded.price_basis,
+              updated_at = excluded.updated_at
+          `);
+
+          for (const row of legacyRows) {
+            let bars: Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }> = [];
+            try {
+              bars = JSON.parse(row.bars_json);
+            } catch {
+              continue;
+            }
+            if (!bars.length) continue;
+
+            let inserted = 0;
+            for (const b of bars) {
+              const res = insertCandle.run({
+                symbol: row.symbol,
+                resolution: row.resolution,
+                time: b.time,
+                open: b.open,
+                high: b.high,
+                low: b.low,
+                close: b.close,
+                volume: b.volume ?? null,
+                currency: row.currency || "USD",
+                priceBasis: row.price_basis || "raw",
+                batchId: row.id,
+              });
+              if (res.changes > 0) inserted++;
+            }
+
+            insertBatch.run({
+              id: row.id,
+              symbol: row.symbol,
+              resolution: row.resolution,
+              name: row.name,
+              barCount: bars.length,
+              newBarCount: inserted,
+              duplicateBarCount: bars.length - inserted,
+              firstTime: bars[0]!.time,
+              lastTime: bars.at(-1)!.time,
+              importedAt: row.imported_at,
+            });
+
+            const stats = sqlite.prepare(`
+              SELECT COUNT(*) as barCount, MIN(time) as firstTime, MAX(time) as lastTime
+              FROM market_candles WHERE symbol = ? AND resolution = ?
+            `).get(row.symbol, row.resolution) as { barCount: number; firstTime: number; lastTime: number };
+
+            if (stats && stats.barCount > 0) {
+              upsertSummary.run({
+                symbol: row.symbol,
+                resolution: row.resolution,
+                barCount: stats.barCount,
+                firstTime: stats.firstTime,
+                lastTime: stats.lastTime,
+                currency: row.currency || "USD",
+                priceBasis: row.price_basis || "raw",
+                updatedAt: new Date().toISOString(),
+              });
+            }
+          }
+        })();
+      }
+    }
+  }
+
+  // Additive upgrade: trades table gains drawings_json column for per-trade plotted drawings.
+  const tradeColumns = sqlite.pragma("table_info(trades)") as { name: string }[];
+  if (!tradeColumns.some((column) => column.name === "drawings_json")) {
+    sqlite.exec("ALTER TABLE trades ADD COLUMN drawings_json TEXT");
+  }
+
   return drizzle(sqlite, { schema });
 };
 
 /** Singleton across Next dev hot reloads. */
 export const db = globalForDb.__journalDb ?? (globalForDb.__journalDb = createDb());
+
+export const ensureTradesDrawingsColumn = (targetDb: any = db): void => {
+  try {
+    const sqlite = (targetDb as any)?.session?.client ?? (targetDb as any)?.$client;
+    if (sqlite && typeof sqlite.pragma === "function") {
+      const tradeColumns = sqlite.pragma("table_info(trades)") as { name: string }[];
+      if (!tradeColumns.some((column) => column.name === "drawings_json")) {
+        sqlite.exec("ALTER TABLE trades ADD COLUMN drawings_json TEXT");
+      }
+      return;
+    }
+  } catch {}
+  try {
+    const dir = dataDir();
+    if (existsSync(join(dir, "journal.db"))) {
+      const sqlite = new Database(join(dir, "journal.db"));
+      try {
+        const tradeColumns = sqlite.pragma("table_info(trades)") as { name: string }[];
+        if (!tradeColumns.some((column) => column.name === "drawings_json")) {
+          sqlite.exec("ALTER TABLE trades ADD COLUMN drawings_json TEXT");
+        }
+      } finally {
+        sqlite.close();
+      }
+    }
+  } catch {}
+};
+
+ensureTradesDrawingsColumn(db);
 
 export * from "./schema";

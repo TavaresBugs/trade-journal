@@ -1,8 +1,25 @@
 import { bad, handler, ok, requireValue } from "@/server/api";
-import { csvDatasets, importCsvDataset, removeCsvDataset } from "@/server/market-data/csv";
+import {
+  csvDatasets,
+  candleSeriesSummary,
+  candleBatches,
+  distinctTradedSymbols,
+  ingestCandles,
+  revertCandleBatch,
+  purgeCandlesBySymbol,
+} from "@/server/market-data/csv";
 import { MAX_CSV_BYTES, parseMarketCsv } from "@/lib/market-csv";
 import { isResolution, RESOLUTIONS, type Resolution } from "@/lib/market-data";
-export const GET = handler(() => ok({ datasets: csvDatasets() }));
+
+export const GET = handler(() =>
+  ok({
+    series: candleSeriesSummary(),
+    batches: candleBatches(),
+    datasets: csvDatasets(),
+    tradedSymbols: distinctTradedSymbols(),
+  }),
+);
+
 export const POST = handler(async (request: Request) => {
   const reader = request.body?.getReader();
   requireValue(reader, "Provide a market CSV request.");
@@ -25,14 +42,40 @@ export const POST = handler(async (request: Request) => {
     return bad("Invalid CSV request.");
   }
   requireValue(
-    body && ["preview", "import", "remove"].includes(body.action),
+    body &&
+      ["preview", "import", "revert_batch", "purge_symbol"].includes(body.action),
     "Choose a CSV action.",
   );
-  if (body.action === "remove") {
-    requireValue(typeof body.id === "string" && body.id.length <= 80, "Choose a dataset.");
-    removeCsvDataset(body.id);
-    return ok({ datasets: csvDatasets() });
+
+  if (body.action === "revert_batch") {
+    requireValue(
+      typeof body.batchId === "string" && body.batchId.length <= 80,
+      "Choose a batch to revert.",
+    );
+    const reverted = revertCandleBatch(body.batchId);
+    return ok({
+      reverted,
+      series: candleSeriesSummary(),
+      batches: candleBatches(),
+      datasets: csvDatasets(),
+    });
   }
+
+  if (body.action === "purge_symbol") {
+    requireValue(
+      typeof body.symbol === "string" && body.symbol.length <= 100,
+      "Choose a symbol to purge.",
+    );
+    const resolution = isResolution(body.resolution) ? body.resolution : undefined;
+    purgeCandlesBySymbol(body.symbol, resolution);
+    return ok({
+      purged: { symbol: body.symbol, resolution },
+      series: candleSeriesSummary(),
+      batches: candleBatches(),
+      datasets: csvDatasets(),
+    });
+  }
+
   requireValue(typeof body.content === "string", "Choose a CSV file.");
   requireValue(
     typeof body.name === "string" && body.name.trim().length > 0 && body.name.length <= 200,
@@ -51,9 +94,32 @@ export const POST = handler(async (request: Request) => {
     ["raw", "split", "adjusted", "midpoint", "bid", "ask"].includes(body.priceBasis),
     "Choose the file's price basis.",
   );
+
   try {
-    if (body.action === "import")
-      return ok({ id: importCsvDataset(body), datasets: csvDatasets() });
+    if (body.action === "import") {
+      const compatibleSymbols =
+        Array.isArray(body.compatibleSymbols) &&
+        body.compatibleSymbols.every((s: unknown) => typeof s === "string")
+          ? (body.compatibleSymbols as string[])
+          : undefined;
+      const ingestResult = ingestCandles({
+        name: body.name,
+        symbol: body.symbol,
+        resolution: body.resolution,
+        currency: body.currency,
+        priceBasis: body.priceBasis,
+        content: body.content,
+        compatibleSymbols,
+      });
+      return ok({
+        id: ingestResult.batchId,
+        batchId: ingestResult.batchId,
+        result: ingestResult,
+        series: candleSeriesSummary(),
+        batches: candleBatches(),
+        datasets: csvDatasets(),
+      });
+    }
     const bars = parseMarketCsv(body.content, body.symbol, body.resolution);
     return ok({
       count: bars.length,

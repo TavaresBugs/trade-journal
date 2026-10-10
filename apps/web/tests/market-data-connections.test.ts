@@ -191,7 +191,7 @@ describe("trade history endpoint", () => {
       (await (await savedHistory(request({}), { params: Promise.resolve({ key }) })).json()).saved
         .estimate.mae,
     ).toBe(20);
-    await csvRequest(request({ action: "remove", id: imported.id }));
+    await csvRequest(request({ action: "revert_batch", batchId: imported.id }));
     expect(
       (await (await savedHistory(request({}), { params: Promise.resolve({ key }) })).json()).saved,
     ).toBeNull();
@@ -224,6 +224,61 @@ describe("trade history endpoint", () => {
     expect(
       (await (await savedHistory(request({}), { params: Promise.resolve({ key }) })).json()).saved,
     ).toBeNull();
+  });
+  it("queries provider with 25 candles padding before open and after close", async () => {
+    const key = seed();
+    const historySpy = vi.fn().mockResolvedValue({
+      provider: "Mock",
+      symbol: "TEST",
+      resolution: "1m",
+      bars: [
+        {
+          time: Date.parse("2026-01-02T10:00:00Z"),
+          open: 100,
+          high: 104,
+          low: 98,
+          close: 102,
+          volume: 1,
+        },
+        {
+          time: Date.parse("2026-01-02T10:01:00Z"),
+          open: 100,
+          high: 104,
+          low: 98,
+          close: 102,
+          volume: 1,
+        },
+        {
+          time: Date.parse("2026-01-02T10:02:00Z"),
+          open: 100,
+          high: 104,
+          low: 98,
+          close: 102,
+          volume: 1,
+        },
+      ],
+      fetchedAt: new Date().toISOString(),
+      truncated: false,
+      warnings: [],
+    });
+    const { providerFor } = await import("../src/server/market-data/connections");
+    const originalProvider = providerFor("market-csv");
+    const originalHistory = originalProvider.history;
+    originalProvider.history = historySpy;
+    try {
+      await loadHistory(request({ ...body, provider: "market-csv" }), {
+        params: Promise.resolve({ key }),
+      });
+      expect(historySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from: Date.parse("2026-01-02T10:00:00Z") - 25 * 60_000,
+          to: Date.parse("2026-01-02T10:03:00Z") + 25 * 60_000,
+        }),
+        expect.anything(),
+      );
+    } finally {
+      originalProvider.history = originalHistory;
+    }
   });
   it("loads a small range from a large CSV and reuses decoded candles", async () => {
     const { importCsvDataset, marketCsv, csvDatasets, removeCsvDataset } =

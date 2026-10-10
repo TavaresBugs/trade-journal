@@ -4,6 +4,7 @@ import { computeMetrics, realizedR } from "../src/metrics";
 import { EDGE_SCORE_VERSION, computeEdgeScore } from "../src/edge-score";
 import { calendarMonth, byWeekday, byDuration } from "../src/aggregate";
 import {
+  accountBalanceCurve,
   dailyStats,
   drawdown,
   equityCurve,
@@ -211,5 +212,71 @@ describe("calendar and buckets group trading days the way a trader reads them", 
     const times = new Map(executions.map((e) => [e.id, e.executedAt]));
     const curve = intradayCurve(trades, times, "2026-01-05");
     expect(curve.at(-1)!.cumNetPnl).toBeCloseTo(98 - 50, 6);
+  });
+
+  describe("accountBalanceCurve (prop firm trailing and threshold)", () => {
+    const dailyPoints = [
+      { t: "2026-03-03", cumNetPnl: 0 },
+      { t: "2026-03-13", cumNetPnl: 295 }, // peak $50,295
+      { t: "2026-08-26", cumNetPnl: -554 }, // drops to $49,446
+      { t: "2026-09-01", cumNetPnl: 2500 }, // surges to $52,500 (beyond initial balance)
+    ];
+
+    it("dynamic trailing trails the peak and never decreases when balance falls", () => {
+      const result = accountBalanceCurve(dailyPoints, {
+        initialBalance: 50000,
+        maxDrawdown: 2000,
+        mode: "dynamic",
+        lockAtInitial: true,
+      });
+
+      // Point 1: $50,000 -> Floor $48,000 (cushion $2,000)
+      expect(result[0]).toEqual({
+        t: "2026-03-03",
+        balance: 50000,
+        minBalance: 48000,
+        cushion: 2000,
+        peak: 50000,
+      });
+
+      // Point 2: Peak $50,295 -> Floor trails to $48,295 (cushion $2,000)
+      expect(result[1]).toEqual({
+        t: "2026-03-13",
+        balance: 50295,
+        minBalance: 48295,
+        cushion: 2000,
+        peak: 50295,
+      });
+
+      // Point 3: Recedes to $49,446 -> Floor FREEZES at $48,295 (cushion $1,151)
+      expect(result[2]).toEqual({
+        t: "2026-08-26",
+        balance: 49446,
+        minBalance: 48295,
+        cushion: 1151,
+        peak: 50295,
+      });
+
+      // Point 4: Surges to $52,500 -> Floor locks at initialBalance ($50,000) because lockAtInitial is true
+      expect(result[3]).toEqual({
+        t: "2026-09-01",
+        balance: 52500,
+        minBalance: 50000,
+        cushion: 2500,
+        peak: 52500,
+      });
+    });
+
+    it("static drawdown maintains a fixed threshold at (initialBalance - maxDrawdown)", () => {
+      const result = accountBalanceCurve(dailyPoints, {
+        initialBalance: 50000,
+        maxDrawdown: 2000,
+        mode: "static",
+      });
+
+      expect(result.every((pt) => pt.minBalance === 48000)).toBe(true);
+      expect(result[1].cushion).toBe(50295 - 48000);
+      expect(result[2].cushion).toBe(49446 - 48000);
+    });
   });
 });

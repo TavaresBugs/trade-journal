@@ -90,6 +90,17 @@ export const parseHistory = (
   let skippedRows = history.stats.skippedRows;
 
   const accMatch =
+    content.slice(0, 4000).match(/<title>\s*(\d+):/i) ||
+    content
+      .slice(0, 4000)
+      .match(
+        /(?:Account|Conta|Statement|Relat[oó]rio|حساب|হিসাব|অ্যাকাউন্ট|Сметка)\s*:[\s\S]*?(?:<b>|,,,|:|,|\s)["']?\s*([0-9A-Za-z_-]+)(?:\s*&nbsp;)?\s*(?:\([A-Z]{3}|,|;|\s|<|$)/i,
+      ) ||
+    content
+      .slice(0, 4000)
+      .match(
+        /(?:Account|Conta|Statement|Relat[oó]rio|حساب|হিসাব|অ্যাকাউন্ট|Сметка)\s*:[,\s]*["']?([0-9A-Za-z_-]+)/i,
+      ) ||
     content.slice(0, 4000).match(/Account:[\s\S]*?<b>\s*([0-9A-Za-z_-]+)/i) ||
     content.slice(0, 4000).match(/Account:\s*([0-9A-Za-z_-]+)/i) ||
     content.slice(0, 4000).match(/Account:,,,["']?([0-9A-Za-z_-]+)/i);

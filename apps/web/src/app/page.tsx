@@ -12,6 +12,7 @@ import type {
 import { dayKeyOf, relativeDrawdownCurve } from "@luxalgo/journal-core";
 import { CalendarPnl } from "@/components/calendar-pnl";
 import { DailyBars } from "@/components/charts/daily-bars";
+import { AccountBalanceChart } from "@/components/charts/account-balance-chart";
 import { EdgeRadar } from "@/components/charts/edge-radar";
 import { EquityArea, normalizeCumulativePoints } from "@/components/charts/equity-area";
 import { RelativeDrawdownBars } from "@/components/charts/relative-drawdown-bars";
@@ -19,6 +20,7 @@ import { TimeHeatmap } from "@/components/charts/time-heatmap";
 import { DashboardCardHeader, DashboardCardDragHandle } from "@/components/dashboard-card-header";
 import { StatGaugeCard, StatRatioCard } from "@/components/widgets";
 import {
+  ArrowLeftRight,
   ArrowUpDown,
   CalendarCheck2,
   CalendarDays,
@@ -30,6 +32,7 @@ import {
   Timer,
   TrendingDown,
   Trophy,
+  Wallet,
 } from "lucide-react";
 import type { CalendarResponse } from "@/lib/calendar-insights";
 import { FilterBar, useFilters } from "@/components/filter-bar";
@@ -45,7 +48,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HelpHint, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { postJson, useApi } from "@/lib/use-api";
-import { cn, fmtDuration, fmtMoney, fmtNumber, fmtPercent } from "@/lib/utils";
+import { cn, fmtAmount, fmtDuration, fmtMoney, fmtNumber, fmtPercent } from "@/lib/utils";
 
 interface Bucket {
   key: string;
@@ -59,6 +62,16 @@ interface StatsPayload {
   currencies: string[];
   metrics: TradeMetrics;
   initialBalance: number;
+  maxDrawdown?: number | null;
+  currentAccount?: {
+    id: string;
+    name: string;
+    broker: string | null;
+    platform: string | null;
+    accountNumber: string | null;
+    initialBalance: number;
+    maxDrawdown: number | null;
+  } | null;
   edgeScore: EdgeScore;
   days: DayStats[];
   dailyCumulative: EquityPoint[];
@@ -134,6 +147,8 @@ function DashboardContent({
   }
   const data = incomingData ?? previousDataRef.current;
 
+  const [pnlCardMode, setPnlCardMode] = useState<"pnl" | "balance">("pnl");
+
   const normalizedDailyCum = useMemo(
     () => (data ? normalizeCumulativePoints(data.dailyCumulative, from, to) : []),
     [data?.dailyCumulative, from, to],
@@ -197,6 +212,17 @@ function DashboardContent({
     ? data.days.reduce((a, b) => (b.netPnl < a.netPnl ? b : a))
     : null;
 
+  const currency = data.currencies[0] ?? "USD";
+  const currentTotalBalance = data.initialBalance + m.netPnl;
+  const effectiveMaxDd =
+    data.maxDrawdown && data.maxDrawdown > 0
+      ? data.maxDrawdown
+      : data.initialBalance > 0
+        ? Math.round(data.initialBalance * 0.05)
+        : 2000;
+  const currentDrawdownFloor = Math.max(0, data.initialBalance - effectiveMaxDd);
+  const currentCushion = currentTotalBalance - currentDrawdownFloor;
+
   return (
     <>
       <DashboardLayout
@@ -208,31 +234,77 @@ function DashboardContent({
             layoutGroup: "summary",
             content: (
               <Card className="h-full">
-                <StatHeader
-                  title="Net P&L"
-                  icon={CircleDollarSign}
-                  hint="Realized profit and loss net of fees, over the selected range."
+                <DashboardCardHeader
+                  title={pnlCardMode === "pnl" ? "Net P&L" : "Account Balance"}
+                  icon={pnlCardMode === "pnl" ? CircleDollarSign : Wallet}
+                  hint={
+                    pnlCardMode === "pnl"
+                      ? "Realized profit and loss net of fees, over the selected range."
+                      : "Current total account balance (initial balance + net P&L)."
+                  }
+                  headerRight={
+                    data.initialBalance > 0 ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPnlCardMode((prev) => (prev === "pnl" ? "balance" : "pnl"));
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md border border-border/80 bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer select-none"
+                        title={
+                          pnlCardMode === "pnl"
+                            ? "Switch to Total Account Balance"
+                            : "Switch to Net P&L"
+                        }
+                      >
+                        <ArrowLeftRight size={11} />
+                        <span>{pnlCardMode === "pnl" ? "Balance" : "P&L"}</span>
+                      </button>
+                    ) : undefined
+                  }
                 />
                 <CardContent>
-                  <Pnl value={m.netPnl} className="text-3xl font-semibold tracking-tight" />
-                  {weekDelta !== null && (
-                    <div
-                      className={cn(
-                        "mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                        weekDelta >= 0 ? "bg-profit/10 text-profit" : "bg-loss/10 text-loss",
+                  {pnlCardMode === "pnl" ? (
+                    <>
+                      <Pnl value={m.netPnl} className="text-3xl font-semibold tracking-tight" />
+                      {weekDelta !== null && (
+                        <div
+                          className={cn(
+                            "mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                            weekDelta >= 0 ? "bg-profit/10 text-profit" : "bg-loss/10 text-loss",
+                          )}
+                        >
+                          {weekDelta >= 0 ? "▲" : "▼"}{" "}
+                          <MonetaryValue>
+                            {fmtMoney(Math.abs(weekDelta)).replace("+", "")}
+                          </MonetaryValue>{" "}
+                          vs prior 7d
+                        </div>
                       )}
-                    >
-                      {weekDelta >= 0 ? "▲" : "▼"}{" "}
-                      <MonetaryValue>
-                        {fmtMoney(Math.abs(weekDelta)).replace("+", "")}
-                      </MonetaryValue>{" "}
-                      vs prior 7d
-                    </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {m.closedTrades} closed trades ·{" "}
+                        <MonetaryValue>{fmtMoney(m.fees)}</MonetaryValue> fees
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-3xl font-semibold tracking-tight text-foreground tnum">
+                        <MonetaryValue>{fmtAmount(currentTotalBalance, currency)}</MonetaryValue>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Cushion:{" "}
+                        <span
+                          className={cn(
+                            "font-medium",
+                            currentCushion >= 0 ? "text-profit" : "text-loss",
+                          )}
+                        >
+                          <MonetaryValue>{fmtAmount(currentCushion, currency)}</MonetaryValue>
+                        </span>{" "}
+                        remaining
+                      </div>
+                    </>
                   )}
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {m.closedTrades} closed trades ·{" "}
-                    <MonetaryValue>{fmtMoney(m.fees)}</MonetaryValue> fees
-                  </div>
                 </CardContent>
               </Card>
             ),
@@ -312,6 +384,31 @@ function DashboardContent({
                 win={{ value: m.avgWin, label: "avg win" }}
                 loss={{ value: m.avgLoss, label: "avg loss" }}
               />
+            ),
+          },
+          {
+            id: "widget-balance-curve",
+            label: "Account Balance & Drawdown",
+            size: "full",
+            layoutGroup: "overview",
+            content: (
+              <Card className="dashboard-visual-card h-full overflow-visible">
+                <DashboardCardHeader
+                  title="Account Balance & Trailing Threshold"
+                  hint="Account equity curve alongside the minimum balance liquidation floor. Tracks trailing drawdown rules (Dynamic, EOD, or Static) with lock-in."
+                />
+                <CardContent className="dashboard-visual-card-content overflow-visible">
+                  <AccountBalanceChart
+                    data={normalizedDailyCum}
+                    initialBalance={data.initialBalance}
+                    maxDrawdown={data.maxDrawdown}
+                    currency={currency}
+                    from={from}
+                    to={to}
+                    height={300}
+                  />
+                </CardContent>
+              </Card>
             ),
           },
           {

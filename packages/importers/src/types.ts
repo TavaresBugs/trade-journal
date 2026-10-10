@@ -72,6 +72,8 @@ export interface ImportOptions {
   dateOrder?: "DMY" | "MDY";
   /** Fallback date (YYYY-MM-DD) for time-only statements that omit the date column. */
   defaultDate?: string;
+  /** Default commission per contract per side (used when broker statement omits fees). */
+  defaultFeePerContract?: number;
 }
 
 export interface ImportFormat {

@@ -144,7 +144,9 @@
 
 /* OLED dual text-shadow for high contrast over color washes and dither gradients. */
 .text-shadow-oled {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.95);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.95),
+    0 0 2px rgba(0, 0, 0, 0.95);
 }
 
 /* Phosphor theme glows using semantic CSS tokens (replaces hardcoded RGBA). */
@@ -428,7 +430,7 @@ body.dashboard-is-dragging .journal-hover-card {
 }
 .journal-filter-bar {
   top: var(--journal-header-offset, 0px);
-  z-index: 20;
+  z-index: 30;
 }
 .journal-filter-dialog {
   display: flex;
@@ -702,6 +704,7 @@ input[type="number"].tnum::-webkit-outer-spin-button {
 /* Cards respond to their available space, including beside the desktop sidebar. */
 .dashboard-grid-stage {
   container: dashboard / inline-size;
+  isolation: isolate;
 }
 .dashboard-grid {
   grid-template-columns: minmax(0, 1fr);
@@ -762,7 +765,7 @@ input[type="number"].tnum::-webkit-outer-spin-button {
 /* Visual cards consume the row height rather than leaving blank card interiors. */
 .dashboard-grid-card:hover,
 .dashboard-grid-card:focus-within {
-  z-index: 40;
+  z-index: 10;
 }
 .dashboard-visual-card {
   display: flex;
@@ -788,6 +791,11 @@ input[type="number"].tnum::-webkit-outer-spin-button {
   margin: 8px 12px 0;
   padding: 13px 0;
   border-top: 1px solid var(--border);
+}
+
+/* Dashboard layout slot seamless stabilization */
+#dashboard-layout-slot:has(> :nth-child(2)) > :first-child {
+  display: none !important;
 }
 
 /* Base font smoothing for clean typography on dark backgrounds */
@@ -1465,3 +1473,2445 @@ body.dashboard-is-dragging * {
   max-width: 100%;
   border-radius: 6px;
 }
+
+/* Vela Drawing Toolbar & Organic Drawer Expansion (Vela Parity) */
+.vela-dtb {
+  --quant-dtb-row: 38px;
+  --quant-dtb-arrow: 12px;
+  --quant-toolbar-highlight: linear-gradient(
+    to right,
+    var(--vela-hover, rgba(255, 255, 255, 0.06)) calc(100% - var(--quant-dtb-arrow, 12px)),
+    color-mix(
+        in srgb,
+        var(--vela-hover, rgba(255, 255, 255, 0.06)) 65%,
+        var(--vela-surface, #151619)
+      )
+      calc(100% - var(--quant-dtb-arrow, 12px))
+  );
+  transition: width 0.18s;
+}
+
+.vela-dtb:not([data-collapsed="1"]) {
+  width: 52px !important;
+}
+
+.vela-dtb > :is(.vela-dtb-cell, .vela-dtb-btn:not(.vela-dtb-collapse)),
+.vela-dtb .vela-dtb-icon {
+  height: var(--quant-dtb-row, 38px) !important;
+}
+
+.vela-dtb .vela-dtb-icon {
+  width: 36px !important;
+}
+
+/* Toolbar hit boxes: transparent on idle and hover so only the magnetic pill highlights the row */
+.vela-dtb > .vela-dtb-cell .vela-dtb-icon .vela-dtb-hit,
+.vela-dtb > .vela-dtb-btn:not(.vela-dtb-collapse) .vela-dtb-hit,
+.vela-dtb .vela-dtb-cell:hover .vela-dtb-icon .vela-dtb-hit,
+.vela-dtb .vela-dtb-cell:hover .vela-dtb-hit,
+.vela-dtb .vela-dtb-icon:hover .vela-dtb-hit,
+.vela-dtb > .vela-dtb-btn:hover .vela-dtb-hit,
+.vela-dtb .vela-dtb-cell.vela-open .vela-dtb-icon .vela-dtb-hit {
+  width: 32px !important;
+  height: 32px !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-radius: 8px;
+  transition:
+    background 0.16s,
+    box-shadow 0.16s;
+}
+
+/* ZERO OUT the chevron hit pill: where the old chevron was, no oval pill should ever exist */
+.vela-dtb .vela-dtb-arrow .vela-dtb-hit,
+.vela-dtb .vela-dtb-arrow .vela-dtb-hit--arrow,
+.vela-dtb .vela-dtb-arrow:hover .vela-dtb-hit,
+.vela-dtb .vela-dtb-arrow:hover .vela-dtb-hit--arrow,
+.vela-dtb .vela-dtb-cell:hover .vela-dtb-arrow .vela-dtb-hit,
+.vela-dtb .vela-dtb-cell:hover .vela-dtb-arrow .vela-dtb-hit--arrow,
+.vela-dtb .vela-dtb-cell.vela-open .vela-dtb-arrow .vela-dtb-hit,
+.vela-dtb .vela-dtb-cell.vela-open .vela-dtb-arrow .vela-dtb-hit--arrow,
+.vela-dtb .vela-dtb-cell.vela-open .vela-dtb-arrow:hover .vela-dtb-hit,
+.vela-dtb .vela-dtb-cell.vela-open .vela-dtb-arrow:hover .vela-dtb-hit--arrow {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.vela-dtb .vela-dtb-arrow .vela-dtb-hit--arrow {
+  width: 100% !important;
+  height: var(--quant-dtb-row, 38px) !important;
+  border-radius: 0 !important;
+}
+
+/* ONLY when selected/active ([data-active="1"]) does the hit box turn solid WHITE with dark icon */
+.vela-dtb > .vela-dtb-cell[data-active="1"] .vela-dtb-icon .vela-dtb-hit,
+.vela-dtb > .vela-dtb-btn[data-active="1"] .vela-dtb-hit {
+  background: color-mix(
+    in srgb,
+    var(--vela-fg-bright, #f0f3fa) 83%,
+    var(--vela-surface, #151619)
+  ) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--vela-fg-bright, #f0f3fa) 83%,
+    var(--vela-surface, #151619)
+  ) !important;
+  color: var(--vela-surface, #151619) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vela-fg-bright, #f0f3fa) 40%, transparent) !important;
+  border-radius: 8px !important;
+}
+
+.vela-dtb > .vela-dtb-btn[data-active="1"]:hover .vela-dtb-hit,
+.vela-dtb > .vela-dtb-cell[data-active="1"]:is(:hover, .vela-open) .vela-dtb-icon .vela-dtb-hit {
+  background: color-mix(
+    in srgb,
+    var(--vela-fg-bright, #f0f3fa) 93%,
+    var(--vela-surface, #151619)
+  ) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--vela-fg-bright, #f0f3fa) 93%,
+    var(--vela-surface, #151619)
+  ) !important;
+  color: var(--vela-surface, #151619) !important;
+}
+
+.vela-dtb > .vela-dtb-cell[data-active="1"] .vela-dtb-icon svg,
+.vela-dtb > .vela-dtb-btn[data-active="1"] svg {
+  color: var(--vela-surface, #151619) !important;
+  stroke: var(--vela-surface, #151619) !important;
+}
+
+/* Open / selected toolbar button */
+.vela-dtb .vela-dtb-cell.vela-open {
+  background: var(--quant-toolbar-highlight) !important;
+  border-radius: 0px !important;
+}
+
+:not(.quant-drawing-hover).vela-dtb .vela-dtb-cell:hover,
+:not(.quant-drawing-hover).vela-dtb .vela-dtb-btn:hover {
+  background: var(--quant-toolbar-highlight) !important;
+  border-radius: 0px !important;
+}
+
+.vela-dtb.quant-drawing-hover .vela-dtb-cell:not(.vela-open):hover,
+.vela-dtb.quant-drawing-hover .vela-dtb-btn:hover {
+  background: transparent !important;
+}
+
+.vela-dtb .vela-dtb-arrow {
+  width: var(--quant-dtb-arrow, 12px) !important;
+  height: var(--quant-dtb-row, 38px) !important;
+  position: absolute !important;
+  right: 0px !important;
+  opacity: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  color: var(--vela-fg-muted, #868a96) !important;
+}
+
+/* Completely remove the default chevron SVG so only the corner arrow is present */
+.vela-dtb .vela-dtb-arrow svg {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+.vela-dtb .vela-dtb-arrow::before {
+  content: "" !important;
+  pointer-events: none;
+  border-bottom: 4px solid color-mix(in srgb, var(--vela-fg-muted, #868a96) 70%, transparent);
+  border-left: 4px solid transparent;
+  width: 0px;
+  height: 0px;
+  transition:
+    border-bottom-color 0.14s,
+    transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: absolute;
+  bottom: 7px;
+  right: 4px;
+}
+
+.vela-dtb .vela-dtb-cell:hover .vela-dtb-arrow::before {
+  border-bottom-color: var(--vela-fg, #d1d4dc) !important;
+}
+
+.vela-dtb .vela-dtb-cell.vela-open .vela-dtb-arrow::before,
+.vela-dtb .vela-dtb-arrow:focus-visible::before {
+  transform: translate(0.5px, -1px) rotate(-45deg) scale(1.3) !important;
+  border-bottom-color: var(--vela-fg-bright, #f0f3fa) !important;
+}
+
+.vela-dtb .vela-dtb-cell:is(:hover, .vela-open) .vela-dtb-icon svg,
+.vela-dtb > .vela-dtb-btn:hover svg {
+  transform: scale(1.16) !important;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Magnetic sliding hover pill */
+:is(.vela-dtb, .quant-drawing-menu-scroll).quant-drawing-hover {
+  isolation: isolate;
+  position: relative;
+}
+
+:is(.vela-dtb, .quant-drawing-menu-scroll).quant-drawing-hover::before {
+  content: "";
+  top: 0px;
+  left: var(--quant-hover-x, 0px);
+  width: var(--quant-hover-width, 100%);
+  border-radius: var(--quant-hover-radius, 6px);
+  height: var(--quant-hover-height, 30px);
+  transform: translateY(var(--quant-hover-y, 0px));
+  background: var(--vela-hover, rgba(255, 255, 255, 0.06));
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity 0.14s;
+  position: absolute;
+}
+
+:is(.vela-dtb, .quant-drawing-menu-scroll).quant-drawing-hover[data-quant-hover-moving]::before {
+  transition:
+    transform 0.19s cubic-bezier(0.22, 0.8, 0.3, 1),
+    height 0.19s cubic-bezier(0.22, 0.8, 0.3, 1),
+    opacity 0.14s;
+}
+
+:is(.vela-dtb, .quant-drawing-menu-scroll).quant-drawing-hover[data-quant-hover-visible]::before {
+  opacity: 1;
+}
+
+.vela-dtb.quant-drawing-hover {
+  --quant-hover-radius: 0px;
+}
+
+.vela-dtb.quant-drawing-hover::before {
+  background: var(--quant-toolbar-highlight);
+}
+
+.quant-drawing-menu-scroll.quant-drawing-hover {
+  --quant-hover-radius: 6px;
+}
+
+.quant-drawing-menu-scroll.quant-drawing-hover .vela-dtb-item:hover {
+  background: transparent !important;
+}
+
+/* Flyout Drawer */
+.vela-dtb-flyout,
+.quant-drawing-menu-exit {
+  clip-path: inset(-24px -32px -32px 0px);
+  animation: 0.22s cubic-bezier(0.22, 0.65, 0.25, 1) both quant-drawing-menu-enter;
+  border-radius: 0px 10px 10px 0px !important;
+}
+
+@keyframes quant-drawing-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.vela-dtb-flyout.quant-drawing-menu,
+.quant-drawing-menu-exit.quant-drawing-menu {
+  isolation: isolate;
+  width: max-content;
+  max-width: calc(100vw - 72px);
+  background: transparent !important;
+  border: none !important;
+  gap: 0px !important;
+  padding: 0px !important;
+  overflow: visible !important;
+  left: 51px !important;
+  box-shadow: none !important;
+}
+
+.quant-drawing-menu-outline {
+  z-index: -1;
+  pointer-events: none;
+  width: 100%;
+  height: calc(100% + 32px);
+  position: absolute;
+  top: -16px;
+  left: 0px;
+  overflow: visible;
+}
+
+.quant-drawing-menu-fill {
+  fill: var(--vela-surface, #151619);
+}
+
+.quant-drawing-menu-edge {
+  fill: none;
+  stroke: var(--vela-border, #2a2b30);
+  stroke-width: 1px;
+}
+
+:root:not(.dark) .quant-drawing-menu-fill {
+  fill: #ffffff;
+}
+
+:root:not(.dark) .quant-drawing-menu-edge {
+  stroke: #e0e3eb;
+}
+
+.quant-drawing-menu-search {
+  background: linear-gradient(to right, transparent, var(--vela-border, #2a2b30) 32px) bottom / 100%
+    1px no-repeat;
+  color: var(--muted-foreground, #868a96);
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  display: flex;
+}
+
+.quant-drawing-menu-search svg {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+}
+
+.quant-drawing-menu-search input {
+  width: 100%;
+  min-width: 0;
+  color: var(--foreground, #f0f3fa);
+  background: transparent;
+  border: 0;
+  outline: none;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.quant-drawing-menu-search input::placeholder {
+  color: var(--muted-foreground, #868a96);
+}
+
+.quant-drawing-menu-scroll {
+  min-height: 0px;
+  max-height: inherit;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--vela-border, #2a2b30) transparent;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 2px;
+  padding: 0px 8px 8px 10px;
+  display: flex;
+  overflow-y: auto;
+}
+
+.quant-drawing-menu .vela-dtb-item {
+  flex: 0 0 auto;
+  min-height: 34px;
+  position: relative;
+  white-space: nowrap !important;
+  border-radius: 6px !important;
+  gap: 9px !important;
+  min-width: 0 !important;
+  padding: 5px 8px !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Tool Item Icon Box */
+.quant-drawing-menu :is(.quant-drawing-menu-icon, .vela-dtb-badge) {
+  box-sizing: border-box !important;
+  border: 1px solid var(--vela-border, #2a2b30) !important;
+  background: var(--vela-hover, rgba(255, 255, 255, 0.06)) !important;
+  color: var(--vela-fg-muted, #868a96) !important;
+  border-radius: 6px !important;
+  padding: 3px !important;
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 0.18s,
+    background 0.18s !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 24px !important;
+}
+
+.quant-drawing-menu .vela-dtb-item:hover :is(.quant-drawing-menu-icon, .vela-dtb-badge) {
+  color: var(--vela-fg-bright, #f0f3fa) !important;
+  background: var(--vela-active, rgba(255, 255, 255, 0.12)) !important;
+  transform: scale(1.16) !important;
+}
+
+/* 1. Hide the checkmark SVG inside flyout drawer items (Official Vela Parity) */
+.quant-drawing-menu .quant-drawing-menu-icon + span + span > svg,
+.quant-drawing-menu
+  .vela-dtb-item
+  span:has(> svg:not(.vela-dtb-star svg)):not(.quant-drawing-menu-icon)
+  svg {
+  visibility: hidden !important;
+  display: none !important;
+}
+
+/* 2. When active, turn the flyout drawer item icon solid white with dark icon (Official Vela Parity) */
+.quant-drawing-menu
+  .vela-dtb-item:has(> .quant-drawing-menu-icon + span + span > svg)
+  :is(.quant-drawing-menu-icon, .vela-dtb-badge),
+.quant-drawing-menu .vela-dtb-item[data-active="1"] :is(.quant-drawing-menu-icon, .vela-dtb-badge),
+.quant-drawing-menu .vela-dtb-item.quant-active :is(.quant-drawing-menu-icon, .vela-dtb-badge) {
+  border-color: color-mix(in srgb, var(--vela-fg-bright, #f0f3fa) 40%, transparent) !important;
+  background: color-mix(
+    in srgb,
+    var(--vela-fg-bright, #f0f3fa) 83%,
+    var(--vela-surface, #151619)
+  ) !important;
+  color: var(--vela-surface, #151619) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vela-fg-bright, #f0f3fa) 40%, transparent) !important;
+}
+
+.quant-drawing-menu
+  .vela-dtb-item:has(> .quant-drawing-menu-icon + span + span > svg)
+  :is(.quant-drawing-menu-icon, .vela-dtb-badge)
+  svg,
+.quant-drawing-menu
+  .vela-dtb-item[data-active="1"]
+  :is(.quant-drawing-menu-icon, .vela-dtb-badge)
+  svg,
+.quant-drawing-menu .vela-dtb-item.quant-active :is(.quant-drawing-menu-icon, .vela-dtb-badge) svg {
+  color: var(--vela-surface, #151619) !important;
+  stroke: var(--vela-surface, #151619) !important;
+}
+
+.quant-drawing-menu
+  .vela-dtb-item:has(> .quant-drawing-menu-icon + span + span > svg):hover
+  :is(.quant-drawing-menu-icon, .vela-dtb-badge),
+.quant-drawing-menu
+  .vela-dtb-item[data-active="1"]:hover
+  :is(.quant-drawing-menu-icon, .vela-dtb-badge) {
+  background: color-mix(
+    in srgb,
+    var(--vela-fg-bright, #f0f3fa) 93%,
+    var(--vela-surface, #151619)
+  ) !important;
+  color: var(--vela-surface, #151619) !important;
+}
+
+/* Tool description tooltip card (.quant-tool-card) - official Vela Parity */
+.quant-tool-card {
+  box-sizing: border-box;
+  width: 232px;
+  max-width: calc(-16px + 100vw);
+  animation: 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) quant-tool-card-enter;
+  background: var(--vela-surface-elev, #1c1d20) !important;
+  white-space: normal !important;
+  border-radius: 12px !important;
+  padding: 13px !important;
+  box-shadow: rgba(0, 0, 0, 0.28) 0px 8px 24px !important;
+  border: 1px solid var(--vela-border, #2a2b30) !important;
+  color: var(--vela-fg, #d1d4dc) !important;
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+@keyframes quant-tool-card-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.quant-tool-card-heading {
+  align-items: center;
+  gap: 10px;
+  display: flex;
+}
+
+.quant-tool-card-heading strong {
+  color: var(--vela-fg-bright, #f0f3fa);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.quant-tool-card-icon {
+  border: 1px solid var(--vela-border, #2a2b30);
+  background: var(--vela-hover, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+  flex: 0 0 30px;
+  justify-content: center;
+  align-items: center;
+  height: 30px;
+  display: flex;
+  color: var(--vela-fg-bright, #f0f3fa);
+}
+
+.quant-tool-card-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.quant-tool-card p {
+  border-top: 1px solid var(--vela-border, #2a2b30);
+  color: var(--vela-fg-muted, #868a96);
+  margin: 10px 0px 0px;
+  padding-top: 10px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.quant-tool-card.quant-side-rail-card,
+.quant-tool-card.quant-chart-card {
+  z-index: 1000 !important;
+  pointer-events: none !important;
+}
+
+.quant-side-rail-card-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--vela-border, #2a2b30);
+  color: var(--vela-fg-muted, #868a96);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.quant-side-rail-card-hint kbd {
+  box-sizing: border-box;
+  background: var(--muted, #1b1b20);
+  border: 1px solid var(--vela-border, #2a2b30);
+  min-width: 18px;
+  height: 18px;
+  color: var(--vela-fg-bright, #f0f3fa);
+  border-radius: 4px;
+  justify-content: center;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 10px;
+  font-family: inherit;
+  display: inline-flex;
+}
+
+.quant-drawing-menu .quant-drawing-section {
+  text-transform: uppercase;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 4px 4px;
+  display: flex;
+  letter-spacing: 0.08em !important;
+  color: var(--muted-foreground, #868a96) !important;
+  padding: 0px !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+}
+
+.quant-drawing-section-line {
+  background: var(--vela-border, #2a2b30);
+  flex: 1 1 0%;
+  height: 1px;
+}
+
+.quant-drawing-section-count {
+  border: 1px solid var(--vela-border, #2a2b30);
+  text-align: center;
+  letter-spacing: 0px;
+  border-radius: 4px;
+  min-width: 22px;
+  padding: 1px 4px;
+}
+
+.quant-drawing-menu .vela-dtb-hint {
+  align-items: center;
+  gap: 4px;
+  display: inline-flex;
+}
+
+.quant-drawing-menu .vela-dtb-hint kbd {
+  box-sizing: border-box;
+  background: var(--muted, #1b1b20);
+  border: 1px solid var(--border, #222228);
+  min-width: 20px;
+  height: 20px;
+  color: var(--foreground, #f0f3fa);
+  border-radius: 4px;
+  justify-content: center;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 10px;
+  display: inline-flex;
+}
+
+.quant-drawing-menu-footer {
+  border-top: 1px solid var(--vela-border, #2a2b30);
+  color: var(--muted-foreground, #868a96);
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  font-size: 10px;
+}
+
+/* Native Floating Drawing Toolbar (.vela-dpop) Grip & Aesthetic Upgrade */
+.vela-dpop:not(.vela-fav-toolbar) {
+  background: var(--vela-bg, #151619) !important;
+  border: 1px solid var(--vela-border, #2a2b30) !important;
+  border-radius: var(--vela-radius-lg, 10px) !important;
+  box-shadow: var(--vela-shadow, 0 8px 30px rgba(0, 0, 0, 0.5)) !important;
+}
+
+.vela-dpop-grip {
+  width: 26px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  cursor: grab !important;
+  touch-action: none !important;
+  color: var(--vela-fg-faint, rgba(178, 181, 190, 0.35)) !important;
+  flex-shrink: 0 !important;
+  transition: color 120ms ease !important;
+}
+
+.vela-dpop-grip:hover {
+  color: var(--vela-fg-bright, #ffffff) !important;
+}
+
+.vela-dpop-grip:active {
+  cursor: grabbing !important;
+}
+
+.vela-dpop-grip svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Floating Favorite Drawing Tools Toolbar (TradingView & Vela Dpop Parity) */
+.vela-fav-toolbar {
+  position: absolute;
+  z-index: 22;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  pointer-events: auto;
+  user-select: none;
+  background: var(--vela-bg, #151619) !important;
+  border: 1px solid var(--vela-border, #2a2b30) !important;
+  border-radius: var(--vela-radius-lg, 10px) !important;
+  box-shadow: var(--vela-shadow, 0 8px 30px rgba(0, 0, 0, 0.5)) !important;
+  box-sizing: border-box;
+}
+
+.vela-fav-toolbar[data-empty="1"],
+.vela-fav-toolbar[hidden] {
+  display: none !important;
+}
+
+.vela-fav-toolbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+}
+
+.vela-fav-toolbar-grip {
+  width: 26px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: grab;
+  touch-action: none;
+  color: var(--vela-fg-faint, rgba(178, 181, 190, 0.35));
+  flex-shrink: 0;
+  transition: color 120ms ease;
+}
+
+.vela-fav-toolbar-grip:hover {
+  color: var(--vela-fg-muted, #9a9ea8);
+}
+
+.vela-fav-toolbar-grip:active,
+.vela-fav-toolbar[data-dragging="1"] .vela-fav-toolbar-grip {
+  cursor: grabbing;
+  color: var(--vela-fg-bright, #ffffff);
+}
+
+.vela-fav-toolbar-items {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.vela-fav-toolbar-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent;
+  color: var(--vela-fg-muted, #9a9ea8);
+  border: none;
+  border-radius: 5px;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 120ms ease, color 120ms ease;
+  position: relative;
+}
+
+.vela-fav-toolbar-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.vela-fav-toolbar-btn:hover {
+  background: var(--vela-hover-strong, rgba(255, 255, 255, 0.08));
+  color: var(--vela-fg-bright, #ffffff);
+}
+
+.vela-fav-toolbar-btn[data-active="1"] {
+  background: var(--vela-active, rgba(255, 255, 255, 0.14));
+  color: var(--vela-fg-bright, #ffffff);
+}
+
+/* Seamless borders and integration for native Vela Topbar and Bottombar */
+.vela-widget-topbar {
+  border-bottom: none !important;
+  background: #151619 !important;
+}
+
+.vela-widget-bottombar {
+  border-top: 1px solid var(--vela-border) !important;
+  background: #151619 !important;
+  height: 39px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 8px !important;
+}
+
+.quant-chart-chrome .vela-widget-bottombar {
+  height: 39px !important;
+  font-size: 13px !important;
+}
+
+.quant-chart-chrome .vela-widget-bottombar :is(.vela-bb-range, .vela-bb-tz) {
+  height: 30px !important;
+  font-weight: 550 !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  transition: color 0.16s, background 0.16s !important;
+}
+
+.quant-chart-chrome :is(.vela-widget-topbar, .vela-widget-bottombar) button[aria-expanded="true"] {
+  background: var(--vela-hover) !important;
+}
+
+.quant-chart-chrome .vela-widget-bottombar button:hover {
+  background: 0px 0px;
+}
+
+:root,
+body,
+.vela-ui,
+.vela-ui-layer {
+  --vela-font: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif) !important;
+  --vela-bg: #151619;
+  --vela-fg: #d1d4dc;
+  --vela-fg-muted: #868a96;
+  --vela-fg-faint: rgba(178, 181, 190, 0.35);
+  --vela-fg-bright: #f0f3fa;
+  --vela-surface: #151619;
+  --vela-surface-elev: rgb(28, 29, 32);
+  --vela-surface-overlay: rgb(28, 29, 32);
+  --vela-surface-sunken: #151619;
+  --vela-border: #2a2b30;
+  --vela-border-strong: #34353b;
+  --vela-border-soft: #2a2b30;
+  --vela-border-faint: rgba(178, 181, 190, 0.08);
+  --vela-hover: rgba(255, 255, 255, 0.06);
+  --vela-active: rgba(255, 255, 255, 0.1);
+  --vela-hover-strong: rgba(255, 255, 255, 0.16);
+  --vela-focus: rgba(178, 181, 190, 0.5);
+  --vela-focus-soft: rgba(178, 181, 190, 0.12);
+  --vela-separator-hover-band: rgba(178, 181, 190, 0.1);
+  --vela-separator-hover-line: rgba(178, 181, 190, 0.55);
+  --vela-scroll: rgba(178, 181, 190, 0.3);
+  --vela-accent: #2962ff;
+  --vela-accent-bright: #38c0fd;
+  --vela-highlight: #e0b400;
+  --vela-selected-bg: #f0f3fa;
+  --vela-selected-fg: #151619;
+  --vela-fg-on-fill: #ffffff;
+  --vela-up: #089981;
+  --vela-down: #f23645;
+  --vela-danger: #f23645;
+  --vela-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --vela-shadow-dialog: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --vela-backdrop: rgba(0, 0, 0, 0.45);
+  --vela-space-1: 4px;
+  --vela-space-2: 8px;
+  --vela-space-3: 12px;
+  --vela-space-4: 16px;
+  --vela-radius-sm: 4px;
+  --vela-radius-md: 6px;
+  --vela-radius-lg: 10px;
+}
+
+/* Architect Font Shield: Prevents lazy #vela-ui-tokens or inline applyThemeTokens("--vela-font: sans-serif") from mutating chart/chrome typography */
+.vela-ui,
+.vela-ui-layer,
+.vela-widget-topbar,
+.vela-widget-topbar button,
+.vela-widget-bottombar,
+.vela-widget-bottombar button,
+.vela-dtb,
+.vela-dtb button,
+.vela-dpop,
+.vela-dpop button,
+.vela-popover,
+.vela-menu,
+.vela-menu-item,
+.vela-tooltip,
+.quant-chart-chrome,
+.quant-chart-chrome button {
+  --vela-font: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif) !important;
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif) !important;
+}
+
+/* Ensure proper positioning & 1:1 typography for Vela Statusline */
+.vela-statusline {
+  top: var(--vela-space-2, 8px) !important;
+  left: calc(var(--vela-toolbar-gutter, 0px) + 10px) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+:where(.vela-has-statusline:has(.vela-dtb)) .vela-statusline {
+  left: calc(var(--vela-toolbar-gutter, 52px) + 10px) !important;
+}
+
+:where(.vela-has-statusline:has(.vela-dtb)) .vela-watermark {
+  left: var(--vela-toolbar-gutter, 52px) !important;
+}
+
+.quant-settings-preview-chart .vela-statusline {
+  left: 10px !important;
+}
+
+.vela-statusline .vela-sl-symbol {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  color: var(--vela-fg, #d1d4dc) !important;
+}
+
+.vela-statusline .vela-sl-meta {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--vela-fg-muted, #868a96) !important;
+}
+
+.vela-statusline .vela-sl-ohlc {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: var(--vela-fg-muted, #868a96) !important;
+}
+
+.vela-statusline .vela-sl-ohlc b {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.vela-statusline .vela-sl-change {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Official Vela Menu Popups (Chart style, Context Menu, Timezone, Timeframe, etc.) */
+.vela-menu {
+  background: var(--vela-surface, #151619) !important;
+  color: var(--vela-fg, #d1d4dc) !important;
+  border: 1px solid var(--vela-border, #2a2b30) !important;
+  border-radius: 10px !important;
+  box-shadow:
+    rgba(0, 0, 0, 0.4) 0px 12px 32px,
+    rgba(0, 0, 0, 0.25) 0px 2px 8px !important;
+  padding: 6px !important;
+  font-family: inherit;
+  list-style: none;
+  z-index: 99999 !important;
+  overscroll-behavior: contain !important;
+}
+
+.vela-menu-item {
+  box-sizing: border-box;
+  border-radius: 6px !important;
+  gap: 10px !important;
+  min-height: 34px !important;
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 24px !important;
+  position: relative;
+  color: var(--vela-fg, #d1d4dc) !important;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.vela-menu-item:hover,
+.vela-menu-item[data-highlighted] {
+  background: var(--vela-hover, rgba(255, 255, 255, 0.06)) !important;
+  color: var(--vela-fg-bright, #f0f3fa) !important;
+}
+
+.vela-menu-item[data-checked] {
+  background: color-mix(
+    in srgb,
+    var(--vela-hover, rgba(255, 255, 255, 0.06)) 65%,
+    transparent
+  ) !important;
+  color: var(--vela-fg-bright, #f0f3fa) !important;
+}
+
+.vela-menu-item > .vela-icon:not(.vela-menu-star) {
+  box-sizing: border-box;
+  border: 1px solid var(--vela-border, #2a2b30) !important;
+  background: var(--vela-hover, rgba(255, 255, 255, 0.06)) !important;
+  border-radius: 6px !important;
+  flex: 0 0 24px;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 3px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 0.16s !important;
+}
+
+.vela-menu-item[data-checked] > .vela-icon:not(.vela-menu-star) {
+  border-color: color-mix(in srgb, var(--vela-fg-bright, #f0f3fa) 40%, transparent) !important;
+  background: color-mix(
+    in srgb,
+    var(--vela-fg-bright, #f0f3fa) 83%,
+    var(--vela-surface, #151619)
+  ) !important;
+  color: var(--vela-surface, #151619) !important;
+}
+
+.vela-menu-item:hover > .vela-icon:not(.vela-menu-star) {
+  color: var(--vela-fg-bright, #f0f3fa) !important;
+  transform: scale(1.1) !important;
+}
+
+.vela-menu-sep {
+  height: 1px !important;
+  background: var(--vela-border, #2a2b30) !important;
+  margin: 6px 8px !important;
+  border: none !important;
+}
+
+/* Official Vela Enhanced Timeframe Picker (quant-tfp) */
+.quant-tfp {
+  isolation: isolate;
+  width: 296px;
+  display: flex;
+  flex-direction: column;
+  background: transparent !important;
+  color: var(--vela-fg, #d1d4dc) !important;
+  border: none !important;
+  border-radius: 0px !important;
+  box-shadow: none !important;
+  font-size: 13px;
+  overflow: visible !important;
+  animation: 0.22s cubic-bezier(0.22, 0.65, 0.25, 1) both quant-topbar-menu-enter;
+  z-index: 50 !important;
+}
+
+.quant-tfp-outline,
+.quant-chrome-outline {
+  z-index: -1;
+  pointer-events: none;
+  width: calc(100% + 32px);
+  height: calc(100% + 2px);
+  position: absolute;
+  top: -2px;
+  left: -16px;
+  overflow: visible;
+  clip-path: inset(2px -40px -40px -40px);
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+.quant-tfp-outline-fill,
+.quant-chrome-outline-fill {
+  fill: #151619 !important;
+}
+
+.quant-tfp-outline-edge,
+.quant-chrome-outline-edge {
+  fill: none;
+  stroke: var(--vela-border, #2a2b30);
+  stroke-width: 1px;
+}
+
+.quant-chrome-outline[data-quant-clamped="1"],
+.quant-chrome-outline.quant-chrome-outline-clamped {
+  top: 0px !important;
+  left: 0px !important;
+  width: 100% !important;
+  height: 100% !important;
+  clip-path: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+/* Master Vela Select Component (Dropdowns in Dialogs & Rows) */
+.vela-select-trigger {
+  height: 29px !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  border: 1px solid var(--vela-border-strong, #34353b) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  color: var(--vela-fg, #d1d4dc) !important;
+  cursor: pointer !important;
+  transition: all 120ms ease !important;
+  user-select: none !important;
+}
+
+.vela-select-trigger:hover:not(:disabled):not([data-quant-open="1"]) {
+  border-color: #4a4b52 !important;
+  color: var(--vela-fg-bright, #f0f3fa) !important;
+}
+
+.vela-select-trigger[data-quant-open="1"],
+.vela-select-trigger[data-quant-open="1"]:hover {
+  background: var(--vela-surface, #151619) !important;
+  border: 1px solid var(--vela-border-strong, #34353b) !important;
+  border-bottom: 1px solid transparent !important;
+  border-top-left-radius: 6px !important;
+  border-top-right-radius: 6px !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  color: #ffffff !important;
+  z-index: 50 !important;
+  position: relative !important;
+}
+
+.vela-select-trigger:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+.vela-select-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.vela-select-chevron {
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  color: #868a96 !important;
+}
+
+.vela-select-dropdown,
+.vela-select-list {
+  isolation: isolate !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+/* Eliminate internal duplicate buttons (delegated exclusively to Right Rail caps) */
+.quant-chart-chrome .vela-topbar-right .vela-widget-screenshot,
+.quant-chart-chrome .vela-topbar-right #vela-action-screenshot,
+.quant-chart-chrome .vela-topbar-right .vela-widget-tool[aria-label="Screenshot"],
+.quant-chart-chrome .vela-widget-screenshot,
+.quant-chart-chrome .vela-bb-settings {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.vela-ui-layer[data-chrome-joined-layer="above"],
+.vela-ui-layer[data-chrome-joined-layer="below"] {
+  position: absolute !important;
+  top: var(--chrome-layer-top, 0px) !important;
+  left: var(--chrome-layer-left, 0px) !important;
+  transform: none !important;
+  z-index: 50 !important;
+}
+
+.quant-chart-chrome .quant-chrome-menu[data-chrome-joined],
+.quant-chart-chrome .vela-menu[data-chrome-joined],
+.quant-chrome-menu[data-chrome-joined],
+.vela-menu[data-chrome-joined] {
+  position: relative !important;
+  z-index: 50 !important;
+  translate: 0 var(--chrome-dock-shift, 0px);
+  animation: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  width: max-content !important;
+  min-width: 240px !important;
+  max-width: 270px !important;
+}
+
+.vela-screenshot-floating-menu {
+  background: #121316 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  padding: 4px !important;
+  min-width: 210px !important;
+}
+
+.quant-chart-chrome .vela-screenshot-floating-menu[data-chrome-joined="below"],
+.vela-screenshot-floating-menu[data-chrome-joined="below"] {
+  position: relative !important;
+  z-index: 50 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 0 10px 10px !important;
+  padding: 7px !important;
+  min-width: 210px !important;
+  animation: none !important;
+}
+
+.quant-chart-chrome .vela-screenshot-floating-menu .vela-menu-item > .vela-icon,
+.vela-screenshot-floating-menu .vela-menu-item > .vela-icon {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 16px !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.quant-chrome-join {
+  position: absolute !important;
+  z-index: 49 !important;
+  pointer-events: none !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.quant-chrome-join svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  overflow: visible !important;
+}
+
+.quant-chrome-join[data-side="above"] svg {
+  transform: scaleY(-1);
+}
+
+.quant-chrome-join-fill {
+  fill: var(--vela-surface, #151619) !important;
+}
+
+.quant-chrome-join-edge {
+  fill: none !important;
+  stroke: var(--vela-border, #2a2b30) !important;
+  stroke-width: 1px !important;
+  vector-effect: non-scaling-stroke;
+}
+
+.vela-select-list.is-scroll {
+  display: flex !important;
+  align-items: stretch !important;
+  gap: 2px !important;
+}
+
+.vela-select-list.is-scroll .vela-select-items {
+  flex: 1 1 auto !important;
+  min-width: min-content !important;
+  overflow-y: auto !important;
+  scrollbar-width: none !important;
+}
+
+.vela-select-list.is-scroll .vela-select-items::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.vela-select-rail {
+  position: relative !important;
+  flex: none !important;
+  width: 3px !important;
+  margin: 2px 1px 2px 0 !important;
+  pointer-events: none !important;
+}
+
+.vela-select-thumb {
+  width: 3px !important;
+  border-radius: 2px !important;
+  background: var(--vela-scroll, rgba(255, 255, 255, 0.2)) !important;
+  transition: transform 0.05s linear;
+}
+
+@keyframes quant-topbar-menu-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.quant-tfp-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--vela-border, #2a2b30);
+  cursor: text;
+}
+
+.quant-tfp-search .vela-icon {
+  color: var(--vela-fg-muted, #868a96);
+  flex: none;
+  width: 15px;
+  height: 15px;
+  font-size: 15px;
+}
+
+.quant-tfp-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--vela-fg-bright, #f0f3fa);
+  font: inherit;
+  font-size: 13px;
+  padding: 0;
+}
+
+.quant-tfp-input::placeholder {
+  color: var(--vela-fg-muted, #868a96);
+}
+
+.quant-tfp-body {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 10px 10px;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+}
+
+.quant-tfp-heading {
+  padding: 8px 0 6px;
+  color: var(--vela-fg-muted, #868a96);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.quant-tfp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.quant-tfp-cell {
+  position: relative;
+  display: flex;
+}
+
+.quant-tfp-chip {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--vela-border, #2a2b30);
+  color: var(--vela-fg-bright, #f0f3fa);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+  font-size: 12px;
+}
+
+.quant-tfp-chip:hover {
+  background: var(--vela-hover, rgba(255, 255, 255, 0.06));
+}
+
+.quant-tfp-chip[data-current="1"] {
+  background: var(--vela-hover-strong, rgba(255, 255, 255, 0.16));
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.quant-tfp-pin {
+  all: unset;
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--vela-surface, #151619);
+  color: var(--vela-fg-muted, #868a96);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.quant-tfp-pin .vela-icon {
+  width: 11px;
+  height: 11px;
+  font-size: 11px;
+}
+
+.quant-tfp-cell:hover .quant-tfp-pin,
+.quant-tfp-pin:focus-visible {
+  opacity: 1;
+}
+
+.quant-tfp-pin[data-on="1"] {
+  opacity: 1;
+  color: var(--vela-highlight, #e0b400);
+}
+
+.quant-tfp-pin:hover {
+  color: var(--vela-highlight, #e0b400);
+}
+
+.quant-tfp-foot,
+.qsp-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--vela-border, #2a2b30);
+  color: var(--vela-fg-muted, #868a96);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  user-select: none;
+}
+
+.qsp-key {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--vela-fg-muted, #868a96);
+  font-size: 11px;
+  line-height: 1.2;
+  transition:
+    background 90ms ease,
+    color 90ms ease;
+}
+
+.qsp-key:hover {
+  background: var(--vela-hover, rgba(255, 255, 255, 0.06));
+  color: var(--vela-fg-bright, #f0f3fa);
+}
+
+.qsp-key:focus-visible {
+  outline: 2px solid var(--vela-focus, rgba(178, 181, 190, 0.5));
+  outline-offset: -1px;
+}
+
+.qsp-key + .qsp-key[data-pair] {
+  margin-left: -6px;
+}
+
+.quant-tfp-foot kbd,
+.qsp-foot kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 8px;
+  text-align: center;
+  padding: 2px 5px;
+  border-radius: 4px;
+  border-bottom: 2px solid var(--vela-border-strong, #34353b);
+  background: var(--vela-surface-elev, rgb(28, 29, 32));
+  color: var(--vela-fg, #d1d4dc);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  transition:
+    transform 60ms ease,
+    border-bottom-width 60ms ease;
+}
+
+.qsp-key:active kbd {
+  border-bottom-width: 1px;
+  transform: translateY(1px);
+}
+
+.quant-tfp-row {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.quant-tfp-row[data-highlighted="1"] {
+  background: var(--vela-hover, rgba(255, 255, 255, 0.06));
+}
+
+.quant-tfp-choose {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.quant-tfp-choose:focus-visible {
+  outline: 2px solid var(--vela-selected-fg, #3875f6);
+  outline-offset: -2px;
+}
+
+.quant-tfp-label {
+  color: var(--vela-fg-bright, #f0f3fa);
+}
+
+.quant-tfp-short {
+  color: var(--vela-fg-muted, #868a96);
+  font-variant-numeric: tabular-nums;
+}
+
+.quant-tfp-empty {
+  padding: 12px 10px;
+  color: var(--vela-fg-muted, #868a96);
+}
+
+.vela-widget-tf-caret[data-quant-open="1"],
+.vela-widget-style[data-quant-open="1"] {
+  background: var(--vela-surface, #151619) !important;
+  color: var(--vela-fg-bright, #f0f3fa) !important;
+  border-bottom-left-radius: 0px !important;
+  border-bottom-right-radius: 0px !important;
+  height: 35px !important;
+  margin-bottom: -5px !important;
+  position: relative !important;
+  z-index: 52 !important;
+}
+
+.vela-widget-tf-caret[data-quant-open="1"] svg {
+  transform: rotate(180deg);
+  transition: transform 120ms ease;
+}
+
+.quant-style-popup {
+  isolation: isolate;
+  position: absolute;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  background: transparent !important;
+  color: var(--vela-fg, #d1d4dc) !important;
+  border: none !important;
+  border-radius: 0px !important;
+  box-shadow: none !important;
+  font-size: 13px;
+  overflow: visible !important;
+  animation: 0.22s cubic-bezier(0.22, 0.65, 0.25, 1) both quant-topbar-menu-enter;
+  z-index: 50 !important;
+}
+
+.quant-style-list {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0px !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  padding: 6px !important;
+  margin: 0 !important;
+  list-style: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  width: 100% !important;
+}
+
+.quant-style-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--vela-fg, #d1d4dc);
+  font-size: 13px;
+  user-select: none;
+  transition: background 0.12s ease;
+}
+
+.quant-style-row:hover {
+  background: var(--vela-hover, rgba(255, 255, 255, 0.06));
+}
+
+.quant-style-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--vela-fg-muted, #868a96);
+  font-size: 14px;
+  flex-shrink: 0;
+  transition:
+    transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.quant-style-badge svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Hover effect: badge salta levemente e fica branco com ícone escuro */
+.quant-style-row:not([data-checked="1"]):hover .quant-style-badge {
+  transform: translateY(-1px) scale(1.08);
+  background: #f0f3fa !important;
+  color: #151619 !important;
+}
+
+.quant-style-row:not([data-checked="1"]):hover .quant-style-label {
+  color: #f0f3fa !important;
+}
+
+/* Ativo atual: permanece com badge branco e ícone escuro, sem salto */
+.quant-style-row[data-checked="1"] .quant-style-badge {
+  background: #f0f3fa !important;
+  color: #151619 !important;
+  transform: none !important;
+}
+
+.quant-style-row[data-checked="1"] .quant-style-label {
+  color: #f0f3fa !important;
+  font-weight: 500;
+}
+
+.quant-style-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.quant-style-sep {
+  height: 1px;
+  background: var(--vela-border, #2a2b30);
+  margin: 4px 6px;
+  list-style: none;
+  opacity: 0.6;
+}
+
+/* Official Vela Chrome Hover Tracker */
+.quant-chrome-hover {
+  --chrome-x: 0px;
+  --chrome-y: 0px;
+  --chrome-w: 0px;
+  --chrome-h: 0px;
+  isolation: isolate;
+  position: relative;
+  background: #151619 !important;
+}
+
+.quant-chrome-hover::before {
+  content: "";
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: var(--chrome-w, 0px);
+  height: var(--chrome-h, 0px);
+  transform: translate(var(--chrome-x, 0px), var(--chrome-y, 0px));
+  background: var(--vela-hover, rgba(255, 255, 255, 0.06));
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 6px;
+  transition: opacity 0.14s ease;
+}
+
+.quant-chrome-hover[data-chrome-moving]::before {
+  transition:
+    transform 0.19s cubic-bezier(0.22, 0.8, 0.3, 1),
+    width 0.19s cubic-bezier(0.22, 0.8, 0.3, 1),
+    height 0.19s cubic-bezier(0.22, 0.8, 0.3, 1),
+    opacity 0.14s ease;
+}
+
+.quant-chrome-hover[data-chrome-visible]::before {
+  opacity: 1;
+}
+
+/* Ensure buttons in chrome have transparent hover so the sliding pill is what shows */
+.quant-chrome-hover .vela-widget-symbol:hover,
+.quant-chrome-hover .vela-widget-tf:hover:not([data-current="1"]),
+.quant-chrome-hover .vela-widget-tf-caret:hover:not([data-quant-open="1"]),
+.quant-chrome-hover .vela-widget-style:hover:not([data-quant-open="1"]),
+.quant-chrome-hover .vela-widget-indicators:hover,
+.quant-chrome-hover .vela-widget-actions button:hover,
+.quant-chrome-hover .vela-widget-bottombar button:hover {
+  background: transparent !important;
+}
+
+/* Bring button contents above the ::before pseudo-element */
+.quant-chrome-hover button,
+.quant-chrome-hover .vela-widget-tf,
+.quant-chrome-hover .vela-widget-symbol,
+.quant-chrome-hover .vela-widget-style,
+.quant-chrome-hover .vela-widget-indicators {
+  position: relative;
+  z-index: 1;
+}
+
+/* Topbar & Chart Menus (Style, Settings, Timezone) */
+.vela-menu:not(.quant-drawing-menu):not(.vela-dtb-flyout):not(.vela-select-dropdown):not([data-chrome-joined]) {
+  isolation: isolate;
+  background: var(--vela-surface, #151619) !important;
+  border: 1px solid var(--vela-border, #2a2b30) !important;
+  border-radius: 10px !important;
+  box-shadow:
+    rgba(0, 0, 0, 0.45) 0px 12px 32px,
+    rgba(0, 0, 0, 0.25) 0px 2px 8px !important;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    Segoe UI,
+    sans-serif;
+  scrollbar-width: thin;
+  padding: 7px !important;
+  z-index: 50 !important;
+  animation: 0.22s cubic-bezier(0.22, 0.65, 0.25, 1) both quant-topbar-menu-enter;
+}
+
+.vela-menu:not(.quant-drawing-menu):not(.vela-dtb-flyout) .vela-menu-item {
+  box-sizing: border-box;
+  border-radius: 6px;
+  gap: 10px;
+  min-height: 34px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 24px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--vela-fg, #d1d4dc);
+  cursor: pointer;
+  transition:
+    background 120ms,
+    color 120ms;
+}
+
+.vela-menu:not(.quant-drawing-menu):not(.vela-dtb-flyout) .vela-menu-item:hover,
+.vela-menu:not(.quant-drawing-menu):not(.vela-dtb-flyout) .vela-menu-item[data-highlighted] {
+  background: var(--vela-hover, #202124);
+  color: var(--vela-fg-bright, #f0f3fa);
+}
+
+.vela-menu:not(.quant-drawing-menu):not(.vela-dtb-flyout) .vela-menu-item[data-checked] {
+  background: color-mix(in srgb, var(--vela-hover) 65%, transparent);
+}
+
+.vela-menu:not(.quant-drawing-menu):not(.vela-dtb-flyout) .vela-menu-item > .vela-icon {
+  box-sizing: border-box;
+  border: 1px solid var(--vela-border);
+  background: var(--vela-hover);
+  border-radius: 6px;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 0.16s;
+}
+
+.vela-menu:not(.quant-drawing-menu):not(.vela-dtb-flyout)
+  .vela-menu-item:is(:hover, [data-highlighted])
+  > .vela-icon {
+  color: var(--vela-fg-bright);
+  transform: scale(1.14);
+}
+
+@keyframes vela-tf-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(120%) scaleX(1.1);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.vela-hot-swap-progress {
+  animation: vela-tf-progress 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+/* ==========================================================================
+   Vela Switch & Toggle Components (Ground-Truth 1:1 Fidelity)
+   ========================================================================== */
+
+/* Base Vela Switch */
+.vela-switch {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  outline: none;
+  user-select: none;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.vela-switch:disabled,
+.vela-switch[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 1. Checkbox: .vela-switch (17x17px, 4px radius) */
+.vela-switch:not(.quant-settings-toggle) {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+}
+
+.vela-switch:not(.quant-settings-toggle)[aria-checked="false"],
+.vela-switch:not(.quant-settings-toggle):not([aria-checked="true"]) {
+  background-color: transparent;
+  border: 1px solid rgb(42, 43, 48);
+  color: transparent;
+}
+
+.vela-switch:not(.quant-settings-toggle)[aria-checked="true"] {
+  background-color: rgb(240, 243, 250);
+  border: 1px solid rgb(240, 243, 250);
+  color: rgb(21, 22, 25);
+}
+
+.vela-switch:not(.quant-settings-toggle) .vela-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.vela-switch:not(.quant-settings-toggle) [data-slot="checkbox-mark"] {
+  width: 12px;
+  height: 12px;
+}
+
+.vela-switch:not(.quant-settings-toggle) [data-checkbox-part="mixed"] {
+  display: none;
+}
+
+.vela-switch:not(.quant-settings-toggle)[aria-checked="mixed"] [data-checkbox-part="lead"],
+.vela-switch:not(.quant-settings-toggle)[aria-checked="mixed"] [data-checkbox-part="finish"] {
+  display: none;
+}
+
+.vela-switch:not(.quant-settings-toggle)[aria-checked="mixed"] [data-checkbox-part="mixed"] {
+  display: block;
+}
+
+/* 2. Toggle: Canonical Review Switch pattern powered by @/components/ui/switch */
+
+/* ==========================================================================
+   Quant Settings Preview (Official LuxAlgo Vela 1:1 Ground Truth)
+   ========================================================================== */
+.quant-settings-panel:has(.quant-settings-preview:not([hidden])) .quant-settings-content {
+  grid-template-columns: minmax(0px, 1fr) 340px;
+}
+
+.quant-settings-panel .quant-settings-preview {
+  border-left: 1px solid var(--vela-border);
+  background: color-mix(in srgb, var(--vela-surface) 94%, #000);
+  flex-direction: column;
+  min-width: 0px;
+  min-height: 0px;
+  padding: 20px 18px;
+  display: flex;
+  overflow: auto;
+}
+
+.quant-settings-panel .quant-settings-preview[hidden],
+.quant-settings-panel .quant-settings-scenarios[hidden] {
+  display: none;
+}
+
+.quant-settings-preview h4 {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vela-fg-muted);
+  margin: 0px 0px 14px;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.quant-settings-preview-card {
+  border: 1px solid var(--vela-border);
+  background: var(--vela-surface);
+  border-radius: 9px;
+  flex-direction: column;
+  flex: 1 0 360px;
+  min-width: 0px;
+  display: flex;
+  overflow: hidden;
+}
+
+.quant-settings-preview-meta {
+  border-bottom: 1px solid var(--vela-border);
+  height: 34px;
+  color: var(--vela-fg-muted);
+  flex: 0 0 auto;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 0px 12px;
+  font-size: 9px;
+  display: flex;
+}
+
+.quant-settings-preview-meta b {
+  color: var(--vela-fg);
+  font-weight: 600;
+}
+
+.quant-settings-preview-chart {
+  flex: 1 1 0%;
+  min-width: 0px;
+  min-height: 290px;
+  position: relative;
+}
+
+.quant-settings-preview-caption {
+  color: var(--vela-fg-muted);
+  margin: 12px 0px 0px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.quant-settings-panel.quant-settings-stacked .quant-settings-preview {
+  border-left: 0px;
+  border-top: 1px solid var(--vela-border);
+}
+
+.quant-settings-panel.quant-settings-stacked .quant-settings-preview-card {
+  flex-grow: 0;
+  flex-basis: 360px;
+}
+
+.vela-statusline .vela-sl-avatar {
+  overflow: hidden;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.vela-statusline .vela-sl-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Official LuxAlgo Vela Color Picker & Swatches */
+.vela-color-field {
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  border: 1px solid var(--vela-border, #2a2b30);
+  border-radius: 0px;
+  background: var(--vela-surface-sunken, #151619);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 120ms ease;
+}
+
+.vela-color-field:hover:not(:disabled) {
+  border-color: var(--vela-fg-muted, #787b86);
+}
+
+.vela-color-field-swatch {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0px;
+  box-shadow: rgba(0, 0, 0, 0.25) 0px 0px 0px 1px inset;
+  box-sizing: border-box;
+}
+
+.vela-color-field-circle {
+  width: 26px;
+  height: 26px;
+  padding: 3px;
+  border: 1px solid var(--vela-border-strong, #34353b);
+  border-radius: 4px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.vela-color-field-circle:hover:not(:disabled) {
+  border-color: var(--vela-fg-muted, #787b86);
+}
+
+.vela-color-field-circle .vela-color-field-swatch {
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.vela-color-field.vela-field-dim,
+.vela-color-field:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.vela-color-field-pop {
+  background: var(--vela-surface-overlay, #1c1d20);
+  border: 1px solid var(--vela-border, #2a2b30);
+  border-radius: var(--vela-radius-lg, 10px);
+  box-shadow: var(--vela-shadow, rgba(0, 0, 0, 0.5) 0px 8px 30px 0px);
+  padding: 10px;
+}
+
+/* Unified Color Picker: Bottom row swatches and [+] button matching top matrix (20x20, borderless, 4px radius, 4px gap) */
+.vela-color-field-pop div[style*="border-top"],
+.vela-color-field-pop .border-t {
+  gap: 4px !important;
+}
+
+/* Swatches in the recent/favorite row (both React and Vela DOM) */
+.vela-color-field-pop div[style*="border-top"] button,
+.vela-color-field-pop div[style*="border-top"] .contents > button,
+.vela-color-field-pop .border-t button,
+.vela-color-field-pop .border-t .contents > button {
+  width: 20px !important;
+  height: 20px !important;
+  aspect-ratio: 1 !important;
+  border-radius: 4px !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  transition: opacity 120ms ease;
+}
+
+.vela-color-field-pop div[style*="border-top"] button:hover,
+.vela-color-field-pop div[style*="border-top"] .contents > button:hover,
+.vela-color-field-pop .border-t button:hover,
+.vela-color-field-pop .border-t .contents > button:hover {
+  opacity: 0.9 !important;
+}
+
+/* Borderless, theme-adaptive [+] custom color button (TradingView style) */
+.vela-color-field-pop label,
+.vela-color-field-pop [data-custom-color],
+.vela-color-field-pop label:has(input[type="color"]) {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 4px !important;
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--vela-fg-muted, #868a96) !important;
+  cursor: pointer !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  transition: background-color 120ms ease, color 120ms ease !important;
+}
+
+.vela-color-field-pop label:hover,
+.vela-color-field-pop [data-custom-color]:hover,
+.vela-color-field-pop label:has(input[type="color"]):hover {
+  background: var(--vela-surface-hover, rgba(255, 255, 255, 0.08)) !important;
+  color: var(--vela-fg-bright, #ffffff) !important;
+}
+
+.vela-color-field-pop label svg,
+.vela-color-field-pop [data-custom-color] svg {
+  display: block !important;
+  pointer-events: none !important;
+}
+
+.vela-color-field-pop label input[type="color"] {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  cursor: pointer !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Official Vela Number Input & Stepper Paddle (Hover-Only) */
+.vela-num input::-webkit-inner-spin-button,
+.vela-num input::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.vela-num input {
+  display: block;
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+.vela-num-step {
+  display: none !important;
+}
+.vela-num:hover .vela-num-step,
+.vela-num[data-steppers]:hover .vela-num-step,
+.vela-num.group:hover .vela-num-step {
+  display: flex !important;
+}
+
+/* Official Vela Chart Controls (Zoom / Reset Chart Paddle) */
+.vela-cc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--vela-radius-sm, 4px);
+  background: transparent;
+  line-height: 0;
+  font-size: 12px;
+  color: var(--vela-fg-muted, #868a96);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.vela-cc-btn:hover {
+  background: var(--vela-active, rgba(255, 255, 255, 0.1)) !important;
+  color: var(--vela-fg-bright, #f0f3fa) !important;
+}
+
+/* Official Vela Settings Dialog Typography & Standardized Grid System */
+.vela-field-section,
+.quant-settings-context-heading {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #868a96;
+  line-height: 1.4;
+  margin-bottom: 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+}
+
+.vela-field-section::after,
+.quant-settings-context-heading::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, #2a2b30, transparent);
+}
+
+/* Quant Settings Dialog Form Rows (Decoupled and shielded against Vela runtime .vela-field-row { display: contents } injection) */
+.quant-settings-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 31px !important;
+  height: 31px !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Scoped fallback for any lingering or dynamic .vela-field-row inside custom settings dialogs */
+.quant-settings-dialog .vela-field-row,
+.quant-settings-group .vela-field-row,
+.vela-settings-dialog .vela-field-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 31px !important;
+  height: 31px !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.vela-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 31px;
+  height: 31px;
+  gap: 8px;
+}
+
+.vela-field-label {
+  font-size: 12px;
+  color: #d1d4dc;
+  font-weight: 400;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.vela-field-cell-unit {
+  display: grid;
+  grid-template-columns: 72px 28px;
+  align-items: center;
+  justify-content: end;
+  gap: 7px;
+  width: 107px;
+}
+
+.vela-field-cell-double-color {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  width: 59px;
+}
+
+.vela-field-cell-single-input {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 72px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Vela Right Sidebar Rail & Panels (Parity 1:1 with Official Vela)
+   Matching print_20261009_232822.png and print_20261009_232839.png
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.quant-side-rail {
+  --quant-rail-surface: var(--vela-surface, #151619);
+  --quant-rail-border: var(--vela-border, #2a2b30);
+  --quant-rail-fg: var(--vela-fg-muted, #868a96);
+  --quant-rail-bright: var(--vela-fg-bright, #f0f3fa);
+  --quant-rail-hover: var(--vela-hover, rgba(255, 255, 255, 0.06));
+  --quant-rail-cap: 39px;
+  --quant-rail-row: 38px;
+  box-sizing: border-box;
+  border-left: 1px solid var(--quant-rail-border);
+  background: var(--quant-rail-surface);
+  width: 52px;
+  align-self: stretch !important;
+  height: auto !important;
+  color: var(--quant-rail-fg);
+  flex-direction: column;
+  flex: 0 0 auto;
+  display: flex;
+  position: relative;
+  z-index: 10;
+}
+
+.quant-side-rail-cap {
+  height: var(--quant-rail-cap);
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--quant-rail-border);
+  flex: 0 0 auto;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.quant-side-rail-cap .quant-side-rail-row {
+  height: 100%;
+}
+
+.quant-side-rail-cap .quant-side-rail-row:hover .quant-side-rail-tile,
+.quant-side-rail-corner:is(:hover, [aria-expanded="true"]) {
+  background: var(--quant-rail-hover);
+}
+
+.quant-side-rail-corner {
+  width: 32px;
+  height: 32px;
+  color: var(--quant-rail-fg);
+  cursor: pointer;
+  border-radius: 8px;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.16s, color 0.16s;
+  display: flex;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.quant-side-rail-corner:is(:hover, [aria-expanded="true"]) {
+  color: var(--quant-rail-bright);
+}
+
+.quant-side-rail-corner:focus-visible {
+  outline: 2px solid var(--quant-rail-bright);
+  outline-offset: 1px;
+}
+
+.quant-side-rail-corner svg,
+.quant-side-rail-settings-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.quant-side-rail-settings-icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.quant-side-rail-cap-foot {
+  border-top: 1px solid var(--quant-rail-border);
+  border-bottom: 0px;
+}
+
+.quant-side-rail-body {
+  isolation: isolate;
+  scrollbar-width: none;
+  flex-direction: column;
+  flex: 1 1 auto;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 0px;
+  padding: 6px 0px;
+  display: flex;
+  position: relative;
+  overflow: hidden auto;
+}
+
+.quant-side-rail-body::-webkit-scrollbar {
+  display: none;
+}
+
+.quant-side-rail-end,
+.quant-side-rail-group {
+  flex-direction: column;
+  gap: 4px;
+  display: flex;
+}
+
+.quant-side-rail-sep {
+  background: var(--quant-rail-border);
+  align-self: center;
+  width: 24px;
+  height: 1px;
+  margin: 2px 0px;
+}
+
+.quant-side-rail-row {
+  width: 100%;
+  height: var(--quant-rail-row);
+  cursor: pointer;
+  color: inherit;
+  flex: 0 0 auto;
+  justify-content: center;
+  align-items: center;
+  transition: color 0.16s;
+  display: flex;
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.quant-side-rail-row:hover,
+.quant-side-rail-row[data-open="1"],
+.quant-side-rail-row[open="1"],
+.quant-side-rail-row[aria-pressed="true"] {
+  color: var(--quant-rail-bright);
+}
+
+.quant-side-rail-row:focus-visible .quant-side-rail-tile {
+  outline: 2px solid var(--quant-rail-bright);
+  outline-offset: 1px;
+}
+
+.quant-side-rail-tile {
+  border-radius: 8px;
+  justify-content: center;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+  transition: background 0.16s, box-shadow 0.16s, color 0.16s;
+  display: flex;
+}
+
+.quant-side-rail-row:hover:not([data-open="1"]):not([open="1"]):not([aria-pressed="true"]) .quant-side-rail-tile {
+  background: var(--quant-rail-hover);
+}
+
+.quant-side-rail-row[data-open="1"] .quant-side-rail-tile,
+.quant-side-rail-row[open="1"] .quant-side-rail-tile,
+.quant-side-rail-row[aria-pressed="true"] .quant-side-rail-tile {
+  background: color-mix(in srgb, var(--quant-rail-bright) 83%, var(--quant-rail-surface)) !important;
+  color: var(--quant-rail-surface) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--quant-rail-bright) 40%, transparent) !important;
+}
+
+.quant-side-rail-row[data-open="1"]:hover .quant-side-rail-tile,
+.quant-side-rail-row[open="1"]:hover .quant-side-rail-tile,
+.quant-side-rail-row[aria-pressed="true"]:hover .quant-side-rail-tile {
+  background: color-mix(in srgb, var(--quant-rail-bright) 93%, var(--quant-rail-surface)) !important;
+}
+
+.quant-side-rail-icon,
+.quant-side-rail-vela-icon,
+.quant-side-rail-vela-icon .vela-icon {
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+  display: flex;
+}
+
+.quant-side-rail-icon svg,
+.quant-side-rail-vela-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.quant-side-rail-icon {
+  transform: scale(var(--quant-icon-scale, 1));
+  transform-origin: 50% center;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.quant-side-rail-row:hover .quant-side-rail-icon {
+  transform: scale(1.16);
+}
+
+.quant-side-rail-row:hover + .quant-side-rail-row {
+  --quant-icon-scale: 0.94;
+}
+
+.quant-side-rail-row:has(+ .quant-side-rail-row:hover) {
+  --quant-icon-scale: 0.94;
+}
+
+/* Ensure docked Vela side panels stretch full height inside dock container */
+.vela-panel {
+  position: relative;
+  width: var(--vela-panel-w, 280px);
+  flex: 0 0 auto;
+  align-self: stretch !important;
+  height: auto !important;
+  min-height: 0;
+}
+
+
+

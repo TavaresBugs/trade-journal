@@ -34,10 +34,16 @@ export const alpaca: MarketDataProvider = {
     if (!(crypto ? /^[A-Z0-9]+\/[A-Z0-9]+$/ : /^[A-Z][A-Z0-9.-]{0,20}$/).test(request.symbol))
       throw new MarketDataError("Use AAPL for stocks, or BTC/USD with the Crypto dataset.");
     const step = RESOLUTIONS[request.resolution];
+    const timeframe =
+      ({ "1m": "1Min", "5m": "5Min", "15m": "15Min", "1h": "1Hour", "1d": "1Day" } as Record<
+        string,
+        string
+      >)[request.resolution];
+    if (!timeframe) {
+      throw new MarketDataError(`Resolution ${request.resolution} is not supported by Alpaca.`);
+    }
     const query = new URLSearchParams({
-      timeframe: { "1m": "1Min", "5m": "5Min", "15m": "15Min", "1h": "1Hour", "1d": "1Day" }[
-        request.resolution
-      ],
+      timeframe,
       start: new Date(Math.max(0, Math.floor(request.from / step) * step - step)).toISOString(),
       end: new Date(request.to).toISOString(),
       limit: "1000",

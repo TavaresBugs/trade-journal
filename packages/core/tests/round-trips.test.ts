@@ -208,4 +208,16 @@ describe("round trips: a trade is one position cycle, flat to flat", () => {
     expect(first).toBe(second);
     expect(first).toBe("acct-1|AAPL|long|2026-01-05T14:30:00Z");
   });
+
+  it("resolves root contract multiplier for monthly contract symbols like MESZ6 and MNQU6", () => {
+    const executions = [
+      fill("MESZ6", "buy", 1, 5000, "2026-10-01T14:30:00Z"),
+      fill("MESZ6", "sell", 1, 5010, "2026-10-01T15:30:00Z"),
+    ];
+    // multipliers configured only for "MES", not explicitly for "MESZ6"
+    const trip = buildRoundTrips(executions, { multipliers: { MES: 5 } })[0]!;
+    expect(trip.contractMultiplier).toBe(5);
+    // 10 points * 1 contract * $5/pt = $50 gross PnL
+    expect(trip.grossPnl).toBe(50);
+  });
 });

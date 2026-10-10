@@ -23,9 +23,9 @@
 */
 
 import { parseImportTimestamp } from "../timestamps";
-import { mapHeaders, normalizeHeader, parseDirectionValue } from "../aliases";
+import { isSlHeader, isTpHeader, mapHeaders, normalizeHeader, parseDirectionValue } from "../aliases";
 import { parseNumericCell, sanitizeRetainedText } from "../csv";
-import { issue, sortTrades, type ImportIssue, type ImportedTrade } from "../model";
+import { issue, sortTrades, type ColumnMapping, type ImportIssue, type ImportedTrade } from "../model";
 import type {
   AdapterContext,
   AdapterMatch,
@@ -45,27 +45,90 @@ export const metaTraderAdapter: SourceAdapter = {
   detect(table: CsvTable): AdapterMatch | null {
     const normalized = table.header.map(normalizeHeader);
     const has = (name: string): boolean => normalized.includes(name);
-    const idish = has("ticket") || has("position") || has("deal") || has("order");
+    const idish =
+      has("ticket") ||
+      has("position") ||
+      has("posicao") ||
+      has("deal") ||
+      has("order") ||
+      has("ordem") ||
+      has("oferta");
     const timeCount = normalized.filter(
-      (h) => h === "time" || h === "opentime" || h === "closetime",
+      (h) => h === "time" || h === "opentime" || h === "closetime" || h === "horario",
     ).length;
     const priceCount = normalized.filter(
-      (h) => h === "price" || h === "openprice" || h === "closeprice",
+      (h) => h === "price" || h === "openprice" || h === "closeprice" || h === "preco",
     ).length;
-    if (!idish || !has("profit") || !has("swap")) return null;
-    if (timeCount < 2 || priceCount < 2) return null;
-    return {
-      confidence: "exact",
-      signals: [
-        "header carries a Ticket/Position id with Swap and Profit columns",
-        "open and close Time/Price column pairs are both present (MetaTrader statement layout)",
-      ],
-    };
+
+    // Geometric signature: Col 6 has S/L and Col 7 has T/P
+    const hasSlTp =
+      table.header.length >= 8 &&
+      isSlHeader(table.header[6]) &&
+      isTpHeader(table.header[7]);
+
+    // Normalized signature: "lucro"/"profit" + dual time + dual price
+    const hasProfitLucro = (has("profit") || has("lucro")) && timeCount >= 2 && priceCount >= 2;
+
+    // Existing English signature
+    const hasEnglishClassic = idish && has("profit") && has("swap") && timeCount >= 2 && priceCount >= 2;
+
+    if (hasSlTp || hasProfitLucro || hasEnglishClassic) {
+      return {
+        confidence: "exact",
+        signals: [
+          hasSlTp
+            ? "detected MetaTrader statement by invariant S/L and T/P column geometry"
+            : "open and close Time/Price column pairs are both present (MetaTrader statement layout)",
+        ],
+      };
+    }
+
+    return null;
   },
 
   parse(table: CsvTable, ctx: AdapterContext): AdapterParseResult {
     const issues: ImportIssue[] = [];
-    const { mapping } = mapHeaders(table.header, table.records);
+
+    // Check if table layout matches the canonical 13-column MetaQuotes geometry:
+    // Col 6 has S/L, Col 7 has T/P, and data rows have dual timestamps (col 0 and 8)
+    // or buy/sell at col 3 (or table has 13+ cols with S/L and T/P)
+    const isSlTp =
+      table.header.length >= 13 &&
+      isSlHeader(table.header[6]) &&
+      isTpHeader(table.header[7]);
+
+    const isCanonical13Col =
+      isSlTp &&
+      (!table.records.length ||
+        table.records.some(
+          (r) =>
+            POSITION_TYPES.test((r.cells[3] ?? "").trim()) ||
+            PENDING_TYPES.test((r.cells[3] ?? "").trim()),
+        ) ||
+        (table.records.some(
+          (r) =>
+            Number.isFinite(parseImportTimestamp(r.cells[0] ?? "")) &&
+            Number.isFinite(parseImportTimestamp(r.cells[8] ?? "")),
+        ) &&
+          !table.records.some((r) => POSITION_TYPES.test((r.cells[2] ?? "").trim()))));
+
+    const mapping: ColumnMapping = isCanonical13Col
+      ? {
+          entryTime: 0,
+          tradeId: 1,
+          symbol: 2,
+          direction: 3,
+          quantity: 4,
+          entryPrice: 5,
+          stopPrice: 6,
+          exitTime: 8,
+          exitPrice: 9,
+          fees: 10,
+          swap: 11,
+          pnl: 12,
+        }
+      : mapHeaders(table.header, table.records).mapping;
+
     if (ctx.mappingOverride !== undefined) Object.assign(mapping, ctx.mappingOverride);
     const cell = (record: { cells: string[] }, field: keyof typeof mapping): string => {
       const index = mapping[field];
@@ -76,11 +139,11 @@ export const metaTraderAdapter: SourceAdapter = {
     const open: ImportedTrade[] = [];
     let skippedRows = 0;
 
-    // The Type column is found by name: its values mix buy/sell with balance
-    // and pending-order rows, which defeats value-driven inspection.
-    const typeIndex =
-      table.header.findIndex((h) => normalizeHeader(h) === "type") !== -1
-        ? table.header.findIndex((h) => normalizeHeader(h) === "type")
+    // The Type column is found by position in canonical 13-col, or by name/mapping in other layouts
+    const typeIndex = isCanonical13Col
+      ? 3
+      : table.header.findIndex((h) => normalizeHeader(h) === "type" || normalizeHeader(h) === "tipo") !== -1
+        ? table.header.findIndex((h) => normalizeHeader(h) === "type" || normalizeHeader(h) === "tipo")
         : (mapping.direction ?? mapping.eventType);
 
     for (const record of table.records) {

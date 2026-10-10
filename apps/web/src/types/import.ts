@@ -69,6 +69,24 @@ export interface StatementCompatibility {
   reason?: string;
 }
 
+export interface BatchFileSummary {
+  fileName: string;
+  format: string;
+  count: number;
+  uniqueAdded?: number;
+  duplicateCount?: number;
+  account?: string;
+}
+
+export interface BatchSummary {
+  totalFiles: number;
+  totalParsed?: number;
+  uniqueExecutions?: number;
+  duplicateExecutions?: number;
+  duplicatesSkipped: number;
+  files: BatchFileSummary[];
+}
+
 export interface PreviewResponse {
   reconciliation?: ImportReview;
   accountReconciliation?: AccountReconciliation;
@@ -86,4 +104,5 @@ export interface PreviewResponse {
   executions?: PreviewExecution[];
   accountConflict?: StatementAccountConflict;
   compatibility?: StatementCompatibility;
+  batchSummary?: BatchSummary;
 }

@@ -33,6 +33,22 @@ export const GET = handler(async (request: Request) => {
     ? accountRows.filter((a) => filters.accounts!.split(",").includes(a.id))
     : accountRows;
   const initialBalance = selected.reduce((total, a) => total + a.initialBalance, 0);
+  const maxDrawdown =
+    selected.length === 1
+      ? (selected[0]?.maxDrawdown ?? null)
+      : (selected.reduce((sum, a) => sum + (a.maxDrawdown ?? 0), 0) || null);
+  const currentAccount =
+    selected.length === 1
+      ? {
+          id: selected[0]!.id,
+          name: selected[0]!.name,
+          broker: selected[0]!.broker,
+          platform: selected[0]!.platform,
+          accountNumber: selected[0]!.accountNumber,
+          initialBalance: selected[0]!.initialBalance,
+          maxDrawdown: selected[0]!.maxDrawdown,
+        }
+      : null;
 
   const { metrics, days, equity } = computeOverview(trades, { timeZone, initialBalance });
   const accountCurrencies = new Map(accountRows.map((a) => [a.id, a.currency]));
@@ -86,5 +102,7 @@ export const GET = handler(async (request: Request) => {
         status: t.status,
       })),
     initialBalance,
+    maxDrawdown,
+    currentAccount,
   });
 });

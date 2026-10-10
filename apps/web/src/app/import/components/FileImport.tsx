@@ -53,6 +53,8 @@ export function FileImport({ initialAccountId }: FileImportProps) {
   };
 
   const [content, setContent] = useState<string | null>(null);
+  const [filesPayload, setFilesPayload] = useState<{ name: string; content: string }[] | null>(null);
+  const [fileNames, setFileNames] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [mappingApplied, setMappingApplied] = useState(false);
@@ -174,12 +176,20 @@ export function FileImport({ initialAccountId }: FileImportProps) {
     }
   }, [accountsData, accountId]);
 
-  const onFile = async (file: File) => {
-    if (!validTimeZone) return;
+  const onFiles = async (files: File[]) => {
+    if (!validTimeZone || files.length === 0) return;
     setStatementTimeZone(timeZone);
     setPreview(null);
     setContent(null);
-    setFileName(file.name);
+    const names = files.map((f) => f.name);
+    setFileNames(names);
+    const firstFile = files[0];
+    if (!firstFile) return;
+    setFileName(
+      files.length > 1
+        ? `${files.length} statements (${names.slice(0, 2).join(", ")}${files.length > 2 ? ` +${files.length - 2} more` : ""})`
+        : firstFile.name,
+    );
     setReviewOptions({});
     setForceMismatch(false);
     setSymbol("");
@@ -188,14 +198,27 @@ export function FileImport({ initialAccountId }: FileImportProps) {
     setError(null);
     setBusy(true);
     try {
-      const text = decodeImportFile(await file.arrayBuffer());
-      setContent(text);
+      const decodedFiles = await Promise.all(
+        files.map(async (file) => ({
+          name: file.name,
+          content: decodeImportFile(await file.arrayBuffer()),
+        })),
+      );
+      setFilesPayload(decodedFiles);
+      const firstDecoded = decodedFiles[0];
+      if (decodedFiles.length === 1 && firstDecoded) {
+        setContent(firstDecoded.content);
+      } else {
+        setContent(decodedFiles.map((d) => d.content).join("\n"));
+      }
+
       const res = await postJson<PreviewResponse>("/api/import", {
         mode: "preview",
-        content: text,
+        files: decodedFiles,
+        content: decodedFiles.length === 1 && firstDecoded ? firstDecoded.content : undefined,
         accountId: accountId || undefined,
         review: {},
-        fileName: file.name,
+        fileName: files.length > 1 ? `${files.length} files` : firstFile.name,
         timeZone,
       });
       setPreview(res);
@@ -252,6 +275,7 @@ export function FileImport({ initialAccountId }: FileImportProps) {
       const res = await postJson<PreviewResponse>("/api/import", {
         mode: "preview",
         content,
+        files: filesPayload ?? undefined,
         accountId: accountId || undefined,
         review: reviewOptions,
         fileName,
@@ -272,6 +296,8 @@ export function FileImport({ initialAccountId }: FileImportProps) {
 
   const resetFile = () => {
     setContent(null);
+    setFilesPayload(null);
+    setFileNames([]);
     setFileName("");
     setPreview(null);
     setSymbol("");
@@ -292,10 +318,12 @@ export function FileImport({ initialAccountId }: FileImportProps) {
         corrected?: number;
         skipped?: number;
         warnings?: string[];
+        batchSummary?: import("@/types/import").BatchSummary;
       }>("/api/import", {
         mode: "commit",
         review: { ...reviewOptions, previewToken: preview.reconciliation?.token ?? undefined },
         content,
+        files: filesPayload ?? undefined,
         accountId,
         mapping: mappingApplied ? mapping : undefined,
         fileName,
@@ -307,8 +335,11 @@ export function FileImport({ initialAccountId }: FileImportProps) {
         result.skipped && result.skipped > 0
           ? ` ${result.skipped} invalid rows were skipped: ${(result.warnings ?? []).at(-1) ?? ""}`
           : "";
+      const batchNote = result.batchSummary
+        ? ` across ${result.batchSummary.totalFiles} statements`
+        : "";
       alert(
-        `Imported ${result.inserted} executions (${result.duplicates} duplicates skipped, ${result.corrected ?? 0} fee corrections).${skippedNote}`,
+        `Imported ${result.inserted} executions${batchNote} (${result.duplicates} duplicates skipped, ${result.corrected ?? 0} fee corrections).${skippedNote}`,
       );
       router.push(`/?accounts=${encodeURIComponent(accountId)}`);
     } catch (cause) {
@@ -394,8 +425,10 @@ export function FileImport({ initialAccountId }: FileImportProps) {
             busy={busy}
             disabled={!settingsData || !validTimeZone}
             fileName={fileName}
+            fileNames={fileNames}
             formats={formatData?.formats}
-            onFileSelect={onFile}
+            onFileSelect={(file) => onFiles([file])}
+            onFilesSelect={onFiles}
           />
         ) : (
           <ImportPreviewTable

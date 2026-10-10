@@ -29,3 +29,4 @@ coverage/
 # local internal tools & raw external guides
 scripts/download-tv-icons.mjs
 packages/importers/tests/fixtures/tradezella/guides/
+export/

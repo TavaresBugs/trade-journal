@@ -161,3 +161,76 @@ export const intradayCurve = (
     return { t: event.t, cumNetPnl: cum };
   });
 };
+
+export type DrawdownMode = "dynamic" | "eod" | "static";
+
+export interface BalancePoint {
+  t: string;
+  balance: number;
+  minBalance: number;
+  cushion: number;
+  peak: number;
+}
+
+export interface BalanceCurveOptions {
+  initialBalance?: number;
+  maxDrawdown?: number | null;
+  mode?: DrawdownMode;
+  lockAtInitial?: boolean;
+}
+
+/**
+ * Calculates the Account Balance curve and Trailing/EOD/Static Drawdown Threshold.
+ *
+ * Rules:
+ * - Dynamic / Trailing: Floor trails the running peak balance (peak - maxDrawdown).
+ * - Monotonicity: The liquidation floor NEVER decreases (once earned, the threshold remains locked).
+ * - Lock at Initial: When enabled (standard Lucid/Apex/Tradeify prop rule), once the floor
+ *   reaches initialBalance, it caps and stops trailing upwards.
+ * - Static: Floor remains constant at (initialBalance - maxDrawdown).
+ */
+export const accountBalanceCurve = (
+  curve: EquityPoint[],
+  options: BalanceCurveOptions = {},
+): BalancePoint[] => {
+  const initialBalance = options.initialBalance ?? 0;
+  const maxDrawdown = options.maxDrawdown && options.maxDrawdown > 0 ? options.maxDrawdown : 0;
+  const mode = options.mode ?? "dynamic";
+  const lockAtInitial = options.lockAtInitial ?? true;
+
+  const initialFloor = maxDrawdown > 0 ? Math.max(0, initialBalance - maxDrawdown) : 0;
+  let runningPeak = initialBalance;
+  let runningFloor = initialFloor;
+
+  return curve.map((point) => {
+    const balance = initialBalance + point.cumNetPnl;
+    if (balance > runningPeak) {
+      runningPeak = balance;
+    }
+
+    if (mode === "static") {
+      runningFloor = initialFloor;
+    } else {
+      if (maxDrawdown > 0) {
+        let targetFloor = runningPeak - maxDrawdown;
+        if (lockAtInitial) {
+          targetFloor = Math.min(initialBalance, targetFloor);
+        }
+        if (targetFloor > runningFloor) {
+          runningFloor = targetFloor;
+        }
+      }
+    }
+
+    const cushion = balance - runningFloor;
+
+    return {
+      t: point.t,
+      balance,
+      minBalance: runningFloor,
+      cushion,
+      peak: runningPeak,
+    };
+  });
+};
+

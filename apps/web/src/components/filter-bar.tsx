@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FilterFields } from "./filter-fields";
-import { SlidersHorizontal } from "lucide-react";
+import { ChevronDown, LayoutTemplate, SlidersHorizontal } from "lucide-react";
 import { AccountSelector } from "./account-selector";
 import { cn } from "@/lib/utils";
 
@@ -168,13 +168,23 @@ export function FilterBar({
     pathname.startsWith("/journal/");
 
   return (
-    <div className="journal-filter-bar sticky z-20 flex min-h-14 min-w-0 flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
+    <div className="journal-filter-bar sticky z-30 flex min-h-14 min-w-0 flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
       <h1 className="mr-auto min-w-0 text-base font-semibold tracking-tight">{title}</h1>
       {showFilters && (
         <>
           <AccountSelector />
           {pathname === "/" && (
-            <div id="dashboard-layout-slot" className="empty:hidden shrink-0 flex items-center" />
+            <div id="dashboard-layout-slot" className="shrink-0 flex items-center">
+              <button
+                type="button"
+                aria-label="Saved dashboard layouts"
+                className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground transition-[background-color,transform] duration-150 hover:bg-muted/60 active:scale-[0.98] cursor-pointer select-none"
+              >
+                <LayoutTemplate size={14} className="text-muted-foreground shrink-0" />
+                <span>Layouts</span>
+                <ChevronDown size={13} className="text-muted-foreground shrink-0" />
+              </button>
+            </div>
           )}
           {hideRangeButtons !== true && (
             <div

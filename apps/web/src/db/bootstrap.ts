@@ -72,7 +72,8 @@ CREATE TABLE IF NOT EXISTS trades (
   rating INTEGER,
   stop_loss REAL,
   profit_target REAL,
-  reviewed_at TEXT
+  reviewed_at TEXT,
+  drawings_json TEXT
 );
 CREATE INDEX IF NOT EXISTS trades_account_closed ON trades (account_id, closed_at);
 CREATE INDEX IF NOT EXISTS trades_symbol ON trades (symbol);
@@ -84,10 +85,54 @@ CREATE TABLE IF NOT EXISTS market_csv_datasets (
  id TEXT PRIMARY KEY, name TEXT NOT NULL, symbol TEXT NOT NULL,
  resolution TEXT NOT NULL, currency TEXT NOT NULL, price_basis TEXT NOT NULL,
  bars_json TEXT NOT NULL, imported_at TEXT NOT NULL,
- bar_count INTEGER NOT NULL, first_time INTEGER NOT NULL, last_time INTEGER NOT NULL
+ bar_count INTEGER NOT NULL, first_time INTEGER NOT NULL, last_time INTEGER NOT NULL,
+ compatible_symbols_json TEXT
 );
 
 CREATE INDEX IF NOT EXISTS market_csv_symbol_resolution ON market_csv_datasets(symbol, resolution);
+
+CREATE TABLE IF NOT EXISTS market_candles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  symbol TEXT NOT NULL,
+  resolution TEXT NOT NULL,
+  time INTEGER NOT NULL,
+  open REAL NOT NULL,
+  high REAL NOT NULL,
+  low REAL NOT NULL,
+  close REAL NOT NULL,
+  volume REAL,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  price_basis TEXT NOT NULL DEFAULT 'raw',
+  batch_id TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS market_candles_unique_bar ON market_candles(symbol, resolution, time);
+CREATE INDEX IF NOT EXISTS market_candles_batch ON market_candles(batch_id);
+
+CREATE TABLE IF NOT EXISTS market_series_summary (
+  symbol TEXT NOT NULL,
+  resolution TEXT NOT NULL,
+  bar_count INTEGER NOT NULL DEFAULT 0,
+  first_time INTEGER NOT NULL,
+  last_time INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  price_basis TEXT NOT NULL DEFAULT 'raw',
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (symbol, resolution)
+);
+CREATE INDEX IF NOT EXISTS market_series_summary_resolution ON market_series_summary(resolution, symbol);
+
+CREATE TABLE IF NOT EXISTS market_candle_batches (
+  id TEXT PRIMARY KEY,
+  symbol TEXT NOT NULL,
+  resolution TEXT NOT NULL,
+  name TEXT NOT NULL,
+  bar_count INTEGER NOT NULL,
+  new_bar_count INTEGER NOT NULL,
+  duplicate_bar_count INTEGER NOT NULL,
+  first_time INTEGER NOT NULL,
+  last_time INTEGER NOT NULL,
+  imported_at TEXT NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS trade_excursions (
   trade_key TEXT PRIMARY KEY REFERENCES trades(key) ON DELETE CASCADE,

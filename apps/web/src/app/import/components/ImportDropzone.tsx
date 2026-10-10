@@ -8,25 +8,34 @@ export interface ImportDropzoneProps {
   busy: boolean;
   disabled: boolean;
   fileName?: string;
+  fileNames?: string[];
   formats?: { id: string; label: string }[];
-  onFileSelect: (file: File) => void;
+  onFileSelect?: (file: File) => void;
+  onFilesSelect?: (files: File[]) => void;
 }
 
 export function ImportDropzone({
   busy,
   disabled,
   fileName,
+  fileNames,
   formats,
   onFileSelect,
+  onFilesSelect,
 }: ImportDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isDisabled = busy || disabled;
 
-  const handleFile = (file?: File) => {
-    if (!file || isDisabled) return;
-    onFileSelect(file);
+  const handleFiles = (files?: FileList | File[] | null) => {
+    if (!files || files.length === 0 || isDisabled) return;
+    const fileArray = Array.from(files);
+    if (onFilesSelect) {
+      onFilesSelect(fileArray);
+    } else if (onFileSelect && fileArray[0]) {
+      onFileSelect(fileArray[0]);
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -38,12 +47,12 @@ export function ImportDropzone({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".csv,.txt,.htm,.html,.tsv"
+        multiple
+        accept=".csv,.txt,.htm,.html,.tsv,.xlsx"
         disabled={isDisabled}
         className="hidden"
         onChange={(event) => {
-          const file = event.target.files?.[0];
-          handleFile(file);
+          handleFiles(event.target.files);
         }}
       />
 
@@ -56,9 +65,9 @@ export function ImportDropzone({
         onDragLeave={() => setIsDragging(false)}
         onDrop={(e) => {
           e.preventDefault();
+          if (isDisabled) return;
           setIsDragging(false);
-          const file = e.dataTransfer.files?.[0];
-          handleFile(file);
+          handleFiles(e.dataTransfer.files);
         }}
         onClick={() => {
           if (!isDisabled) {
@@ -80,10 +89,14 @@ export function ImportDropzone({
         )}
         <div className="space-y-1">
           <p className="text-xs font-semibold text-foreground">
-            {busy ? "Parsing statement…" : fileName || "Click or drop your statement here"}
+            {busy
+              ? "Parsing statement…"
+              : fileNames && fileNames.length > 1
+                ? `${fileNames.length} statements selected (${fileNames.slice(0, 2).join(", ")}${fileNames.length > 2 ? ` +${fileNames.length - 2} more` : ""})`
+                : fileName || "Click or drop your statement(s) here"}
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Supports CSV &amp; HTML exports (FTMO, MT4/MT5, TradeZella, Tradovate, IBKR, etc.)
+            Supports CSV, XLSX &amp; HTML exports — select single or multiple files at once (FTMO, Tradovate, MT4/MT5, TradeZella, etc.)
           </p>
           {formats && (
             <p className="text-[10px] text-muted-foreground/75 pt-1">

@@ -74,7 +74,6 @@ export function PrivacyToggle({
         }
         aria-label={`Privacy mode ${enabled ? "on" : "off"}`}
         aria-pressed={enabled}
-        disabled={!ready}
         onClick={toggle}
         title={isIcon ? `Privacy mode: ${enabled ? "On" : "Off"}` : undefined}
       >

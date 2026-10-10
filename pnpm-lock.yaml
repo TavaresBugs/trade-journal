@@ -48,8 +48,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/importers
       '@luxalgo/vela':
-        specifier: ^0.6.8
-        version: 0.6.8
+        specifier: ^0.8.3
+        version: 0.8.3
       '@pdf-lib/fontkit':
         specifier: ^1.1.1
         version: 1.1.1
@@ -611,8 +611,8 @@ packages:
     resolution: {integrity: sha512-GuqYiENa5EyKwG2mpS+G4JcB8cDceJuSMSLcHybOl2We3h3MWDL9XPjh4mIBDrtvnMFZ/dd4YCvJNCxcSYP4Zw==}
     engines: {node: '>=18.17'}
 
-  '@luxalgo/vela@0.6.8':
-    resolution: {integrity: sha512-BMLIqmeXIHZCSsxh/SQFnNA1D6A/M2ENbCJjmMq03aYu2uARZjQL9EdcM8F4IGNpDusoKjDIS+D21OMpI89G4g==}
+  '@luxalgo/vela@0.8.3':
+    resolution: {integrity: sha512-ohKlUFSnOO6P0kGR5w7cU2QbkIFhW/IYjEh/YXusle0qOwXmiSG3p1Sa4tmiXwLUGuCBsKGcQrKoudsGp/5Hpw==}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
@@ -3211,7 +3211,7 @@ snapshots:
 
   '@luxalgo/broker-sdk@0.3.0': {}
 
-  '@luxalgo/vela@0.6.8':
+  '@luxalgo/vela@0.8.3':
     dependencies:
       '@zag-js/core': 1.43.3
       '@zag-js/dialog': 1.43.3

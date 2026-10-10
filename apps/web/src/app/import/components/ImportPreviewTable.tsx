@@ -6,6 +6,7 @@ import {
   ArrowLeftRight,
   CheckCircle2,
   FileSpreadsheet,
+  Layers,
   Loader2,
   Plus,
   RefreshCw,
@@ -241,6 +242,39 @@ export function ImportPreviewTable({
                   ? `${dayKeyOf(preview.totals.from, displayTimeZone)} → ${dayKeyOf(preview.totals.to, displayTimeZone)}`
                   : "—"}
               </span>
+            </div>
+          </div>
+        )}
+
+        {/* Multi-File Batch Summary Breakdown */}
+        {preview.batchSummary && preview.batchSummary.totalFiles > 1 && (
+          <div className="border-b border-border/30 bg-muted/10 p-3 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
+              <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Layers className="size-3.5 text-primary" />
+                <span>Multi-File Statement Batch ({preview.batchSummary.totalFiles} files combined)</span>
+              </div>
+              <span className="text-[11px] text-muted-foreground font-mono">
+                {preview.batchSummary.totalParsed} parsed · {preview.batchSummary.uniqueExecutions} unique · {preview.batchSummary.duplicateExecutions} duplicates ignored
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5">
+              {preview.batchSummary.files.map((f, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md bg-card/60 border border-border/30 text-[11px]"
+                >
+                  <span className="font-mono text-muted-foreground truncate" title={f.fileName}>
+                    {f.fileName}
+                  </span>
+                  <span className="shrink-0 font-medium font-mono text-foreground">
+                    {f.uniqueAdded} fills
+                    {(f.duplicateCount ?? 0) > 0 ? (
+                      <span className="text-muted-foreground ml-1">({f.duplicateCount} dup)</span>
+                    ) : null}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}

@@ -18,10 +18,17 @@ import { accounts } from "@/db/schema";
 import { and, eq, isNull, or } from "drizzle-orm";
 import { getBrokerMetadata, checkPlatformCompatibility } from "@/lib/brokers/broker-catalog";
 import { commitImportAtomically } from "@/server/services/import-service";
+import { executionHash } from "@/server/ids";
+
+export interface ImportFilePayload {
+  name: string;
+  content: string;
+}
 
 interface ImportBody {
   mode: "preview" | "commit";
-  content: string;
+  content?: string;
+  files?: ImportFilePayload[];
   accountId?: string;
   /** Column mapping when auto-detection found nothing. */
   mapping?: GenericMapping;
@@ -40,7 +47,10 @@ interface ImportBody {
  */
 export const POST = handler(async (request: Request) => {
   const body = (await request.json()) as ImportBody;
-  if (typeof body.content !== "string" || !body.content) return bad("content is required");
+  const hasFiles = Array.isArray(body.files) && body.files.length > 0;
+  if (!hasFiles && (typeof body.content !== "string" || !body.content)) {
+    return bad("content or files is required");
+  }
   if (!["preview", "commit"].includes(body.mode)) return bad("mode must be preview or commit");
   if (body.symbol !== undefined && (typeof body.symbol !== "string" || body.symbol.length > 100))
     return bad("Invalid symbol");
@@ -48,6 +58,10 @@ export const POST = handler(async (request: Request) => {
     return bad("Invalid filename");
   if (body.dateOrder !== undefined && !["DMY", "MDY"].includes(body.dateOrder))
     return bad("Invalid dateOrder (must be 'DMY' or 'MDY')");
+
+  const filesList: ImportFilePayload[] = hasFiles
+    ? body.files!
+    : [{ name: body.fileName || "statement.csv", content: body.content! }];
 
   const account = body.accountId
     ? db.select().from(accounts).where(eq(accounts.id, body.accountId)).get()
@@ -69,23 +83,130 @@ export const POST = handler(async (request: Request) => {
 
   const importOptions = {
     timeZone,
-    fileName: body.fileName,
+    fileName: body.fileName || (hasFiles ? filesList[0]?.name : undefined),
     symbol: body.symbol,
     dateOrder,
   };
 
-  const parsed = body.mapping
-    ? parseWithMapping(body.content, body.mapping, importOptions)
-    : parseAuto(body.content, importOptions);
+  let batchSummary: import("@/types/import").BatchSummary | undefined = undefined;
+  let parsed: import("@luxalgo/journal-importers").ParsedImport | null = null;
 
-  if (!parsed) {
-    return ok({
-      detected: null,
-      timeZone,
-      dateOrder,
-      headers: readHeaders(body.content),
-      needsMapping: true,
-    });
+  if (hasFiles && filesList.length > 1) {
+    const parsedFiles: { file: ImportFilePayload; parsed: import("@luxalgo/journal-importers").ParsedImport }[] = [];
+    const unparsedFiles: string[] = [];
+
+    for (const f of filesList) {
+      const fOptions = { ...importOptions, fileName: f.name };
+      const p = body.mapping
+        ? parseWithMapping(f.content, body.mapping, fOptions)
+        : parseAuto(f.content, fOptions);
+
+      if (p) {
+        parsedFiles.push({ file: f, parsed: p });
+      } else {
+        unparsedFiles.push(f.name);
+      }
+    }
+
+    if (parsedFiles.length === 0) {
+      const firstContent = filesList[0]?.content ?? "";
+      return ok({
+        detected: null,
+        timeZone,
+        dateOrder,
+        headers: readHeaders(firstContent),
+        needsMapping: true,
+      });
+    }
+
+    // Deduplicate executions across files
+    const combinedExecutions: ImportedExecution[] = [];
+    const seenSignatures = new Set<string>();
+    let duplicatesSkipped = 0;
+    let totalSkippedRows = 0;
+    const allWarnings: string[] = [];
+    const allErrors: string[] = [];
+    const detectedAccounts = new Set<string>();
+    const sourceAccounts = new Set<string>();
+    const fileStats: import("@/types/import").BatchFileSummary[] = [];
+
+    for (const pf of parsedFiles) {
+      if (pf.parsed.account) detectedAccounts.add(pf.parsed.account);
+      if (pf.parsed.sourceAccounts) {
+        for (const sa of pf.parsed.sourceAccounts) sourceAccounts.add(sa);
+      }
+      totalSkippedRows += pf.parsed.skippedRows ?? 0;
+      if (pf.parsed.warnings) allWarnings.push(...pf.parsed.warnings);
+      if (pf.parsed.errors) allErrors.push(...pf.parsed.errors);
+
+      let fileUnique = 0;
+      let fileDup = 0;
+      for (const exec of pf.parsed.executions) {
+        const sig = executionHash(exec);
+        if (seenSignatures.has(sig)) {
+          duplicatesSkipped++;
+          fileDup++;
+        } else {
+          seenSignatures.add(sig);
+          combinedExecutions.push(exec);
+          fileUnique++;
+        }
+      }
+      fileStats.push({
+        fileName: pf.file.name,
+        format: pf.parsed.format,
+        count: pf.parsed.executions.length,
+        uniqueAdded: fileUnique,
+        duplicateCount: fileDup,
+        account: pf.parsed.account,
+      });
+    }
+
+    // Sort chronologically by execution time
+    combinedExecutions.sort(
+      (a, b) => new Date(a.executedAt).getTime() - new Date(b.executedAt).getTime(),
+    );
+
+    if (unparsedFiles.length > 0) {
+      allWarnings.push(
+        `${unparsedFiles.length} file(s) could not be parsed: ${unparsedFiles.join(", ")}`,
+      );
+    }
+
+    parsed = {
+      format: parsedFiles[0]?.parsed.format ?? "unknown",
+      executions: combinedExecutions,
+      skippedRows: totalSkippedRows,
+      warnings: Array.from(new Set(allWarnings)),
+      errors: allErrors.length > 0 ? Array.from(new Set(allErrors)) : undefined,
+      account: detectedAccounts.size > 0 ? Array.from(detectedAccounts)[0] : undefined,
+      sourceAccounts: sourceAccounts.size > 0 ? Array.from(sourceAccounts) : undefined,
+    };
+
+    const totalParsed = parsedFiles.reduce((acc, pf) => acc + pf.parsed.executions.length, 0);
+    batchSummary = {
+      totalFiles: filesList.length,
+      totalParsed,
+      uniqueExecutions: combinedExecutions.length,
+      duplicateExecutions: duplicatesSkipped,
+      duplicatesSkipped,
+      files: fileStats,
+    };
+  } else {
+    const singleContent = filesList[0]?.content ?? "";
+    parsed = body.mapping
+      ? parseWithMapping(singleContent, body.mapping, importOptions)
+      : parseAuto(singleContent, importOptions);
+
+    if (!parsed) {
+      return ok({
+        detected: null,
+        timeZone,
+        dateOrder,
+        headers: readHeaders(singleContent),
+        needsMapping: true,
+      });
+    }
   }
 
   if (body.mode === "preview") {
@@ -183,11 +304,18 @@ export const POST = handler(async (request: Request) => {
       compatibility,
       reconciliation:
         parsed.format === "ninjatrader" && resolvedAccountId
-          ? previewNinjaTraderImport(resolvedAccountId, parsed, body.content, timeZone, body.review)
+          ? previewNinjaTraderImport(
+              resolvedAccountId,
+              parsed,
+              body.content || filesList.map((f) => f.content).join("\n"),
+              timeZone,
+              body.review,
+            )
           : undefined,
       accountReconciliation: resolvedAccountId
         ? reconcileImport(resolvedAccountId, parsed.executions as ImportedExecution[])
         : undefined,
+      batchSummary,
     });
   }
 
@@ -218,18 +346,28 @@ export const POST = handler(async (request: Request) => {
     );
   }
 
+  const effectiveContent = body.content || filesList.map((f) => f.content).join("\n");
+  const effectiveFileName =
+    body.fileName ||
+    (hasFiles && filesList.length > 1
+      ? `${filesList.length} files (${filesList.map((f) => f.name).join(", ")})`
+      : filesList[0]?.name);
+
   const result = commitImportAtomically({
     accountId: body.accountId,
     parsed,
-    content: body.content,
+    content: effectiveContent,
     timeZone,
-    fileName: body.fileName,
+    fileName: effectiveFileName,
     review: body.review,
     targetAccount,
     compat,
   });
 
-  return ok(result);
+  return ok({
+    ...result,
+    batchSummary,
+  });
 });
 
 /** The import page lists what auto-detection understands. */

@@ -461,6 +461,15 @@ export const QUANT_INSTRUMENTS: readonly QuantInstrument[] = [
   },
 ] as const;
 
+/**
+ * Standard contract multipliers for futures instruments (points to currency).
+ * Automatically maps standard CME, NYMEX, CBOT, COMEX, and B3 instruments.
+ * CFDs (e.g. US100, US500, NAS100) default to 1:1 points unless specified.
+ */
+export const DEFAULT_FUTURES_MULTIPLIERS: Readonly<Record<string, number>> = Object.freeze(
+  Object.fromEntries(QUANT_INSTRUMENTS.map((inst) => [inst.id, inst.multiplier])),
+);
+
 export interface PropFirmPreset {
   id: string;
   name: string;

@@ -19,7 +19,8 @@ const parseJsonArray = (value: string | null): string[] => {
 
 const context = () => ({ multipliers: getMultipliers(), defaults: getJournalDefaults() });
 export const rowToTrade = (row: TradeRow, config = context()): AnnotatedTrade => {
-  const multiplier = config.multipliers[row.symbol];
+  const root = row.symbol.replace(/[FGHJKMNQUVXZ]\d{1,4}$/i, "");
+  const multiplier = config.multipliers[row.symbol] ?? config.multipliers[root];
   const defaults = config.defaults;
   const missingMultiplier =
     multiplier == null && ["futures", "option", "forex", "cfd"].includes(row.assetClass ?? "");

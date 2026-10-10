@@ -104,4 +104,45 @@ describe("symbol-specs and symbol-utils engine", () => {
       expect(isCalculableSymbol("TSLA")).toBe(false);
     });
   });
+
+  describe("Asset Families & Ground Truth Preservation", () => {
+    it("preserves exact empirical ground truth (MES is MES, US500 is US500)", () => {
+      expect(normalizeSymbol("MES1!")).toBe("MES");
+      expect(normalizeSymbol("MESH6")).toBe("MES");
+      expect(normalizeSymbol("MESM6")).toBe("MES");
+      expect(normalizeSymbol("US500.CASH")).toBe("US500");
+      expect(normalizeSymbol("US500.pro")).toBe("US500");
+      expect(normalizeSymbol("ESU6")).toBe("ES");
+      expect(normalizeSymbol("MNQZ5")).toBe("MNQ");
+      expect(normalizeSymbol("US100.CASH")).toBe("US100");
+
+      // Verify that MES never mutates to US500 and vice versa
+      expect(normalizeSymbol("MES")).toBe("MES");
+      expect(normalizeSymbol("US500")).toBe("US500");
+      expect(normalizeSymbol("MES")).not.toBe(normalizeSymbol("US500"));
+    });
+
+    it("groups related instruments into underlying asset families without mutating their identity", async () => {
+      const { getAssetFamily } = await import("../src/lib/assets/symbol-utils");
+      const mesFamily = getAssetFamily("MES");
+      expect(mesFamily).toBeDefined();
+      expect(mesFamily?.id).toBe("sp500");
+      expect(mesFamily?.currency).toBe("USD");
+
+      const us500Family = getAssetFamily("US500.CASH");
+      expect(us500Family).toBeDefined();
+      expect(us500Family?.id).toBe("sp500");
+
+      const mnqFamily = getAssetFamily("MNQZ6");
+      expect(mnqFamily?.id).toBe("nasdaq100");
+
+      const us100Family = getAssetFamily("US100.CASH");
+      expect(us100Family?.id).toBe("nasdaq100");
+
+      const goldFamily = getAssetFamily("XAUUSD");
+      expect(goldFamily?.id).toBe("gold");
+
+      expect(getAssetFamily("UNKNOWN_ASSET_XYZ")).toBeNull();
+    });
+  });
 });

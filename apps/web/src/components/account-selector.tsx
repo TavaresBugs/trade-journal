@@ -22,6 +22,7 @@ import {
 import { AddAccountDialog } from "@/components/add-account-dialog";
 import { BrokerIcon } from "@/components/ui/broker-icon";
 import { getAccountBrokerInfo } from "@/lib/brokers/broker-catalog";
+import { ShowCredentialsButton } from "@/components/credentials-dialog";
 import { postJson, useApi } from "@/lib/use-api";
 import { cn } from "@/lib/utils";
 
@@ -246,6 +247,16 @@ export function AccountSelector() {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {(!data || accounts.length > 0) && (
+          <ShowCredentialsButton
+            accountId={selectedAccount ? selectedAccount.id : "all"}
+            accountName={selectedAccount ? selectedAccount.name : "All Accounts"}
+            accountNumber={selectedAccount?.accountNumber}
+            isAllAccounts={!selectedAccount}
+            className="h-8 hidden sm:inline-flex"
+          />
+        )}
 
         {(demoError || error) && (
           <p

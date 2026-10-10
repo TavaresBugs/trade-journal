@@ -16,9 +16,25 @@ import type { CsvRecord } from "./csv";
 /** Lowercase, spell out "%", strip the rest: "Net PnL (USD)" → "netpnlusd", "Return %" → "returnpct". */
 export function normalizeHeader(header: string): string {
   return header
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/%/gu, "pct")
     .replace(/[^a-z0-9]/gu, "");
+}
+
+/** Check if a raw or normalized header represents S/L (Stop Loss). */
+export function isSlHeader(header?: string): boolean {
+  if (!header) return false;
+  const n = normalizeHeader(header);
+  return n === "sl" || /^\s*s\s*\/?\s*l\s*$/i.test(header);
+}
+
+/** Check if a raw or normalized header represents T/P (Take Profit). */
+export function isTpHeader(header?: string): boolean {
+  if (!header) return false;
+  const n = normalizeHeader(header);
+  return n === "tp" || /^\s*t\s*\/?\s*p\s*$/i.test(header);
 }
 
 const CURRENCY_SUFFIX = /(usd|eur|gbp|jpy|aud|cad|chf|nzd|usdt|usdc|btc|eth)$/;
@@ -66,6 +82,7 @@ const ALIASES: ReadonlyArray<readonly [CanonicalField, readonly string[]]> = [
       "deal",
       "id",
       "tradeidnumber",
+      "oferta",
     ],
   ],
   ["orderId", ["orderid", "order", "orderno", "ordernumber", "orderref", "orderreference"]],
@@ -83,6 +100,7 @@ const ALIASES: ReadonlyArray<readonly [CanonicalField, readonly string[]]> = [
       "asset",
       "security",
       "item",
+      "ativo",
       "symbolname",
       "underlying",
     ],
@@ -98,12 +116,14 @@ const ALIASES: ReadonlyArray<readonly [CanonicalField, readonly string[]]> = [
       "positionside",
       "tradeside",
       "tradetype",
+      "tipo",
+      "direcao",
       "marketpos",
       "marketposition",
       "openingdirection",
     ],
   ],
-  ["eventType", ["eventtype", "event", "entryexit", "inout", "transactiontype"]],
+  ["eventType", ["eventtype", "event", "entryexit", "inout", "transactiontype", "direcao"]],
   [
     "quantity",
     [
@@ -113,6 +133,7 @@ const ALIASES: ReadonlyArray<readonly [CanonicalField, readonly string[]]> = [
       "sizeqty",
       "volume",
       "lots",
+      "lotes",
       "lotsize",
       "contracts",
       "shares",
@@ -253,6 +274,8 @@ const ALIASES: ReadonlyArray<readonly [CanonicalField, readonly string[]]> = [
       "grossprofit",
       "closedpnl",
       "tradepnl",
+      "lucro",
+      "resultado",
     ],
   ],
   [
@@ -268,6 +291,8 @@ const ALIASES: ReadonlyArray<readonly [CanonicalField, readonly string[]]> = [
       "totalfees",
       "brokeragefees",
       "commissionsfees",
+      "comissao",
+      "taxa",
     ],
   ],
   ["swap", ["swap", "swaps", "rollover", "financing", "overnightfee", "overnightfees"]],
@@ -391,6 +416,12 @@ const KNOWN_IRRELEVANT = new Set(
     "status",
     "state",
     "orderstatus",
+    "horariodaabertura",
+    "ordem",
+    "custo",
+    "saldo",
+    "comentario",
+    "estado",
   ].map(normalizeHeader),
 );
 

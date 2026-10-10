@@ -162,6 +162,54 @@ describe("history imports use the existing preview, commit and rebuild pipeline"
       await (await post({ mode: "commit", content, mapping, accountId: "test" })).json(),
     ).toMatchObject({ inserted: 1 });
   });
+
+  it("handles multi-file batch uploads with cross-file deduplication and per-file stats", async () => {
+    const file1 = {
+      name: "batch1.csv",
+      content: `Symbol;FX:EURUSD\nTrade #;Type;Date/Time;Price;Contracts;Profit;Profit %\n1;Entry long;2026-01-05 09:00;1.1;0.1;18.5;1\n1;Exit long;2026-01-05 10:00;1.102;0.1;18.5;1`,
+    };
+    const file2 = {
+      name: "batch2.csv",
+      content: `Symbol;FX:EURUSD\nTrade #;Type;Date/Time;Price;Contracts;Profit;Profit %\n2;Entry long;2026-01-06 09:00;1.1;0.1;18.5;1\n2;Exit long;2026-01-06 10:00;1.102;0.1;18.5;1`,
+    };
+    // file3 is an exact copy of file1 to test deduplication
+    const file3 = {
+      name: "batch1_duplicate.csv",
+      content: file1.content,
+    };
+
+    const previewRes = await (
+      await post({
+        mode: "preview",
+        files: [file1, file2, file3],
+        timeZone: "UTC",
+      })
+    ).json();
+
+    expect(previewRes.batchSummary).toBeDefined();
+    expect(previewRes.batchSummary.totalFiles).toBe(3);
+    expect(previewRes.batchSummary.totalParsed).toBe(6);
+    expect(previewRes.batchSummary.uniqueExecutions).toBe(4);
+    expect(previewRes.batchSummary.duplicateExecutions).toBe(2);
+    expect(previewRes.totals.executions).toBe(4);
+    expect(previewRes.batchSummary.files).toHaveLength(3);
+    expect(previewRes.batchSummary.files[0].uniqueAdded).toBe(2);
+    expect(previewRes.batchSummary.files[1].uniqueAdded).toBe(2);
+    expect(previewRes.batchSummary.files[2].duplicateCount).toBe(2);
+
+    const commitRes = await (
+      await post({
+        mode: "commit",
+        files: [file1, file2, file3],
+        accountId: "test",
+        timeZone: "UTC",
+      })
+    ).json();
+
+    expect(commitRes.inserted).toBe(4);
+    expect(commitRes.batchSummary).toBeDefined();
+    expect(commitRes.batchSummary.totalFiles).toBe(3);
+  });
 });
 
 describe("file decoding", () => {

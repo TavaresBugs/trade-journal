@@ -314,3 +314,83 @@ export function normalizeSymbol(raw: string): string {
 
   return clean || s;
 }
+
+export interface AssetFamily {
+  id: string;
+  name: string;
+  underlying: string;
+  currency: string;
+  symbols: readonly string[];
+}
+
+export const ASSET_FAMILIES: readonly AssetFamily[] = [
+  {
+    id: "sp500",
+    name: "S&P 500",
+    underlying: "S&P 500 Index",
+    currency: "USD",
+    symbols: ["MES", "ES", "US500", "US500.CASH", "SPX500", "SP500", "SPX"],
+  },
+  {
+    id: "nasdaq100",
+    name: "Nasdaq 100",
+    underlying: "Nasdaq-100 Index",
+    currency: "USD",
+    symbols: ["MNQ", "NQ", "US100", "US100.CASH", "NAS100", "USTEC", "NDX"],
+  },
+  {
+    id: "dow30",
+    name: "Dow Jones 30",
+    underlying: "Dow Jones Industrial Average",
+    currency: "USD",
+    symbols: ["MYM", "YM", "US30", "DJ30", "DJI", "WALLSTREET"],
+  },
+  {
+    id: "russell2000",
+    name: "Russell 2000",
+    underlying: "Russell 2000 Index",
+    currency: "USD",
+    symbols: ["M2K", "RTY", "US2000", "RUSSELL"],
+  },
+  {
+    id: "gold",
+    name: "Gold",
+    underlying: "Gold Spot / Futures",
+    currency: "USD",
+    symbols: ["GC", "MGC", "XAUUSD", "GOLD"],
+  },
+  {
+    id: "oil",
+    name: "Crude Oil",
+    underlying: "WTI Crude Oil",
+    currency: "USD",
+    symbols: ["CL", "MCL", "USOIL", "WTI"],
+  },
+  {
+    id: "euro",
+    name: "EUR / USD",
+    underlying: "Euro FX",
+    currency: "USD",
+    symbols: ["6E", "M6E", "EURUSD"],
+  },
+] as const;
+
+/**
+ * Resolves the underlying asset family for an instrument without mutating the symbol's identity.
+ * For example: both MES (CME future) and US500 (CFD) point to the S&P 500 family.
+ */
+export function getAssetFamily(symbol: string): AssetFamily | null {
+  if (!symbol) return null;
+  const s = symbol.trim().toUpperCase();
+  const normalized = normalizeSymbol(s);
+  for (const family of ASSET_FAMILIES) {
+    if (
+      family.symbols.includes(s) ||
+      family.symbols.includes(normalized) ||
+      family.symbols.some((sym) => normalizeSymbol(sym) === normalized)
+    ) {
+      return family;
+    }
+  }
+  return null;
+}

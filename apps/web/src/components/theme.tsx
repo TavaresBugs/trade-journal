@@ -66,7 +66,6 @@ export function ThemeToggle({ iconOnly = false }: { iconOnly?: boolean }) {
           ? "h-9 w-9 shrink-0 rounded-lg"
           : "w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
       }
-      disabled={!ready}
       onClick={toggle}
       aria-label={label}
       title={iconOnly ? label : undefined}

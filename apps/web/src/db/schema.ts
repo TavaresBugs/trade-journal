@@ -2,6 +2,7 @@ import {
   blob,
   index,
   integer,
+  primaryKey,
   real,
   sqliteTable,
   text,
@@ -146,6 +147,7 @@ export const trades = sqliteTable(
     stopLoss: real("stop_loss"),
     profitTarget: real("profit_target"),
     reviewedAt: text("reviewed_at"),
+    drawingsJson: text("drawings_json"),
   },
   (table) => [
     index("trades_account_closed").on(table.accountId, table.closedAt),
@@ -299,9 +301,66 @@ export const marketCsvDatasets = sqliteTable(
     firstTime: integer("first_time").notNull(),
     lastTime: integer("last_time").notNull(),
     importedAt: text("imported_at").notNull(),
+    compatibleSymbolsJson: text("compatible_symbols_json"),
   },
   (table) => [index("market_csv_symbol_resolution").on(table.symbol, table.resolution)],
 );
+
+/** High-performance time-series candles. */
+export const marketCandles = sqliteTable(
+  "market_candles",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    symbol: text("symbol").notNull(),
+    resolution: text("resolution").notNull(),
+    time: integer("time").notNull(),
+    open: real("open").notNull(),
+    high: real("high").notNull(),
+    low: real("low").notNull(),
+    close: real("close").notNull(),
+    volume: real("volume"),
+    currency: text("currency").notNull().default("USD"),
+    priceBasis: text("price_basis").notNull().default("raw"),
+    batchId: text("batch_id"),
+  },
+  (table) => [
+    uniqueIndex("market_candles_unique_bar").on(table.symbol, table.resolution, table.time),
+    index("market_candles_batch").on(table.batchId),
+  ],
+);
+
+/** Materialized summary of candle time series per symbol and resolution. */
+export const marketSeriesSummary = sqliteTable(
+  "market_series_summary",
+  {
+    symbol: text("symbol").notNull(),
+    resolution: text("resolution").notNull(),
+    barCount: integer("bar_count").notNull().default(0),
+    firstTime: integer("first_time").notNull(),
+    lastTime: integer("last_time").notNull(),
+    currency: text("currency").notNull().default("USD"),
+    priceBasis: text("price_basis").notNull().default("raw"),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.symbol, table.resolution] }),
+    index("market_series_summary_resolution").on(table.resolution, table.symbol),
+  ],
+);
+
+/** Batch tracking for imported candle files. */
+export const marketCandleBatches = sqliteTable("market_candle_batches", {
+  id: text("id").primaryKey(),
+  symbol: text("symbol").notNull(),
+  resolution: text("resolution").notNull(),
+  name: text("name").notNull(),
+  barCount: integer("bar_count").notNull(),
+  newBarCount: integer("new_bar_count").notNull(),
+  duplicateBarCount: integer("duplicate_bar_count").notNull(),
+  firstTime: integer("first_time").notNull(),
+  lastTime: integer("last_time").notNull(),
+  importedAt: text("imported_at").notNull(),
+});
 
 /** User-maintained prop account attempts and actual cash flows, never journal P&L. */
 export const propAccounts = sqliteTable("prop_accounts", {

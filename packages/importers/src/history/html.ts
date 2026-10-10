@@ -17,8 +17,18 @@
   and the same size caps as the CSV path apply.
 */
 
-import { DEFAULT_MAX_CHARS, DEFAULT_MAX_ROWS, type CsvLimits, type CsvRecord } from "./csv";
+import {
+  DEFAULT_MAX_CHARS,
+  DEFAULT_MAX_ROWS,
+  parseNumericCell,
+  type CsvLimits,
+  type CsvRecord,
+} from "./csv";
 import { issue, type ImportIssue } from "./model";
+import { isSlHeader, isTpHeader, matchHeader } from "./aliases";
+import { parseImportTimestamp } from "./timestamps";
+import { metaTraderAdapter } from "./adapters/metatrader";
+import type { SourceAdapter } from "./adapters/adapter";
 
 /**
  * Cheap, deterministic check: an HTML document rather than delimited text.
@@ -278,11 +288,38 @@ export function extractHtmlTables(
  * ending in ":" (a summary). Trade and balance rows carry ids/amounts across
  * many cells, so neither shape matches them.
  */
-function isSectionTitleRow(cells: readonly string[]): boolean {
+export function isSectionTitleRow(cells: readonly string[]): boolean {
   const nonEmpty = cells.map((c) => c.trim()).filter((c) => c !== "");
   if (nonEmpty.length === 0) return false;
   if (nonEmpty.length <= 2 && nonEmpty.every((c) => !/\d/.test(c))) return true;
-  return nonEmpty.length <= 4 && /[a-zA-Z]/.test(nonEmpty[0]!) && nonEmpty[0]!.endsWith(":");
+  return nonEmpty.length <= 4 && /\p{L}/u.test(nonEmpty[0]!) && nonEmpty[0]!.endsWith(":");
+}
+
+/**
+ * Does this row look like a header: mostly non-numeric cells, some of them known aliases?
+ */
+export function headerScore(cells: readonly string[]): number {
+  let aliasHits = 0;
+  let numeric = 0;
+  for (const cell of cells) {
+    const trimmed = cell.trim();
+    if (trimmed === "") continue;
+    if (Number.isFinite(parseNumericCell(trimmed))) numeric++;
+    else if (matchHeader(trimmed) !== null) aliasHits++;
+  }
+  return numeric > 0 ? 0 : aliasHits;
+}
+
+/**
+ * Checks if a row meets the invariant MetaTrader Positions header geometry:
+ * col 6 has S/L, col 7 has T/P, and the next record has dual timestamps at col 0 and 8.
+ */
+export function isPositionsHeader(cells: readonly string[], nextRow?: CsvRecord): boolean {
+  if (cells.length < 8 || !isSlHeader(cells[6]) || !isTpHeader(cells[7])) return false;
+  if (!nextRow) return false;
+  const col0 = nextRow.cells[0] ?? "";
+  const col8 = nextRow.cells[8] ?? "";
+  return Number.isFinite(parseImportTimestamp(col0)) && Number.isFinite(parseImportTimestamp(col8));
 }
 
 /**
@@ -304,4 +341,139 @@ export function truncateAtSectionBoundary(
     }
   }
   return { records: [...records], truncatedAt: null };
+}
+
+/**
+ * The trades section of an HTML statement, chosen adapter-first:
+ * 1. Geometric MetaTrader signature: a header where col 6 has S/L and col 7 has T/P
+ *    and data rows have dual timestamps at col 0 and col 8, cut at next section boundary.
+ * 2. Every header candidate row (strong alias score) opens a section that runs to the next
+ *    section boundary; the first section a signature adapter claims wins.
+ * 3. With no signature match, the best-scoring section goes to the generic mapper.
+ */
+export function chooseStatementSection(
+  tables: readonly HtmlTable[],
+  issues: ImportIssue[],
+  adapters?: readonly SourceAdapter[],
+): {
+  header: string[];
+  records: CsvRecord[];
+  adapter: SourceAdapter | null;
+  signals: string[];
+} | null {
+  // 1. Language-agnostic MetaTrader Positions check:
+  // Identify the positions section when col 6/7 has S/L and T/P and lines have dual timestamps,
+  // cutting at next section boundary.
+  for (const table of tables) {
+    for (let i = 0; i < table.records.length; i++) {
+      const headerRecord = table.records[i]!;
+      const nextRecord = table.records[i + 1];
+      if (isPositionsHeader(headerRecord.cells, nextRecord)) {
+        const after = table.records.slice(i + 1);
+        const trimmed = truncateAtSectionBoundary(after, (cells) =>
+          isSectionTitleRow(cells) ||
+          (cells.length >= 8 && isSlHeader(cells[6]) && isTpHeader(cells[7])) ||
+          headerScore(cells) >= 3,
+        );
+        if (trimmed.records.length > 0) {
+          issues.push(
+            issue(
+              "info",
+              "row-recovered",
+              `HTML statement: the positions section headed at line ${headerRecord.line} (${trimmed.records.length} rows) ` +
+                `matched "${metaTraderAdapter.label}" by invariant geometric signature; other sections ` +
+                "were not imported as trades.",
+            ),
+          );
+          return {
+            header: headerRecord.cells.map((c) => c.trim()),
+            records: trimmed.records,
+            adapter: metaTraderAdapter,
+            signals: [
+              "HTML statement: identified MetaTrader positions section by invariant S/L, T/P and dual-timestamp geometry",
+            ],
+          };
+        }
+      }
+    }
+  }
+
+  // 2. Candidate rows with score >= 3
+  interface Candidate {
+    table: HtmlTable;
+    index: number;
+    score: number;
+  }
+  const candidates: Candidate[] = [];
+  for (const table of tables) {
+    for (let i = 0; i < table.records.length; i++) {
+      const score = headerScore(table.records[i]!.cells);
+      if (score >= 3) candidates.push({ table, index: i, score });
+    }
+  }
+  if (candidates.length === 0) return null;
+
+  const sectionOf = (
+    candidate: Candidate,
+  ): { header: string[]; records: CsvRecord[]; line: number } => {
+    const headerRecord = candidate.table.records[candidate.index]!;
+    const after = candidate.table.records.slice(candidate.index + 1);
+    const trimmed = truncateAtSectionBoundary(after, (cells) => headerScore(cells) >= 3);
+    return {
+      header: headerRecord.cells.map((c) => c.trim()),
+      records: trimmed.records,
+      line: headerRecord.line,
+    };
+  };
+
+  const signatureAdapters = (adapters ?? [metaTraderAdapter]).filter(
+    (a) => a.id !== "generic-csv",
+  );
+  for (const candidate of candidates) {
+    const section = sectionOf(candidate);
+    if (section.records.length === 0) continue;
+    for (const adapter of signatureAdapters) {
+      const match = adapter.detect({
+        delimiter: ",",
+        header: section.header,
+        records: section.records,
+      });
+      if (match !== null) {
+        issues.push(
+          issue(
+            "info",
+            "row-recovered",
+            `HTML statement: the section headed at line ${section.line} (${section.records.length} rows) ` +
+              `matched "${adapter.label}"; other sections (orders, deals, open positions, summaries) ` +
+              "were not imported as trades.",
+          ),
+        );
+        return {
+          header: section.header,
+          records: section.records,
+          adapter,
+          signals: match.signals,
+        };
+      }
+    }
+  }
+
+  let best = candidates[0]!;
+  for (const candidate of candidates) if (candidate.score > best.score) best = candidate;
+  const section = sectionOf(best);
+  if (section.records.length === 0) return null;
+  issues.push(
+    issue(
+      "info",
+      "row-recovered",
+      `HTML table detected: the section headed at line ${section.line} (${section.records.length} rows) ` +
+        "was selected by its column names.",
+    ),
+  );
+  return {
+    header: section.header,
+    records: section.records,
+    adapter: null,
+    signals: ["columns resolved by header aliases in an HTML table"],
+  };
 }

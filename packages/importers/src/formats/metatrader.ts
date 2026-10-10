@@ -30,20 +30,31 @@ export const metatrader: ImportFormat = {
   label: "MetaTrader 4/5 (HTML statement)",
   detect: (_headers, content) =>
     /<html/i.test(content) &&
-    /(MetaTrader|MetaQuotes|Closed Transactions|Strategy Tester|Trade History Report)/i.test(
-      content,
+    (
+      /client\s+terminal/i.test(content) ||
+      /Relat[oó]rio\s+do\s+Hist[oó]rico/i.test(content) ||
+      /(MetaTrader|MetaQuotes|Closed Transactions|Strategy Tester|Trade History Report)/i.test(
+        content,
+      )
     ),
   parse: (content, options): ParsedImport => {
-    // Extract Account ID if present in header (e.g. "Account: 6059687" or "Statement: 6059687")
+    // Extract Account ID if present in header (e.g. "Account: 6059687" or "Statement: 6059687" or multilingual equivalents)
     const accMatch =
+      content.match(/<title>\s*(\d+):/i) ||
+      content.match(
+        /(?:Account|Conta|Statement|Relat[oó]rio|حساب|হিসাব|অ্যাকাউন্ট|Сметка)\s*:[\s\S]*?(?:<b>|,,,|:|,|\s)["']?\s*([0-9A-Za-z_-]+)(?:\s*&nbsp;)?\s*(?:\([A-Z]{3}|,|;|\s|<|$)/i,
+      ) ||
+      content.match(
+        /(?:Account|Conta|Statement|Relat[oó]rio|حساب|হিসাব|অ্যাকাউন্ট|Сметка)\s*:[,\s]*["']?([0-9A-Za-z_-]+)/i,
+      ) ||
       content.match(/Account:\s*([0-9A-Za-z_-]+)/i) ||
-      content.match(/Statement:\s*([0-9A-Za-z_-]+)/i) ||
-      content.match(/<title>\s*([0-9A-Za-z_-]+):/i);
+      content.match(/Statement:\s*([0-9A-Za-z_-]+)/i);
     const account = accMatch ? accMatch[1] : undefined;
 
     // If this statement contains a Positions section, let the specialized history adapter
     // parse it into clean position round-trips with S/L, T/P, profit and official tickets.
-    const hasPositions = /Positions|Posições/i.test(content);
+    const hasPositions =
+      /Positions|Posições|Позици|পজিশন|موقف|صفقات/i.test(content);
     if (hasPositions) {
       const historyParsed = parseHistory(content, options);
       if (historyParsed && historyParsed.executions.length > 0) {

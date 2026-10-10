@@ -106,11 +106,17 @@ export function Tooltip({
   labelFormatter,
   valueFormatter,
   variant = "default",
+  content,
 }: {
   labelKey?: string
   labelFormatter?: (label: string, index: number) => string
   valueFormatter?: (value: number, name: string) => string
   variant?: TooltipVariant
+  content?: (props: {
+    index: number
+    heading: React.ReactNode
+    items: ReturnType<ReturnType<typeof useCommonChart>["itemsAt"]>
+  }) => React.ReactNode
 }) {
   const chart = useCommonChart()
   const show = chart.ready && chart.hoverIndex != null
@@ -132,7 +138,7 @@ export function Tooltip({
 
   return (
     <AnimatePresence>
-      {show && items.length > 0 && (
+      {show && (content || items.length > 0) && (
         <motion.div
           key="dither-tooltip"
           initial={{
@@ -161,22 +167,28 @@ export function Tooltip({
             VARIANT[variant]
           )}
         >
-          {heading && <TooltipHeader title={heading} />}
-          <div className="flex flex-col gap-1.5">
-            {items.map((item) => (
-              <TooltipRow
-                key={item.name}
-                label={item.label}
-                value={
-                  valueFormatter
-                    ? valueFormatter(item.value, item.name)
-                    : item.value.toLocaleString()
-                }
-                color={rgb(item.seed.fill)}
-                dimmed={item.dimmed}
-              />
-            ))}
-          </div>
+          {content ? (
+            content({ index, heading, items })
+          ) : (
+            <>
+              {heading && <TooltipHeader title={heading} />}
+              <div className="flex flex-col gap-1.5">
+                {items.map((item) => (
+                  <TooltipRow
+                    key={item.name}
+                    label={item.label}
+                    value={
+                      valueFormatter
+                        ? valueFormatter(item.value, item.name)
+                        : item.value.toLocaleString()
+                    }
+                    color={rgb(item.seed.fill)}
+                    dimmed={item.dimmed}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

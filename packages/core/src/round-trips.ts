@@ -174,9 +174,10 @@ export const buildRoundTrips = (
     group.sort(compareExecutions);
     const { accountId, symbol } = group[0]!;
     const importGroup = group[0]!.importMetadata?.group;
-    const contractMultiplier = options.multipliers?.[symbol];
-    const multiplier = contractMultiplier ?? 1;
     const assetClass = group.find((e) => e.assetClass)?.assetClass;
+    const rootSymbol = symbol.replace(/[FGHJKMNQUVXZ]\d{1,4}$/i, "");
+    const contractMultiplier = options.multipliers?.[symbol] ?? options.multipliers?.[rootSymbol];
+    const multiplier = contractMultiplier ?? 1;
 
     let cycle: OpenCycle | null = null;
 

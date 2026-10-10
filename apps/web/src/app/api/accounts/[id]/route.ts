@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { accounts, db, executions, trades } from "@/db";
 import { bad, handler, ok } from "@/server/api";
+import { deleteAccountCredentials } from "@/server/account-credentials";
 import { rebuildAccount } from "@/server/rebuild";
 import { validatePatchAccount } from "@/server/validation/accounts-schema";
 
@@ -34,10 +35,16 @@ export const PATCH = handler(async (request: Request, { params }: Params) => {
 
 export const DELETE = handler(async (_request: Request, { params }: Params) => {
   const { id } = await params;
+  const account = db.select().from(accounts).where(eq(accounts.id, id)).get();
+  if (!account) return bad("Account not found", 404);
+
+  // Safely clean credentials from .env and memory with twin account collision protection
+  const credentialsCleanup = deleteAccountCredentials(id);
+
   db.transaction((tx) => {
     tx.delete(trades).where(eq(trades.accountId, id)).run();
     tx.delete(executions).where(eq(executions.accountId, id)).run();
     tx.delete(accounts).where(eq(accounts.id, id)).run();
   });
-  return ok({ deleted: true });
+  return ok({ deleted: true, credentialsCleanup });
 });

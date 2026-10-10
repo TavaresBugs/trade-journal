@@ -26,7 +26,10 @@ import {
   type CsvRecord,
 } from "./csv";
 import {
+  chooseStatementSection,
   extractHtmlTables,
+  headerScore,
+  isPositionsHeader,
   looksLikeHtml,
   truncateAtSectionBoundary,
   type HtmlTable,
@@ -42,6 +45,8 @@ import {
   type ImportedTrade,
 } from "./model";
 import type { SlashDateOrder } from "./timestamps";
+
+export { chooseStatementSection } from "./html";
 
 /**
  * Registered source adapters, checked in order. The generic alias-mapped
@@ -79,19 +84,6 @@ function emptyResult(format: DetectedFormat, issues: ImportIssue[]): ImportResul
   };
 }
 
-/** Does this row look like a header: mostly non-numeric cells, some of them known aliases? */
-function headerScore(cells: readonly string[]): number {
-  let aliasHits = 0;
-  let numeric = 0;
-  for (const cell of cells) {
-    const trimmed = cell.trim();
-    if (trimmed === "") continue;
-    if (Number.isFinite(parseNumericCell(trimmed))) numeric++;
-    else if (matchHeader(trimmed) !== null) aliasHits++;
-  }
-  return numeric > 0 ? 0 : aliasHits;
-}
-
 /**
  * Find the header row. Usually record 0; broker statements sometimes bury the
  * table under a disclaimer/summary preamble, so the first 30 records are
@@ -103,7 +95,11 @@ function locateHeader(
   let best: { headerIndex: number; score: number } | null = null;
   const limit = Math.min(records.length, 30);
   for (let i = 0; i < limit; i++) {
-    const score = headerScore(records[i]!.cells);
+    const cells = records[i]!.cells;
+    if (isPositionsHeader(cells, records[i + 1])) {
+      return { headerIndex: i, score: 99 };
+    }
+    const score = headerScore(cells);
     if (score >= 2 && (best === null || score > best.score)) best = { headerIndex: i, score };
     if (best !== null && i > best.headerIndex + 5) break; // don't wander past a good header
   }
@@ -178,103 +174,6 @@ function validateTrades(trades: ImportedTrade[], issues: ImportIssue[]): void {
 }
 
 /**
- * The trades section of an HTML statement, chosen adapter-first: every header
- * candidate row (strong alias score) opens a section that runs to the next
- * section boundary; the first section a signature adapter claims wins, so a
- * report's Positions section beats its Orders/Deals sections and a tester
- * report's Deals section is read with MT5 deal semantics. With no signature
- * match, the best-scoring section goes to the generic mapper.
- */
-function chooseStatementSection(
-  tables: readonly HtmlTable[],
-  issues: ImportIssue[],
-): {
-  header: string[];
-  records: CsvRecord[];
-  adapter: SourceAdapter | null;
-  signals: string[];
-} | null {
-  interface Candidate {
-    table: HtmlTable;
-    index: number;
-    score: number;
-  }
-  // Scan every row: a statement's trades section can sit tens of thousands of
-  // rows deep (a tester report lists all cancelled orders first). headerScore
-  // is cheap and returns 0 on any row containing numbers.
-  const candidates: Candidate[] = [];
-  for (const table of tables) {
-    for (let i = 0; i < table.records.length; i++) {
-      const score = headerScore(table.records[i]!.cells);
-      if (score >= 3) candidates.push({ table, index: i, score });
-    }
-  }
-  if (candidates.length === 0) return null;
-
-  const sectionOf = (
-    candidate: Candidate,
-  ): { header: string[]; records: CsvRecord[]; line: number } => {
-    const headerRecord = candidate.table.records[candidate.index]!;
-    const after = candidate.table.records.slice(candidate.index + 1);
-    const trimmed = truncateAtSectionBoundary(after, (cells) => headerScore(cells) >= 3);
-    return {
-      header: headerRecord.cells.map((c) => c.trim()),
-      records: trimmed.records,
-      line: headerRecord.line,
-    };
-  };
-
-  const signatureAdapters = ADAPTERS.filter((a) => a.id !== genericCsvAdapter.id);
-  for (const candidate of candidates) {
-    const section = sectionOf(candidate);
-    if (section.records.length === 0) continue;
-    for (const adapter of signatureAdapters) {
-      const match = adapter.detect({
-        delimiter: ",",
-        header: section.header,
-        records: section.records,
-      });
-      if (match !== null) {
-        issues.push(
-          issue(
-            "info",
-            "row-recovered",
-            `HTML statement: the section headed at line ${section.line} (${section.records.length} rows) ` +
-              `matched "${adapter.label}"; other sections (orders, deals, open positions, summaries) ` +
-              "were not imported as trades.",
-          ),
-        );
-        return {
-          header: section.header,
-          records: section.records,
-          adapter,
-          signals: match.signals,
-        };
-      }
-    }
-  }
-
-  let best = candidates[0]!;
-  for (const candidate of candidates) if (candidate.score > best.score) best = candidate;
-  const section = sectionOf(best);
-  if (section.records.length === 0) return null;
-  issues.push(
-    issue(
-      "info",
-      "row-recovered",
-      `HTML table detected: the section headed at line ${section.line} (${section.records.length} rows) ` +
-        "was selected by its column names.",
-    ),
-  );
-  return {
-    header: section.header,
-    records: section.records,
-    adapter: null,
-    signals: ["columns resolved by header aliases in an HTML table"],
-  };
-}
-
-/**
  * Import a pasted or uploaded trade history (any supported tabular format).
  * Inspect `result.ok` and `result.issues` before accepting any records.
  */
@@ -307,7 +206,7 @@ export function importTradeHistory(rawText: string, options: ImportOptions = {})
   if (htmlSource) {
     const extracted = extractHtmlTables(text, limits);
     issues.push(...extracted.issues);
-    statementSection = chooseStatementSection(extracted.tables, issues);
+    statementSection = chooseStatementSection(extracted.tables, issues, ADAPTERS);
     if (statementSection === null) {
       // No strong header anywhere: fall back to the biggest table and let the
       // ordinary header locator try (covers simple 2-column HTML tables).

@@ -186,6 +186,20 @@ export const tradovate: ImportFormat = {
     }
     // Standard orders export
     const parsed = tradovateOrders.parse(content, options);
+
+    // If executions have 0 fee, apply standard micro futures commission ($0.50/side) or custom default fee
+    for (const exec of parsed.executions) {
+      if (exec.fee === 0) {
+        const root = exec.symbol.replace(/[FGHJKMNQUVXZ]\d{1,4}$/i, "").toUpperCase();
+        const isMicroFuture = /^(M[A-Z0-9]{2,3})$/.test(root);
+        if (options.defaultFeePerContract !== undefined) {
+          exec.fee = Number((exec.quantity * options.defaultFeePerContract).toFixed(4));
+        } else if (isMicroFuture) {
+          exec.fee = Number((exec.quantity * 0.50).toFixed(4));
+        }
+      }
+    }
+
     // Extract account if present in rows
     const records = toRecords(parseCsv(content));
     const accounts = new Set<string>();

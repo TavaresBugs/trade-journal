@@ -56,7 +56,7 @@ interface Widget {
   id: string;
   label: string;
   size: DashboardCardSize;
-  layoutGroup: "summary" | "visuals" | "detail" | "secondary" | "full";
+  layoutGroup: "summary" | "overview" | "visuals" | "detail" | "secondary" | "full";
   content: ReactNode;
 }
 const collisionDetection: CollisionDetection = (args) =>

@@ -44,6 +44,7 @@ interface AnnotateBody {
   stopLoss?: number | null;
   profitTarget?: number | null;
   reviewed?: boolean;
+  drawingsJson?: string | null;
 }
 
 export const PATCH = handler(async (request: Request, { params }: Params) => {
@@ -66,6 +67,11 @@ export const PATCH = handler(async (request: Request, { params }: Params) => {
     body.notes == null || (typeof body.notes === "string" && body.notes.length <= 100000),
     "Notes must be at most 100,000 characters.",
   );
+  requireValue(
+    body.drawingsJson == null ||
+      (typeof body.drawingsJson === "string" && body.drawingsJson.length <= 500000),
+    "Drawings payload must be at most 500,000 characters.",
+  );
   for (const field of ["tags", "mistakes"] as const)
     requireValue(
       body[field] === undefined ||
@@ -87,6 +93,7 @@ export const PATCH = handler(async (request: Request, { params }: Params) => {
   if (body.stopLoss !== undefined) patch.stopLoss = body.stopLoss;
   if (body.profitTarget !== undefined) patch.profitTarget = body.profitTarget;
   if (body.reviewed !== undefined) patch.reviewedAt = body.reviewed ? nowIso() : null;
+  if (body.drawingsJson !== undefined) patch.drawingsJson = body.drawingsJson;
 
   if (!Object.keys(patch).length) return ok({ updated: true });
   db.update(trades).set(patch).where(eq(trades.key, decoded)).run();

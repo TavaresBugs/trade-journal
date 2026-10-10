@@ -35,6 +35,7 @@ import { formatZoneOffset } from "@/lib/timezone";
 import { postJson, useApi } from "@/lib/use-api";
 import { fmtMoney, fmtAmount, pnlClass, cn } from "@/lib/utils";
 import { MonetaryValue } from "@/components/privacy";
+import { ShowCredentialsButton } from "@/components/credentials-dialog";
 import type { AccountRow } from "@/types/accounts";
 
 export default function AccountsPage() {
@@ -258,6 +259,13 @@ function Accounts() {
                       />
                     </Button>
                   )}
+
+                  <ShowCredentialsButton
+                    accountId={account.id}
+                    accountName={account.name}
+                    accountNumber={account.accountNumber}
+                    className="h-8 mr-0.5"
+                  />
 
                   <Button
                     size="sm"

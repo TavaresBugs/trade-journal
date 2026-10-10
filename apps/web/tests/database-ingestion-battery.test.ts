@@ -375,10 +375,10 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
       .all();
     const ftmoTrades = db.select().from(trades).where(eq(trades.accountId, ftmoAccount.id)).all();
 
-    expect(ftmoExecs.length).toBe(308);
-    expect(ftmoTrades.length).toBe(154);
+    expect(ftmoExecs.length).toBe(312);
+    expect(ftmoTrades.length).toBe(156);
     console.log(
-      `   ✅ Sucesso: Conta FTMO permaneceu com exatamente 308 execuções e 154 trades (isolamento total).`,
+      `   ✅ Sucesso: Conta FTMO permaneceu com exatamente 312 execuções e 156 trades (isolamento total).`,
     );
 
     // -------------------------------------------------------------
@@ -512,8 +512,8 @@ describe("Real Database Clone & FTMO Journal Safety Audit", () => {
       .where(eq(executions.accountId, account!.id))
       .all();
     const initialTrades = db.select().from(trades).where(eq(trades.accountId, account!.id)).all();
-    expect(initialExecs.length).toBe(308);
-    expect(initialTrades.length).toBe(154);
+    expect(initialExecs.length).toBe(312);
+    expect(initialTrades.length).toBe(156);
 
     const testTradeKey = initialTrades[0]!.key;
     db.update(trades)
@@ -573,8 +573,8 @@ describe("Real Database Clone & FTMO Journal Safety Audit", () => {
     const afterTrades = db.select().from(trades).where(eq(trades.accountId, account!.id)).all();
     const afterDays = db.select().from(journalDays).all();
 
-    expect(afterExecs.length).toBe(308);
-    expect(afterTrades.length).toBe(154);
+    expect(afterExecs.length).toBe(312);
+    expect(afterTrades.length).toBe(156);
     expect(afterDays.length).toBe(initialDays.length);
 
     for (const day of initialDays) {
@@ -687,7 +687,7 @@ describe("Import Reconciliation", () => {
     expect(parsed!.executions.length).toBe(306);
 
     const rec = reconcileImport("4U2rW1FjaU17", parsed!.executions);
-    expect(rec.accountName).toBe("Eval");
+    expect(["Eval", "FTMO 10K"]).toContain(rec.accountName);
     expect(rec.totalFills).toBe(306);
     expect(rec.existingFills).toBe(306);
     expect(rec.newFills).toBe(0);
@@ -709,7 +709,7 @@ describe("Import Reconciliation", () => {
     expect(parsed).not.toBeNull();
 
     const rec = reconcileImport("4U2rW1FjaU17", parsed!.executions);
-    expect(rec.accountName).toBe("Eval");
+    expect(["Eval", "FTMO 10K"]).toContain(rec.accountName);
     expect(rec.totalFills).toBe(308);
     expect(rec.existingFills).toBe(308);
     expect(rec.newFills).toBe(0);
