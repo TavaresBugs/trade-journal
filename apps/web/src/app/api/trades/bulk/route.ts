@@ -9,13 +9,15 @@ interface BulkBody {
   action: "review" | "unreview" | "tag" | "untag" | "playbook" | "delete";
   tag?: string;
   playbookId?: string | null;
+  purgeAttachments?: boolean;
 }
 
 export const POST = handler(async (request: Request) => {
   const body = (await request.json()) as BulkBody;
   if (!Array.isArray(body.keys) || body.keys.length === 0) return bad("keys are required");
   if (body.action === "delete") {
-    const result = deleteTradesWithCleanup(body.keys);
+    const purgeAttachments = Boolean(body.purgeAttachments);
+    const result = deleteTradesWithCleanup(body.keys, { purgeAttachments });
     return ok({ deleted: result.deletedTradeCount, ...result });
   }
 

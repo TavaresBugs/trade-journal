@@ -195,7 +195,7 @@ export function showVelaToast(
   container: HTMLElement,
   message: string,
   type: "info" | "success" | "error" = "success",
-  durationMs: number = 3000
+  durationMs: number = 3000,
 ): void {
   const doc = container?.ownerDocument || document;
   injectScreenshotStyles(doc);
@@ -236,7 +236,7 @@ export function showVelaToast(
 
 export function getChartScreenshotCanvas(
   chartContainer: HTMLElement,
-  chartInstance?: any
+  chartInstance?: any,
 ): HTMLCanvasElement | null {
   // 1. Official Vela Renderer screenshotCanvas()
   if (typeof chartInstance?.renderer?.screenshotCanvas === "function") {
@@ -261,7 +261,7 @@ export function getChartScreenshotCanvas(
   // 3. Fallback: Composite all canvas elements found inside chartContainer
   if (!chartContainer) return null;
   const canvases = Array.from(chartContainer.querySelectorAll("canvas")).filter(
-    (c) => c.width > 0 && c.height > 0
+    (c) => c.width > 0 && c.height > 0,
   );
   if (canvases.length === 0) return null;
 
@@ -291,7 +291,7 @@ export async function downloadChartScreenshot(
   chartInstance: any,
   symbol: string,
   resolution: string,
-  onToast?: (message: string, type?: "info" | "success" | "error") => void
+  onToast?: (message: string, type?: "info" | "success" | "error") => void,
 ): Promise<boolean> {
   const notify = (msg: string, type?: "info" | "success" | "error") =>
     onToast ? onToast(msg, type) : showVelaToast(chartContainer, msg, type);
@@ -328,7 +328,7 @@ export async function copyChartScreenshotToClipboard(
   chartInstance: any,
   onToast?: (message: string, type?: "info" | "success" | "error") => void,
   symbol: string = "chart",
-  resolution: string = "1m"
+  resolution: string = "1m",
 ): Promise<boolean> {
   const notify = (msg: string, type?: "info" | "success" | "error") =>
     onToast ? onToast(msg, type) : showVelaToast(chartContainer, msg, type);
@@ -353,9 +353,7 @@ export async function copyChartScreenshotToClipboard(
           navigator.clipboard?.write &&
           typeof ClipboardItem !== "undefined"
         ) {
-          await navigator.clipboard.write([
-            new ClipboardItem({ "image/png": blob }),
-          ]);
+          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
           notify("Chart image copied to clipboard", "success");
           resolve(true);
         } else {
@@ -400,7 +398,7 @@ export function armVelaPortionSelection(
   chartInstance: any,
   symbol: string,
   resolution: string,
-  onToast?: (message: string, type?: "info" | "success" | "error") => void
+  onToast?: (message: string, type?: "info" | "success" | "error") => void,
 ): () => void {
   const doc = chartContainer.ownerDocument || document;
   injectScreenshotStyles(doc);
@@ -410,8 +408,13 @@ export function armVelaPortionSelection(
     chartContainer.style.position = "relative";
   }
 
-  const oldOverlay = chartContainer.querySelector(".vela-portion-overlay");
-  oldOverlay?.remove();
+  const oldOverlay = chartContainer.querySelector(".vela-portion-overlay") as
+    (HTMLElement & { _removeCleanup?: () => void }) | null;
+  if (oldOverlay?._removeCleanup) {
+    oldOverlay._removeCleanup();
+  } else {
+    oldOverlay?.remove();
+  }
 
   const overlay = doc.createElement("div");
   overlay.className = "vela-portion-overlay";
@@ -431,6 +434,8 @@ export function armVelaPortionSelection(
     window.removeEventListener("keydown", onKeyDown, true);
     overlay.remove();
   }
+
+  (overlay as HTMLElement & { _removeCleanup?: () => void })._removeCleanup = removeOverlay;
 
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
@@ -540,9 +545,7 @@ export function armVelaPortionSelection(
                 navigator.clipboard?.write &&
                 typeof ClipboardItem !== "undefined"
               ) {
-                await navigator.clipboard.write([
-                  new ClipboardItem({ "image/png": blob }),
-                ]);
+                await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
                 notify("Chart image copied to clipboard", "success");
               } else {
                 throw new Error("Clipboard API not available");
@@ -582,7 +585,7 @@ export function armVelaPortionSelection(
 // ── Topbar Screenshot Menu Attachment ───────────────────────────────────────
 
 export function attachVelaScreenshotMenu(
-  opts: VelaScreenshotMenuOptions
+  opts: VelaScreenshotMenuOptions,
 ): ScreenshotMenuController {
   const { topbarContainer, chartContainer, getChartInstance, getSymbol, getResolution, onToast } =
     opts;
@@ -596,13 +599,13 @@ export function attachVelaScreenshotMenu(
   function findCameraBtn(): HTMLElement | null {
     return (
       topbarContainer.parentElement?.querySelector<HTMLElement>(
-        ".quant-side-rail-corner[aria-label='Screenshot']"
+        ".quant-side-rail-corner[aria-label='Screenshot']",
       ) ||
       topbarContainer.ownerDocument?.querySelector<HTMLElement>(
-        ".quant-side-rail-corner[aria-label='Screenshot']"
+        ".quant-side-rail-corner[aria-label='Screenshot']",
       ) ||
       topbarContainer.querySelector<HTMLElement>(
-        ".vela-widget-screenshot, #vela-action-screenshot, [aria-label='Screenshot'], [aria-label='Download screenshot']"
+        ".vela-widget-screenshot, #vela-action-screenshot, [aria-label='Screenshot'], [aria-label='Download screenshot']",
       )
     );
   }
@@ -704,7 +707,7 @@ export function attachVelaScreenshotMenu(
             getChartInstance(),
             getSymbol(),
             getResolution(),
-            onToast
+            onToast,
           );
         },
       },
@@ -719,7 +722,7 @@ export function attachVelaScreenshotMenu(
             getChartInstance(),
             onToast,
             getSymbol(),
-            getResolution()
+            getResolution(),
           );
         },
       },
@@ -734,7 +737,7 @@ export function attachVelaScreenshotMenu(
             getChartInstance(),
             getSymbol(),
             getResolution(),
-            onToast
+            onToast,
           );
         },
       },
@@ -797,11 +800,14 @@ export function attachVelaScreenshotMenu(
         const height = Math.max(116, menu.offsetHeight || menuRect.height || 124);
         const { z, M, P, D } = computeScreenshotJoinGeometry(width, height);
 
-        const capBottomRel = (capRect.height > 0 ? capRect.bottom : btnRect.bottom) - containerRect.top;
+        const capBottomRel =
+          (capRect.height > 0 ? capRect.bottom : btnRect.bottom) - containerRect.top;
         const layerTop = Math.round(capBottomRel > 0 ? capBottomRel - 1 : 38);
         const btnRightRel = btnRect.right - containerRect.left;
         const containerWidth = anchorContainer.clientWidth || containerRect.width || 400;
-        const layerLeft = Math.round(Math.max(8, (btnRightRel > 0 ? btnRightRel : containerWidth) - width));
+        const layerLeft = Math.round(
+          Math.max(8, (btnRightRel > 0 ? btnRightRel : containerWidth) - width),
+        );
 
         popup.style.setProperty?.("--chrome-layer-top", `${layerTop}px`);
         popup.style.setProperty?.("--chrome-layer-left", `${layerLeft}px`);
@@ -820,7 +826,8 @@ export function attachVelaScreenshotMenu(
 
         const maxRightRel = Math.max(btnRightRel, containerRect.width || containerWidth);
         const clipRight = maxRightRel > 0 ? Math.max(0, layerLeft + width + z - maxRightRel) : z;
-        join.style.clipPath = clipRight > 0 ? `inset(0px ${clipRight.toFixed(2)}px 0px 0px)` : "none";
+        join.style.clipPath =
+          clipRight > 0 ? `inset(0px ${clipRight.toFixed(2)}px 0px 0px)` : "none";
 
         join.innerHTML = `<svg viewBox="0 0 ${M} ${P}" style="width: 100%; height: 100%; display: block; overflow: visible;"><path class="quant-chrome-join-fill" d="${D} Z"></path><path class="quant-chrome-join-edge" d="${D}"></path></svg>`;
       }
@@ -855,6 +862,8 @@ export function attachVelaScreenshotMenu(
     cameraBtn.addEventListener("click", handleTriggerClick);
   }
 
+  let activePortionCleanup: (() => void) | null = null;
+
   const controller: ScreenshotMenuController = {
     open: openPopup,
     close: closePopup,
@@ -866,7 +875,7 @@ export function attachVelaScreenshotMenu(
         getChartInstance(),
         getSymbol(),
         getResolution(),
-        onToast
+        onToast,
       ),
     copyToClipboard: () =>
       copyChartScreenshotToClipboard(
@@ -874,18 +883,21 @@ export function attachVelaScreenshotMenu(
         getChartInstance(),
         onToast,
         getSymbol(),
-        getResolution()
+        getResolution(),
       ),
     selectPortion: () => {
-      armVelaPortionSelection(
+      activePortionCleanup?.();
+      activePortionCleanup = armVelaPortionSelection(
         chartContainer,
         getChartInstance(),
         getSymbol(),
         getResolution(),
-        onToast
+        onToast,
       );
     },
     destroy: () => {
+      activePortionCleanup?.();
+      activePortionCleanup = null;
       closePopup();
       if (cameraBtn) {
         cameraBtn.removeEventListener("click", handleTriggerClick);

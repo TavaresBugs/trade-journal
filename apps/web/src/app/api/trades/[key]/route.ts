@@ -136,8 +136,20 @@ export const PATCH = handler(async (request: Request, { params }: Params) => {
   return ok({ updated: true });
 });
 
-export const DELETE = handler(async (_request: Request, { params }: Params) => {
+export const DELETE = handler(async (request: Request, { params }: Params) => {
   const { key } = await params;
-  const result = deleteTradeWithCleanup(key);
+  const url = new URL(request.url);
+  let purgeAttachments = url.searchParams.get("purgeAttachments") === "true";
+
+  if (!purgeAttachments && request.headers.get("content-type")?.includes("application/json")) {
+    try {
+      const body = await request.clone().json();
+      if (body && typeof body.purgeAttachments === "boolean") {
+        purgeAttachments = body.purgeAttachments;
+      }
+    } catch {}
+  }
+
+  const result = deleteTradeWithCleanup(key, { purgeAttachments });
   return ok({ deleted: true, ...result });
 });

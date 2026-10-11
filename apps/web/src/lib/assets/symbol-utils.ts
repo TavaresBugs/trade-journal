@@ -315,12 +315,16 @@ export function normalizeSymbol(raw: string): string {
   return clean || s;
 }
 
+export type AssetClass = "futures" | "cfd" | "forex" | "crypto" | "commodities";
+
 export interface AssetFamily {
   id: string;
   name: string;
   underlying: string;
   currency: string;
   symbols: readonly string[];
+  futuresSymbols?: readonly string[];
+  cfdSymbols?: readonly string[];
 }
 
 export const ASSET_FAMILIES: readonly AssetFamily[] = [
@@ -330,6 +334,8 @@ export const ASSET_FAMILIES: readonly AssetFamily[] = [
     underlying: "S&P 500 Index",
     currency: "USD",
     symbols: ["MES", "ES", "US500", "US500.CASH", "SPX500", "SP500", "SPX"],
+    futuresSymbols: ["MES", "ES"],
+    cfdSymbols: ["US500", "US500.CASH", "SPX500", "SP500", "SPX"],
   },
   {
     id: "nasdaq100",
@@ -337,6 +343,8 @@ export const ASSET_FAMILIES: readonly AssetFamily[] = [
     underlying: "Nasdaq-100 Index",
     currency: "USD",
     symbols: ["MNQ", "NQ", "US100", "US100.CASH", "NAS100", "USTEC", "NDX"],
+    futuresSymbols: ["MNQ", "NQ"],
+    cfdSymbols: ["US100", "US100.CASH", "NAS100", "USTEC", "NDX"],
   },
   {
     id: "dow30",
@@ -344,6 +352,8 @@ export const ASSET_FAMILIES: readonly AssetFamily[] = [
     underlying: "Dow Jones Industrial Average",
     currency: "USD",
     symbols: ["MYM", "YM", "US30", "DJ30", "DJI", "WALLSTREET"],
+    futuresSymbols: ["MYM", "YM"],
+    cfdSymbols: ["US30", "DJ30", "DJI", "WALLSTREET"],
   },
   {
     id: "russell2000",
@@ -351,6 +361,8 @@ export const ASSET_FAMILIES: readonly AssetFamily[] = [
     underlying: "Russell 2000 Index",
     currency: "USD",
     symbols: ["M2K", "RTY", "US2000", "RUSSELL"],
+    futuresSymbols: ["M2K", "RTY"],
+    cfdSymbols: ["US2000", "RUSSELL"],
   },
   {
     id: "gold",
@@ -358,6 +370,8 @@ export const ASSET_FAMILIES: readonly AssetFamily[] = [
     underlying: "Gold Spot / Futures",
     currency: "USD",
     symbols: ["GC", "MGC", "XAUUSD", "GOLD"],
+    futuresSymbols: ["GC", "MGC"],
+    cfdSymbols: ["XAUUSD", "GOLD"],
   },
   {
     id: "oil",
@@ -365,6 +379,8 @@ export const ASSET_FAMILIES: readonly AssetFamily[] = [
     underlying: "WTI Crude Oil",
     currency: "USD",
     symbols: ["CL", "MCL", "USOIL", "WTI"],
+    futuresSymbols: ["CL", "MCL"],
+    cfdSymbols: ["USOIL", "WTI"],
   },
   {
     id: "euro",
@@ -372,6 +388,8 @@ export const ASSET_FAMILIES: readonly AssetFamily[] = [
     underlying: "Euro FX",
     currency: "USD",
     symbols: ["6E", "M6E", "EURUSD"],
+    futuresSymbols: ["6E", "M6E"],
+    cfdSymbols: ["EURUSD"],
   },
 ] as const;
 
@@ -393,4 +411,107 @@ export function getAssetFamily(symbol: string): AssetFamily | null {
     }
   }
   return null;
+}
+
+/**
+ * Categorizes an instrument into its high-level asset class.
+ */
+export function getAssetClass(symbol: string): AssetClass {
+  if (!symbol) return "cfd";
+  const raw = symbol.trim().toUpperCase();
+
+  // Explicit cash/CFD indicators take precedence
+  if (raw.includes(".CASH") || raw.includes("_CASH") || raw.endsWith("CASH")) {
+    return "cfd";
+  }
+
+  const norm = normalizeSymbol(raw).toUpperCase();
+
+  // Known futures roots or continuous contract patterns
+  const isKnownFuture =
+    [
+      "NQ",
+      "MNQ",
+      "ES",
+      "MES",
+      "YM",
+      "MYM",
+      "RTY",
+      "M2K",
+      "CL",
+      "MCL",
+      "GC",
+      "MGC",
+      "SI",
+      "MSI",
+      "ZB",
+      "ZN",
+      "ZF",
+      "ZT",
+      "TN",
+      "UB",
+      "6E",
+      "M6E",
+      "6B",
+      "M6B",
+      "6A",
+      "6C",
+      "6J",
+      "WIN",
+      "WDO",
+      "IND",
+      "DOL",
+    ].includes(norm) ||
+    /^(NQ|MNQ|ES|MES|YM|MYM|RTY|M2K|CL|MCL|GC|MGC|SI|MSI|SIL|NG|HG|MHG|PL|RB|HO|ZB|ZN|ZF|ZT|TN|UB|WIN|WDO|IND|DOL|6E|M6E|6B|M6B|6A|6C|6J)[FGHJKMNQUVXZ]?\d{1,4}!*$/i.test(
+      raw,
+    );
+
+  if (isKnownFuture) {
+    return "futures";
+  }
+
+  // Commodities spot
+  if (["XAUUSD", "GOLD", "XAGUSD", "SILVER", "USOIL", "WTI", "NATGAS", "COPPER"].includes(norm)) {
+    return "commodities";
+  }
+
+  // Forex pairs
+  for (const base of MAJOR_CURRENCY_CODES) {
+    if (norm.startsWith(base) && norm.length === 6) {
+      return "forex";
+    }
+  }
+
+  // Crypto pairs
+  for (const crypto of POPULAR_CRYPTO_BASES) {
+    if (
+      norm === crypto ||
+      (norm.startsWith(crypto) &&
+        (norm.endsWith("USDT") || norm.endsWith("USD") || norm.endsWith("USDC")))
+    ) {
+      return "crypto";
+    }
+  }
+
+  return "cfd";
+}
+
+/**
+ * Returns default brother symbols for an instrument respecting asset-class boundaries.
+ * For example, MNQ defaults to ["MNQ", "NQ"], while US100 defaults to ["US100", "US100.CASH", "NAS100", "USTEC", "NDX"].
+ */
+export function getDefaultCompatibleSymbols(symbol: string): string[] {
+  if (!symbol) return [];
+  const s = symbol.trim().toUpperCase();
+  const fam = getAssetFamily(s);
+  if (!fam) return [s];
+
+  const cls = getAssetClass(s);
+  if (cls === "futures" && fam.futuresSymbols) {
+    return [...fam.futuresSymbols];
+  }
+  if (cls !== "futures" && fam.cfdSymbols) {
+    return [...fam.cfdSymbols];
+  }
+  return [...fam.symbols];
 }

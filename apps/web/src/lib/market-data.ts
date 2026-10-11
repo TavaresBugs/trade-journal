@@ -10,18 +10,118 @@ export interface MarketBar {
 
 export const RESOLUTIONS = {
   "1m": 60_000,
+  "2m": 120_000,
   "3m": 180_000,
   "5m": 300_000,
+  "10m": 600_000,
   "15m": 900_000,
+  "30m": 1_800_000,
+  "45m": 2_700_000,
   "1h": 3_600_000,
+  "2h": 7_200_000,
+  "3h": 10_800_000,
   "4h": 14_400_000,
+  "6h": 21_600_000,
+  "8h": 28_800_000,
+  "12h": 43_200_000,
   "1d": 86_400_000,
+  "3d": 259_200_000,
   "1w": 604_800_000,
   "1mo": 2_592_000_000,
 } as const;
-export type Resolution = keyof typeof RESOLUTIONS;
+export type StandardResolution = keyof typeof RESOLUTIONS;
+export type Resolution = StandardResolution;
 export const isResolution = (value: unknown): value is Resolution =>
-  typeof value === "string" && Object.hasOwn(RESOLUTIONS, value);
+  typeof value === "string" &&
+  (Object.hasOwn(RESOLUTIONS, value) ||
+    /^\d+\s*(s|m|h|d|w|mo)$/i.test(value) ||
+    /^(D|3D|W|M|daily|weekly|monthly)$/i.test(value));
+
+/**
+ * Institutional TradingView-style aesthetic timeframe formatter:
+ * - Minutes: 1m, 5m, 15m, 30m
+ * - Hours: 1H, 2H, 4H, 12H (capitalized H)
+ * - Days: D, 3D (capitalized D)
+ * - Weeks: W (capitalized W)
+ * - Months: M (capitalized M)
+ */
+export function formatResolutionDisplay(res: string): string {
+  if (!res) return "";
+  const trimmed = res.trim();
+  if (trimmed === "1d" || trimmed === "1D" || trimmed.toLowerCase() === "daily") return "D";
+  if (trimmed === "3d" || trimmed === "3D") return "3D";
+  if (trimmed === "1w" || trimmed === "1W" || trimmed.toLowerCase() === "weekly") return "W";
+  if (trimmed === "1mo" || trimmed === "1M" || trimmed.toLowerCase() === "monthly") return "M";
+
+  const match = trimmed.match(/^(\d+)\s*([a-zA-Z]+)$/);
+  if (!match || !match[1] || !match[2]) return trimmed;
+  const num = match[1];
+  const unit = match[2].toLowerCase();
+  if (unit === "h" || unit === "hr" || unit === "hour" || unit === "hours") return `${num}H`;
+  if (unit === "d" || unit === "day" || unit === "days") return num === "1" ? "D" : `${num}D`;
+  if (unit === "w" || unit === "wk" || unit === "week" || unit === "weeks")
+    return num === "1" ? "W" : `${num}W`;
+  if (unit === "mo" || unit === "month" || unit === "months") return num === "1" ? "M" : `${num}M`;
+  if (unit === "m" || unit === "min" || unit === "minute" || unit === "minutes") return `${num}m`;
+  return trimmed;
+}
+
+/**
+ * Normalizes user/broker timeframe strings into canonical database storage keys:
+ * - "1H", "4H" -> "1h", "4h"
+ * - "D", "daily" -> "1d"
+ * - "3D" -> "3d"
+ * - "W", "weekly" -> "1w"
+ * - "M", "monthly" -> "1mo"
+ * - "30min", "30M" -> "30m"
+ */
+export function normalizeResolution(input: string): string {
+  if (!input) return "1m";
+  const trimmed = input.trim();
+  const upper = trimmed.toUpperCase();
+  if (upper === "D" || trimmed.toLowerCase() === "daily" || trimmed.toLowerCase() === "day")
+    return "1d";
+  if (upper === "3D") return "3d";
+  if (upper === "W" || trimmed.toLowerCase() === "weekly" || trimmed.toLowerCase() === "week")
+    return "1w";
+  if (upper === "M" || trimmed.toLowerCase() === "monthly" || trimmed.toLowerCase() === "month")
+    return "1mo";
+
+  const match = trimmed.match(/^(\d+)\s*([a-zA-Z]+)$/);
+  if (!match || !match[1] || !match[2]) return trimmed.toLowerCase();
+  const num = match[1];
+  const unit = match[2].toLowerCase();
+  if (unit.startsWith("h")) return `${num}h`;
+  if (unit.startsWith("d")) return `${num}d`;
+  if (unit.startsWith("mo") || (match[2] === "M" && (num === "1" || num === "3")))
+    return `${num}mo`;
+  if (unit.startsWith("m") || unit.startsWith("s") || match[2] === "M")
+    return `${num}${unit.startsWith("s") ? "s" : "m"}`;
+  return `${num}${unit}`;
+}
+
+/**
+ * Returns resolution duration in milliseconds.
+ * Returns known constant if present, or mathematically parses arbitrary string (e.g. "30m", "2h", "1d").
+ */
+export function parseResolutionMs(value: string): number {
+  const norm = normalizeResolution(value);
+  if (norm in RESOLUTIONS) return RESOLUTIONS[norm as StandardResolution];
+  const lower = norm.toLowerCase();
+
+  const match = lower.match(
+    /^(\d+)\s*(s|sec|seconds?|m|min|minutes?|h|hr|hours?|d|days?|w|wk|weeks?|mo|months?)?$/i,
+  );
+  if (!match || !match[1]) return 60_000;
+  const num = Number(match[1]);
+  const rawUnit = (match[2] ?? "m").toLowerCase();
+  if (rawUnit.startsWith("s")) return num * 1_000;
+  if (rawUnit.startsWith("h")) return num * 3_600_000;
+  if (rawUnit.startsWith("d")) return num * 86_400_000;
+  if (rawUnit.startsWith("w")) return num * 604_800_000;
+  if (rawUnit.startsWith("mo")) return num * 2_592_000_000;
+  return num * 60_000;
+}
 
 export interface MarketConnection {
   id: string;

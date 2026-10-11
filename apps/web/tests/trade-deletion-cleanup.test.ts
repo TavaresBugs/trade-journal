@@ -29,9 +29,8 @@ const { deleteTradeWithCleanup, deleteTradesWithCleanup } = await import("../src
 const { DELETE: deleteTradeRoute } = await import("../src/app/api/trades/[key]/route");
 const { POST: bulkTradeRoute } = await import("../src/app/api/trades/bulk/route");
 const { DELETE: deleteAccountRoute } = await import("../src/app/api/accounts/[id]/route");
-const { GET: getSettingsRoute, PATCH: patchSettingsRoute } = await import(
-  "../src/app/api/settings/route"
-);
+const { GET: getSettingsRoute, PATCH: patchSettingsRoute } =
+  await import("../src/app/api/settings/route");
 const {
   saveDrawingFavorites,
   saveDrawingToolPrefs,
@@ -251,18 +250,30 @@ describe("Trade Deletion Lifecycle, Cascade Cleanup & Dual-Tier Preferences", ()
       ).toHaveLength(1);
       expect(db.select().from(notes).where(eq(notes.id, "note-1")).get()?.tradeKey).toBe(tradeKey);
 
-      // Act: Delete trade via DELETE /api/trades/[key]
+      // Act 1: Safe Execution Reset via DELETE /api/trades/[key] (default: purgeAttachments=false)
       const request = new Request(`http://localhost/api/trades/${encodeURIComponent(tradeKey)}`, {
         method: "DELETE",
       });
-      const response = await deleteTradeRoute(request, { params: Promise.resolve({ key: tradeKey }) });
+      const response = await deleteTradeRoute(request, {
+        params: Promise.resolve({ key: tradeKey }),
+      });
       expect(response.status).toBe(200);
-      const json = (await response.json()) as { deleted: boolean; deletedTradeCount: number; deletedAttachmentCount: number };
+      const json = (await response.json()) as {
+        deleted: boolean;
+        deletedTradeCount: number;
+        deletedAttachmentCount: number;
+        preservedAttachmentCount: number;
+        preservedRuleCheckCount: number;
+        preservedNoteCount: number;
+      };
       expect(json.deleted).toBe(true);
       expect(json.deletedTradeCount).toBe(1);
-      expect(json.deletedAttachmentCount).toBe(2);
+      expect(json.deletedAttachmentCount).toBe(0);
+      expect(json.preservedAttachmentCount).toBe(2);
+      expect(json.preservedRuleCheckCount).toBe(1);
+      expect(json.preservedNoteCount).toBe(1);
 
-      // Assert:
+      // Assert Safe Reset state:
       // 1. Trade is deleted from trades table
       const remainingTrade = db.select().from(trades).where(eq(trades.key, tradeKey)).get();
       expect(remainingTrade).toBeUndefined();
@@ -275,30 +286,33 @@ describe("Trade Deletion Lifecycle, Cascade Cleanup & Dual-Tier Preferences", ()
         .all();
       expect(remainingExecs).toHaveLength(0);
 
-      // 3. Attachments are deleted from attachments table
-      const remainingAttachments = db
+      // 3. Attachments are PRESERVED in attachments table for re-import
+      const preservedAttachments = db
         .select()
         .from(attachments)
         .where(eq(attachments.ownerId, tradeKey))
         .all();
-      expect(remainingAttachments).toHaveLength(0);
+      expect(preservedAttachments).toHaveLength(2);
 
-      // 4. Rule checks are deleted from trade_rule_checks
-      const remainingRuleChecks = db
+      // 4. Rule checks are PRESERVED in trade_rule_checks for re-import
+      const preservedRuleChecks = db
         .select()
         .from(tradeRuleChecks)
         .where(eq(tradeRuleChecks.tradeKey, tradeKey))
         .all();
-      expect(remainingRuleChecks).toHaveLength(0);
+      expect(preservedRuleChecks).toHaveLength(1);
 
-      // 5. Note still exists but note.tradeKey is null
+      // 5. Note still exists and still points to tradeKey for automatic re-anchoring
       const noteRow = db.select().from(notes).where(eq(notes.id, "note-1")).get();
       expect(noteRow).toBeDefined();
-      expect(noteRow?.tradeKey).toBeNull();
-      expect(noteRow?.content).toBe("Solid execution at support.");
+      expect(noteRow?.tradeKey).toBe(tradeKey);
 
       // 6. Journal day session record STILL EXISTS (thesis is preserved)
-      const sessionDay = db.select().from(journalDays).where(eq(journalDays.date, sessionDate)).get();
+      const sessionDay = db
+        .select()
+        .from(journalDays)
+        .where(eq(journalDays.date, sessionDate))
+        .get();
       expect(sessionDay).toBeDefined();
       expect(sessionDay?.note).toBe(
         "Market opened gap-up, thesis is to trade pullbacks into 150 key support.",
@@ -308,6 +322,218 @@ describe("Trade Deletion Lifecycle, Cascade Cleanup & Dual-Tier Preferences", ()
       const candles = db.select().from(marketCandles).where(eq(marketCandles.symbol, "AAPL")).all();
       expect(candles).toHaveLength(1);
       expect(candles[0]?.close).toBe(155);
+
+      // 8. RE-IMPORT RECOVERY VERIFICATION:
+      // Re-insert corrected executions for the same trade
+      db.insert(executions)
+        .values([
+          {
+            id: "exec-101-corrected",
+            accountId,
+            symbol: "AAPL",
+            side: "buy",
+            quantity: 10,
+            price: 150,
+            fee: 1.25, // Updated fee
+            executedAt: "2026-01-01T10:00:00Z",
+            source: "manual",
+            contentHash: "hash-exec-101-corrected",
+            createdAt: "2026-01-01T10:00:00Z",
+          },
+          {
+            id: "exec-102-corrected",
+            accountId,
+            symbol: "AAPL",
+            side: "sell",
+            quantity: 10,
+            price: 155,
+            fee: 1.25,
+            executedAt: "2026-01-01T10:15:00Z",
+            source: "manual",
+            contentHash: "hash-exec-102-corrected",
+            createdAt: "2026-01-01T10:15:00Z",
+          },
+        ])
+        .run();
+
+      rebuildAccount(accountId);
+      const restoredTrades = db.select().from(trades).where(eq(trades.accountId, accountId)).all();
+      expect(restoredTrades).toHaveLength(1);
+      expect(restoredTrades[0]!.key).toBe(tradeKey); // Rebuild-stable key matches!
+
+      // Attachments, rule checks, and note immediately re-bind to the restored trade!
+      const reattachedAttachments = db
+        .select()
+        .from(attachments)
+        .where(eq(attachments.ownerId, restoredTrades[0]!.key))
+        .all();
+      expect(reattachedAttachments).toHaveLength(2);
+
+      // Act 2: Nuclear Hard Purge with ?purgeAttachments=true
+      const purgeRequest = new Request(
+        `http://localhost/api/trades/${encodeURIComponent(tradeKey)}?purgeAttachments=true`,
+        { method: "DELETE" },
+      );
+      const purgeResponse = await deleteTradeRoute(purgeRequest, {
+        params: Promise.resolve({ key: tradeKey }),
+      });
+      expect(purgeResponse.status).toBe(200);
+      const purgeJson = (await purgeResponse.json()) as {
+        deleted: boolean;
+        deletedTradeCount: number;
+        deletedAttachmentCount: number;
+      };
+      expect(purgeJson.deleted).toBe(true);
+      expect(purgeJson.deletedTradeCount).toBe(1);
+      expect(purgeJson.deletedAttachmentCount).toBe(2);
+
+      // Assert: Attachments and rule checks are permanently deleted
+      expect(
+        db.select().from(attachments).where(eq(attachments.ownerId, tradeKey)).all(),
+      ).toHaveLength(0);
+      expect(
+        db.select().from(tradeRuleChecks).where(eq(tradeRuleChecks.tradeKey, tradeKey)).all(),
+      ).toHaveLength(0);
+
+      // Note is unlinked on hard purge
+      const unlinkedNote = db.select().from(notes).where(eq(notes.id, "note-1")).get();
+      expect(unlinkedNote?.tradeKey).toBeNull();
+    });
+
+    it("supports JSON body { purgeAttachments: true } in DELETE /api/trades/[key]", async () => {
+      const accountId = "acc-json-purge";
+      db.insert(accounts)
+        .values({
+          id: accountId,
+          name: "JSON Purge Account",
+          kind: "manual",
+          currency: "USD",
+          createdAt: "2026-01-01T00:00:00Z",
+        })
+        .run();
+
+      db.insert(executions)
+        .values([
+          {
+            id: "exec-jp-1",
+            accountId,
+            symbol: "NVDA",
+            side: "buy",
+            quantity: 10,
+            price: 100,
+            fee: 1,
+            executedAt: "2026-01-01T10:00:00Z",
+            source: "manual",
+            contentHash: "h-jp-1",
+            createdAt: "2026-01-01T10:00:00Z",
+          },
+          {
+            id: "exec-jp-2",
+            accountId,
+            symbol: "NVDA",
+            side: "sell",
+            quantity: 10,
+            price: 110,
+            fee: 1,
+            executedAt: "2026-01-01T10:05:00Z",
+            source: "manual",
+            contentHash: "h-jp-2",
+            createdAt: "2026-01-01T10:05:00Z",
+          },
+        ])
+        .run();
+
+      rebuildAccount(accountId);
+      const tradeList = db.select().from(trades).where(eq(trades.accountId, accountId)).all();
+      expect(tradeList).toHaveLength(1);
+      const tradeKey = tradeList[0]!.key;
+
+      db.insert(attachments)
+        .values({
+          id: "att-jp-1",
+          ownerType: "trade",
+          ownerId: tradeKey,
+          name: "chart.png",
+          mime: "image/png",
+          size: 512,
+          data: Buffer.from("png"),
+          createdAt: "2026-01-01T10:00:00Z",
+        })
+        .run();
+
+      const request = new Request(`http://localhost/api/trades/${encodeURIComponent(tradeKey)}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purgeAttachments: true }),
+      });
+      const response = await deleteTradeRoute(request, {
+        params: Promise.resolve({ key: tradeKey }),
+      });
+      expect(response.status).toBe(200);
+      const json = (await response.json()) as { deleted: boolean; deletedAttachmentCount: number };
+      expect(json.deleted).toBe(true);
+      expect(json.deletedAttachmentCount).toBe(1);
+
+      expect(
+        db.select().from(attachments).where(eq(attachments.ownerId, tradeKey)).all(),
+      ).toHaveLength(0);
+    });
+
+    it("allows nuclear purge on a trade that was reset and only has rule checks or unlinked notes remaining without throwing 404", async () => {
+      const phantomTradeKey = "acc-reset|SPY|long|1704100000000";
+
+      // Trade has NO row in trades table and NO attachments, but has preserved rule check and note
+      db.insert(tradeRuleChecks)
+        .values({
+          id: "rule-phantom-1",
+          tradeKey: phantomTradeKey,
+          playbookId: "pb-phantom",
+          rule: "Waited for retest",
+          followed: true,
+        })
+        .run();
+
+      db.insert(notes)
+        .values({
+          id: "note-phantom-1",
+          folderId: "folder-default",
+          title: "Phantom Note",
+          content: "Residual review note",
+          tradeKey: phantomTradeKey,
+          createdAt: "2026-01-01T10:00:00Z",
+          updatedAt: "2026-01-01T10:00:00Z",
+        })
+        .run();
+
+      const request = new Request(
+        `http://localhost/api/trades/${encodeURIComponent(phantomTradeKey)}?purgeAttachments=true`,
+        { method: "DELETE" },
+      );
+      const response = await deleteTradeRoute(request, {
+        params: Promise.resolve({ key: phantomTradeKey }),
+      });
+      expect(response.status).toBe(200);
+      const json = (await response.json()) as {
+        deleted: boolean;
+        deletedTradeCount: number;
+        deletedRuleCheckCount: number;
+        unlinkedNoteCount: number;
+      };
+      expect(json.deleted).toBe(true);
+      expect(json.deletedTradeCount).toBe(0);
+      expect(json.deletedRuleCheckCount).toBe(1);
+      expect(json.unlinkedNoteCount).toBe(1);
+
+      // Rule check deleted, note unlinked
+      expect(
+        db
+          .select()
+          .from(tradeRuleChecks)
+          .where(eq(tradeRuleChecks.tradeKey, phantomTradeKey))
+          .all(),
+      ).toHaveLength(0);
+      const noteRow = db.select().from(notes).where(eq(notes.id, "note-phantom-1")).get();
+      expect(noteRow?.tradeKey).toBeNull();
     });
 
     it("returns 404 when trade does not exist", async () => {
@@ -471,15 +697,21 @@ describe("Trade Deletion Lifecycle, Cascade Cleanup & Dual-Tier Preferences", ()
         .run();
 
       // Act: Delete account
-      const delReq = new Request(`http://localhost/api/accounts/${accountId}`, { method: "DELETE" });
-      const delRes = await deleteAccountRoute(delReq, { params: Promise.resolve({ id: accountId }) });
+      const delReq = new Request(`http://localhost/api/accounts/${accountId}`, {
+        method: "DELETE",
+      });
+      const delRes = await deleteAccountRoute(delReq, {
+        params: Promise.resolve({ id: accountId }),
+      });
       expect(delRes.status).toBe(200);
 
       // Assert:
       // Account, trades, executions deleted
       expect(db.select().from(accounts).where(eq(accounts.id, accountId)).get()).toBeUndefined();
       expect(db.select().from(trades).where(eq(trades.accountId, accountId)).all()).toHaveLength(0);
-      expect(db.select().from(executions).where(eq(executions.accountId, accountId)).all()).toHaveLength(0);
+      expect(
+        db.select().from(executions).where(eq(executions.accountId, accountId)).all(),
+      ).toHaveLength(0);
 
       // Trade attachments deleted, day attachment preserved
       const remainingTradeAttachments = db
@@ -505,6 +737,222 @@ describe("Trade Deletion Lifecycle, Cascade Cleanup & Dual-Tier Preferences", ()
       const preservedNote = db.select().from(notes).where(eq(notes.id, "note-del-1")).get();
       expect(preservedNote).toBeDefined();
       expect(preservedNote?.tradeKey).toBeNull();
+    });
+
+    it("cleans up preserved trade attachments and rule checks matching account prefix even when trade rows were already reset", async () => {
+      const accountId = "acc-prefix-clean";
+      db.insert(accounts)
+        .values({
+          id: accountId,
+          name: "Prefix Clean Account",
+          kind: "manual",
+          currency: "USD",
+          createdAt: "2026-01-01T00:00:00Z",
+        })
+        .run();
+
+      // Notice: NO trades or executions exist for this account in the database (they were reset).
+      // But preserved attachments and rule checks exist referencing this account's trade key pattern:
+      const resetTradeKey = `${accountId}|ES|long|1704100000000`;
+      db.insert(attachments)
+        .values({
+          id: "att-orphan-prevent",
+          ownerType: "trade",
+          ownerId: resetTradeKey,
+          name: "preserved_chart.png",
+          mime: "image/png",
+          size: 1024,
+          data: Buffer.from("chart"),
+          createdAt: "2026-01-01T10:00:00Z",
+        })
+        .run();
+
+      db.insert(tradeRuleChecks)
+        .values({
+          id: "rule-orphan-prevent",
+          tradeKey: resetTradeKey,
+          playbookId: "pb-1",
+          rule: "Rule 1",
+          followed: true,
+        })
+        .run();
+
+      db.insert(notes)
+        .values({
+          id: "note-orphan-prevent",
+          folderId: "folder-default",
+          title: "Preserved Note",
+          content: "Residual review note",
+          tradeKey: resetTradeKey,
+          createdAt: "2026-01-01T10:00:00Z",
+          updatedAt: "2026-01-01T10:00:00Z",
+        })
+        .run();
+
+      // Act: Delete account
+      const delReq = new Request(`http://localhost/api/accounts/${accountId}`, {
+        method: "DELETE",
+      });
+      const delRes = await deleteAccountRoute(delReq, {
+        params: Promise.resolve({ id: accountId }),
+      });
+      expect(delRes.status).toBe(200);
+
+      // Assert:
+      // Preserved attachments and rule checks for this account are cleaned up
+      expect(
+        db.select().from(attachments).where(eq(attachments.ownerId, resetTradeKey)).all(),
+      ).toHaveLength(0);
+      expect(
+        db.select().from(tradeRuleChecks).where(eq(tradeRuleChecks.tradeKey, resetTradeKey)).all(),
+      ).toHaveLength(0);
+      const noteRow = db.select().from(notes).where(eq(notes.id, "note-orphan-prevent")).get();
+      expect(noteRow?.tradeKey).toBeNull();
+    });
+
+    it("does NOT wipe sibling account data when deleting an account whose ID contains an underscore (no SQLite LIKE wildcard injection)", async () => {
+      // Setup: Target account with underscore, and sibling accounts that would match unescaped LIKE 'acc_1|%'
+      const targetAccountId = "acc_1";
+      const siblingAccountDash = "acc-1";
+      const siblingAccountAlpha = "acc21";
+
+      for (const id of [targetAccountId, siblingAccountDash, siblingAccountAlpha]) {
+        db.insert(accounts)
+          .values({
+            id,
+            name: `Account ${id}`,
+            kind: "manual",
+            currency: "USD",
+            createdAt: "2026-01-01T00:00:00Z",
+          })
+          .run();
+      }
+
+      // Attachments for each account
+      const targetTradeKey = `${targetAccountId}|ES|long|1704100000000`;
+      const siblingDashTradeKey = `${siblingAccountDash}|ES|long|1704100000000`;
+      const siblingAlphaTradeKey = `${siblingAccountAlpha}|ES|long|1704100000000`;
+
+      db.insert(attachments)
+        .values([
+          {
+            id: "att-target",
+            ownerType: "trade",
+            ownerId: targetTradeKey,
+            name: "target.png",
+            mime: "image/png",
+            size: 100,
+            data: Buffer.from("t"),
+            createdAt: "2026-01-01T10:00:00Z",
+          },
+          {
+            id: "att-sibling-dash",
+            ownerType: "trade",
+            ownerId: siblingDashTradeKey,
+            name: "dash.png",
+            mime: "image/png",
+            size: 100,
+            data: Buffer.from("d"),
+            createdAt: "2026-01-01T10:00:00Z",
+          },
+          {
+            id: "att-sibling-alpha",
+            ownerType: "trade",
+            ownerId: siblingAlphaTradeKey,
+            name: "alpha.png",
+            mime: "image/png",
+            size: 100,
+            data: Buffer.from("a"),
+            createdAt: "2026-01-01T10:00:00Z",
+          },
+        ])
+        .run();
+
+      db.insert(tradeRuleChecks)
+        .values([
+          {
+            id: "chk-target",
+            tradeKey: targetTradeKey,
+            playbookId: "p1",
+            rule: "r1",
+            followed: true,
+          },
+          {
+            id: "chk-sibling-dash",
+            tradeKey: siblingDashTradeKey,
+            playbookId: "p1",
+            rule: "r1",
+            followed: true,
+          },
+        ])
+        .run();
+
+      db.insert(notes)
+        .values([
+          {
+            id: "note-target",
+            folderId: "folder-default",
+            title: "Target Note",
+            content: "Target",
+            tradeKey: targetTradeKey,
+            createdAt: "2026-01-01T10:00:00Z",
+            updatedAt: "2026-01-01T10:00:00Z",
+          },
+          {
+            id: "note-sibling-dash",
+            folderId: "folder-default",
+            title: "Sibling Dash Note",
+            content: "Sibling Dash",
+            tradeKey: siblingDashTradeKey,
+            createdAt: "2026-01-01T10:00:00Z",
+            updatedAt: "2026-01-01T10:00:00Z",
+          },
+        ])
+        .run();
+
+      // Act: Delete ONLY the target account with underscore
+      const delReq = new Request(`http://localhost/api/accounts/${targetAccountId}`, {
+        method: "DELETE",
+      });
+      const delRes = await deleteAccountRoute(delReq, {
+        params: Promise.resolve({ id: targetAccountId }),
+      });
+      expect(delRes.status).toBe(200);
+
+      // Assert: Target account data is deleted
+      expect(
+        db.select().from(accounts).where(eq(accounts.id, targetAccountId)).get(),
+      ).toBeUndefined();
+      expect(
+        db.select().from(attachments).where(eq(attachments.id, "att-target")).get(),
+      ).toBeUndefined();
+      expect(
+        db.select().from(tradeRuleChecks).where(eq(tradeRuleChecks.id, "chk-target")).get(),
+      ).toBeUndefined();
+      expect(db.select().from(notes).where(eq(notes.id, "note-target")).get()?.tradeKey).toBeNull();
+
+      // SIBLINGS MUST REMAIN 100% INTACT:
+      // Sibling dash
+      expect(
+        db.select().from(accounts).where(eq(accounts.id, siblingAccountDash)).get(),
+      ).toBeDefined();
+      expect(
+        db.select().from(attachments).where(eq(attachments.id, "att-sibling-dash")).get(),
+      ).toBeDefined();
+      expect(
+        db.select().from(tradeRuleChecks).where(eq(tradeRuleChecks.id, "chk-sibling-dash")).get(),
+      ).toBeDefined();
+      expect(db.select().from(notes).where(eq(notes.id, "note-sibling-dash")).get()?.tradeKey).toBe(
+        siblingDashTradeKey,
+      );
+
+      // Sibling alpha
+      expect(
+        db.select().from(accounts).where(eq(accounts.id, siblingAccountAlpha)).get(),
+      ).toBeDefined();
+      expect(
+        db.select().from(attachments).where(eq(attachments.id, "att-sibling-alpha")).get(),
+      ).toBeDefined();
     });
   });
 
@@ -610,21 +1058,50 @@ describe("Trade Deletion Lifecycle, Cascade Cleanup & Dual-Tier Preferences", ()
         ])
         .run();
 
-      const bulkReq = new Request("http://localhost/api/trades/bulk", {
+      // Test 1: Safe reset by default (purgeAttachments: false)
+      const safeBulkReq = new Request("http://localhost/api/trades/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", keys }),
+        body: JSON.stringify({ action: "delete", keys, purgeAttachments: false }),
       });
-      const bulkRes = await bulkTradeRoute(bulkReq);
-      expect(bulkRes.status).toBe(200);
-      const bulkJson = (await bulkRes.json()) as { deleted: number; deletedAttachmentCount: number };
-      expect(bulkJson.deleted).toBe(2);
-      expect(bulkJson.deletedAttachmentCount).toBe(2);
+      const safeBulkRes = await bulkTradeRoute(safeBulkReq);
+      expect(safeBulkRes.status).toBe(200);
+      const safeBulkJson = (await safeBulkRes.json()) as {
+        deleted: number;
+        deletedAttachmentCount: number;
+        preservedAttachmentCount: number;
+      };
+      expect(safeBulkJson.deleted).toBe(2);
+      expect(safeBulkJson.deletedAttachmentCount).toBe(0);
+      expect(safeBulkJson.preservedAttachmentCount).toBe(2);
 
-      // Verify trades and attachments deleted
+      // Verify trades and executions deleted, but attachments preserved for re-import
       expect(db.select().from(trades).where(eq(trades.accountId, accountId)).all()).toHaveLength(0);
-      expect(db.select().from(executions).where(eq(executions.accountId, accountId)).all()).toHaveLength(0);
-      expect(db.select().from(attachments).where(eq(attachments.ownerType, "trade")).all()).toHaveLength(0);
+      expect(
+        db.select().from(executions).where(eq(executions.accountId, accountId)).all(),
+      ).toHaveLength(0);
+      expect(
+        db.select().from(attachments).where(eq(attachments.ownerType, "trade")).all(),
+      ).toHaveLength(2);
+
+      // Test 2: Nuclear Hard Purge (purgeAttachments: true)
+      const purgeBulkReq = new Request("http://localhost/api/trades/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", keys, purgeAttachments: true }),
+      });
+      const purgeBulkRes = await bulkTradeRoute(purgeBulkReq);
+      expect(purgeBulkRes.status).toBe(200);
+      const purgeBulkJson = (await purgeBulkRes.json()) as {
+        deleted: number;
+        deletedAttachmentCount: number;
+      };
+      expect(purgeBulkJson.deletedAttachmentCount).toBe(2);
+
+      // Verify attachments are now completely deleted
+      expect(
+        db.select().from(attachments).where(eq(attachments.ownerType, "trade")).all(),
+      ).toHaveLength(0);
     });
   });
 
@@ -710,7 +1187,10 @@ describe("Trade Deletion Lifecycle, Cascade Cleanup & Dual-Tier Preferences", ()
 
       // Test saveDrawingToolPrefs
       mockFetch.mockClear();
-      saveDrawingToolPrefs({ snapMode: "strong" }, { fetchImpl: mockFetch as any, debounceMs: 300 });
+      saveDrawingToolPrefs(
+        { snapMode: "strong" },
+        { fetchImpl: mockFetch as any, debounceMs: 300 },
+      );
 
       // Synchronous localStorage check
       expect(loadDrawingToolPrefs().snapMode).toBe("strong");

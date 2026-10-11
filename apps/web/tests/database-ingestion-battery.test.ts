@@ -95,16 +95,16 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
 
   it("executes the full 9-stage database integrity battery including overlapping date windows", async () => {
     console.log(`\n======================================================`);
-    console.log(`🚀 INICIANDO BATERIA DE ESTRESSE DO BANCO DE DADOS`);
+    console.log(`🚀 STARTING DATABASE STRESS BATTERY`);
     console.log(`   Sandbox: ${sandboxDbPath}`);
     console.log(`======================================================\n`);
 
     const initialJournalDays = db.select().from(journalDays).all();
 
     // -------------------------------------------------------------
-    // CENÁRIO 1: UPLOAD LIMPO (Fresh Ingestion)
+    // SCENARIO 1: FRESH INGESTION
     // -------------------------------------------------------------
-    console.log(`👉 [CENÁRIO 1] Testando Upload Limpo em Nova Conta...`);
+    console.log(`👉 [SCENARIO 1] Testing Fresh Upload on New Account...`);
     const acc1Id = "battery-acc-fresh";
     db.insert(accounts)
       .values({
@@ -156,13 +156,13 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
     expect(source1).toBeDefined();
     expect(source1!.format).toBe("tradezero");
     console.log(
-      `   ✅ Sucesso: 6 execuções inseridas, 1 trade fechado (-$7.895,03), import_source registrado.`,
+      `   ✅ Success: 6 executions inserted, 1 closed trade (-$7,895.03), import_source registered.`,
     );
 
     // -------------------------------------------------------------
-    // CENÁRIO 2: RE-UPLOAD IDÊNTICO (Idempotência Absoluta)
+    // SCENARIO 2: IDENTICAL RE-UPLOAD (Absolute Idempotency)
     // -------------------------------------------------------------
-    console.log(`\n👉 [CENÁRIO 2] Testando Re-upload Idêntico (Idempotência)...`);
+    console.log(`\n👉 [SCENARIO 2] Testing Identical Re-upload (Absolute Idempotency)...`);
     const res2 = await importPost(
       new Request("http://localhost/api/import", {
         method: "POST",
@@ -186,13 +186,13 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
     expect(execs2.length).toBe(6);
     expect(trades2.length).toBe(1);
     console.log(
-      `   ✅ Sucesso: 0 inseridos, 6 duplicados detectados. Contagens de banco 100% idênticas.`,
+      `   ✅ Success: 0 inserted, 6 duplicates detected. Database counts 100% identical.`,
     );
 
     // -------------------------------------------------------------
-    // CENÁRIO 3: RE-UPLOAD DESORDENADO / INVERTIDO (Order Invariance)
+    // SCENARIO 3: OUT-OF-ORDER RE-UPLOAD (Order Invariance)
     // -------------------------------------------------------------
-    console.log(`\n👉 [CENÁRIO 3] Testando Re-upload Invertido (Ordem Cronológica Inversa)...`);
+    console.log(`\n👉 [SCENARIO 3] Testing Reversed Re-upload (Reverse Chronological Order)...`);
     const [tzHeader, ...tzRows] = tradezeroContent.trim().split(/\r?\n/);
     const reversedContent = [tzHeader, ...tzRows.toReversed()].join("\n");
 
@@ -216,18 +216,16 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
 
     const execs3 = db.select().from(executions).where(eq(executions.accountId, acc1Id)).all();
     expect(execs3.length).toBe(6);
-    console.log(
-      `   ✅ Sucesso: Linhas invertidas identificadas por hash/id nativo; 0 duplicatas criadas.`,
-    );
+    console.log(`   ✅ Success: Inverted rows identified by native hash/id; 0 duplicates created.`);
 
     // -------------------------------------------------------------
-    // CENÁRIO 4: SOBREVIVÊNCIA DE ANOTAÇÕES MANUAIS (Annotation Safety)
+    // SCENARIO 4: MANUAL ANNOTATION SURVIVAL (Annotation Safety)
     // -------------------------------------------------------------
-    console.log(`\n👉 [CENÁRIO 4] Testando Sobrevivência de Anotações e Notas Pós-Rebuild...`);
+    console.log(`\n👉 [SCENARIO 4] Testing Annotation and Notes Survival Post-Rebuild...`);
     const tivcTrade = trades2[0]!;
     db.update(trades)
       .set({
-        notes: "Trade de short agressivo no pullback. Respeitou VWAP perfeitamente.",
+        notes: "Aggressive short trade on pullback. Respected VWAP cleanly.",
         rating: 5,
         playbookId: "momentum-breakdown",
       })
@@ -238,19 +236,19 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
 
     const tradeAfterRebuild = db.select().from(trades).where(eq(trades.key, tivcTrade.key)).get()!;
     expect(tradeAfterRebuild.notes).toBe(
-      "Trade de short agressivo no pullback. Respeitou VWAP perfeitamente.",
+      "Aggressive short trade on pullback. Respected VWAP cleanly.",
     );
     expect(tradeAfterRebuild.rating).toBe(5);
     expect(tradeAfterRebuild.playbookId).toBe("momentum-breakdown");
     expect(tradeAfterRebuild.netPnl).toBeCloseTo(-7895.03, 2);
     console.log(
-      `   ✅ Sucesso: Anotação, rating e playbook sobreviveram ao rebuild matemático intactos.`,
+      `   ✅ Success: Annotation, rating, and playbook survived mathematical rebuild intact.`,
     );
 
     // -------------------------------------------------------------
-    // CENÁRIO 5: JANELAS SOBREPOSTAS (Jan-Apr ➔ Mar-May)
+    // SCENARIO 5: OVERLAPPING DATE WINDOWS
     // -------------------------------------------------------------
-    console.log(`\n👉 [CENÁRIO 5] Testando Janelas Sobrepostas (Jan-Abril ➔ Março-Maio)...`);
+    console.log(`\n👉 [SCENARIO 5] Testing Overlapping Windows (Jan-Apr ➔ Mar-May)...`);
     const accOverlapId = "battery-acc-overlap";
     db.insert(accounts)
       .values({
@@ -320,12 +318,12 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
 
     const tradesStage1 = db.select().from(trades).where(eq(trades.accountId, accOverlapId)).all();
     expect(tradesStage1.length).toBe(4);
-    console.log(`   [Etapa 1] Arquivo 1 (Jan-Abril): 8 execuções inseridas, 4 trades criados.`);
+    console.log(`   [Stage 1] File 1 (Jan-Apr): 8 executions inserted, 4 trades created.`);
 
     const tslaTrade = tradesStage1.find((t) => t.symbol === "TSLA")!;
     expect(tslaTrade).toBeDefined();
     db.update(trades)
-      .set({ notes: "TSLA quebrou a resistência de Março. Nota essencial!", rating: 4 })
+      .set({ notes: "TSLA broke resistance in March. Critical note!", rating: 4 })
       .where(eq(trades.key, tslaTrade.key))
       .run();
 
@@ -363,18 +361,16 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
     expect(tradesOverlapFinal.length).toBe(5);
 
     const tslaAfterOverlap = db.select().from(trades).where(eq(trades.key, tslaTrade.key)).get()!;
-    expect(tslaAfterOverlap.notes).toBe("TSLA quebrou a resistência de Março. Nota essencial!");
+    expect(tslaAfterOverlap.notes).toBe("TSLA broke resistance in March. Critical note!");
     expect(tslaAfterOverlap.rating).toBe(4);
 
-    console.log(
-      `   ✅ Sucesso no Overlap: 4 duplicatas detectadas, 2 inseridas, 5 trades no total.`,
-    );
+    console.log(`   ✅ Overlap Success: 4 duplicates detected, 2 inserted, 5 trades in total.`);
 
     // -------------------------------------------------------------
-    // CENÁRIO 6: ISOLAMENTO ESTREITO DA CONTA REAL FTMO (Zero Leakage)
+    // SCENARIO 6: TIGHT ACCOUNT ISOLATION (Zero Leakage)
     // -------------------------------------------------------------
     console.log(
-      `\n👉 [CENÁRIO 6] Verificando se a Conta Real FTMO ("Eval") Sofreu Qualquer Impacto...`,
+      `\n👉 [SCENARIO 6] Verifying Whether Real FTMO ("Eval") Account Experienced Any Impact...`,
     );
     const ftmoAccount = db.select().from(accounts).where(eq(accounts.id, "4U2rW1FjaU17")).get()!;
     const ftmoExecs = db
@@ -387,13 +383,13 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
     expect(ftmoExecs.length).toBe(312);
     expect(ftmoTrades.length).toBe(156);
     console.log(
-      `   ✅ Sucesso: Conta FTMO permaneceu com exatamente 312 execuções e 156 trades (isolamento total).`,
+      `   ✅ Success: FTMO account remained with exactly 312 executions and 156 trades (total isolation).`,
     );
 
     // -------------------------------------------------------------
-    // CENÁRIO 7: IMUTABILIDADE DOS DIÁRIOS REFLEXIVOS (journal_days)
+    // SCENARIO 7: JOURNAL DAYS IMMUTABILITY
     // -------------------------------------------------------------
-    console.log(`\n👉 [CENÁRIO 7] Verificando Imutabilidade dos Diários Reflexivos...`);
+    console.log(`\n👉 [SCENARIO 7] Verifying Reflective Journal Days Immutability...`);
     const days = db.select().from(journalDays).all();
     expect(days.length).toBe(initialJournalDays.length);
     expect(days.length).toBeGreaterThanOrEqual(6);
@@ -401,13 +397,13 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
     expect(dayFomc).toBeDefined();
     expect(dayFomc.note).toContain("Dia de Fomc");
     console.log(
-      `   ✅ Sucesso: ${days.length} registros de journal_days intactos com todos os textos pré-market.`,
+      `   ✅ Success: ${days.length} journal_days records intact with all pre-market notes.`,
     );
 
     // -------------------------------------------------------------
-    // CENÁRIO 8: INTERCEPÇÃO DE CONFLITO DE CONTA (Account Mismatch Guard)
+    // SCENARIO 8: ACCOUNT MISMATCH GUARD
     // -------------------------------------------------------------
-    console.log(`\n👉 [CENÁRIO 8] Testando Bloqueio contra Conflito Acidental de Conta...`);
+    console.log(`\n👉 [SCENARIO 8] Testing Guard Against Accidental Account Mismatch...`);
     const tradestationFixture = path.resolve(
       __dirname,
       "../../../packages/importers/tests/fixtures/tradezella/tradestation-tradestation.csv",
@@ -432,14 +428,14 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
     const jsonMismatch = await resMismatch.json();
     expect(jsonMismatch.error).toContain("Account mismatch");
     console.log(
-      `   ✅ Sucesso: Bloqueio ativado com sucesso! Erro retornado: "${jsonMismatch.error}"`,
+      `   ✅ Success: Guard activated successfully! Returned error: "${jsonMismatch.error}"`,
     );
 
     // -------------------------------------------------------------
-    // CENÁRIO 9: POSIÇÃO ABERTA NO ARQUIVO 1 E FECHADA NO ARQUIVO 2
+    // SCENARIO 9: CROSS-FILE FIFO ROUND TRIP
     // -------------------------------------------------------------
     console.log(
-      `\n👉 [CENÁRIO 9] Testando Posição Aberta em Arquivo A e Fechada em Arquivo B (Cross-File FIFO)...`,
+      `\n👉 [SCENARIO 9] Testing Open Position in File A and Closed in File B (Cross-File FIFO)...`,
     );
     const accCrossId = "battery-acc-cross-fifo";
     db.insert(accounts)
@@ -492,7 +488,7 @@ describe("Database Stress & Ingestion Battery (9 Scenarios)", () => {
     expect(tradesFri[0]!.grossPnl).toBe(500);
     expect(tradesFri[0]!.netPnl).toBe(498);
     console.log(
-      `   ✅ Sucesso: O arquivo da Sexta casou com o da Segunda; posição fechada com Net P&L = +$498,00.`,
+      `   ✅ Success: Friday file matched Monday file; position closed with Net P&L = +$498.00.`,
     );
   });
 });
@@ -526,7 +522,7 @@ describe("Real Database Clone & FTMO Journal Safety Audit", () => {
 
     const testTradeKey = initialTrades[0]!.key;
     db.update(trades)
-      .set({ notes: "MINHA_ANOTACAO_DE_OURO_FTMO", rating: 5, playbookId: "fvg-reversal" })
+      .set({ notes: "MY_GOLDEN_FTMO_NOTE", rating: 5, playbookId: "fvg-reversal" })
       .where(eq(trades.key, testTradeKey))
       .run();
 
@@ -594,7 +590,7 @@ describe("Real Database Clone & FTMO Journal Safety Audit", () => {
     }
 
     const annotatedTradeAfter = db.select().from(trades).where(eq(trades.key, testTradeKey)).get();
-    expect(annotatedTradeAfter!.notes).toBe("MINHA_ANOTACAO_DE_OURO_FTMO");
+    expect(annotatedTradeAfter!.notes).toBe("MY_GOLDEN_FTMO_NOTE");
     expect(annotatedTradeAfter!.rating).toBe(5);
     expect(annotatedTradeAfter!.playbookId).toBe("fvg-reversal");
   });

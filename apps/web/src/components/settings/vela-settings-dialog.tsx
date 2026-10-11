@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import schemaData from "./vela-settings-schema.json";
-import type { VelaSettingsSchema, SettingsTab } from "./vela-settings-types";
+import type { SettingsTab } from "./vela-settings-types";
 import { formatDatasetDisplayName, type MarketCsvDataset } from "@/lib/market-csv";
 import type { Resolution } from "@/lib/market-data";
 import {
@@ -32,22 +31,17 @@ import { VELA_TIMEZONE_CATALOG } from "@/lib/vela-timezones";
 import { VelaInteractivePreview } from "./vela-interactive-preview";
 import { VELA_CHART_STYLE_OPTIONS } from "@/components/vela-style-picker";
 
-const typedSchema = schemaData as VelaSettingsSchema;
-
-const DEFAULT_TAB: SettingsTab = {
-  id: "symbol",
-  name: "Symbol",
-  isSubTab: false,
-  sections: [],
-};
-
-const MAIN_TAB_ORDER = [
-  "symbol",
-  "status-line",
-  "scales-and-lines",
-  "canvas",
-  "data",
+export const VELA_SETTINGS_TABS: SettingsTab[] = [
+  { id: "symbol", name: "Symbol", isSubTab: false, sections: [] },
+  { id: "status-line", name: "Status line", isSubTab: false, sections: [] },
+  { id: "scales-and-lines", name: "Scales and lines", isSubTab: false, sections: [] },
+  { id: "canvas", name: "Canvas", isSubTab: false, sections: [] },
+  { id: "data", name: "Data", isSubTab: false, sections: [] },
 ];
+
+const DEFAULT_TAB: SettingsTab = VELA_SETTINGS_TABS[0]!;
+
+const MAIN_TAB_ORDER = ["symbol", "status-line", "scales-and-lines", "canvas", "data"];
 
 const TIMEZONE_OPTIONS = VELA_TIMEZONE_CATALOG;
 
@@ -294,7 +288,9 @@ export function VelaSettingsDialog({
   }, [isOpen, onClose]);
 
   const activeTab: SettingsTab = useMemo(() => {
-    return typedSchema.tabs.find((t) => t.id === activeTabId) ?? typedSchema.tabs[0] ?? DEFAULT_TAB;
+    return (
+      VELA_SETTINGS_TABS.find((t) => t.id === activeTabId) ?? VELA_SETTINGS_TABS[0] ?? DEFAULT_TAB
+    );
   }, [activeTabId]);
 
   if (!isOpen) return null;
@@ -314,7 +310,15 @@ export function VelaSettingsDialog({
             strokeLinejoin="round"
           >
             <path d="M4.5 2v2M4.5 12v2M11.5 2v1.5M11.5 11v3" />
-            <rect x="2.8" y="4" width="3.4" height="8" rx="0.6" fill="currentColor" fillOpacity="0.25" />
+            <rect
+              x="2.8"
+              y="4"
+              width="3.4"
+              height="8"
+              rx="0.6"
+              fill="currentColor"
+              fillOpacity="0.25"
+            />
             <rect x="9.8" y="3.5" width="3.4" height="7.5" rx="0.6" fill="currentColor" />
           </svg>
         );
@@ -360,7 +364,7 @@ export function VelaSettingsDialog({
     }
   };
 
-  const tabsToShow = typedSchema.tabs.filter((t) => MAIN_TAB_ORDER.includes(t.id));
+  const tabsToShow = VELA_SETTINGS_TABS;
 
   const renderToggle = (checked: boolean, onToggle: () => void, ariaLabel?: string) => (
     <VelaToggle checked={checked} onChange={onToggle} ariaLabel={ariaLabel} />
@@ -407,7 +411,16 @@ export function VelaSettingsDialog({
           }}
           className="flex-1 w-full min-h-0 border-none bg-transparent text-[#868a96] hover:text-[#f0f3fa] hover:bg-white/10 rounded-[2px] p-0 cursor-pointer flex items-center justify-center transition-colors"
         >
-          <svg viewBox="0 0 16 16" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            viewBox="0 0 16 16"
+            width="9"
+            height="9"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M3.5 10 8 5.5 12.5 10" />
           </svg>
         </button>
@@ -421,7 +434,16 @@ export function VelaSettingsDialog({
           }}
           className="flex-1 w-full min-h-0 border-none bg-transparent text-[#868a96] hover:text-[#f0f3fa] hover:bg-white/10 rounded-[2px] p-0 cursor-pointer flex items-center justify-center transition-colors"
         >
-          <svg viewBox="0 0 16 16" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            viewBox="0 0 16 16"
+            width="9"
+            height="9"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M3.5 6 8 10.5 12.5 6" />
           </svg>
         </button>
@@ -559,9 +581,7 @@ export function VelaSettingsDialog({
                 <div className="grid grid-cols-2 gap-4 items-start">
                   {/* CARD 1: CANDLES */}
                   <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                    <div className="vela-field-section">
-                      Candles
-                    </div>
+                    <div className="vela-field-section">Candles</div>
 
                     {/* BODY ROW */}
                     <div className="quant-settings-row vela-field-row">
@@ -728,9 +748,7 @@ export function VelaSettingsDialog({
 
                   {/* CARD 2: ANIMATION */}
                   <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                    <div className="vela-field-section">
-                      Animation
-                    </div>
+                    <div className="vela-field-section">Animation</div>
 
                     {[
                       {
@@ -814,10 +832,7 @@ export function VelaSettingsDialog({
                           })),
                       },
                     ].map((item) => (
-                      <div
-                        key={item.label}
-                        className="quant-settings-row vela-field-row"
-                      >
+                      <div key={item.label} className="quant-settings-row vela-field-row">
                         <span className="vela-field-label">{item.label}</span>
                         <div className="flex items-center gap-2">
                           <VelaInfoTooltip tooltipKey={item.tooltipKey} />
@@ -830,9 +845,7 @@ export function VelaSettingsDialog({
 
                 {/* BOTTOM ROW: TIME ZONE & WATERMARK (WIDE CARD) */}
                 <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                  <div className="vela-field-section">
-                    Time zone & watermark
-                  </div>
+                  <div className="vela-field-section">Time zone & watermark</div>
 
                   <div className="grid grid-cols-2 gap-6 items-start">
                     {/* TIME ZONE */}
@@ -890,9 +903,7 @@ export function VelaSettingsDialog({
                 <div className="grid grid-cols-2 gap-4 items-start">
                   {/* CARD 1: STATUS LINE */}
                   <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                    <div className="vela-field-section">
-                      Status line
-                    </div>
+                    <div className="vela-field-section">Status line</div>
 
                     <div className="quant-settings-row vela-field-row">
                       <span className="vela-field-label">Symbol name</span>
@@ -937,9 +948,7 @@ export function VelaSettingsDialog({
 
                   {/* CARD 2: INDICATORS */}
                   <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                    <div className="vela-field-section">
-                      Indicators
-                    </div>
+                    <div className="vela-field-section">Indicators</div>
 
                     <div className="quant-settings-row vela-field-row">
                       <span className="vela-field-label">Titles</span>
@@ -975,9 +984,7 @@ export function VelaSettingsDialog({
                 <div className="grid grid-cols-2 gap-4 items-start">
                   {/* CARD 1: PRICE SCALE */}
                   <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                    <div className="vela-field-section">
-                      Price scale
-                    </div>
+                    <div className="vela-field-section">Price scale</div>
 
                     {/* MODE */}
                     <div className="quant-settings-row vela-field-row">
@@ -1086,9 +1093,7 @@ export function VelaSettingsDialog({
 
                   {/* CARD 2: CROSSHAIR */}
                   <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                    <div className="vela-field-section">
-                      Crosshair
-                    </div>
+                    <div className="vela-field-section">Crosshair</div>
 
                     {/* COLOR */}
                     <div className="quant-settings-row vela-field-row">
@@ -1163,9 +1168,7 @@ export function VelaSettingsDialog({
                   <div className="space-y-4">
                     {/* CARD 1: BACKGROUND & TEXT */}
                     <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                      <div className="vela-field-section">
-                        Background &amp; Text
-                      </div>
+                      <div className="vela-field-section">Background &amp; Text</div>
 
                       <div className="space-y-0.5">
                         <div className="quant-settings-row vela-field-row">
@@ -1230,9 +1233,7 @@ export function VelaSettingsDialog({
 
                     {/* CARD 3: MARGINS */}
                     <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                      <div className="vela-field-section">
-                        Margins
-                      </div>
+                      <div className="vela-field-section">Margins</div>
 
                       <div className="space-y-0.5">
                         <div className="quant-settings-row vela-field-row">
@@ -1299,9 +1300,7 @@ export function VelaSettingsDialog({
                   <div className="space-y-4">
                     {/* CARD 2: GRID */}
                     <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                      <div className="vela-field-section">
-                        Grid
-                      </div>
+                      <div className="vela-field-section">Grid</div>
 
                       <div className="space-y-0.5">
                         <div className="quant-settings-row vela-field-row">
@@ -1356,9 +1355,7 @@ export function VelaSettingsDialog({
 
                     {/* CARD 4: THEME */}
                     <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-1">
-                      <div className="vela-field-section">
-                        Theme
-                      </div>
+                      <div className="vela-field-section">Theme</div>
 
                       <div className="quant-settings-row vela-field-row">
                         <span className="vela-field-label">Color theme</span>
@@ -1383,9 +1380,7 @@ export function VelaSettingsDialog({
               <div className="space-y-3.5 max-w-[800px]">
                 {/* CARD 1: ACTIVE MARKET DATASET (FULL WIDTH) */}
                 <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] space-y-2.5">
-                  <div className="vela-field-section">
-                    Active Market Dataset
-                  </div>
+                  <div className="vela-field-section">Active Market Dataset</div>
 
                   <div className="quant-settings-row vela-field-row !h-auto min-h-[38px] py-0.5">
                     <div>
@@ -1411,9 +1406,7 @@ export function VelaSettingsDialog({
                   <div className="quant-settings-row vela-field-row !h-auto min-h-[38px] py-0.5">
                     <div>
                       <div className="vela-field-label">Database Engine</div>
-                      <div className="text-[11px] text-[#868a96]">
-                        Local SQLite Cache (Synced)
-                      </div>
+                      <div className="text-[11px] text-[#868a96]">Local SQLite Cache (Synced)</div>
                     </div>
                     <button
                       type="button"
@@ -1436,9 +1429,7 @@ export function VelaSettingsDialog({
                   {/* CARD 2: HISTORICAL DEPTH & CONTEXT */}
                   <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] flex flex-col justify-between">
                     <div>
-                      <div className="vela-field-section">
-                        Historical Depth &amp; Context
-                      </div>
+                      <div className="vela-field-section">Historical Depth &amp; Context</div>
 
                       <div className="space-y-2 mt-2">
                         <div className="quant-settings-row vela-field-row">
@@ -1493,9 +1484,7 @@ export function VelaSettingsDialog({
                   {/* CARD 3: ENGINE MEMORY & CACHE */}
                   <div className="quant-settings-group border border-[#2a2b30] bg-transparent rounded-[10px] p-[15px] flex flex-col justify-between">
                     <div>
-                      <div className="vela-field-section">
-                        Engine Memory &amp; Cache
-                      </div>
+                      <div className="vela-field-section">Engine Memory &amp; Cache</div>
                       <div className="grid grid-cols-3 gap-2 mt-2">
                         <div className="p-2.5 bg-[#151619] border border-[#2a2b30] rounded-[6px]">
                           <div className="text-[10px] uppercase font-mono text-[#868a96]">
@@ -1517,7 +1506,9 @@ export function VelaSettingsDialog({
                           <div className="text-[10px] uppercase font-mono text-[#868a96]">
                             Local cache
                           </div>
-                          <div className="text-[12px] font-semibold text-emerald-400 mt-1">Synced</div>
+                          <div className="text-[12px] font-semibold text-emerald-400 mt-1">
+                            Synced
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -7,9 +7,16 @@ import {
   ingestCandles,
   revertCandleBatch,
   purgeCandlesBySymbol,
+  setCustomSymbolLinks,
 } from "@/server/market-data/csv";
 import { MAX_CSV_BYTES, parseMarketCsv } from "@/lib/market-csv";
-import { isResolution, RESOLUTIONS, type Resolution } from "@/lib/market-data";
+import {
+  isResolution,
+  RESOLUTIONS,
+  normalizeResolution,
+  parseResolutionMs,
+  type Resolution,
+} from "@/lib/market-data";
 
 export const GET = handler(() =>
   ok({
@@ -31,7 +38,7 @@ export const POST = handler(async (request: Request) => {
     size += value.byteLength;
     if (size > MAX_CSV_BYTES * 2) {
       await reader.cancel();
-      return bad("Use a CSV smaller than 5 MB.", 413);
+      return bad("Use a CSV smaller than 30 MB.", 413);
     }
     parts.push(value);
   }
@@ -43,9 +50,35 @@ export const POST = handler(async (request: Request) => {
   }
   requireValue(
     body &&
-      ["preview", "import", "revert_batch", "purge_symbol"].includes(body.action),
+      [
+        "preview",
+        "import",
+        "revert_batch",
+        "purge_symbol",
+        "update_compatible_symbols",
+      ].includes(body.action),
     "Choose a CSV action.",
   );
+
+  if (body.action === "update_compatible_symbols") {
+    requireValue(
+      typeof body.symbol === "string" && body.symbol.length <= 100,
+      "Choose a symbol to update.",
+    );
+    requireValue(
+      Array.isArray(body.compatibleSymbols) &&
+        body.compatibleSymbols.every((s: unknown) => typeof s === "string"),
+      "Provide compatible symbols array.",
+    );
+    setCustomSymbolLinks(body.symbol, body.compatibleSymbols);
+    return ok({
+      symbol: body.symbol,
+      compatibleSymbols: body.compatibleSymbols,
+      series: candleSeriesSummary(),
+      batches: candleBatches(),
+      datasets: csvDatasets(),
+    });
+  }
 
   if (body.action === "revert_batch") {
     requireValue(
@@ -96,6 +129,9 @@ export const POST = handler(async (request: Request) => {
   );
 
   try {
+    const normResolution = (normalizeResolution(body.resolution) ||
+      body.resolution.toLowerCase()) as Resolution;
+
     if (body.action === "import") {
       const compatibleSymbols =
         Array.isArray(body.compatibleSymbols) &&
@@ -105,7 +141,7 @@ export const POST = handler(async (request: Request) => {
       const ingestResult = ingestCandles({
         name: body.name,
         symbol: body.symbol,
-        resolution: body.resolution,
+        resolution: normResolution,
         currency: body.currency,
         priceBasis: body.priceBasis,
         content: body.content,
@@ -114,17 +150,22 @@ export const POST = handler(async (request: Request) => {
       return ok({
         id: ingestResult.batchId,
         batchId: ingestResult.batchId,
+        symbol: ingestResult.symbol,
+        resolution: ingestResult.resolution,
+        newBarCount: ingestResult.newBarCount,
+        duplicateBarCount: ingestResult.duplicateBarCount,
+        totalInDb: ingestResult.totalInDb,
         result: ingestResult,
         series: candleSeriesSummary(),
         batches: candleBatches(),
         datasets: csvDatasets(),
       });
     }
-    const bars = parseMarketCsv(body.content, body.symbol, body.resolution);
+    const bars = parseMarketCsv(body.content, body.symbol, normResolution);
     return ok({
       count: bars.length,
       from: new Date(bars[0]!.time).toISOString(),
-      to: new Date(bars.at(-1)!.time + RESOLUTIONS[body.resolution as Resolution]).toISOString(),
+      to: new Date(bars.at(-1)!.time + parseResolutionMs(normResolution)).toISOString(),
       sample: bars.slice(0, 3),
     });
   } catch (error) {

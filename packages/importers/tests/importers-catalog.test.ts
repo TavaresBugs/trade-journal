@@ -73,7 +73,7 @@ const ORDERS_TRADOVATE_CSV = `orderId,Account,Date,Fill Time,B/S,Contract,Produc
 102,LFE0506847043001,8/4/26,10:20:44,Sell,MNQU6,MNQ,1,29248.50,Filled`;
 
 // ============================================================================
-// SUÍTE SETORIAL: CATÁLOGO DE CORRETORAS
+// SECTOR SUITE: BROKER CATALOG
 // ============================================================================
 
 describe("Broker Importers Catalog Sector Battery", () => {

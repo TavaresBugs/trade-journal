@@ -363,10 +363,10 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
   return (
     <div>
       {/* Top Header:
-          - Face A (Trade Vinculado): AssetIcon + Instrument: {SYMBOL} + Direction + Status (Sem data no título, sem abas!)
-            Se houver múltiplos trades no dia, exibe stepper discreto ‹ 1 de 3 ›.
-          - Face B (Clean Journal): Journal · {YYYY-MM-DD} + Filtros
-            Se houver trades no dia, exibe atalho discreto "View trades (N)".
+          - Face A (Trade-Linked): AssetIcon + Instrument: {SYMBOL} + Direction + Status (No date in title, no tabs!)
+            If multiple trades exist in the day, displays discrete stepper ‹ 1 of 3 ›.
+          - Face B (Clean Journal): Journal · {YYYY-MM-DD} + Filters
+            If trades exist in the day, displays discrete shortcut "View trades (N)".
       */}
       <FilterBar
         title={
@@ -398,7 +398,7 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
                   {trade.status}
                 </Badge>
 
-                {/* Seletor discreto ‹ 1 de 3 › APENAS se houver mais de 1 trade no dia */}
+                {/* Discrete stepper ‹ 1 of 3 › ONLY when there is more than 1 trade on the day */}
                 {totalTrades > 1 && (
                   <div className="flex items-center ml-2 rounded-lg border border-border/60 bg-muted/30 p-0.5 shadow-xs">
                     <Link
@@ -488,7 +488,7 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              {/* Asset / Journal Icon com Dropdown para selecionar ou alterar o ativo */}
+              {/* Asset / Journal Icon with Dropdown to select or change asset */}
               <JournalAssetDropdown
                 currentAsset={currentJournalAsset}
                 onSelectAsset={handleSelectJournalAsset}
@@ -496,7 +496,7 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
                 allTradedSymbols={dayData?.allTradedSymbols}
               />
 
-              {/* Textos: 'Journal' como label e o instrumento (ou data) como título principal */}
+              {/* Text labels: 'Journal' as subtitle and instrument (or date) as primary title */}
               <div className="flex flex-col justify-center">
                 <span className="text-xs text-muted-foreground leading-none">Journal</span>
                 <span className="text-base font-bold text-foreground tracking-tight leading-snug">
@@ -504,7 +504,7 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
                 </span>
               </div>
 
-              {/* Se tiver ativo vinculado, exibe a data no lugar de WIN/LONG usando badge azul institucional */}
+              {/* When an asset is linked, displays the date instead of WIN/LONG using an institutional blue badge */}
               {currentJournalAsset && (
                 <div className="flex items-center gap-1.5 self-center">
                   <span className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-500/15 text-sky-400 px-2 py-0.5 text-xs font-mono font-medium tracking-wide select-none">
@@ -541,9 +541,9 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
       />
 
       <div className="grid gap-3 p-4 xl:grid-cols-3">
-        {/* Coluna Esquerda:
+        {/* Left Column:
             - Face A: Hero Card ➔ Screenshots ➔ Market Data Replay (+ Running P&L)
-            - Face B (Clean Journal): Hero e Market Data são OMITIDOS! Screenshots sobe para o topo.
+            - Face B (Clean Journal): Hero and Market Data are OMITTED! Screenshots move to the top.
         */}
         <div className="min-w-0 space-y-3 xl:col-span-2">
           {hasTrade && trade && (
@@ -554,10 +554,10 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
             />
           )}
 
-          {/* Timeframe Screenshots (sempre presente em ambas as faces) */}
+          {/* Timeframe Screenshots (always present in both faces) */}
           <TimeframeScreenshotGrid date={effectiveDate} />
 
-          {/* Market Data & Replay (omitido no Clean Journal) */}
+          {/* Market Data & Replay (omitted in Clean Journal) */}
           {hasTrade && trade && executions && (
             <>
               <TradeMarketData trade={trade} executions={executions} />
@@ -576,10 +576,10 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
           )}
         </div>
 
-        {/* Coluna Direita:
-            - Review Card (Review unificado com estrelas, reviewed, tags, mistakes, notes com voice/templates)
-            - Strategy Rule Review (omitido no Clean Journal)
-            - Bloco de IA (Critique quando trade, Recap quando clean journal)
+        {/* Right Column:
+            - Review Card (Unified review with stars, reviewed switch, tags, mistakes, notes with voice/templates)
+            - Strategy Rule Review (omitted in Clean Journal)
+            - AI Block (Critique for trade, Recap for clean journal)
         */}
         <div className="min-w-0 space-y-3">
           <UnifiedReviewCard
@@ -592,7 +592,7 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
             onPatch={hasTrade ? patchTrade : patchDay}
           />
 
-          {/* Strategy Rule Review (Playbook Rules): Omitido no Clean Journal */}
+          {/* Strategy Rule Review (Playbook Rules): Omitted in Clean Journal */}
           {hasTrade && trade && (
             <RuleChecklist tradeKey={trade.key} playbookId={trade.playbookId} />
           )}
@@ -665,8 +665,8 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
 }
 
 /**
- * TradeHeroCard: Renderiza o card com Net P&L em destaque (+% notional) e 10 métricas financeiras.
- * Omitido no modo Clean Journal.
+ * TradeHeroCard: Renders hero card featuring Net P&L (+% notional) and 10 financial metrics.
+ * Omitted in Clean Journal mode.
  */
 export interface TradeHeroCardProps {
   trade: TradeDetail;
@@ -877,11 +877,11 @@ function Meta({
 }
 
 /**
- * UnifiedReviewCard: Um único componente de review que gerencia:
- * - Trade Review (quando hasTrade = true, com seletor de Playbook)
- * - Day Review (quando hasTrade = false, sem Playbook)
- * Mantém 100% de paridade em estrelas, reviewed switch, tags, mistakes,
- * RichEditor com voz e templates, exportação e salvamento.
+ * UnifiedReviewCard: Single unified review component managing:
+ * - Trade Review (when hasTrade = true, with Playbook selector)
+ * - Day Review (when hasTrade = false, without Playbook selector)
+ * Preserves 100% parity across star rating, reviewed switch, tags, mistakes,
+ * RichEditor with voice dictation & templates, export, and auto-saving.
  */
 function UnifiedReviewCard({
   hasTrade,
@@ -1106,7 +1106,7 @@ function UnifiedReviewCard({
           </div>
         </div>
 
-        {/* Playbook Selection: Omitido no Clean Journal */}
+        {/* Playbook Selection: Omitted in Clean Journal */}
         {hasTrade && trade && (
           <div className="space-y-1.5">
             <label

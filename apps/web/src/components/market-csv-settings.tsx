@@ -11,7 +11,6 @@ import {
   Plus,
   RotateCcw,
   Save,
-  Sliders,
   Upload,
   X,
 } from "lucide-react";
@@ -24,8 +23,8 @@ import {
   type MarketCsvImportResponse,
   type MarketSeriesSummary,
 } from "@/lib/market-csv";
-import { RESOLUTIONS, type MarketBar, type Resolution } from "@/lib/market-data";
-import { getAssetFamily } from "@/lib/assets/symbol-utils";
+import { RESOLUTIONS, formatResolutionDisplay, type Resolution } from "@/lib/market-data";
+import { getAssetFamily, getDefaultCompatibleSymbols } from "@/lib/assets/symbol-utils";
 import { postJson, useApi } from "@/lib/use-api";
 import { decodeImportFile } from "@/lib/decode-import";
 import { cn } from "@/lib/utils";
@@ -33,15 +32,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { OptionSelect } from "./ui/option-select";
-import { MonetaryValue } from "./privacy";
 import { JournalAssetDropdown } from "./journal-asset-dropdown";
-
-interface Preview {
-  count: number;
-  from: string;
-  to: string;
-  sample: MarketBar[];
-}
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -69,7 +60,6 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
   const [priceBasis, setPriceBasis] = useState("raw");
   const [compatibleSymbols, setCompatibleSymbols] = useState<string[]>([]);
   const [customSymbolInput, setCustomSymbolInput] = useState("");
-  const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -91,17 +81,25 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
   }, [activeSeries]);
 
   const change = () => {
-    setPreview(null);
     setMessage("");
     setError("");
   };
+
+  const [batchProgress, setBatchProgress] = useState<{
+    total: number;
+    current: number;
+    currentName: string;
+    completed: number;
+    totalBars: number;
+    duplicateBars: number;
+  } | null>(null);
 
   const handleSelectedFile = async (selected: File) => {
     change();
     setFile(null);
     if (!selected) return;
     if (selected.size > MAX_CSV_BYTES) {
-      setError("Use um arquivo CSV menor que 5 MB.");
+      setError("Please select a CSV file smaller than 30 MB.");
       return;
     }
     setBusy(true);
@@ -115,19 +113,111 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
       const detected = detectCsvMetadata(selected.name, content);
       if (detected.symbol) {
         setSymbol(detected.symbol);
-        if (detected.family) {
-          setCompatibleSymbols([...detected.family.symbols]);
+        if (detected.compatibleSymbols && detected.compatibleSymbols.length > 0) {
+          setCompatibleSymbols([...detected.compatibleSymbols]);
         } else {
-          setCompatibleSymbols([detected.symbol]);
+          setCompatibleSymbols(getDefaultCompatibleSymbols(detected.symbol));
         }
       }
       if (detected.resolution) setResolution(detected.resolution);
       if (detected.currency) setCurrency(detected.currency);
       if (detected.priceBasis) setPriceBasis(detected.priceBasis);
     } catch {
-      setError("Não foi possível ler este arquivo CSV.");
+      setError("Unable to read this CSV file.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleSelectedFiles = async (files: FileList | File[]) => {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+    if (list.length === 1) {
+      void handleSelectedFile(list[0]!);
+      return;
+    }
+
+    // Multi-file batch sequential ingestion with smart de-duplication
+    change();
+    setFile(null);
+    setBusy(true);
+    setBatchProgress({
+      total: list.length,
+      current: 1,
+      currentName: list[0]!.name,
+      completed: 0,
+      totalBars: 0,
+      duplicateBars: 0,
+    });
+
+    let completedCount = 0;
+    let totalBarsCount = 0;
+    let duplicateBarsCount = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < list.length; i++) {
+      const f = list[i]!;
+      setBatchProgress({
+        total: list.length,
+        current: i + 1,
+        currentName: f.name,
+        completed: completedCount,
+        totalBars: totalBarsCount,
+        duplicateBars: duplicateBarsCount,
+      });
+
+      if (f.size > MAX_CSV_BYTES) {
+        errors.push(`${f.name}: Exceeds 30 MB limit`);
+        continue;
+      }
+
+      try {
+        const content = decodeImportFile(await f.arrayBuffer());
+        const detected = detectCsvMetadata(f.name, content);
+        const resolvedSymbol = detected.symbol || symbol || "US100";
+        const resolvedResolution = detected.resolution || resolution || "1m";
+        const resolvedCurrency = detected.currency || currency || "USD";
+        const resolvedPriceBasis = detected.priceBasis || priceBasis || "raw";
+        const existingSeries = activeSeries.find(
+          (s) => s.symbol.toUpperCase() === resolvedSymbol.toUpperCase(),
+        );
+        const resolvedCompat =
+          existingSeries?.compatibleSymbols ??
+          (detected.compatibleSymbols && detected.compatibleSymbols.length > 0
+            ? detected.compatibleSymbols
+            : getDefaultCompatibleSymbols(resolvedSymbol));
+
+        const res = await postJson<MarketCsvImportResponse>("/api/market-data/csv", {
+          action: "import",
+          name: f.name,
+          symbol: resolvedSymbol,
+          resolution: resolvedResolution,
+          currency: resolvedCurrency,
+          priceBasis: resolvedPriceBasis,
+          content,
+          compatibleSymbols: resolvedCompat,
+        });
+
+        completedCount++;
+        totalBarsCount += res.newBarCount ?? res.result?.newBarCount ?? 0;
+        duplicateBarsCount += res.duplicateBarCount ?? res.result?.duplicateBarCount ?? 0;
+      } catch (err) {
+        errors.push(`${f.name}: ${err instanceof Error ? err.message : "Ingestion failed"}`);
+      }
+    }
+
+    setBatchProgress(null);
+    setBusy(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    refresh();
+    onChange();
+
+    if (errors.length > 0) {
+      setError(`Imported ${completedCount} of ${list.length} files. Errors: ${errors.join("; ")}`);
+    } else {
+      setMessage(
+        `Successfully imported all ${completedCount} files (+${totalBarsCount.toLocaleString()} new bars added, ${duplicateBarsCount.toLocaleString()} overlapping duplicates skipped).`,
+      );
     }
   };
 
@@ -135,12 +225,9 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
     change();
     const clean = newSymbol.trim();
     setSymbol(clean);
-    const fam = getAssetFamily(clean);
-    if (fam) {
-      setCompatibleSymbols((prev) => {
-        const merged = new Set([...fam.symbols, ...prev]);
-        return [...merged];
-      });
+    const defaults = getDefaultCompatibleSymbols(clean);
+    if (defaults.length > 0) {
+      setCompatibleSymbols(defaults);
     } else if (clean && !compatibleSymbols.includes(clean)) {
       setCompatibleSymbols([clean]);
     }
@@ -163,13 +250,13 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
     setCustomSymbolInput("");
   };
 
-  const act = async (action: "preview" | "import") => {
+  const handleImport = async () => {
     setBusy(true);
     setError("");
     setMessage("");
     try {
-      const body = await postJson<Preview & MarketCsvImportResponse>("/api/market-data/csv", {
-        action,
+      const body = await postJson<MarketCsvImportResponse>("/api/market-data/csv", {
+        action: "import",
         ...file,
         symbol,
         resolution,
@@ -177,32 +264,25 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
         priceBasis,
         compatibleSymbols,
       });
-      if (action === "preview") {
-        setPreview(body);
-      } else {
-        setPreview(null);
-        setFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
 
-        if (body && typeof body.newBarCount === "number") {
-          const newCount = body.newBarCount.toLocaleString();
-          const dupCount = (body.duplicateBarCount ?? 0).toLocaleString();
-          const totalCount = (body.totalInDb ?? body.newBarCount).toLocaleString();
-          const targetSym = body.symbol || symbol;
-          const targetRes = body.resolution || resolution;
-          setMessage(
-            `Foram adicionadas ${newCount} novas velas ao ${targetSym} (${targetRes}). ${dupCount} velas repetidas foram ignoradas. Total no banco: ${totalCount} velas.`
-          );
-        } else {
-          setMessage(
-            "Candles de mercado importados com sucesso! Disponíveis no gráfico e relatórios."
-          );
-        }
-        refresh();
-        onChange();
+      if (body && typeof body.newBarCount === "number") {
+        const newCount = body.newBarCount.toLocaleString();
+        const dupCount = (body.duplicateBarCount ?? 0).toLocaleString();
+        const totalCount = (body.totalInDb ?? body.newBarCount).toLocaleString();
+        const targetSym = body.symbol || symbol;
+        const targetRes = body.resolution || resolution;
+        setMessage(
+          `Added ${newCount} new bars to ${targetSym} (${targetRes}). ${dupCount} duplicate bars skipped. Total in database: ${totalCount} bars.`,
+        );
+      } else {
+        setMessage("Market candles imported successfully! Available in chart and reports.");
       }
+      refresh();
+      onChange();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Falha na requisição de CSV.");
+      setError(cause instanceof Error ? cause.message : "CSV request failed.");
     } finally {
       setBusy(false);
     }
@@ -220,13 +300,13 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
       });
       setMessage(
         res
-          ? `Todas as velas de ${sym} (${res}) foram expurgadas com sucesso.`
-          : `Todas as velas de ${sym} foram expurgadas com sucesso.`,
+          ? `All bars for ${sym} (${res}) were purged successfully.`
+          : `All bars for ${sym} were purged successfully.`,
       );
       refresh();
       onChange();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Falha ao expurgar velas da série.");
+      setError(cause instanceof Error ? cause.message : "Failed to purge series bars.");
       throw cause;
     } finally {
       setBusy(false);
@@ -245,13 +325,38 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
       });
       setMessage(
         batchName
-          ? `Lote "${batchName}" revertido com sucesso. Velas do lote foram removidas.`
-          : `Lote revertido com sucesso. Velas do lote foram removidas.`,
+          ? `Batch "${batchName}" reverted successfully. Batch bars were removed.`
+          : `Batch reverted successfully. Batch bars were removed.`,
       );
       refresh();
       onChange();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Falha ao reverter lote.");
+      setError(cause instanceof Error ? cause.message : "Failed to revert batch.");
+      throw cause;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleUpdateCompatibleSymbols = async (sym: string, allowedSymbols: string[]) => {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      await postJson("/api/market-data/csv", {
+        action: "update_compatible_symbols",
+        symbol: sym,
+        compatibleSymbols: allowedSymbols,
+      });
+      setMessage(
+        `Updated linked compatible instruments for ${sym} (${allowedSymbols.join(", ")}).`,
+      );
+      refresh();
+      onChange();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Failed to update compatible instruments.",
+      );
       throw cause;
     } finally {
       setBusy(false);
@@ -259,7 +364,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
   };
 
   const family = symbol ? getAssetFamily(symbol) : null;
-  const brotherSymbols = family ? family.symbols : [];
+  const brotherSymbols = symbol ? getDefaultCompatibleSymbols(symbol) : [];
   const inactiveBrotherSymbols = brotherSymbols.filter((s) => !compatibleSymbols.includes(s));
 
   return (
@@ -268,43 +373,93 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
       id="market-csv"
     >
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Layers className="size-4 text-emerald-400" />
             <h3 className="text-sm font-semibold tracking-tight text-foreground">
-              Market data CSV (Candles Históricos)
+              Market Data CSV (Historical Candles)
             </h3>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
-            Carregue velas de mercado para renderização de alta resolução no gráfico Vela e cálculo
-            preciso de MAE/MFE nos seus trades. Suporta arquivos de até 5 MB / 50.000 barras.
+            Import market candles for high-resolution chart rendering in Vela and precise trade
+            excursion (MAE/MFE) calculations. Supports single or bulk multi-file uploads up to 30 MB / 100,000 bars per file.
           </p>
+          <div className="pt-0.5">
+            <a
+              className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
+              href="/market-data-template.csv"
+              download
+            >
+              Download CSV template
+            </a>
+          </div>
         </div>
-        <a
-          className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
-          href="/market-data-template.csv"
-          download
-        >
-          Baixar template de cabeçalho
-        </a>
+
+        <div className="flex items-center gap-2 pt-0.5 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setManagerOpen(true)}
+            className="h-8 px-3 text-xs gap-1.5 border-border/70 hover:border-emerald-500/40 hover:text-emerald-400 cursor-pointer font-medium"
+          >
+            <Database className="size-3.5 text-emerald-400" />
+            <span>Manage Data & Coverage</span>
+            {totalCandlesCount > 0 && (
+              <span className="ml-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[10px] font-mono font-medium text-emerald-400">
+                {distinctSymbolsCount} {distinctSymbolsCount === 1 ? "asset" : "assets"}
+              </span>
+            )}
+          </Button>
+        </div>
       </div>
 
-      {/* Hidden File Input */}
+      {/* Hidden File Input (supports multiple file selection) */}
       <input
         ref={fileInputRef}
         type="file"
+        multiple
         accept=".csv,.tsv,text/csv,text/tab-separated-values"
         disabled={busy}
         className="hidden"
         onChange={(event) => {
-          const selected = event.target.files?.[0];
-          if (selected) void handleSelectedFile(selected);
+          const selected = event.target.files;
+          if (selected && selected.length > 0) void handleSelectedFiles(selected);
+          event.target.value = "";
         }}
       />
 
+      {/* Batch Ingestion Progress Banner */}
+      {batchProgress && (
+        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-emerald-400 flex items-center gap-2">
+              <Loader2 className="size-4 animate-spin" />
+              Batch Ingestion: Importing file {batchProgress.current} of {batchProgress.total}
+            </span>
+            <span className="font-mono text-emerald-300 font-semibold">
+              {Math.round((batchProgress.current / batchProgress.total) * 100)}%
+            </span>
+          </div>
+          <div className="w-full bg-emerald-950/60 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="bg-emerald-400 h-1.5 rounded-full transition-all duration-200"
+              style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span className="truncate max-w-sm">File: {batchProgress.currentName}</span>
+            <span className="font-mono text-emerald-400 font-medium">
+              +{batchProgress.totalBars.toLocaleString()} new bars ·{" "}
+              {batchProgress.duplicateBars.toLocaleString()} duplicates skipped
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Dropzone Area */}
-      {!file ? (
+      {!file && !batchProgress ? (
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -315,8 +470,8 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
             e.preventDefault();
             if (busy) return;
             setIsDragging(false);
-            const dropped = e.dataTransfer.files?.[0];
-            if (dropped) void handleSelectedFile(dropped);
+            const dropped = e.dataTransfer.files;
+            if (dropped && dropped.length > 0) void handleSelectedFiles(dropped);
           }}
           onClick={() => {
             if (!busy) fileInputRef.current?.click();
@@ -336,15 +491,15 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
           )}
           <div className="space-y-1">
             <p className="text-xs font-semibold text-foreground">
-              Arraste e solte o arquivo CSV de candles aqui, ou{" "}
-              <span className="text-emerald-400 underline">clique para selecionar</span>
+              Drop candle CSV files here (single or multiple), or{" "}
+              <span className="text-emerald-400 underline">click to browse</span>
             </p>
             <p className="text-[11px] text-muted-foreground">
-              Suporta exportações de TradingView, NinjaTrader, MetaTrader e Tradovate (.csv ou .tsv)
+              Supports multi-file bulk upload with automatic timeframe detection and smart de-duplication
             </p>
           </div>
         </div>
-      ) : (
+      ) : !file ? null : (
         /* Selected File Card */
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/20 p-3.5">
           <div className="flex items-center gap-3 min-w-0">
@@ -359,7 +514,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
                 </span>
               </div>
               <p className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
-                <Check className="size-3" /> Metadados identificados automaticamente
+                <Check className="size-3" /> Metadata automatically detected
               </p>
             </div>
           </div>
@@ -370,7 +525,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
             onClick={() => fileInputRef.current?.click()}
             className="text-xs gap-1.5 h-8"
           >
-            <RotateCcw className="size-3.5" /> Trocar arquivo
+            <RotateCcw className="size-3.5" /> Change file
           </Button>
         </div>
       )}
@@ -382,11 +537,11 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="candle-symbol" className="text-xs font-medium">
-                Símbolo do Instrumento
+                Instrument Symbol
               </Label>
               {family && (
                 <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
-                  Família {family.name}
+                  Family {family.name}
                 </span>
               )}
             </div>
@@ -396,11 +551,11 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
               allTradedSymbols={data?.tradedSymbols}
               triggerVariant="form"
               hideGeneralJournal={true}
-              placeholder="Buscar ou digitar símbolo (ex: MES, US500)…"
+              placeholder="Search or enter symbol (e.g. MES, US500)..."
               className="h-9"
             />
             <p className="text-[11px] text-muted-foreground">
-              Símbolo de origem deste arquivo. Mantém a identidade empírica no banco.
+              Source instrument symbol. Preserves empirical identity in the database.
             </p>
           </div>
 
@@ -408,10 +563,10 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
           <div className="space-y-1.5 pt-1 border-t border-border/40">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-foreground">
-                Ativos vinculados permitidos:
+                Linked Compatible Instruments:
               </span>
               <span className="text-[10px] text-muted-foreground">
-                Clique para permitir ou remover
+                Click to toggle allowed symbols
               </span>
             </div>
 
@@ -422,8 +577,8 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
                   type="button"
                   key={sym}
                   onClick={() => toggleCompatibleSymbol(sym)}
-                  className="group inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-all select-none"
-                  title="Clique para desmarcar este ativo da lista permitida"
+                  className="group inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-all select-none cursor-pointer"
+                  title="Click to remove this instrument"
                 >
                   <Check className="size-3 text-emerald-400" />
                   <span>{sym}</span>
@@ -437,8 +592,8 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
                   type="button"
                   key={sym}
                   onClick={() => toggleCompatibleSymbol(sym)}
-                  className="inline-flex items-center gap-1 rounded-md bg-muted/40 border border-border/40 px-2 py-1 text-xs text-muted-foreground line-through hover:bg-muted/70 hover:no-underline transition-all select-none"
-                  title="Clique para reativar este ativo"
+                  className="inline-flex items-center gap-1 rounded-md bg-muted/40 border border-border/40 px-2 py-1 text-xs text-muted-foreground line-through hover:bg-muted/70 hover:no-underline transition-all select-none cursor-pointer"
+                  title="Click to re-enable this instrument"
                 >
                   <Plus className="size-3" />
                   <span>{sym}</span>
@@ -465,7 +620,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
                   <button
                     type="button"
                     onClick={handleAddCustomSymbol}
-                    className="flex size-6 items-center justify-center rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-xs"
+                    className="flex size-6 items-center justify-center rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-xs cursor-pointer"
                   >
                     <Plus className="size-3" />
                   </button>
@@ -474,7 +629,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
             </div>
 
             <p className="text-[10px] text-muted-foreground">
-              Trades destes ativos poderão utilizar as velas deste CSV como base gráfica.
+              Trades in these instruments can use these candles as chart data.
             </p>
           </div>
         </div>
@@ -485,11 +640,11 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label htmlFor="candle-resolution" className="text-xs font-medium">
-                Resolução do Candle (Timeframe)
+                Candle Resolution (Timeframe)
               </Label>
               {resolution && (
                 <span className="text-[10px] text-emerald-400 font-mono">
-                  {resolution} (detectado)
+                  {formatResolutionDisplay(resolution)} (detected)
                 </span>
               )}
             </div>
@@ -503,20 +658,41 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
               }}
             >
               <option value="" disabled>
-                Escolha o timeframe do arquivo
+                Select file timeframe
               </option>
-              {Object.keys(RESOLUTIONS).map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
+              {resolution && !Object.keys(RESOLUTIONS).includes(resolution) && (
+                <optgroup label="Custom / Detected">
+                  <option value={resolution}>{formatResolutionDisplay(resolution)} (Custom)</option>
+                </optgroup>
+              )}
+              <optgroup label="Minutes">
+                {(["1m", "2m", "3m", "5m", "10m", "15m", "30m", "45m"] as const).map((value) => (
+                  <option key={value} value={value}>
+                    {formatResolutionDisplay(value)}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Hours">
+                {(["1h", "2h", "3h", "4h", "6h", "8h", "12h"] as const).map((value) => (
+                  <option key={value} value={value}>
+                    {formatResolutionDisplay(value)}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Daily & Above">
+                {(["1d", "3d", "1w", "1mo"] as const).map((value) => (
+                  <option key={value} value={value}>
+                    {formatResolutionDisplay(value)}
+                  </option>
+                ))}
+              </optgroup>
             </OptionSelect>
           </div>
 
           {/* Quote Currency */}
           <div className="space-y-1">
             <Label htmlFor="candle-currency" className="text-xs font-medium">
-              Moeda de Cotação (Quote currency)
+              Quote Currency
             </Label>
             <Input
               id="candle-currency"
@@ -531,14 +707,14 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
               }}
             />
             <p className="text-[10px] text-muted-foreground">
-              Moeda do preço (USD para futuros CME/ações EUA, BRL para B3).
+              Price currency (USD for CME futures / US equities, BRL for B3).
             </p>
           </div>
 
           {/* Price Basis */}
           <div className="space-y-1">
             <Label htmlFor="candle-basis" className="text-xs font-medium">
-              Base de Preço
+              Price Basis
             </Label>
             <OptionSelect
               id="candle-basis"
@@ -550,9 +726,9 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
               }}
             >
               <option value="" disabled>
-                Escolha a base de preço
+                Select price basis
               </option>
-              <option value="raw">Unadjusted / raw (Recomendado)</option>
+              <option value="raw">Unadjusted / raw (Recommended)</option>
               <option value="split">Split adjusted</option>
               <option value="adjusted">Other adjusted</option>
               <option value="midpoint">Midpoint</option>
@@ -560,7 +736,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
               <option value="ask">Ask</option>
             </OptionSelect>
             <p className="text-[10px] text-muted-foreground">
-              Mantenha &ldquo;Unadjusted / raw&rdquo; para contratos futuros e preços puros.
+              Keep “Unadjusted / raw” for futures contracts and pure price action.
             </p>
           </div>
         </div>
@@ -570,88 +746,33 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
       <div className="flex flex-col items-center justify-center pt-3 gap-2 border-t border-border/40">
         <Button
           size="lg"
-          className="bg-white text-zinc-950 hover:bg-zinc-100 font-semibold shadow-md active:scale-[0.98] px-8 h-10 gap-2 min-w-[240px] dark:bg-white dark:text-zinc-950 transition-all"
+          className="bg-white text-zinc-950 hover:bg-zinc-100 font-semibold shadow-md active:scale-[0.98] px-8 h-10 gap-2 min-w-[240px] dark:bg-white dark:text-zinc-950 transition-all cursor-pointer"
           disabled={busy || !file || !symbol || !currency || !resolution || !priceBasis}
-          onClick={() => void act("import")}
+          onClick={() => void handleImport()}
         >
           {busy ? (
             <Loader2 className="size-4 animate-spin text-zinc-950" />
           ) : (
             <Save className="size-4 text-zinc-950" />
           )}
-          Importar Candles de Mercado
+          Import Market Candles
         </Button>
 
-        <div className="flex items-center gap-2">
+        {file && (
           <Button
             variant="ghost"
             size="sm"
-            className="text-xs text-muted-foreground hover:text-foreground h-7"
-            disabled={busy || !file || !symbol || !currency || !resolution || !priceBasis}
-            onClick={() => void act("preview")}
+            className="text-xs text-muted-foreground hover:text-destructive h-7 cursor-pointer"
+            disabled={busy}
+            onClick={() => {
+              setFile(null);
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            }}
           >
-            Pré-visualizar candles (tabela)
+            Clear file
           </Button>
-
-          {file && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground hover:text-destructive h-7"
-              disabled={busy}
-              onClick={() => {
-                setFile(null);
-                setPreview(null);
-                if (fileInputRef.current) fileInputRef.current.value = "";
-              }}
-            >
-              Limpar seleção
-            </Button>
-          )}
-        </div>
+        )}
       </div>
-
-      {/* Preview Table */}
-      {preview && (
-        <div className="space-y-2 rounded-xl border border-border/80 bg-background/50 p-3.5 animate-in fade-in-50">
-          <div className="flex items-center justify-between text-xs">
-            <p className="font-medium text-foreground">
-              Pré-visualização: {preview.count.toLocaleString()} candles encontrados
-            </p>
-            <p className="text-muted-foreground text-[11px]">
-              {preview.from.slice(0, 16).replace("T", " ")} até{" "}
-              {preview.to.slice(0, 16).replace("T", " ")} UTC
-            </p>
-          </div>
-          <div className="overflow-x-auto rounded-lg border border-border/50">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-muted/40 text-muted-foreground border-b border-border/50">
-                <tr>
-                  {["Horário (UTC)", "Open", "High", "Low", "Close"].map((label) => (
-                    <th key={label} className="p-2 font-medium">
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40 font-mono text-[11px]">
-                {preview.sample.map((bar) => (
-                  <tr key={bar.time} className="hover:bg-muted/20">
-                    <td className="p-2 text-muted-foreground">
-                      {new Date(bar.time).toISOString().replace(".000Z", "Z")}
-                    </td>
-                    {[bar.open, bar.high, bar.low, bar.close].map((val, idx) => (
-                      <td key={idx} className="p-2">
-                        <MonetaryValue>{val}</MonetaryValue>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* Notifications / Live Ingestion Feedback */}
       {(error || listError) && (
@@ -673,40 +794,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
         </div>
       )}
 
-      {/* Resumo da Base de Velas & Abertura do Modal de Gerenciamento */}
-      <div className="pt-3 border-t border-border/40" id="time-series-catalog">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-border/70 bg-background/50 hover:border-emerald-500/30 transition-all shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-              <Database className="size-4" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-foreground flex items-center gap-2">
-                <span>Base de Dados de Velas (market_candles)</span>
-                <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-mono font-medium text-emerald-400">
-                  {distinctSymbolsCount} {distinctSymbolsCount === 1 ? "ativo" : "ativos"} · {totalCandlesCount.toLocaleString()} velas
-                </span>
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                Séries contínuas em SQLite com deduplicação nativa em UTC · Integração com Vela
-              </div>
-            </div>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setManagerOpen(true)}
-            className="h-8 px-3 text-xs gap-1.5 border-border/70 hover:border-emerald-500/40 hover:text-emerald-400 cursor-pointer"
-          >
-            <Sliders className="size-3.5 text-emerald-400" />
-            <span>Gerenciar Dados & Séries</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Modal Dedicado no Padrão Vela */}
+      {/* Dedicated Vela-standard Dialog */}
       <MarketDataManagerDialog
         isOpen={managerOpen}
         onClose={() => setManagerOpen(false)}
@@ -714,6 +802,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
         batches={data?.batches ?? []}
         onPurgeSeries={handlePurgeSeries}
         onRevertBatch={handleRevertBatch}
+        onUpdateCompatibleSymbols={handleUpdateCompatibleSymbols}
       />
     </div>
   );

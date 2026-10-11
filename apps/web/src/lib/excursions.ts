@@ -1,4 +1,4 @@
-import { RESOLUTIONS, type ExcursionEstimate, type MarketHistory } from "./market-data";
+import { parseResolutionMs, type ExcursionEstimate, type MarketHistory } from "./market-data";
 
 interface Fill {
   side: "buy" | "sell";
@@ -32,7 +32,7 @@ export function estimateExcursions(
     excludedBars: 0,
     warnings: [reason],
   });
-  const candleDuration = RESOLUTIONS[history.resolution];
+  const candleDuration = parseResolutionMs(history.resolution);
   // A coarse sanity check, not proof that currencies, contracts or adjustments match.
   // Reject a conspicuous mismatch even if the user checked the confirmation box.
   for (const fill of fills) {
@@ -72,7 +72,7 @@ export function estimateExcursions(
     );
   const open = Date.parse(trade.openedAt),
     close = Date.parse(trade.closedAt);
-  const step = RESOLUTIONS[history.resolution];
+  const step = parseResolutionMs(history.resolution);
   const sorted = fills
     .map((fill) => ({ ...fill, time: Date.parse(fill.executedAt) }))
     .sort((a, b) => a.time - b.time);

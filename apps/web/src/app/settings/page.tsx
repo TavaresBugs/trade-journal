@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { JournalDefaultSettings } from "@/components/journal-default-settings";
 import { MarketDataSettings } from "@/components/market-data-settings";
 import { AiSettings } from "@/components/ai-settings";
-import { Download } from "lucide-react";
+import { YourDataSettings } from "@/components/settings/your-data-settings";
 import { FilterBar } from "@/components/filter-bar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -149,25 +149,7 @@ function Settings() {
 
         <AiSettings />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Your data</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <a href="/api/export" download="trade-journal-export.json">
-              <Button variant="outline">
-                <Download />
-                Full backup (JSON)
-              </Button>
-            </a>
-            <a href="/api/export?format=csv" download>
-              <Button variant="outline">
-                <Download />
-                Trades (CSV)
-              </Button>
-            </a>
-          </CardContent>
-        </Card>
+        <YourDataSettings />
       </div>
     </div>
   );

@@ -1,10 +1,22 @@
 import { headerKey, parseCsv } from "@luxalgo/journal-importers";
-import { RESOLUTIONS, isResolution, type Resolution, type MarketBar } from "./market-data";
-import { normalizeSymbol, getAssetFamily, type AssetFamily } from "./assets/symbol-utils";
+import {
+  RESOLUTIONS,
+  isResolution,
+  parseResolutionMs,
+  normalizeResolution,
+  type Resolution,
+  type MarketBar,
+} from "./market-data";
+import {
+  normalizeSymbol,
+  getAssetFamily,
+  getDefaultCompatibleSymbols,
+  type AssetFamily,
+} from "./assets/symbol-utils";
 import { SYMBOL_SPECS } from "./assets/symbol-specs";
 
-export const MAX_CSV_BYTES = 5 * 1024 * 1024;
-export const MAX_CSV_BARS = 50_000;
+export const MAX_CSV_BYTES = 30 * 1024 * 1024;
+export const MAX_CSV_BARS = 100_000;
 
 /**
  * Resilient candle timestamp parser.
@@ -51,6 +63,119 @@ export interface DetectedCsvMetadata {
   currency?: string;
   priceBasis?: string;
   family?: AssetFamily | null;
+  compatibleSymbols?: string[];
+}
+
+/**
+ * Universal filename timeframe extractor.
+ * Matches standard aliases (daily, weekly, monthly) and generic patterns:
+ * e.g. MES1_30m_websocket, US500_5m, NQ_1h, AAPL_15min, BTC_2h, etc.
+ */
+export function extractResolutionFromFilename(cleanName: string): Resolution | undefined {
+  if (/(?:^|[_ .-])daily(?:[_ .-]|$)/i.test(cleanName)) return "1d";
+  if (/(?:^|[_ .-])weekly(?:[_ .-]|$)/i.test(cleanName)) return "1w";
+  if (/(?:^|[_ .-])monthly(?:[_ .-]|$)/i.test(cleanName)) return "1mo";
+  if (/(?:^|[_ .-])1?D(?:[_ .-]|$)/.test(cleanName)) return "1d";
+  if (/(?:^|[_ .-])3D(?:[_ .-]|$)/.test(cleanName)) return "3d";
+  if (/(?:^|[_ .-])1?W(?:[_ .-]|$)/.test(cleanName)) return "1w";
+  if (/(?:^|[_ .-])1?M(?:[_ .-]|$)/.test(cleanName)) return "1mo";
+
+  const regex =
+    /(?:^|[_ .-])(\d+)\s*(m|min|minute|minutes|h|hr|hour|hours|d|day|days|w|wk|week|weeks|mo|month|months)(?=[_ .-]|$)/gi;
+  const matches = Array.from(cleanName.matchAll(regex));
+
+  for (const match of matches) {
+    if (!match[1] || !match[2]) continue;
+    const num = Number(match[1]);
+    const rawUnit = match[2].toLowerCase();
+
+    let unit = "m";
+    if (rawUnit.startsWith("h")) unit = "h";
+    else if (rawUnit.startsWith("d")) unit = "d";
+    else if (rawUnit.startsWith("w")) unit = "w";
+    else if (rawUnit.startsWith("mo")) unit = "mo";
+    else if (rawUnit.startsWith("m")) unit = "m";
+
+    const candidate = `${num}${unit}`;
+    const normalized = normalizeResolution(candidate);
+    return isResolution(normalized) ? normalized : undefined;
+  }
+
+  return undefined;
+}
+
+/**
+ * Universal empirical timestamp delta inference.
+ * Uses mode/frequency matching across standard candidate buckets with tolerances,
+ * safely filtering non-positive differences and long holiday/weekend gaps.
+ */
+export function inferResolutionFromDeltas(deltas: number[]): Resolution | undefined {
+  if (!deltas || !deltas.length) return undefined;
+
+  const positive = deltas.filter((d) => typeof d === "number" && Number.isFinite(d) && d > 0);
+  if (!positive.length) return undefined;
+
+  // Filter out extreme gaps (> 35 days) when smaller intervals exist, preserving monthly deltas
+  const withinMonth = positive.filter((d) => d <= 35 * 86400);
+  const validDeltas = withinMonth.length > 0 ? withinMonth : positive;
+
+  const CANDIDATES: Array<{ res: Resolution; sec: number; tol: number }> = [
+    { res: "1m", sec: 60, tol: 2 },
+    { res: "2m", sec: 120, tol: 3 },
+    { res: "3m", sec: 180, tol: 4 },
+    { res: "5m", sec: 300, tol: 6 },
+    { res: "10m", sec: 600, tol: 10 },
+    { res: "15m", sec: 900, tol: 15 },
+    { res: "30m", sec: 1800, tol: 30 },
+    { res: "45m", sec: 2700, tol: 45 },
+    { res: "1h", sec: 3600, tol: 60 },
+    { res: "2h", sec: 7200, tol: 120 },
+    { res: "3h", sec: 10800, tol: 180 },
+    { res: "4h", sec: 14400, tol: 240 },
+    { res: "6h", sec: 21600, tol: 360 },
+    { res: "8h", sec: 28800, tol: 480 },
+    { res: "12h", sec: 43200, tol: 720 },
+    { res: "1d", sec: 86400, tol: 14400 },
+    { res: "3d", sec: 259200, tol: 43200 },
+    { res: "1w", sec: 604800, tol: 86400 },
+    { res: "1mo", sec: 2592000, tol: 432000 },
+  ];
+
+  let bestCandidate: Resolution | undefined;
+  let maxMatches = 0;
+
+  for (const cand of CANDIDATES) {
+    const matches = validDeltas.filter((d) => Math.abs(d - cand.sec) <= cand.tol).length;
+    if (matches > maxMatches) {
+      maxMatches = matches;
+      bestCandidate = cand.res;
+    }
+  }
+
+  if (bestCandidate && maxMatches > 0) {
+    return bestCandidate;
+  }
+
+  const minDiff = Math.min(...validDeltas);
+  if (minDiff < 3600) {
+    const minM = Math.round(minDiff / 60);
+    const cand = `${minM}m`;
+    if (isResolution(cand)) return cand;
+  } else if (minDiff < 86400) {
+    const minH = Math.round(minDiff / 3600);
+    const cand = `${minH}h`;
+    if (isResolution(cand)) return cand;
+  } else if (minDiff <= 3 * 86400) {
+    const minD = Math.round(minDiff / 86400);
+    const cand = `${minD}d`;
+    if (isResolution(cand)) return cand;
+  } else if (minDiff <= 10 * 86400) {
+    return "1w";
+  } else if (minDiff <= 35 * 86400) {
+    return "1mo";
+  }
+
+  return undefined;
 }
 
 /**
@@ -80,32 +205,24 @@ export function detectCsvMetadata(filename: string, content?: string): DetectedC
           if (rawSymbol) symbol = normalizeSymbol(rawSymbol);
         }
 
-        // Calculate resolution delta from consecutive rows (sampling to bypass weekend/session gaps)
+        // Calculate resolution delta from consecutive rows (sampling up to 30 rows to bypass weekend/session gaps)
         if (rows.length >= 2) {
           const timeIdx = header.findIndex((cell) =>
-            ["time", "timestamp", "datetime", "datetime_utc", "date"].includes(headerKey(cell)),
+            ["time", "timestamp", "datetime", "datetimeutc", "date"].includes(headerKey(cell)),
           );
           if (timeIdx >= 0) {
             const deltas: number[] = [];
-            const sampleLimit = Math.min(rows.length - 1, 15);
+            const sampleLimit = Math.min(rows.length - 1, 30);
             for (let i = 0; i < sampleLimit; i++) {
               const t1 = parseCandleTimestamp(rows[i]![timeIdx] ?? "");
               const t2 = parseCandleTimestamp(rows[i + 1]![timeIdx] ?? "");
-              if (Number.isFinite(t1) && Number.isFinite(t2) && t2 > t1) {
-                deltas.push((t2 - t1) / 1000);
+              if (Number.isFinite(t1) && Number.isFinite(t2)) {
+                const diff = Math.abs(t2 - t1) / 1000;
+                if (diff > 0) deltas.push(diff);
               }
             }
             if (deltas.length > 0) {
-              const minDiff = Math.min(...deltas);
-              if (minDiff === 60) resolution = "1m";
-              else if (minDiff === 180) resolution = "3m";
-              else if (minDiff === 300) resolution = "5m";
-              else if (minDiff === 900) resolution = "15m";
-              else if (minDiff === 3600) resolution = "1h";
-              else if (minDiff >= 10800 && minDiff <= 18000) resolution = "4h";
-              else if (minDiff >= 72000 && minDiff <= 93600) resolution = "1d";
-              else if (minDiff >= 5 * 86400 && minDiff <= 8 * 86400) resolution = "1w";
-              else if (minDiff >= 25 * 86400 && minDiff <= 35 * 86400) resolution = "1mo";
+              resolution = inferResolutionFromDeltas(deltas);
             }
           }
         }
@@ -128,15 +245,7 @@ export function detectCsvMetadata(filename: string, content?: string): DetectedC
   }
 
   if (!resolution) {
-    // Matches 1m, 3m, 5m, 15m, 1h, 4h, 1d, 1w, 1mo or aliases in filename
-    const resMatch = cleanName.match(/(?:^|[_ -])(1m|3m|5m|15m|1h|4h|1d|daily|1w|weekly|1mo|monthly)(?:[_ -]|$)/i);
-    if (resMatch?.[1]) {
-      const lower = resMatch[1].toLowerCase();
-      if (lower === "daily") resolution = "1d";
-      else if (lower === "weekly") resolution = "1w";
-      else if (lower === "monthly") resolution = "1mo";
-      else if (isResolution(lower)) resolution = lower;
-    }
+    resolution = extractResolutionFromFilename(cleanName);
   }
 
   // 3. Resolve currency & family
@@ -145,6 +254,7 @@ export function detectCsvMetadata(filename: string, content?: string): DetectedC
     : "USD";
 
   const family = symbol ? getAssetFamily(symbol) : null;
+  const compatibleSymbols = symbol ? getDefaultCompatibleSymbols(symbol) : [];
 
   return {
     symbol,
@@ -152,6 +262,7 @@ export function detectCsvMetadata(filename: string, content?: string): DetectedC
     currency,
     priceBasis: "raw",
     family,
+    compatibleSymbols,
   };
 }
 
@@ -161,12 +272,12 @@ export function parseMarketCsv(
   resolution: Resolution,
 ): MarketBar[] {
   if (new TextEncoder().encode(content).byteLength > MAX_CSV_BYTES)
-    throw new Error("Use a CSV smaller than 5 MB.");
+    throw new Error("Use a CSV smaller than 30 MB.");
   if ((content.match(/"/g)?.length ?? 0) % 2 !== 0)
     throw new Error("CSV contains an unterminated quoted field.");
   const [header, ...rows] = parseCsv(content);
   if (!header || !rows.length || rows.length > MAX_CSV_BARS)
-    throw new Error("CSV must contain 1–50,000 candle rows.");
+    throw new Error("CSV must contain 1–100,000 candle rows.");
   const aliases: Record<string, string[]> = {
     time: ["time", "timestamp", "datetime", "date"],
     open: ["open", "o"],
@@ -246,30 +357,35 @@ export function parseMarketCsv(
     })
     .sort((a, b) => a.time - b.time);
 
-  const step = RESOLUTIONS[resolution];
-  const isHighTf = ["4h", "1d", "1w", "1mo"].includes(resolution);
+  const normRes = normalizeResolution(resolution);
+  const step = parseResolutionMs(normRes);
+  const isHighTf = ["2h", "3h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1mo"].includes(normRes);
 
   if (!isHighTf) {
     const phase = bars[0]!.time % step;
     bars.forEach((bar, index) => {
       if (bar.time % step !== phase)
-        throw new Error(
-          "Candle timestamps do not align to the selected resolution.",
-        );
+        throw new Error("Candle timestamps do not align to the selected resolution.");
       if (index && bar.time === bars[index - 1]!.time)
         throw new Error("Duplicate candle timestamps. Remove duplicates before importing.");
     });
   } else {
-    // High-timeframe resolutions (4h, 1d, 1w, 1mo):
+    // High-timeframe resolutions (2h, 3h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1mo):
     // Real-world markets have session opening hours (e.g. CME at 18:00 ET = 22:00/23:00 UTC),
     // DST shifts, exchange holidays, and irregular calendar months (28-31 days).
     const minDeltas: Record<string, number> = {
+      "2h": 1_800_000, // at least 30m between consecutive 2h bars
+      "3h": 2_700_000,
       "4h": 3_600_000, // at least 1h between consecutive bars
+      "6h": 7_200_000,
+      "8h": 10_800_000,
+      "12h": 14_400_000,
       "1d": 43_200_000, // at least 12h between daily bars (rejects intraday data)
+      "3d": 129_600_000,
       "1w": 302_400_000, // at least 3.5 days between weekly bars
       "1mo": 1_296_000_000, // at least 15 days between monthly bars
     };
-    const minAllowedDelta = minDeltas[resolution] ?? 3_600_000;
+    const minAllowedDelta = minDeltas[normRes] ?? 1_800_000;
 
     bars.forEach((bar, index) => {
       // Must be aligned to clean minutes (no sub-minute jitter)
@@ -317,6 +433,7 @@ export interface MarketSeriesSummary {
   currency: string;
   priceBasis: string;
   updatedAt?: string;
+  compatibleSymbols?: string[];
 }
 
 export interface MarketCandleBatch {
@@ -340,6 +457,14 @@ export interface MarketCsvImportResponse {
   newBarCount?: number;
   duplicateBarCount?: number;
   totalInDb?: number;
+  result?: {
+    batchId: string;
+    symbol: string;
+    resolution: Resolution;
+    newBarCount: number;
+    duplicateBarCount: number;
+    totalInDb: number;
+  };
   datasets?: MarketCsvDataset[];
   series?: MarketSeriesSummary[];
   batches?: MarketCandleBatch[];
@@ -366,5 +491,3 @@ export function formatDatasetDisplayName(dataset: {
   const res = dataset.resolution ? ` · ${dataset.resolution}` : "";
   return `${sym}${res}${countStr}`;
 }
-
-

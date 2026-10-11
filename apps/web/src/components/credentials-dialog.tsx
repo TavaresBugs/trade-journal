@@ -425,8 +425,8 @@ export function CredentialsDialog({
               <div>
                 {/* Header Row */}
                 <div className="grid grid-cols-[190px_130px_1fr_1fr] items-center gap-x-6 px-6 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 bg-muted/30 border-b border-border/40">
-                  <span>Mesa / Prop Firm</span>
-                  <span className="text-center">Plataforma</span>
+                  <span>Broker / Prop Firm</span>
+                  <span className="text-center">Platform</span>
                   <span>Username</span>
                   <span>Password</span>
                 </div>
@@ -450,7 +450,7 @@ export function CredentialsDialog({
                           key={item.account.id}
                           className="grid grid-cols-[190px_130px_1fr_1fr] items-center gap-x-6 px-6 py-3.5 hover:bg-muted/15 transition-colors"
                         >
-                          {/* Mesa / Prop Firm Column */}
+                          {/* Broker / Prop Firm Column */}
                           <div className="flex items-center gap-2.5 min-w-0 pr-1">
                             <BrokerIcon
                               icon={brokerInfo?.icon}
@@ -467,7 +467,7 @@ export function CredentialsDialog({
                             </span>
                           </div>
 
-                          {/* Plataforma Column (Inteligente e Centralizada) */}
+                          {/* Platform Column (Smart & Centered) */}
                           <div className="flex items-center justify-center gap-2 shrink-0">
                             {badges.length > 0 ? (
                               badges.map((b) => (
@@ -578,7 +578,7 @@ export function CredentialsDialog({
               <div>
                 {/* Header Row */}
                 <div className="grid grid-cols-[140px_1fr_1fr] items-center gap-x-6 px-6 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 bg-muted/30 border-b border-border/40">
-                  <span className="text-center">Plataforma</span>
+                  <span className="text-center">Platform</span>
                   <span>Username</span>
                   <span>Password</span>
                 </div>
@@ -586,7 +586,7 @@ export function CredentialsDialog({
                 {/* Body Row (Zero bottom footer, directly bounds dialog) */}
                 {singleData && (
                   <div className="grid grid-cols-[140px_1fr_1fr] items-center gap-x-6 px-6 py-4 bg-black/40">
-                    {/* Plataforma Column (Centralizada) */}
+                    {/* Platform Column (Centered) */}
                     <div className="flex items-center justify-center gap-2 shrink-0">
                       {getAccountPlatformBadges(singleData.account, singleData.credentials).map(
                         (meta) => (

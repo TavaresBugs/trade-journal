@@ -4,18 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Vela } from "@luxalgo/vela";
 import {
   RESOLUTIONS,
+  parseResolutionMs,
   type MarketConnection,
   type ExcursionEstimate,
   type Resolution,
   type TradeMarketResult,
 } from "@/lib/market-data";
 import { providerInfo } from "@/lib/market-providers";
-import type {
-  MarketCandleBatch,
-  MarketCsvDataset,
-  MarketSeriesSummary,
-} from "@/lib/market-csv";
-import { getAssetFamily, normalizeSymbol } from "@/lib/assets/symbol-utils";
+import type { MarketCandleBatch, MarketCsvDataset, MarketSeriesSummary } from "@/lib/market-csv";
+import { getDefaultCompatibleSymbols, normalizeSymbol } from "@/lib/assets/symbol-utils";
 import { getAssetIconConfig } from "@/lib/assets/asset-icons";
 import { useApi } from "@/lib/use-api";
 import { cn, fmtMoney } from "@/lib/utils";
@@ -44,8 +41,6 @@ import {
   applyStoredSettingsToChart,
   loadStoredSettings,
 } from "./settings/vela-settings-bridge";
-
-
 
 export function TradeMarketData({
   trade,
@@ -78,9 +73,7 @@ export function TradeMarketData({
     datasets?: MarketCsvDataset[];
     series?: MarketSeriesSummary[];
     batches?: MarketCandleBatch[];
-  }>(
-    hasCsvConfigured || info?.mode === "csv" ? "/api/market-data/csv" : null,
-  );
+  }>(hasCsvConfigured || info?.mode === "csv" ? "/api/market-data/csv" : null);
   const [confirmed, setConfirmed] = useState(false);
   const [result, setResult] = useState<TradeMarketResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -160,7 +153,10 @@ export function TradeMarketData({
         refreshSaved();
       }
     } catch (cause) {
-      if (request.signal.aborted || (cause instanceof DOMException && cause.name === "AbortError")) {
+      if (
+        request.signal.aborted ||
+        (cause instanceof DOMException && cause.name === "AbortError")
+      ) {
         return;
       }
       if (seq === requestSeqRef.current) {
@@ -174,7 +170,8 @@ export function TradeMarketData({
 
   // Auto-load candles if saved configuration exists or matching dataset is found
   useEffect(() => {
-    if (autoLoadedRef.current || dismissedRef.current || busy || result || !available.length) return;
+    if (autoLoadedRef.current || dismissedRef.current || busy || result || !available.length)
+      return;
 
     // 1. If saved estimate/configuration exists, load automatically with saved parameters
     if (saved?.saved) {
@@ -210,41 +207,42 @@ export function TradeMarketData({
     if (hasCsvConfigured) {
       const tradeTime = Date.parse(trade.openedAt);
       const tradeNorm = normalizeSymbol(trade.symbol);
-      const family = getAssetFamily(trade.symbol);
-      const familySymbols = family ? family.symbols.map(normalizeSymbol) : [];
+      const defaultCompatible = getDefaultCompatibleSymbols(trade.symbol).map(normalizeSymbol);
 
       const seriesList = csv?.series ?? [];
       const matchingSeries = seriesList.filter((s) => {
         const norm = normalizeSymbol(s.symbol);
-        const margin = RESOLUTIONS[s.resolution as Resolution] ?? 60_000;
+        const margin = parseResolutionMs(s.resolution);
         const inRange = tradeTime >= s.firstTime && tradeTime <= s.lastTime + margin;
-        return inRange && (norm === tradeNorm || familySymbols.includes(norm));
+        const seriesCompat = Array.isArray(s.compatibleSymbols)
+          ? s.compatibleSymbols.map(normalizeSymbol)
+          : defaultCompatible;
+        return inRange && (norm === tradeNorm || seriesCompat.includes(tradeNorm));
       });
 
       const matchingDatasets = (csv?.datasets ?? []).filter((d) => {
         const norm = normalizeSymbol(d.symbol);
         const dFrom = d.from ? Date.parse(d.from) : NaN;
         const dTo = d.to ? Date.parse(d.to) : NaN;
-        const margin = RESOLUTIONS[d.resolution as Resolution] ?? 60_000;
+        const margin = parseResolutionMs(d.resolution);
         const inRange =
           !Number.isFinite(dFrom) ||
           !Number.isFinite(dTo) ||
           (tradeTime >= dFrom && tradeTime <= dTo + margin);
-        return (
-          inRange &&
-          (norm === tradeNorm ||
-            (d.compatibleSymbols ?? []).some((s) => normalizeSymbol(s) === tradeNorm) ||
-            familySymbols.includes(norm))
-        );
+        const datasetCompat = Array.isArray(d.compatibleSymbols)
+          ? d.compatibleSymbols.map(normalizeSymbol)
+          : defaultCompatible;
+        return inRange && (norm === tradeNorm || datasetCompat.includes(tradeNorm));
       });
 
       if (matchingSeries.length > 0 || matchingDatasets.length > 0) {
-        const order: Record<string, number> = { "1m": 1, "3m": 2, "5m": 3, "15m": 4, "1h": 5, "4h": 6, "1d": 7 };
         const allRes = [
           ...matchingSeries.map((s) => s.resolution),
           ...matchingDatasets.map((d) => d.resolution),
         ];
-        const bestRes = (allRes.sort((a, b) => (order[a] ?? 99) - (order[b] ?? 99))[0] as Resolution) || "1m";
+        const bestRes =
+          (allRes.sort((a, b) => parseResolutionMs(a) - parseResolutionMs(b))[0] as Resolution) ||
+          "1m";
 
         autoLoadedRef.current = true;
         setProvider("market-csv");
@@ -268,14 +266,16 @@ export function TradeMarketData({
     const set = new Set<Resolution>();
     if (hasCsvConfigured || provider === "market-csv") {
       const tradeNorm = normalizeSymbol(trade.symbol);
-      const family = getAssetFamily(trade.symbol);
-      const familySymbols = family ? family.symbols.map(normalizeSymbol) : [];
+      const defaultCompatible = getDefaultCompatibleSymbols(trade.symbol).map(normalizeSymbol);
 
       // Check series summary from continuous database
       const seriesList = csv?.series ?? [];
       for (const s of seriesList) {
         const norm = normalizeSymbol(s.symbol);
-        if (norm === tradeNorm || familySymbols.includes(norm)) {
+        const seriesCompat = Array.isArray(s.compatibleSymbols)
+          ? s.compatibleSymbols.map(normalizeSymbol)
+          : defaultCompatible;
+        if (norm === tradeNorm || seriesCompat.includes(tradeNorm)) {
           set.add(s.resolution as Resolution);
         }
       }
@@ -283,11 +283,10 @@ export function TradeMarketData({
       // Check datasets
       for (const d of csv?.datasets ?? []) {
         const norm = normalizeSymbol(d.symbol);
-        const symMatches =
-          norm === tradeNorm ||
-          (d.compatibleSymbols ?? []).some((s) => normalizeSymbol(s) === tradeNorm) ||
-          familySymbols.includes(norm);
-        if (symMatches) {
+        const datasetCompat = Array.isArray(d.compatibleSymbols)
+          ? d.compatibleSymbols.map(normalizeSymbol)
+          : defaultCompatible;
+        if (norm === tradeNorm || datasetCompat.includes(tradeNorm)) {
           set.add(d.resolution as Resolution);
         }
       }
@@ -296,12 +295,15 @@ export function TradeMarketData({
   }, [hasCsvConfigured, provider, csv, trade]);
 
   const handleSelectResolution = (newRes: Resolution) => {
-    const effectiveProvider = provider || result?.provider || (hasCsvConfigured ? "market-csv" : "");
+    const effectiveProvider =
+      provider || result?.provider || (hasCsvConfigured ? "market-csv" : "");
     if (effectiveProvider === "market-csv" || hasCsvConfigured) {
       setProvider("market-csv");
       setResolution(newRes);
       // Keep dataset selection as an optional override only if it specifically matches newRes, else default to continuous feed
-      const currentOverride = dataset ? (csv?.datasets ?? []).find((d) => d.id === dataset && d.resolution === newRes)?.id : "";
+      const currentOverride = dataset
+        ? (csv?.datasets ?? []).find((d) => d.id === dataset && d.resolution === newRes)?.id
+        : "";
       const targetDataset = currentOverride || "";
       setDataset(targetDataset);
       void load({
@@ -531,11 +533,13 @@ export function TradeMarketData({
                           <div className="space-y-1">
                             <div className="flex items-center justify-between">
                               <Label htmlFor="market-dataset">
-                                {info?.mode === "csv" ? "Dataset / Origem (Opcional)" : "Data feed / dataset"}
+                                {info?.mode === "csv"
+                                  ? "Dataset / Source (Optional)"
+                                  : "Data feed / dataset"}
                               </Label>
                               {info?.mode === "csv" && !dataset && (
                                 <span className="text-[10px] text-emerald-400 font-medium font-mono">
-                                  Banco contínuo ativo
+                                  Continuous database active
                                 </span>
                               )}
                             </div>
@@ -549,10 +553,13 @@ export function TradeMarketData({
                                   setConfirmed(false);
                                 }}
                               >
-                                <option value="">Banco Contínuo de Velas (Automático · Recomendado)</option>
+                                <option value="">
+                                  Continuous Candle Series (Automatic · Recommended)
+                                </option>
                                 {(csv?.datasets ?? []).map((item) => (
                                   <option key={item.id} value={item.id}>
-                                    Override isolado: {item.name} ({item.symbol} · {item.resolution})
+                                    Isolated override: {item.name} ({item.symbol} ·{" "}
+                                    {item.resolution})
                                   </option>
                                 ))}
                               </OptionSelect>
@@ -586,7 +593,8 @@ export function TradeMarketData({
                             )}
                             {info?.mode === "csv" && (
                               <p className="text-[10px] text-muted-foreground">
-                                Por padrão, as velas contínuas do banco são consultadas automaticamente. Selecione um arquivo apenas para forçar um lote específico.
+                                By default, continuous bars from the database are queried
+                                automatically. Select a file only to force a specific batch.
                               </p>
                             )}
                           </div>
@@ -594,8 +602,9 @@ export function TradeMarketData({
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {info?.mode === "csv"
-                          ? "Consulta a série contínua no banco de dados SQLite. Velas importadas em múltiplos lotes são integradas automaticamente."
-                          : `${info?.description} ${info?.symbolHint}`} Option contract history is not supported yet.
+                          ? "Queries continuous series from the SQLite database. Candles imported in multiple batches are automatically merged."
+                          : `${info?.description} ${info?.symbolHint}`}{" "}
+                        Option contract history is not supported yet.
                       </p>
                       <label className="flex items-start gap-2 text-xs text-muted-foreground">
                         <input
@@ -678,12 +687,22 @@ export function TradeMarketData({
 function toVelaTf(res: Resolution): string {
   const map: Record<Resolution, string> = {
     "1m": "1",
+    "2m": "2",
     "3m": "3",
     "5m": "5",
+    "10m": "10",
     "15m": "15",
+    "30m": "30",
+    "45m": "45",
     "1h": "60",
+    "2h": "120",
+    "3h": "180",
     "4h": "240",
+    "6h": "360",
+    "8h": "480",
+    "12h": "720",
     "1d": "D",
+    "3d": "3D",
     "1w": "W",
     "1mo": "M",
   };
@@ -694,27 +713,45 @@ function fromVelaTf(tf: string): Resolution | undefined {
   const map: Record<string, Resolution> = {
     "1": "1m",
     "1m": "1m",
+    "2": "2m",
+    "2m": "2m",
     "3": "3m",
     "3m": "3m",
     "5": "5m",
     "5m": "5m",
+    "10": "10m",
+    "10m": "10m",
     "15": "15m",
     "15m": "15m",
-    "30": "15m",
-    "30m": "15m",
+    "30": "30m",
+    "30m": "30m",
+    "45": "45m",
+    "45m": "45m",
     "60": "1h",
     "1h": "1h",
+    "120": "2h",
+    "2h": "2h",
+    "180": "3h",
+    "3h": "3h",
     "240": "4h",
     "4h": "4h",
+    "360": "6h",
+    "6h": "6h",
+    "480": "8h",
+    "8h": "8h",
+    "720": "12h",
+    "12h": "12h",
     "1D": "1d",
     "1d": "1d",
-    "D": "1d",
+    D: "1d",
+    "3D": "3d",
+    "3d": "3d",
     "1W": "1w",
     "1w": "1w",
-    "W": "1w",
+    W: "1w",
     "1M": "1mo",
     "1mo": "1mo",
-    "M": "1mo",
+    M: "1mo",
   };
   return map[tf];
 }
@@ -943,7 +980,7 @@ function HistoricalMarketChart({
   const isSavedCanonical = Boolean(
     savedEstimate?.estimate?.mae !== null &&
     savedEstimate?.estimate?.mae !== undefined &&
-    savedEstimate?.resolution
+    savedEstimate?.resolution,
   );
   const canonicalEstimate = isSavedCanonical ? savedEstimate!.estimate : history.estimate;
   const canonicalResolution = isSavedCanonical ? savedEstimate!.resolution : history.resolution;
@@ -975,8 +1012,8 @@ function HistoricalMarketChart({
         <>
           {history.estimate.priceBasisMismatch && (
             <p role="status" className="rounded-md border p-3 text-sm text-muted-foreground">
-              The market candles and recorded fill prices do not match. Showing market
-              prices; fill labels and MAE/MFE estimates are withheld. See the data limits below.
+              The market candles and recorded fill prices do not match. Showing market prices; fill
+              labels and MAE/MFE estimates are withheld. See the data limits below.
             </p>
           )}
           <MarketCandlesChart
@@ -1095,10 +1132,7 @@ function MarketCandlesChart({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState("symbol");
 
-  const allVelaTimeframes = useMemo(
-    () => ["1", "3", "5", "15", "60", "240", "D", "W", "M"],
-    [],
-  );
+  const allVelaTimeframes = useMemo(() => ["1", "3", "5", "15", "60", "240", "D", "W", "M"], []);
 
   // Mount effect: instantiates Vela and widgets ONCE per [history.symbol, initialPriceStyle]
   useEffect(() => {
@@ -1117,10 +1151,7 @@ function MarketCandlesChart({
           getDrawingType,
         },
         { Statusline, Watermark, ChartContextMenu, Topbar, Bottombar, ObjectTree, DataWindow },
-      ] = await Promise.all([
-        import("@luxalgo/vela"),
-        import("@luxalgo/vela/widget"),
-      ]);
+      ] = await Promise.all([import("@luxalgo/vela"), import("@luxalgo/vela/widget")]);
 
       if (disposed || !host.current) return;
 
@@ -1380,7 +1411,8 @@ function MarketCandlesChart({
       };
       const statusline = new Statusline(host.current, initialHistory.symbol, resolveIcon);
       const initialProviderLabel =
-        initialHistory.provider === "market-csv" || initialHistory.provider?.toLowerCase().includes("csv")
+        initialHistory.provider === "market-csv" ||
+        initialHistory.provider?.toLowerCase().includes("csv")
           ? "CSV"
           : initialHistory.provider;
       statusline.setMeta(toVelaTf(initialHistory.resolution), initialProviderLabel);
@@ -1397,7 +1429,11 @@ function MarketCandlesChart({
       statuslineRef.current = statusline;
 
       // 4. Vela Native Watermark Widget
-      const watermark = new Watermark(host.current, initialHistory.symbol, toVelaTf(initialHistory.resolution));
+      const watermark = new Watermark(
+        host.current,
+        initialHistory.symbol,
+        toVelaTf(initialHistory.resolution),
+      );
       watermark.setLoading(false);
       watermarkRef.current = watermark;
 
@@ -1445,31 +1481,32 @@ function MarketCandlesChart({
       const unregisterCopyPrice = registerCopyPriceAction(getActivePointer);
 
       const contextMenu = new ChartContextMenu(host.current, {
-        getContext: () => ({
-          chart: instance,
-          symbol: initialHistory.symbol,
-          timeframe: toVelaTf(initialHistory.resolution),
-          priceStyle: initialPriceStyle,
-          setSymbol: () => {},
-          setTimeframe: (tf: string) => instance.setMarket({ timeframe: tf }),
-          setPriceStyle: (style: string) => instance.renderer.set("priceStyle", style),
-          openSymbolSearch: () => {},
-          togglePanel: () => {},
-          dockStrip: () => () => {},
-          host: host.current!,
-          toast: (msg: string, kind?: "info" | "success" | "error") => {
-            showVelaToast(msg, kind, host.current);
-          },
-          addIndicator: () => {},
-          addNativeIndicator: () => {},
-          stateChanged: () => {},
-          pointer: {
-            price: getActivePointer()?.price ?? null,
-            decimals: getActivePointer()?.decimals ?? 2,
-            time: getActivePointer()?.time ?? null,
-            paneKind: "price",
-          },
-        } as any),
+        getContext: () =>
+          ({
+            chart: instance,
+            symbol: initialHistory.symbol,
+            timeframe: toVelaTf(initialHistory.resolution),
+            priceStyle: initialPriceStyle,
+            setSymbol: () => {},
+            setTimeframe: (tf: string) => instance.setMarket({ timeframe: tf }),
+            setPriceStyle: (style: string) => instance.renderer.set("priceStyle", style),
+            openSymbolSearch: () => {},
+            togglePanel: () => {},
+            dockStrip: () => () => {},
+            host: host.current!,
+            toast: (msg: string, kind?: "info" | "success" | "error") => {
+              showVelaToast(msg, kind, host.current);
+            },
+            addIndicator: () => {},
+            addNativeIndicator: () => {},
+            stateChanged: () => {},
+            pointer: {
+              price: getActivePointer()?.price ?? null,
+              decimals: getActivePointer()?.decimals ?? 2,
+              time: getActivePointer()?.time ?? null,
+              paneKind: "price",
+            },
+          }) as any,
         resetView: () => {
           instance.renderer.set("autoScale", true);
           if (typeof (instance.renderer as any).resetView === "function") {
@@ -1515,16 +1552,12 @@ function MarketCandlesChart({
 
       // 8. Drawings Persistence & Favorite Tools Toolbar
       const currentTradeKey = tradeKeyRef.current || initialHistory.symbol;
-      const cleanupDrawingsPersistence = attachVelaDrawingsPersistence(
-        instance,
-        currentTradeKey,
-        {
-          initialDrawingsJson: initialDrawingsJsonRef.current,
-          onDrawingsRestored: () => {
-            sidePanelsDock?.refresh?.();
-          },
+      const cleanupDrawingsPersistence = attachVelaDrawingsPersistence(instance, currentTradeKey, {
+        initialDrawingsJson: initialDrawingsJsonRef.current,
+        onDrawingsRestored: () => {
+          sidePanelsDock?.refresh?.();
         },
-      );
+      });
       drawingsPersistenceCleanupRef.current = cleanupDrawingsPersistence;
       lastAttachedTradeKeyRef.current = currentTradeKey;
 
@@ -1797,7 +1830,10 @@ function MarketCandlesChart({
   return (
     <div className="relative rounded-xl border border-[var(--vela-border)] bg-[#151619] overflow-hidden shadow-xs vela-ui quant-chart-chrome flex flex-row">
       {error && (
-        <p role="alert" className="absolute top-0 left-0 right-0 z-50 text-sm text-destructive p-3 bg-[#151619]/90 border-b border-destructive/30">
+        <p
+          role="alert"
+          className="absolute top-0 left-0 right-0 z-50 text-sm text-destructive p-3 bg-[#151619]/90 border-b border-destructive/30"
+        >
           {error}
         </p>
       )}
@@ -1823,7 +1859,10 @@ function MarketCandlesChart({
         {/* Relative Canvas Area & Side Panel Dock Row */}
         <div className="relative flex flex-row flex-1 h-[700px] min-h-[700px] w-full bg-[#151619] overflow-hidden">
           {/* Relative Canvas Area */}
-          <div ref={host} className="relative h-[700px] min-h-[700px] flex-1 min-w-0 bg-[#151619]" />
+          <div
+            ref={host}
+            className="relative h-[700px] min-h-[700px] flex-1 min-w-0 bg-[#151619]"
+          />
 
           {/* Dock Host for ObjectTree and DataWindow */}
           <div ref={panelDockHost} className="relative flex flex-row self-stretch shrink-0" />
@@ -1992,4 +2031,3 @@ function MarketCandlesChart({
     </div>
   );
 }
-

@@ -12,6 +12,16 @@ import {
   flushPendingTradeDrawingsSave,
   attachVelaDrawingsPersistence,
 } from "../src/components/vela-drawings-bridge";
+import {
+  attachVelaFavoriteToolbar,
+  enhanceVelaFloatingToolbarGrip,
+  FAV_TOOLBAR_POS_STORAGE_KEY,
+  GRIP_SIX_DOTS_SVG,
+  DEFAULT_TOOL_META,
+  resolveToolMeta,
+} from "../src/components/vela-drawing-enhancer";
+import { syncVelaToolbarGutter } from "../src/components/trade-market-data";
+import { MockElement, MockDocument } from "./helpers/dom-mock";
 
 // In-memory localStorage mock for node environment
 class MockLocalStorage implements Storage {
@@ -47,14 +57,22 @@ class MockVelaChart {
   storeListeners = new Set<() => void>();
   drawingsDoc = { version: 1, drawings: [] as any[] };
   favorites: string[] = [];
+  activeTool: string | null = null;
   snapMode = "off";
   stayMode = false;
 
   drawings = {
+    favorites: vi.fn(() => this.favorites),
     setFavorites: vi.fn((favs: string[]) => {
       this.favorites = [...favs];
+      this.emit("drawing:favorites", { favorites: this.favorites });
     }),
     getFavorites: () => this.favorites,
+    getTool: vi.fn(() => this.activeTool),
+    setTool: vi.fn((tool: string | null) => {
+      this.activeTool = tool;
+      this.emit("drawing:tool", { type: this.activeTool });
+    }),
     setSnapMode: vi.fn((mode: "off" | "weak" | "strong") => {
       this.snapMode = mode;
     }),
@@ -107,10 +125,15 @@ class MockVelaChart {
       l();
     }
   }
+
+  listenerCount(event: string) {
+    return this.eventHandlers.get(event)?.size ?? 0;
+  }
 }
 
-describe("Vela Drawings & Preferences Persistence Bridge", () => {
+describe("Vela Drawings Suite (Unified Functional Engine)", () => {
   let mockStorage: MockLocalStorage;
+  const origLocalStorage = (globalThis as any).localStorage;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -122,11 +145,28 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
     flushPendingTradeDrawingsSave();
     vi.clearAllTimers();
     vi.useRealTimers();
+    (globalThis as any).localStorage = origLocalStorage;
   });
 
-  describe("1. Hydration of favorites, tool modes, and drawings", () => {
+  describe("1. Dual-tier localStorage + API Persistence Bridge", () => {
+    it("manages localStorage primitives for favorites, tool prefs, and trade drawings", () => {
+      expect(loadDrawingFavorites()).toEqual([]);
+      saveDrawingFavorites(["trendline", "box"]);
+      expect(loadDrawingFavorites()).toEqual(["trendline", "box"]);
+
+      expect(loadDrawingToolPrefs()).toEqual({});
+      saveDrawingToolPrefs({ snapMode: "strong", stayMode: true });
+      expect(loadDrawingToolPrefs()).toEqual({ snapMode: "strong", stayMode: true });
+
+      expect(loadTradeDrawings("trade-xyz")).toBeNull();
+      saveTradeDrawings("trade-xyz", { version: 1, drawings: [{ id: "1", type: "line" }] });
+      expect(loadTradeDrawings("trade-xyz")).toEqual({
+        version: 1,
+        drawings: [{ id: "1", type: "line" }],
+      });
+    });
+
     it("hydrates favorites, snap/stay modes, and trade drawings from localStorage without write-backs", () => {
-      // Seed localStorage
       localStorage.setItem(
         VELA_DRAWING_FAVORITES_KEY,
         JSON.stringify(["Trend Line", "Horizontal Ray"]),
@@ -183,7 +223,6 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
         drawings: [{ id: "d-sqlite-1", type: "Fib Retracement" }],
       });
 
-      // Verify cached in localStorage
       const cached = localStorage.getItem(VELA_TRADE_DRAWINGS_PREFIX + "trade-from-db");
       expect(cached).toBe(initialJson);
 
@@ -204,9 +243,7 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
 
       cleanup();
     });
-  });
 
-  describe("2. Auto-persistence on mutations, undo/redo, and pure selection ignoring", () => {
     it("persists to localStorage synchronously and debounces remote PATCH on drawing:created", async () => {
       const chart = new MockVelaChart();
       const mockFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ updated: true })));
@@ -216,24 +253,19 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
         debounceMs: 350,
       });
 
-      // Add a drawing
       chart.drawingsDoc.drawings.push({ id: "d-new-1", type: "Brush" });
       chart.emit("drawing:created", { drawing: { id: "d-new-1" } });
 
-      // Synchronous localStorage write
       const savedRaw = localStorage.getItem(VELA_TRADE_DRAWINGS_PREFIX + "trade-create-test");
       expect(savedRaw).not.toBeNull();
       const savedDoc = JSON.parse(savedRaw!);
       expect(savedDoc.drawings).toEqual([{ id: "d-new-1", type: "Brush" }]);
 
-      // Debounce verification: not called immediately
       expect(mockFetch).not.toHaveBeenCalled();
 
-      // Advance by 300ms: still not called
       vi.advanceTimersByTime(300);
       expect(mockFetch).not.toHaveBeenCalled();
 
-      // Advance by 60ms (total 360ms > 350ms): called once
       vi.advanceTimersByTime(60);
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(mockFetch).toHaveBeenCalledWith(
@@ -266,7 +298,6 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
         fetchImpl: mockFetch as any,
       });
 
-      // User selects the drawing without modifying anything
       chart.emit("drawing:selected", { id: "d-existing" });
 
       vi.advanceTimersByTime(1000);
@@ -284,19 +315,16 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
         debounceMs: 350,
       });
 
-      // Step 1: User adds a drawing
       chart.drawingsDoc.drawings.push({ id: "d-1", type: "Arrow" });
       chart.emit("drawing:created");
 
       vi.advanceTimersByTime(400);
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
-      // Step 2: User triggers undo() in @luxalgo/vela:
-      // The store reverts to 0 drawings and emits drawing:selected!
+      // Store reverts on undo and emits drawing:selected with empty drawings
       chart.drawingsDoc.drawings = [];
       chart.emit("drawing:selected", { id: null });
 
-      // Synchronously saved empty drawings to localStorage
       const savedRaw = localStorage.getItem(VELA_TRADE_DRAWINGS_PREFIX + "trade-undo-test");
       expect(JSON.parse(savedRaw!).drawings).toEqual([]);
 
@@ -323,7 +351,6 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
         debounceMs: 350,
       });
 
-      // Mutation via store
       chart.drawingsDoc.drawings.push({ id: "d-store-1", type: "Rectangle" });
       chart.triggerStoreChange();
 
@@ -332,13 +359,10 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
 
       cleanup();
     });
-  });
 
-  describe("3. Isolation between trades and flushing pending saves on cleanup", () => {
     it("isolates drawings between two trades of the same symbol and flushes on cleanup", () => {
       const mockFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ updated: true })));
 
-      // Trade A on MES
       const tradeKeyA = "acc-1:MES:2026-03-01:1";
       const chartA = new MockVelaChart();
       const cleanupA = attachVelaDrawingsPersistence(chartA, tradeKeyA, {
@@ -346,14 +370,12 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
         debounceMs: 500,
       });
 
-      // User draws on Trade A
       chartA.drawingsDoc.drawings.push({ id: "a-draw-1", type: "Trend Line" });
       chartA.emit("drawing:created");
 
-      // Before timer expires, switch to Trade B (cleanup Trade A)
+      // Cleanup A must immediately flush remote sync for Trade A
       cleanupA();
 
-      // Flush must immediately fire remote sync for Trade A
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(mockFetch).toHaveBeenCalledWith(
         `/api/trades/${encodeURIComponent(tradeKeyA)}`,
@@ -367,44 +389,31 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
         }),
       );
 
-      // Now mount Trade B on same symbol MES
       const tradeKeyB = "acc-1:MES:2026-03-02:2";
       const chartB = new MockVelaChart();
       const cleanupB = attachVelaDrawingsPersistence(chartB, tradeKeyB, {
         fetchImpl: mockFetch as any,
       });
 
-      // Trade B must NOT have Trade A's drawings!
       expect(chartB.drawings.fromJSON).toHaveBeenCalledWith({
         version: 1,
         drawings: [],
       });
 
-      // Trade A's drawings in localStorage remain separate
-      const storedA = loadTradeDrawings(tradeKeyA);
-      expect(storedA?.drawings).toEqual([{ id: "a-draw-1", type: "Trend Line" }]);
-
-      const storedB = loadTradeDrawings(tradeKeyB);
-      expect(storedB).toBeNull();
+      expect(loadTradeDrawings(tradeKeyA)?.drawings).toEqual([
+        { id: "a-draw-1", type: "Trend Line" },
+      ]);
+      expect(loadTradeDrawings(tradeKeyB)).toBeNull();
 
       cleanupB();
     });
-  });
 
-  describe("4. Persistence of favorites, snap mode, and stay mode events", () => {
-    it("persists drawing:favorites events to localStorage", () => {
+    it("persists drawing:favorites, drawing:snap, and drawing:stay events", () => {
       const chart = new MockVelaChart();
       const cleanup = attachVelaDrawingsPersistence(chart, "trade-favs");
 
-      chart.emit("drawing:favorites", { favorites: ["Rectangle", "Callout", "Price Note"] });
-      expect(loadDrawingFavorites()).toEqual(["Rectangle", "Callout", "Price Note"]);
-
-      cleanup();
-    });
-
-    it("persists drawing:snap and drawing:stay events to localStorage", () => {
-      const chart = new MockVelaChart();
-      const cleanup = attachVelaDrawingsPersistence(chart, "trade-prefs");
+      chart.emit("drawing:favorites", { favorites: ["Rectangle", "Callout"] });
+      expect(loadDrawingFavorites()).toEqual(["Rectangle", "Callout"]);
 
       chart.emit("drawing:snap", { mode: "strong" });
       expect(loadDrawingToolPrefs().snapMode).toBe("strong");
@@ -420,6 +429,245 @@ describe("Vela Drawings & Preferences Persistence Bridge", () => {
       expect(loadDrawingToolPrefs().stayMode).toBe(false);
 
       cleanup();
+    });
+  });
+
+  describe("2. Favorite Drawing Tools Toolbar & Grip", () => {
+    let doc: MockDocument;
+    let hostEl: MockElement;
+    const origHTMLElement = (globalThis as any).HTMLElement;
+    const origResizeObserver = (globalThis as any).ResizeObserver;
+    const origMutationObserver = (globalThis as any).MutationObserver;
+
+    beforeEach(() => {
+      (globalThis as any).HTMLElement = MockElement as any;
+      (globalThis as any).ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      };
+      (globalThis as any).MutationObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+        takeRecords() {
+          return [];
+        }
+      };
+
+      doc = new MockDocument();
+      hostEl = doc.createElement("div");
+      hostEl.className = "vela-chart-container";
+      hostEl.offsetWidth = 1000;
+      hostEl.offsetHeight = 700;
+      hostEl.setRectFn(() => ({ left: 0, top: 0, width: 1000, height: 700 }));
+      doc.body.appendChild(hostEl);
+    });
+
+    afterEach(() => {
+      (globalThis as any).HTMLElement = origHTMLElement;
+      (globalThis as any).ResizeObserver = origResizeObserver;
+      (globalThis as any).MutationObserver = origMutationObserver;
+    });
+
+    it("resolves drawing tool metadata and provides canonical icons", () => {
+      expect(DEFAULT_TOOL_META["trendline"]?.label).toBe("Trend Line");
+      expect(DEFAULT_TOOL_META["box"]?.label).toBe("Rectangle");
+      expect(DEFAULT_TOOL_META["fibretracement"]?.label).toBe("Fib Retracement");
+
+      const trendMeta = resolveToolMeta("trendline");
+      expect(trendMeta.label).toBe("Trend Line");
+      expect(trendMeta.icon).toContain("<svg");
+
+      const customMeta = resolveToolMeta("unknown_tool", undefined, {
+        resolveToolMeta: (type) => ({
+          label: `Custom ${type}`,
+          icon: "<svg></svg>",
+        }),
+      });
+      expect(customMeta.label).toBe("Custom unknown_tool");
+    });
+
+    it("toggles favorite toolbar visibility when favorites are added or emptied", () => {
+      const chart = new MockVelaChart();
+      const cleanup = attachVelaFavoriteToolbar(chart as any, hostEl as any);
+
+      const toolbar = hostEl.querySelector(".vela-fav-toolbar");
+      expect(toolbar).not.toBeNull();
+      expect(toolbar!.hidden).toBe(true);
+      expect(toolbar!.getAttribute("data-empty")).toBe("1");
+
+      chart.drawings.setFavorites(["trendline", "box"]);
+
+      expect(toolbar!.hidden).toBe(false);
+      expect(toolbar!.hasAttribute("data-empty")).toBe(false);
+      const buttons = toolbar!.querySelectorAll(".vela-fav-toolbar-btn");
+      expect(buttons.length).toBe(2);
+      expect(buttons[0]!.getAttribute("data-tool")).toBe("trendline");
+      expect(buttons[1]!.getAttribute("data-tool")).toBe("box");
+
+      cleanup();
+    });
+
+    it("clicking a tool button activates it and clicking again deactivates it (toggles null)", () => {
+      const chart = new MockVelaChart();
+      chart.favorites = ["trendline", "box"];
+      const cleanup = attachVelaFavoriteToolbar(chart as any, hostEl as any);
+
+      const toolbar = hostEl.querySelector(".vela-fav-toolbar")!;
+      const trendBtn = toolbar.querySelector("[data-tool='trendline']")!;
+
+      expect(trendBtn.getAttribute("data-active")).toBe("0");
+
+      trendBtn.dispatchEvent({ type: "click" });
+      expect(chart.drawings.setTool).toHaveBeenCalledWith("trendline");
+      expect(trendBtn.getAttribute("data-active")).toBe("1");
+      expect(trendBtn.getAttribute("aria-pressed")).toBe("true");
+
+      trendBtn.dispatchEvent({ type: "click" });
+      expect(chart.drawings.setTool).toHaveBeenCalledWith(null);
+      expect(trendBtn.getAttribute("data-active")).toBe("0");
+      expect(trendBtn.getAttribute("aria-pressed")).toBe("false");
+
+      cleanup();
+    });
+
+    it("synchronizes button states with external drawing:tool events", () => {
+      const chart = new MockVelaChart();
+      chart.favorites = ["trendline", "box"];
+      const cleanup = attachVelaFavoriteToolbar(chart as any, hostEl as any);
+
+      const toolbar = hostEl.querySelector(".vela-fav-toolbar")!;
+      const trendBtn = toolbar.querySelector("[data-tool='trendline']")!;
+      const boxBtn = toolbar.querySelector("[data-tool='box']")!;
+
+      chart.emit("drawing:tool", { type: "box" });
+      expect(boxBtn.getAttribute("data-active")).toBe("1");
+      expect(trendBtn.getAttribute("data-active")).toBe("0");
+
+      chart.emit("drawing:tool", { type: null });
+      expect(boxBtn.getAttribute("data-active")).toBe("0");
+
+      cleanup();
+    });
+
+    it("restores toolbar position from localStorage and cleans up on unmount", () => {
+      localStorage.setItem(FAV_TOOLBAR_POS_STORAGE_KEY, JSON.stringify({ x: 220, y: 45 }));
+
+      const chart = new MockVelaChart();
+      chart.favorites = ["trendline"];
+      const cleanup = attachVelaFavoriteToolbar(chart as any, hostEl as any);
+
+      const toolbar = hostEl.querySelector(".vela-fav-toolbar")!;
+      expect(toolbar.style.left).toBe("220px");
+      expect(toolbar.style.top).toBe("45px");
+
+      expect(chart.listenerCount("drawing:favorites")).toBe(1);
+      expect(chart.listenerCount("drawing:tool")).toBe(1);
+
+      cleanup();
+
+      expect(hostEl.querySelector(".vela-fav-toolbar")).toBeNull();
+      expect(chart.listenerCount("drawing:favorites")).toBe(0);
+      expect(chart.listenerCount("drawing:tool")).toBe(0);
+    });
+
+    it("enhances toolbar grip button with GRIP_SIX_DOTS_SVG idempotently", () => {
+      const gripBtn = doc.createElement("button");
+      gripBtn.className = "vela-dpop-grip";
+      gripBtn.innerHTML = "<span>old</span>";
+
+      enhanceVelaFloatingToolbarGrip(gripBtn as any);
+      expect(gripBtn.innerHTML).toBe(GRIP_SIX_DOTS_SVG);
+      expect(gripBtn.getAttribute("data-grip-enhanced")).toBe("1");
+
+      // Calling again is idempotent
+      enhanceVelaFloatingToolbarGrip(gripBtn as any);
+      expect(gripBtn.innerHTML).toBe(GRIP_SIX_DOTS_SVG);
+    });
+  });
+
+  describe("3. Toolbar Gutter Synchronization", () => {
+    it("synchronizes renderer toolbar gutter to 52px and triggers size recalculation", () => {
+      const setToolbarGutter = vi.fn();
+      const syncSize = vi.fn();
+      const mockContainer = {
+        style: {
+          setProperty: vi.fn(),
+        },
+      } as unknown as HTMLElement;
+
+      const mockInstance = {
+        renderer: {
+          setToolbarGutter,
+          syncSize,
+        },
+        drawings: {},
+      };
+
+      syncVelaToolbarGutter(mockInstance, mockContainer);
+
+      expect(setToolbarGutter).toHaveBeenCalledWith(52);
+      expect(mockContainer.style.setProperty).toHaveBeenCalledWith("--vela-toolbar-gutter", "52px");
+      expect(syncSize).toHaveBeenCalled();
+    });
+
+    it("intercepts drawings.syncToolbarGutter for open, collapsed, and mobile layouts", () => {
+      const setToolbarGutter = vi.fn();
+      const syncSize = vi.fn();
+
+      const mockDrawings = {
+        toolbarVisible: true,
+        mobileLayout: false,
+        toolbarCollapsed: false,
+        syncToolbarGutter: vi.fn(),
+      };
+
+      const mockInstance = {
+        renderer: {
+          setToolbarGutter,
+          syncSize,
+        },
+        drawings: mockDrawings,
+      };
+
+      syncVelaToolbarGutter(mockInstance);
+      expect(setToolbarGutter).toHaveBeenCalledWith(52);
+
+      // Collapsed toolbar -> 16px
+      mockDrawings.toolbarCollapsed = true;
+      mockDrawings.syncToolbarGutter();
+      expect(setToolbarGutter).toHaveBeenLastCalledWith(16);
+
+      // Restored toolbar -> 52px
+      mockDrawings.toolbarCollapsed = false;
+      mockDrawings.syncToolbarGutter();
+      expect(setToolbarGutter).toHaveBeenLastCalledWith(52);
+
+      // Mobile layout -> 0px
+      mockDrawings.mobileLayout = true;
+      mockDrawings.syncToolbarGutter();
+      expect(setToolbarGutter).toHaveBeenLastCalledWith(0);
+
+      // Hidden toolbar -> 0px
+      mockDrawings.mobileLayout = false;
+      mockDrawings.toolbarVisible = false;
+      mockDrawings.syncToolbarGutter();
+      expect(setToolbarGutter).toHaveBeenLastCalledWith(0);
+    });
+
+    it("handles null, undefined, and nested renderer wrappers safely", () => {
+      expect(() => syncVelaToolbarGutter(null)).not.toThrow();
+      expect(() => syncVelaToolbarGutter(undefined)).not.toThrow();
+      expect(() => syncVelaToolbarGutter({})).not.toThrow();
+
+      const setToolbarGutter = vi.fn();
+      const syncSize = vi.fn();
+      const mockRenderer = { setToolbarGutter, syncSize };
+      const wrappedInstance = { renderer: { renderer: mockRenderer, syncSize: vi.fn() } };
+
+      syncVelaToolbarGutter(wrappedInstance);
+      expect(setToolbarGutter).toHaveBeenCalledWith(52);
     });
   });
 });

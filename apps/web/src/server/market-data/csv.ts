@@ -1,10 +1,54 @@
 import { randomUUID } from "node:crypto";
 import { db, marketCsvDatasets, trades } from "@/db";
-import { RESOLUTIONS, type MarketBar, type Resolution } from "@/lib/market-data";
+import {
+  RESOLUTIONS,
+  parseResolutionMs,
+  normalizeResolution,
+  type MarketBar,
+  type Resolution,
+} from "@/lib/market-data";
 import { parseMarketCsv, formatDatasetDisplayName, type MarketCsvDataset } from "@/lib/market-csv";
-import { normalizeSymbol, getAssetFamily } from "@/lib/assets/symbol-utils";
+import {
+  normalizeSymbol,
+  getAssetFamily,
+  getAssetClass,
+  getDefaultCompatibleSymbols,
+} from "@/lib/assets/symbol-utils";
+import { getSetting, setSetting } from "@/server/settings";
 import { MarketDataError, type MarketDataProvider } from "./provider";
 import { result } from "./http";
+
+export function getCustomSymbolLinks(symbol: string): string[] | null {
+  const norm = (normalizeSymbol(symbol) || symbol.trim()).toUpperCase();
+  const val = getSetting(`market_symbol_links:${norm}`);
+  if (!val) return null;
+  try {
+    const parsed = JSON.parse(val);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCustomSymbolLinks(symbol: string, allowedSymbols: string[]): void {
+  const norm = (normalizeSymbol(symbol) || symbol.trim()).toUpperCase();
+  const cleanList = Array.from(
+    new Set(allowedSymbols.map((s) => s.trim().toUpperCase()).filter(Boolean)),
+  );
+  setSetting(`market_symbol_links:${norm}`, JSON.stringify(cleanList));
+
+  // Synchronize market_csv_datasets rows for this symbol so backward compat works
+  const sqlite = db.$client;
+  sqlite
+    .prepare("UPDATE market_csv_datasets SET compatible_symbols_json = ? WHERE symbol = ?")
+    .run(JSON.stringify(cleanList), norm);
+}
+
+export function getActiveCompatibleSymbols(symbol: string): string[] {
+  const custom = getCustomSymbolLinks(symbol);
+  if (custom !== null) return custom;
+  return getDefaultCompatibleSymbols(symbol);
+}
 
 export function csvDatasets(): MarketCsvDataset[] {
   return db
@@ -35,7 +79,7 @@ export function csvDatasets(): MarketCsvDataset[] {
         name: formatDatasetDisplayName(row),
         resolution: row.resolution as Resolution,
         from: new Date(firstTime).toISOString(),
-        to: new Date(lastTime + RESOLUTIONS[row.resolution as Resolution]).toISOString(),
+        to: new Date(lastTime + parseResolutionMs(row.resolution)).toISOString(),
         compatibleSymbols,
       };
     });
@@ -101,10 +145,13 @@ export interface CandleSeriesSummaryItem {
   from: string;
   to: string;
   batches: CandleBatchItem[];
+  compatibleSymbols?: string[];
 }
 
 export function ingestCandles(input: IngestCandlesInput): IngestCandlesResult {
-  const bars = parseMarketCsv(input.content, input.symbol, input.resolution);
+  const normResolution = (normalizeResolution(input.resolution) ||
+    input.resolution.toLowerCase()) as Resolution;
+  const bars = parseMarketCsv(input.content, input.symbol, normResolution);
   if (bars.length === 0) {
     throw new MarketDataError("No candles found in CSV file.");
   }
@@ -122,7 +169,7 @@ export function ingestCandles(input: IngestCandlesInput): IngestCandlesResult {
     for (const bar of bars) {
       const res = insertCandle.run(
         input.symbol,
-        input.resolution,
+        normResolution,
         bar.time,
         bar.open,
         bar.high,
@@ -143,30 +190,44 @@ export function ingestCandles(input: IngestCandlesInput): IngestCandlesResult {
     const lastTime = bars.at(-1)!.time;
     const importedAt = new Date().toISOString();
 
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO market_candle_batches (id, symbol, resolution, name, bar_count, new_bar_count, duplicate_bar_count, first_time, last_time, imported_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      batchId,
-      input.symbol,
-      input.resolution,
-      input.name,
-      bars.length,
-      newBarCount,
-      duplicateBarCount,
-      firstTime,
-      lastTime,
-      importedAt,
-    );
+    `,
+      )
+      .run(
+        batchId,
+        input.symbol,
+        normResolution,
+        input.name,
+        bars.length,
+        newBarCount,
+        duplicateBarCount,
+        firstTime,
+        lastTime,
+        importedAt,
+      );
 
-    const stats = sqlite.prepare(`
+    const stats = sqlite
+      .prepare(
+        `
       SELECT COUNT(*) as barCount, MIN(time) as firstTime, MAX(time) as lastTime
       FROM market_candles
       WHERE symbol = ? AND resolution = ?
-    `).get(input.symbol, input.resolution) as { barCount: number; firstTime: number; lastTime: number };
+    `,
+      )
+      .get(input.symbol, normResolution) as {
+      barCount: number;
+      firstTime: number;
+      lastTime: number;
+    };
 
     if (stats && stats.barCount > 0) {
-      sqlite.prepare(`
+      sqlite
+        .prepare(
+          `
         INSERT INTO market_series_summary (symbol, resolution, bar_count, first_time, last_time, currency, price_basis, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(symbol, resolution) DO UPDATE SET
@@ -176,43 +237,57 @@ export function ingestCandles(input: IngestCandlesInput): IngestCandlesResult {
           currency = excluded.currency,
           price_basis = excluded.price_basis,
           updated_at = excluded.updated_at
-      `).run(
-        input.symbol,
-        input.resolution,
-        stats.barCount,
-        stats.firstTime,
-        stats.lastTime,
-        input.currency || "USD",
-        input.priceBasis || "raw",
-        importedAt,
-      );
+      `,
+        )
+        .run(
+          input.symbol,
+          normResolution,
+          stats.barCount,
+          stats.firstTime,
+          stats.lastTime,
+          input.currency || "USD",
+          input.priceBasis || "raw",
+          importedAt,
+        );
     }
 
     // Keep marketCsvDatasets metadata synced for legacy tests / compatibility
-    sqlite.prepare(`
+    sqlite
+      .prepare(
+        `
       INSERT INTO market_csv_datasets (id, name, symbol, resolution, currency, price_basis, bars_json, imported_at, bar_count, first_time, last_time, compatible_symbols_json)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      batchId,
-      formatDatasetDisplayName({ name: input.name, symbol: input.symbol, resolution: input.resolution }),
-      input.symbol,
-      input.resolution,
-      input.currency || "USD",
-      input.priceBasis || "raw",
-      "[]",
-      importedAt,
-      bars.length,
-      firstTime,
-      lastTime,
-      input.compatibleSymbols && input.compatibleSymbols.length > 0
-        ? JSON.stringify(input.compatibleSymbols)
-        : null,
-    );
+    `,
+      )
+      .run(
+        batchId,
+        formatDatasetDisplayName({
+          name: input.name,
+          symbol: input.symbol,
+          resolution: normResolution,
+        }),
+        input.symbol,
+        normResolution,
+        input.currency || "USD",
+        input.priceBasis || "raw",
+        "[]",
+        importedAt,
+        bars.length,
+        firstTime,
+        lastTime,
+        input.compatibleSymbols && input.compatibleSymbols.length > 0
+          ? JSON.stringify(input.compatibleSymbols)
+          : null,
+      );
+
+    if (input.compatibleSymbols && input.compatibleSymbols.length > 0) {
+      setCustomSymbolLinks(input.symbol, input.compatibleSymbols);
+    }
 
     return {
       batchId,
       symbol: input.symbol,
-      resolution: input.resolution,
+      resolution: normResolution,
       newBarCount,
       duplicateBarCount,
       totalInDb: stats?.barCount ?? newBarCount,
@@ -224,9 +299,7 @@ export function revertCandleBatch(batchId: string) {
   const sqlite = db.$client;
   return sqlite.transaction(() => {
     const batch = sqlite
-      .prepare(
-        "SELECT symbol, resolution FROM market_candle_batches WHERE id = ?",
-      )
+      .prepare("SELECT symbol, resolution FROM market_candle_batches WHERE id = ?")
       .get(batchId) as { symbol: string; resolution: string } | undefined;
 
     const legacy = !batch
@@ -264,9 +337,7 @@ export function revertCandleBatch(batchId: string) {
     sqlite.prepare("DELETE FROM market_candle_batches WHERE id = ?").run(batchId);
 
     sqlite
-      .prepare(
-        "DELETE FROM trade_excursions WHERE json_extract(estimate_json, '$.datasetId') = ?",
-      )
+      .prepare("DELETE FROM trade_excursions WHERE json_extract(estimate_json, '$.datasetId') = ?")
       .run(batchId);
     sqlite.prepare("DELETE FROM market_csv_datasets WHERE id = ?").run(batchId);
 
@@ -300,9 +371,7 @@ export function revertCandleBatch(batchId: string) {
           );
       } else {
         sqlite
-          .prepare(
-            "DELETE FROM market_series_summary WHERE symbol = ? AND resolution = ?",
-          )
+          .prepare("DELETE FROM market_series_summary WHERE symbol = ? AND resolution = ?")
           .run(targetSymbol, targetResolution);
       }
     }
@@ -320,10 +389,18 @@ export function purgeCandlesBySymbol(symbol: string, resolution?: string): void 
   const sqlite = db.$client;
   sqlite.transaction(() => {
     if (resolution) {
-      sqlite.prepare("DELETE FROM market_candles WHERE symbol = ? AND resolution = ?").run(symbol, resolution);
-      sqlite.prepare("DELETE FROM market_series_summary WHERE symbol = ? AND resolution = ?").run(symbol, resolution);
-      sqlite.prepare("DELETE FROM market_candle_batches WHERE symbol = ? AND resolution = ?").run(symbol, resolution);
-      sqlite.prepare("DELETE FROM market_csv_datasets WHERE symbol = ? AND resolution = ?").run(symbol, resolution);
+      sqlite
+        .prepare("DELETE FROM market_candles WHERE symbol = ? AND resolution = ?")
+        .run(symbol, resolution);
+      sqlite
+        .prepare("DELETE FROM market_series_summary WHERE symbol = ? AND resolution = ?")
+        .run(symbol, resolution);
+      sqlite
+        .prepare("DELETE FROM market_candle_batches WHERE symbol = ? AND resolution = ?")
+        .run(symbol, resolution);
+      sqlite
+        .prepare("DELETE FROM market_csv_datasets WHERE symbol = ? AND resolution = ?")
+        .run(symbol, resolution);
     } else {
       sqlite.prepare("DELETE FROM market_candles WHERE symbol = ?").run(symbol);
       sqlite.prepare("DELETE FROM market_series_summary WHERE symbol = ?").run(symbol);
@@ -376,7 +453,7 @@ export function candleSeriesSummary(): CandleSeriesSummaryItem[] {
 
   return summaries.map((s) => {
     const res = s.resolution as Resolution;
-    const dur = RESOLUTIONS[res] ?? 60_000;
+    const dur = parseResolutionMs(s.resolution);
     return {
       ...s,
       resolution: res,
@@ -385,6 +462,7 @@ export function candleSeriesSummary(): CandleSeriesSummaryItem[] {
       batches: allBatches
         .filter((b) => b.symbol === s.symbol && b.resolution === s.resolution)
         .map((b) => ({ ...b, resolution: b.resolution as Resolution })),
+      compatibleSymbols: getActiveCompatibleSymbols(s.symbol),
     };
   });
 }
@@ -457,8 +535,7 @@ export const marketCsv: MarketDataProvider = {
       const batch = sqlite
         .prepare("SELECT id, symbol, resolution, name FROM market_candle_batches WHERE id = ?")
         .get(request.dataset) as
-        | { id: string; symbol: string; resolution: string; name: string }
-        | undefined;
+        { id: string; symbol: string; resolution: string; name: string } | undefined;
 
       if (batch) {
         targetSymbol = batch.symbol;
@@ -495,7 +572,7 @@ export const marketCsv: MarketDataProvider = {
         }
       }
     } else {
-      const resolutionMs = RESOLUTIONS[request.resolution] ?? 60_000;
+      const resolutionMs = parseResolutionMs(request.resolution);
       const isOverlapping = (firstTime: number, lastTime: number) =>
         firstTime < request.to && lastTime + resolutionMs > request.from;
 
@@ -523,7 +600,38 @@ export const marketCsv: MarketDataProvider = {
         exact = undefined;
       }
 
-      if (!exact && normRequest && normRequest !== request.symbol) {
+      const matchesAllowedList = (allowed: string[], reqSym: string, normReq: string): boolean => {
+        const upperReq = reqSym.trim().toUpperCase();
+        if (allowed.includes(upperReq) || allowed.includes(reqSym)) return true;
+        // Allow futures contract month / continuous suffixes (e.g. MES1!, ESU24) when root symbol is in allowed
+        if (
+          normReq &&
+          upperReq.startsWith(normReq) &&
+          !upperReq.includes(".") &&
+          allowed.includes(normReq)
+        ) {
+          return true;
+        }
+        return false;
+      };
+
+      const isAllowedBySymbolConfig = (seriesSymbol: string, reqSym: string): boolean => {
+        const upperReq = reqSym.trim().toUpperCase();
+        const upperSeries = seriesSymbol.trim().toUpperCase();
+        if (upperReq === upperSeries) return true;
+        // Allow continuous futures contract variations of the series symbol itself (e.g. MES1!, MESZ24 for MES)
+        if (
+          normRequest === normalizeSymbol(seriesSymbol) &&
+          upperReq.startsWith(upperSeries) &&
+          !upperReq.includes(".")
+        ) {
+          return true;
+        }
+        const activeAllowed = getActiveCompatibleSymbols(seriesSymbol);
+        return matchesAllowedList(activeAllowed, reqSym, normRequest);
+      };
+
+      if (!exact && normRequest && normRequest !== request.symbol.trim().toUpperCase()) {
         const normSummary = sqlite
           .prepare(
             `SELECT symbol, currency, price_basis as priceBasis, bar_count as barCount, first_time as firstTime, last_time as lastTime
@@ -540,7 +648,11 @@ export const marketCsv: MarketDataProvider = {
               lastTime: number;
             }
           | undefined;
-        if (normSummary && isOverlapping(normSummary.firstTime, normSummary.lastTime)) {
+        if (
+          normSummary &&
+          isOverlapping(normSummary.firstTime, normSummary.lastTime) &&
+          isAllowedBySymbolConfig(normSummary.symbol, request.symbol)
+        ) {
           exact = normSummary;
         }
       }
@@ -572,7 +684,9 @@ export const marketCsv: MarketDataProvider = {
         const exactDataset = datasets.find(
           (d) =>
             d.symbol === request.symbol ||
-            (normRequest && (d.symbol === normRequest || normalizeSymbol(d.symbol) === normRequest)),
+            (normRequest &&
+              (d.symbol === normRequest || normalizeSymbol(d.symbol) === normRequest) &&
+              isAllowedBySymbolConfig(d.symbol, request.symbol)),
         );
         if (exactDataset) {
           targetSymbol = exactDataset.symbol;
@@ -581,15 +695,55 @@ export const marketCsv: MarketDataProvider = {
           targetBatchId = exactDataset.id;
           datasetName = exactDataset.name;
         } else {
-          // Priority 2: Brother instruments from declared compatible symbols or asset family
-          for (const d of datasets) {
-            if (d.compatibleSymbolsJson) {
-              try {
-                const allowed = JSON.parse(d.compatibleSymbolsJson) as string[];
-                if (Array.isArray(allowed)) {
+          const summaries = (
+            sqlite
+              .prepare(
+                `SELECT symbol, currency, price_basis as priceBasis, bar_count as barCount, first_time as firstTime, last_time as lastTime
+                 FROM market_series_summary
+                 WHERE resolution = ? AND bar_count > 0`,
+              )
+              .all(request.resolution) as Array<{
+              symbol: string;
+              currency: string;
+              priceBasis: string;
+              barCount: number;
+              firstTime: number;
+              lastTime: number;
+            }>
+          ).filter((s) => isOverlapping(s.firstTime, s.lastTime));
+
+          // Priority 2A: Check custom symbol links on active summaries (allows custom tickers outside families)
+          for (const s of summaries) {
+            const customAllowed = getCustomSymbolLinks(s.symbol);
+            if (customAllowed && matchesAllowedList(customAllowed, request.symbol, normRequest)) {
+              targetSymbol = s.symbol;
+              datasetCurrency = s.currency;
+              datasetPriceBasis = s.priceBasis;
+              break;
+            }
+          }
+
+          // Priority 2B: Check declared compatibleSymbolsJson on datasets (if not overridden by custom links)
+          if (!targetSymbol) {
+            for (const d of datasets) {
+              const customAllowed = getCustomSymbolLinks(d.symbol);
+              if (customAllowed !== null) {
+                if (matchesAllowedList(customAllowed, request.symbol, normRequest)) {
+                  targetSymbol = d.symbol;
+                  datasetCurrency = d.currency;
+                  datasetPriceBasis = d.priceBasis;
+                  targetBatchId = d.id;
+                  datasetName = d.name;
+                  break;
+                }
+                continue;
+              }
+              if (d.compatibleSymbolsJson) {
+                try {
+                  const allowed = JSON.parse(d.compatibleSymbolsJson) as string[];
                   if (
-                    allowed.includes(request.symbol) ||
-                    (normRequest && allowed.includes(normRequest))
+                    Array.isArray(allowed) &&
+                    matchesAllowedList(allowed, request.symbol, normRequest)
                   ) {
                     targetSymbol = d.symbol;
                     datasetCurrency = d.currency;
@@ -598,38 +752,21 @@ export const marketCsv: MarketDataProvider = {
                     datasetName = d.name;
                     break;
                   }
-                }
-              } catch {}
+                } catch {}
+              }
             }
           }
 
+          // Priority 3: Same-class Asset Family fallback
           if (!targetSymbol) {
             const family = getAssetFamily(request.symbol);
             if (family) {
-              const summaries = (
-                sqlite
-                  .prepare(
-                    `SELECT symbol, currency, price_basis as priceBasis, bar_count as barCount, first_time as firstTime, last_time as lastTime
-                     FROM market_series_summary
-                     WHERE resolution = ? AND bar_count > 0`,
-                  )
-                  .all(request.resolution) as Array<{
-                  symbol: string;
-                  currency: string;
-                  priceBasis: string;
-                  barCount: number;
-                  firstTime: number;
-                  lastTime: number;
-                }>
-              ).filter((s) => isOverlapping(s.firstTime, s.lastTime));
-
               const familySummary = summaries.find((s) => {
                 const sFam = getAssetFamily(s.symbol);
-                return (
-                  sFam?.id === family.id ||
-                  family.symbols.includes(s.symbol) ||
-                  (normalizeSymbol(s.symbol) ? family.symbols.includes(normalizeSymbol(s.symbol)) : false)
-                );
+                if (!sFam || sFam.id !== family.id) return false;
+
+                const allowed = getActiveCompatibleSymbols(s.symbol);
+                return matchesAllowedList(allowed, request.symbol, normRequest);
               });
 
               if (familySummary) {
@@ -639,11 +776,10 @@ export const marketCsv: MarketDataProvider = {
               } else {
                 const familyDataset = datasets.find((d) => {
                   const dFam = getAssetFamily(d.symbol);
-                  return (
-                    dFam?.id === family.id ||
-                    family.symbols.includes(d.symbol) ||
-                    (normalizeSymbol(d.symbol) ? family.symbols.includes(normalizeSymbol(d.symbol)) : false)
-                  );
+                  if (!dFam || dFam.id !== family.id) return false;
+
+                  const allowed = getActiveCompatibleSymbols(d.symbol);
+                  return matchesAllowedList(allowed, request.symbol, normRequest);
                 });
                 if (familyDataset) {
                   targetSymbol = familyDataset.symbol;
@@ -692,7 +828,7 @@ export const marketCsv: MarketDataProvider = {
       }
     }
 
-    const resolutionMs = RESOLUTIONS[targetResolution] ?? 60_000;
+    const resolutionMs = parseResolutionMs(targetResolution);
     const fromTime = request.from - resolutionMs + 1;
     const toTime = request.to - 1;
 

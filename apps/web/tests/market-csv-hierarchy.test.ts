@@ -8,8 +8,16 @@ const scratch = mkdtempSync(join(tmpdir(), "journal-csv-hierarchy-"));
 process.env.JOURNAL_DATA_DIR = scratch;
 
 const { db, trades, marketCsvDatasets } = await import("../src/db");
-const { marketCsv, importCsvDataset, distinctTradedSymbols, removeCsvDataset } =
-  await import("../src/server/market-data/csv");
+const {
+  marketCsv,
+  importCsvDataset,
+  distinctTradedSymbols,
+  removeCsvDataset,
+  setCustomSymbolLinks,
+  getCustomSymbolLinks,
+  ingestCandles,
+  purgeCandlesBySymbol,
+} = await import("../src/server/market-data/csv");
 
 describe("Market CSV Ground Truth & Family Hierarchy", () => {
   // 2025-01-02 14:30:00 UTC = 1735828200000
@@ -106,22 +114,36 @@ describe("Market CSV Ground Truth & Family Hierarchy", () => {
     expect(res.warnings[0]).not.toContain("brother instrument");
   });
 
-  it("matches US500 request to MES dataset as family fallback when no US500 dataset exists (Priority 2)", async () => {
-    const res = await marketCsv.history(
+  it("matches ES (Futures) to MES (Futures) within the Futures family, while isolating US500 (CFD) by default", async () => {
+    // ES is in the same Futures class as MES -> should match automatically
+    const esRes = await marketCsv.history(
       {
-        symbol: "US500",
+        symbol: "ES",
         resolution: "5m",
         from: fromTime,
         to: toTime,
       },
       "",
     );
-    expect(res.datasetId).toBe(mesDatasetId);
-    expect(res.bars[0]!.open).toBe(5000);
-    expect(res.warnings[0]).toContain("Candles from brother instrument MES");
+    expect(esRes.datasetId).toBe(mesDatasetId);
+    expect(esRes.bars[0]!.open).toBe(5000);
+    expect(esRes.warnings[0]).toContain("Candles from brother instrument MES");
+
+    // US500 is CFD class -> must NOT cross-contaminate with Futures MES by default
+    await expect(
+      marketCsv.history(
+        {
+          symbol: "US500",
+          resolution: "5m",
+          from: fromTime,
+          to: toTime,
+        },
+        "",
+      ),
+    ).rejects.toThrow("No CSV dataset matches this symbol and resolution");
   });
 
-  it("prioritizes US500 dataset over MES fallback when US500 dataset is imported (Ground Truth Preserved)", async () => {
+  it("matches CFD brother symbols (SPX500, US500.CASH) to US500 dataset within the CFD family", async () => {
     us500DatasetId = importCsvDataset({
       name: "US500_5m.csv",
       symbol: "US500",
@@ -131,7 +153,7 @@ describe("Market CSV Ground Truth & Family Hierarchy", () => {
       content: us500CsvContent,
     });
 
-    const res = await marketCsv.history(
+    const resExact = await marketCsv.history(
       {
         symbol: "US500",
         resolution: "5m",
@@ -140,10 +162,49 @@ describe("Market CSV Ground Truth & Family Hierarchy", () => {
       },
       "",
     );
-    expect(res.datasetId).toBe(us500DatasetId);
-    expect(res.bars[0]!.open).toBe(5001); // US500 candle open, not MES!
-    expect(res.warnings[0]).toContain("Local file: US500_5m.csv");
-    expect(res.warnings[0]).not.toContain("brother instrument");
+    expect(resExact.datasetId).toBe(us500DatasetId);
+    expect(resExact.bars[0]!.open).toBe(5001);
+    expect(resExact.warnings[0]).toContain("Local file: US500_5m.csv");
+
+    // SPX500 normalizes to US500 (Priority 1 alias)
+    const resCfdAlias = await marketCsv.history(
+      {
+        symbol: "SPX500",
+        resolution: "5m",
+        from: fromTime,
+        to: toTime,
+      },
+      "",
+    );
+    expect(resCfdAlias.datasetId).toBe(us500DatasetId);
+    expect(resCfdAlias.bars[0]!.open).toBe(5001);
+
+    // SPX and US500.CASH also resolve to US500 within the CFD family
+    const resCfdBrother = await marketCsv.history(
+      {
+        symbol: "US500.CASH",
+        resolution: "5m",
+        from: fromTime,
+        to: toTime,
+      },
+      "",
+    );
+    expect(resCfdBrother.datasetId).toBe(us500DatasetId);
+    expect(resCfdBrother.bars[0]!.open).toBe(5001);
+
+    // Unlinking SPX500 via setCustomSymbolLinks blocks SPX500 while preserving US500.CASH
+    setCustomSymbolLinks("US500", ["US500", "US500.CASH"]);
+    await expect(
+      marketCsv.history(
+        {
+          symbol: "SPX500",
+          resolution: "5m",
+          from: fromTime,
+          to: toTime,
+        },
+        "",
+      ),
+    ).rejects.toThrow("No CSV dataset matches this symbol and resolution");
   });
 
   it("honors explicit dataset override even if request symbol differs", async () => {
@@ -161,8 +222,7 @@ describe("Market CSV Ground Truth & Family Hierarchy", () => {
     expect(res.bars[0]!.open).toBe(5000);
   });
 
-  it("respects customized compatibleSymbols and rejects brothers removed by the user", async () => {
-    // Import dataset where user explicitly allowed ONLY MES and US500, excluding SPY
+  it("respects customized compatibleSymbols and interactive setCustomSymbolLinks (add & unlink tickers)", async () => {
     const customId = importCsvDataset({
       name: "CUSTOM_MES_5m.csv",
       symbol: "MES_CUSTOM",
@@ -185,11 +245,14 @@ describe("Market CSV Ground Truth & Family Hierarchy", () => {
     );
     expect(resAllowed.datasetId).toBe(customId);
 
-    // Request for an unallowed brother symbol like UNKNOWN_PARTNER should NOT find it
+    // Unlink ALLOWED_PARTNER via setCustomSymbolLinks (simulating UI [x] button)
+    setCustomSymbolLinks("MES_CUSTOM", ["MES_CUSTOM"]);
+    expect(getCustomSymbolLinks("MES_CUSTOM")).toEqual(["MES_CUSTOM"]);
+
     await expect(
       marketCsv.history(
         {
-          symbol: "UNKNOWN_PARTNER",
+          symbol: "ALLOWED_PARTNER",
           resolution: "5m",
           from: fromTime,
           to: toTime,
@@ -199,6 +262,90 @@ describe("Market CSV Ground Truth & Family Hierarchy", () => {
     ).rejects.toThrow("No CSV dataset matches this symbol and resolution");
 
     removeCsvDataset(customId);
+
+    // Unlink ES from MES (leaving only MES or []) and verify ES is blocked while MES1! still resolves
+    setCustomSymbolLinks("MES", ["MES"]);
+    await expect(
+      marketCsv.history(
+        {
+          symbol: "ES",
+          resolution: "5m",
+          from: fromTime,
+          to: toTime,
+        },
+        "",
+      ),
+    ).rejects.toThrow("No CSV dataset matches this symbol and resolution");
+
+    const mesCont = await marketCsv.history(
+      {
+        symbol: "MES1!",
+        resolution: "5m",
+        from: fromTime,
+        to: toTime,
+      },
+      "",
+    );
+    expect(mesCont.datasetId).toBe(mesDatasetId);
+
+    // Even when set to empty array [], ES remains blocked and MES1! still resolves to MES
+    setCustomSymbolLinks("MES", []);
+    await expect(
+      marketCsv.history(
+        {
+          symbol: "ES",
+          resolution: "5m",
+          from: fromTime,
+          to: toTime,
+        },
+        "",
+      ),
+    ).rejects.toThrow("No CSV dataset matches this symbol and resolution");
+
+    const mesCont2 = await marketCsv.history(
+      {
+        symbol: "MES1!",
+        resolution: "5m",
+        from: fromTime,
+        to: toTime,
+      },
+      "",
+    );
+    expect(mesCont2.datasetId).toBe(mesDatasetId);
+  });
+
+  it("smartly de-duplicates overlapping candles on bulk/incremental imports without duplicating existing bars", () => {
+    const batch1 = ingestCandles({
+      name: "US100.cash_5m_part1.csv",
+      symbol: "US100",
+      resolution: "5m",
+      currency: "USD",
+      priceBasis: "raw",
+      content: `timestamp,open,high,low,close,volume
+1735828200,21000,21010,20990,21005,100
+1735828500,21005,21020,21000,21015,120`,
+    });
+    expect(batch1.newBarCount).toBe(2);
+    expect(batch1.duplicateBarCount).toBe(0);
+    expect(batch1.totalInDb).toBe(2);
+
+    // Second upload has 2 overlapping bars + 1 new surplus bar
+    const batch2 = ingestCandles({
+      name: "US100.cash_5m_part2.csv",
+      symbol: "US100",
+      resolution: "5m",
+      currency: "USD",
+      priceBasis: "raw",
+      content: `timestamp,open,high,low,close,volume
+1735828200,21000,21010,20990,21005,100
+1735828500,21005,21020,21000,21015,120
+1735828800,21015,21030,21010,21025,150`,
+    });
+    expect(batch2.newBarCount).toBe(1);
+    expect(batch2.duplicateBarCount).toBe(2);
+    expect(batch2.totalInDb).toBe(3);
+
+    purgeCandlesBySymbol("US100", "5m");
   });
 
   afterAll(() => {
