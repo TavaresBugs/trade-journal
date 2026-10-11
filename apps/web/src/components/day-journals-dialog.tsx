@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, FileText, Plus } from "lucide-react";
+import { BookOpen, CalendarDays, FileText, Link2, Loader2, Plus, Unlink } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { AssetIcon } from "./ui/asset-icon";
@@ -25,11 +25,22 @@ interface DayTradeItem {
   durationMs?: number | null;
   stopLoss?: number | null;
   profitTarget?: number | null;
+  notes?: string | null;
   linkedJournalDate?: string | null;
+}
+
+interface DayJournalEntry {
+  id: string;
+  date: string;
+  note: string;
+  symbol: string | null;
+  attachmentsCount: number;
+  linkedTradesCount: number;
 }
 
 interface DayJournalData {
   date: string;
+  journals?: DayJournalEntry[];
   trades: DayTradeItem[];
   note: string;
   symbol?: string | null;
@@ -54,6 +65,7 @@ export function DayJournalsDialog({
   const [data, setData] = useState<DayJournalData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [linkingKey, setLinkingKey] = useState<string | null>(null);
 
   const fetchDayData = useCallback(async (dayDate: string) => {
     setLoading(true);
@@ -86,7 +98,22 @@ export function DayJournalsDialog({
   const hasDayJournal = Boolean(
     data?.hasDayJournal ?? (hasNote || Boolean(data?.symbol) || attachmentsCount > 0),
   );
-  const hasItems = hasDayJournal || trades.length > 0;
+  const journalsList: DayJournalEntry[] =
+    data?.journals && data.journals.length > 0
+      ? data.journals
+      : hasDayJournal
+        ? [
+            {
+              id: date,
+              date,
+              note: data?.note ?? "",
+              symbol: data?.symbol ?? null,
+              attachmentsCount,
+              linkedTradesCount: trades.filter((t) => t.linkedJournalDate === date).length,
+            },
+          ]
+        : [];
+  const hasItems = journalsList.length > 0 || trades.length > 0;
 
   const formattedDate = new Date(date + "T00:00:00Z").toLocaleDateString("en-US", {
     month: "long",
@@ -100,302 +127,331 @@ export function DayJournalsDialog({
     router.push(`/journal/${date}?t=${index + 1}`);
   };
 
-  const handleDayOverview = () => {
+  const handleOpenDayJournalEntry = (journalId: string) => {
     onOpenChange(false);
-    router.push(`/journal/${date}?t=day`);
+    if (journalId === date) {
+      router.push(`/journal/${date}?t=day`);
+    } else {
+      const subId = journalId.slice(date.length + 1);
+      router.push(`/journal/${date}?t=${encodeURIComponent(`day:${subId}`)}`);
+    }
   };
 
   const handleCreateDraft = () => {
     onOpenChange(false);
-    const targetIndex = trades.length > 0 ? trades.length + 1 : 1;
-    router.push(`/journal/${date}?t=${targetIndex}&new=true`);
+    if (journalsList.length === 0) {
+      router.push(`/journal/${date}?t=day&new=true`);
+    } else {
+      const subId = `j_${Math.random().toString(36).slice(2, 7)}`;
+      router.push(`/journal/${date}?t=${encodeURIComponent(`day:${subId}`)}&new=true`);
+    }
   };
 
-  const areAllTradesLinked = trades.length > 0 && trades.every((t) => t.linkedJournalDate === date);
+  const handleToggleTradeLink = async (e: React.MouseEvent, trade: DayTradeItem) => {
+    e.stopPropagation();
+    if (!date || linkingKey) return;
+    const isCurrentlyLinked = Boolean(
+      trade.linkedJournalDate &&
+        (trade.linkedJournalDate === date || trade.linkedJournalDate.startsWith(`${date}#`)),
+    );
+    const matchingSymbolJournal = journalsList.find(
+      (j) => j.symbol && trade.symbol.toUpperCase().includes(j.symbol.toUpperCase()),
+    );
+    const targetJournalId = matchingSymbolJournal?.id ?? journalsList[0]?.id ?? date;
+    const siblingWithNote = trades.find(
+      (t) => t.key !== trade.key && Boolean(t.notes && t.notes.trim().length > 0),
+    );
+    setLinkingKey(trade.key);
+    try {
+      await fetch(`/api/trades/${encodeURIComponent(trade.key)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          linkedJournalDate: isCurrentlyLinked ? null : targetJournalId,
+          ...(!isCurrentlyLinked && !trade.notes?.trim() && siblingWithNote
+            ? { sourceTradeKey: siblingWithNote.key }
+            : {}),
+        }),
+      });
+      await fetchDayData(date);
+      onJournalCreated?.();
+    } finally {
+      setLinkingKey(null);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl p-5 sm:p-6 border-border/70 shadow-2xl rounded-2xl">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Journals for {formattedDate}</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Header without duplicate counters (counts live in footer only) */}
-          <div className="flex items-start justify-between pb-3 pr-10 border-b border-border/50">
-            <div>
-              <h3 className="text-base font-semibold text-foreground tracking-tight capitalize">
-                {formattedDate}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {data?.symbol
-                  ? `${data.symbol} Session · ${trades.length} trade${trades.length === 1 ? "" : "s"}${attachmentsCount > 0 ? ` · ${attachmentsCount} screenshot${attachmentsCount === 1 ? "" : "s"}` : ""}`
-                  : "Trade history and notes recorded on this date"}
-              </p>
-            </div>
-            {hasDayJournal && areAllTradesLinked && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDayOverview}
-                className="h-7 text-xs gap-1.5 border-border/70 text-muted-foreground hover:text-foreground shrink-0 rounded-lg"
-              >
-                <BookOpen className="size-3 text-sky-400" />
-                <span>Session Notes</span>
-              </Button>
-            )}
+      <DialogContent className="w-full min-w-0 max-w-2xl p-0 sm:p-0 gap-0 sm:gap-0 bg-card border-border/80 shadow-2xl overflow-hidden rounded-xl [&>button]:top-3 [&>button]:right-3">
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0 h-14 pl-6 pr-13 border-b border-border/40 text-left">
+          <div className="flex items-center gap-2 min-w-0">
+            <CalendarDays className="size-4 text-muted-foreground shrink-0" />
+            <DialogTitle className="text-sm font-semibold tracking-tight text-foreground pr-0 capitalize truncate">
+              {formattedDate}
+            </DialogTitle>
           </div>
 
-          {/* Loading, Error, Empty State or Minimal Table */}
-          {loading ? (
-            <div className="py-12 flex flex-col items-center justify-center gap-2 text-zinc-400 text-xs">
-              <div className="size-5 border-2 border-zinc-500 border-t-zinc-200 rounded-full animate-spin" />
-              <span>Loading journals...</span>
-            </div>
-          ) : error ? (
-            <div className="py-8 text-center text-xs text-rose-400">{error}</div>
-          ) : !hasItems ? (
-            /* Clean background empty state */
-            <div className="py-12 px-4 flex flex-col items-center justify-center text-center">
-              <FileText className="size-8 text-zinc-600 mb-3 stroke-[1.5]" />
-              <h4 className="text-sm font-semibold text-zinc-200 tracking-tight">
-                No journals recorded on this day
-              </h4>
-              <p className="text-xs text-zinc-400 mt-1 max-w-sm text-balance">
-                Start your session notes or log a new trade.
-              </p>
-              <Button
-                size="sm"
-                onClick={handleDayOverview}
-                className="mt-5 gap-1.5 px-4 h-9 rounded-lg bg-zinc-100 text-zinc-950 hover:bg-zinc-200 font-semibold shadow-xs transition-transform active:scale-[0.98]"
-              >
-                <Plus className="size-4" />
-                <span>Create Day Journal</span>
-              </Button>
-            </div>
-          ) : (
-            <div className="w-full overflow-x-auto">
-              <table className="w-full table-fixed text-xs border-collapse">
-                <colgroup>
-                  <col className="w-[40%]" />
-                  <col className="w-[18%]" />
-                  <col className="w-[20%]" />
-                  <col className="w-[11%]" />
-                  <col className="w-[11%]" />
-                </colgroup>
-                <thead>
-                  <tr className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase border-b border-[#202229]/60">
-                    <th className="pb-2.5 pl-1 font-medium text-left">TRADE</th>
-                    <th className="pb-2.5 font-medium text-center">SIDE</th>
-                    <th className="pb-2.5 font-medium text-center">P&L</th>
-                    <th className="pb-2.5 font-medium text-center">R</th>
-                    <th className="pb-2.5 font-medium text-right pr-2">HOLD</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#202229]/30">
-                  {/* Day Journal / Session note row: shown when present and not all trades are already linked to this session */}
-                  {hasDayJournal && !areAllTradesLinked && (
-                    <tr
-                      onClick={handleDayOverview}
-                      className="group hover:bg-white/[0.025] transition-colors cursor-pointer"
-                    >
-                      {/* TRADE (Blue indicator + Icon + Title) */}
-                      <td className="py-2.5 pl-1">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-0.5 h-7 rounded-full bg-sky-500/80 transition-colors" />
-                          {data?.symbol ? (
-                            <AssetIcon symbol={data.symbol} size="sm" />
-                          ) : (
-                            <span
-                              className="relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full select-none bg-muted/40 ring-1 ring-black/5 dark:ring-white/10 text-muted-foreground"
-                              style={{ width: 24, height: 24 }}
-                            >
-                              <BookOpen className="size-3 text-muted-foreground" />
-                            </span>
-                          )}
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-semibold text-xs text-zinc-100 tracking-tight group-hover:text-zinc-50">
-                              {data?.symbol ? `${data.symbol} Journal` : "Session Journal"}
-                            </span>
-                            <span className="text-[10px] text-zinc-500 font-mono">
-                              {attachmentsCount > 0
-                                ? `${attachmentsCount} screenshot${attachmentsCount === 1 ? "" : "s"}${hasNote ? " · Note" : ""}`
-                                : hasNote
-                                  ? "Session note"
-                                  : "Day Journal"}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
+          <Button
+            size="sm"
+            onClick={handleCreateDraft}
+            className="h-7 gap-1.5 px-2.5 text-xs bg-zinc-100 text-zinc-950 hover:bg-zinc-200 font-semibold shadow-xs transition-transform active:scale-[0.98] rounded-md shrink-0 cursor-pointer"
+          >
+            <Plus className="size-3.5" />
+            <span>New Journal</span>
+          </Button>
+        </DialogHeader>
 
-                      {/* SIDE (DirectionBadge matching style) */}
-                      <td className="py-2.5 text-center">
-                        <span className="inline-flex items-center justify-center gap-1 font-medium tracking-wide rounded-md border border-transparent select-none px-1.5 py-0.5 text-[10px] bg-sky-500/15 text-sky-400">
-                          <BookOpen className="h-2.5 w-2.5 shrink-0" strokeWidth={2} />
-                          <span>{hasNote ? "NOTE" : "DAY"}</span>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center p-8 gap-2 text-muted-foreground bg-black/40">
+            <Loader2 className="size-5 animate-spin" />
+            <span className="text-xs">Loading journals...</span>
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center text-xs text-rose-400 bg-black/40">{error}</div>
+        ) : !hasItems ? (
+          <div className="py-10 px-6 flex flex-col items-center justify-center text-center bg-black/40">
+            <FileText className="size-7 text-muted-foreground/50 mb-2.5 stroke-[1.5]" />
+            <h4 className="text-xs font-semibold text-foreground tracking-tight">
+              No journals recorded on this day
+            </h4>
+            <p className="text-[11px] text-muted-foreground mt-1 max-w-xs text-balance">
+              Use the New Journal button above to start your session notes or log a trade.
+            </p>
+          </div>
+        ) : (
+          <div>
+            {/* Full-bleed Header Row matching Show Credentials */}
+            <div className="grid grid-cols-[1.8fr_0.9fr_1fr_0.6fr_0.6fr] items-center gap-x-4 px-6 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 bg-muted/30 border-b border-border/40">
+              <span>Trade</span>
+              <span className="text-center">Side</span>
+              <span className="text-center">P&amp;L</span>
+              <span className="text-center">R</span>
+              <span className="text-right">Hold</span>
+            </div>
+
+            {/* Full-bleed Rows List (Zero bottom footer, directly bounds dialog) */}
+            <div className="divide-y divide-border/40 bg-black/40 max-h-[60vh] overflow-y-auto">
+              {/* All Day Journals / Session notes rows */}
+              {journalsList.map((journal, jIdx) => {
+                const jHasNote = Boolean(journal.note && journal.note.trim().length > 0);
+                const jAttCount = journal.attachmentsCount ?? 0;
+                const jTitle = journal.symbol
+                  ? `${journal.symbol} Journal`
+                  : journalsList.length > 1
+                    ? `Session Journal #${jIdx + 1}`
+                    : "Session Journal";
+
+                return (
+                  <div
+                    key={journal.id}
+                    onClick={() => handleOpenDayJournalEntry(journal.id)}
+                    className="grid grid-cols-[1.8fr_0.9fr_1fr_0.6fr_0.6fr] items-center gap-x-4 px-6 py-3.5 hover:bg-muted/15 transition-colors cursor-pointer group"
+                  >
+                    {/* TRADE (Blue indicator + Icon + Title) */}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-0.5 h-7 rounded-full bg-sky-500/80 transition-colors shrink-0" />
+                      {journal.symbol ? (
+                        <AssetIcon symbol={journal.symbol} size="sm" />
+                      ) : (
+                        <span
+                          className="relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full select-none bg-muted/40 ring-1 ring-black/5 dark:ring-white/10 text-muted-foreground"
+                          style={{ width: 24, height: 24 }}
+                        >
+                          <BookOpen className="size-3 text-muted-foreground" />
                         </span>
-                      </td>
+                      )}
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-xs text-foreground truncate group-hover:text-white">
+                          {jTitle}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-mono truncate">
+                          {jAttCount > 0
+                            ? `${jAttCount} screenshot${jAttCount === 1 ? "" : "s"}${jHasNote ? " · Note" : ""}`
+                            : jHasNote
+                              ? "Session note"
+                              : "Day Journal"}
+                        </span>
+                      </div>
+                    </div>
 
-                      {/* P&L */}
-                      <td className="py-2.5 text-center font-mono text-zinc-500 text-xs">–</td>
+                    {/* SIDE */}
+                    <div className="flex items-center justify-center">
+                      <span className="inline-flex items-center justify-center gap-1 font-medium tracking-wide rounded-md border border-transparent select-none px-1.5 py-0.5 text-[10px] bg-sky-500/15 text-sky-400">
+                        <BookOpen className="h-2.5 w-2.5 shrink-0" strokeWidth={2} />
+                        <span>{jHasNote ? "NOTE" : "DAY"}</span>
+                      </span>
+                    </div>
 
-                      {/* R */}
-                      <td className="py-2.5 text-center font-mono text-zinc-500 text-xs">–</td>
+                    {/* P&L */}
+                    <div className="text-center font-mono text-muted-foreground text-xs">–</div>
 
-                      {/* HOLD */}
-                      <td className="py-2.5 text-right pr-2 font-mono text-zinc-500 text-xs">–</td>
-                    </tr>
-                  )}
+                    {/* R */}
+                    <div className="text-center font-mono text-muted-foreground text-xs">–</div>
 
-                  {/* Individual trades */}
-                  {trades.map((trade, idx) => {
-                    const isOpen = trade.status === "open" || !trade.closedAt;
-                    const isWin = trade.status === "win" || trade.netPnl > 0;
-                    const isLoss = trade.status === "loss" || trade.netPnl < 0;
+                    {/* HOLD */}
+                    <div className="text-right font-mono text-muted-foreground text-xs">–</div>
+                  </div>
+                );
+              })}
 
-                    // Time formatting
-                    const timeRaw = trade.openedAt || trade.closedAt;
-                    const timeStr = timeRaw
-                      ? new Date(timeRaw).toLocaleTimeString("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: false,
-                        })
-                      : "";
+              {/* Individual trades */}
+              {trades.map((trade, idx) => {
+                const isOpen = trade.status === "open" || !trade.closedAt;
+                const isWin = trade.status === "win" || trade.netPnl > 0;
+                const isLoss = trade.status === "loss" || trade.netPnl < 0;
 
-                    // Duration / Hold time
-                    let holdStr = "—";
-                    if (trade.durationMs != null && trade.durationMs > 0) {
-                      holdStr = fmtDuration(trade.durationMs);
-                    } else if (trade.openedAt && trade.closedAt) {
-                      const ms =
-                        new Date(trade.closedAt).getTime() - new Date(trade.openedAt).getTime();
-                      if (ms > 0) holdStr = fmtDuration(ms);
-                    }
+                const timeRaw = trade.openedAt || trade.closedAt;
+                const timeStr = timeRaw
+                  ? new Date(timeRaw).toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false,
+                    })
+                  : "";
 
-                    // R-multiple calculation
-                    let rStr = "—";
-                    if (trade.stopLoss && trade.avgEntry && trade.avgExit) {
-                      const risk = Math.abs(trade.avgEntry - trade.stopLoss);
-                      if (risk > 0) {
-                        const gain =
-                          trade.direction === "long"
-                            ? trade.avgExit - trade.avgEntry
-                            : trade.avgEntry - trade.avgExit;
-                        const rVal = gain / risk;
-                        rStr = `${rVal >= 0 ? "+" : ""}${rVal.toFixed(1)}R`;
-                      }
-                    }
+                let holdStr = "—";
+                if (trade.durationMs != null && trade.durationMs > 0) {
+                  holdStr = fmtDuration(trade.durationMs);
+                } else if (trade.openedAt && trade.closedAt) {
+                  const ms =
+                    new Date(trade.closedAt).getTime() - new Date(trade.openedAt).getTime();
+                  if (ms > 0) holdStr = fmtDuration(ms);
+                }
 
-                    // Session link hierarchy (linked to the day's session journal when mixed with unlinked trades)
-                    const isLinked = Boolean(
-                      hasDayJournal &&
-                      trade.linkedJournalDate &&
-                      trade.linkedJournalDate === date &&
-                      !areAllTradesLinked,
-                    );
+                let rStr = "—";
+                if (trade.stopLoss && trade.avgEntry && trade.avgExit) {
+                  const risk = Math.abs(trade.avgEntry - trade.stopLoss);
+                  if (risk > 0) {
+                    const gain =
+                      trade.direction === "long"
+                        ? trade.avgExit - trade.avgEntry
+                        : trade.avgEntry - trade.avgExit;
+                    const rVal = gain / risk;
+                    rStr = `${rVal >= 0 ? "+" : ""}${rVal.toFixed(1)}R`;
+                  }
+                }
 
-                    return (
-                      <tr
-                        key={trade.key || idx}
-                        onClick={() => handleOpenJournal(idx)}
-                        className="group hover:bg-white/[0.025] transition-colors cursor-pointer"
-                      >
-                        {/* TRADE (Indicator + Icon + Asset + Time) */}
-                        <td className={cn("py-2.5", isLinked ? "pl-4 sm:pl-5" : "pl-1")}>
-                          <div className="flex items-center gap-2">
-                            {isLinked && (
-                              <span
-                                className="text-zinc-600 font-mono text-xs select-none shrink-0"
-                                title="Linked to Session Journal"
-                              >
-                                ↳
-                              </span>
-                            )}
-                            <div
-                              className={cn(
-                                "w-0.5 h-7 rounded-full transition-colors shrink-0",
-                                isOpen
-                                  ? "bg-zinc-600"
-                                  : isWin
-                                    ? "bg-profit"
-                                    : isLoss
-                                      ? "bg-loss"
-                                      : "bg-zinc-500",
-                              )}
-                            />
-                            <AssetIcon symbol={trade.symbol} size="sm" />
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-semibold text-xs text-zinc-100 tracking-tight group-hover:text-zinc-50">
-                                {trade.symbol}
-                              </span>
-                              <span className="text-[10px] text-zinc-500 font-mono tabular-nums">
-                                {timeStr || `Trade ${idx + 1}`}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
+                const isLinked = Boolean(
+                  trade.linkedJournalDate && trade.linkedJournalDate === date,
+                );
+                const hasTradeNote = Boolean(trade.notes && trade.notes.trim().length > 0);
 
-                        {/* SIDE */}
-                        <td className="py-2.5 text-center">
-                          <DirectionBadge direction={trade.direction} size="xs" />
-                        </td>
-
-                        {/* P&L */}
-                        <td className="py-2.5 text-center font-mono">
-                          {isOpen ? (
-                            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-muted/60 text-muted-foreground select-none">
-                              OPEN
+                return (
+                  <div
+                    key={trade.key || idx}
+                    onClick={() => handleOpenJournal(idx)}
+                    className="grid grid-cols-[1.8fr_0.9fr_1fr_0.6fr_0.6fr] items-center gap-x-4 px-6 py-3.5 hover:bg-muted/15 transition-colors cursor-pointer group"
+                  >
+                    {/* TRADE (Indicator + Icon + Asset + Time + Note badge + Quick Link) */}
+                    <div className={cn("flex items-center gap-2.5 min-w-0", isLinked && "pl-3")}>
+                      {isLinked && (
+                        <span
+                          className="text-sky-400/80 font-mono text-xs select-none shrink-0"
+                          title="Linked to Session Journal"
+                        >
+                          ↳
+                        </span>
+                      )}
+                      <div
+                        className={cn(
+                          "w-0.5 h-7 rounded-full transition-colors shrink-0",
+                          isOpen
+                            ? "bg-zinc-600"
+                            : isWin
+                              ? "bg-profit"
+                              : isLoss
+                                ? "bg-loss"
+                                : "bg-zinc-500",
+                        )}
+                      />
+                      <AssetIcon symbol={trade.symbol} size="sm" />
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-medium text-xs text-foreground truncate group-hover:text-white">
+                            {trade.symbol}
+                          </span>
+                          {hasTradeNote && !isLinked && (
+                            <span
+                              className="inline-flex items-center gap-0.5 rounded px-1 py-0.2 text-[9px] font-medium bg-sky-500/15 text-sky-400 shrink-0"
+                              title="Trade has a journal note"
+                            >
+                              <BookOpen className="size-2.5" />
+                              <span>NOTE</span>
                             </span>
-                          ) : (
-                            <Pnl
-                              value={trade.netPnl}
-                              currency={currency}
-                              className="font-semibold text-xs"
-                            />
                           )}
-                        </td>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
+                          {timeStr || `Trade ${idx + 1}`}
+                        </span>
+                      </div>
 
-                        {/* R */}
-                        <td className="py-2.5 text-center font-mono tabular-nums text-zinc-400 text-xs">
-                          {rStr}
-                        </td>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={linkingKey === trade.key}
+                        onClick={(e) => void handleToggleTradeLink(e, trade)}
+                        className={cn(
+                          "size-6 shrink-0 cursor-pointer transition-opacity",
+                          isLinked
+                            ? "text-sky-400 hover:text-sky-300 opacity-90"
+                            : "text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100",
+                        )}
+                        title={
+                          isLinked
+                            ? "Unlink from Session Journal"
+                            : hasTradeNote && !hasDayJournal
+                              ? "Promote note & share as Session Journal"
+                              : "Link to Session Journal"
+                        }
+                      >
+                        {linkingKey === trade.key ? (
+                          <Loader2 className="size-3 animate-spin" />
+                        ) : isLinked ? (
+                          <Unlink className="size-3" />
+                        ) : (
+                          <Link2 className="size-3" />
+                        )}
+                      </Button>
+                    </div>
 
-                        {/* HOLD */}
-                        <td className="py-2.5 text-right pr-2 font-mono tabular-nums text-zinc-400 text-xs">
-                          {holdStr}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    {/* SIDE */}
+                    <div className="flex items-center justify-center">
+                      <DirectionBadge direction={trade.direction} size="xs" />
+                    </div>
+
+                    {/* P&L */}
+                    <div className="flex items-center justify-center font-mono">
+                      {isOpen ? (
+                        <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-muted/60 text-muted-foreground select-none">
+                          OPEN
+                        </span>
+                      ) : (
+                        <Pnl
+                          value={trade.netPnl}
+                          currency={currency}
+                          className="font-semibold text-xs"
+                        />
+                      )}
+                    </div>
+
+                    {/* R */}
+                    <div className="text-center font-mono tabular-nums text-muted-foreground text-xs">
+                      {rStr}
+                    </div>
+
+                    {/* HOLD */}
+                    <div className="text-right font-mono tabular-nums text-muted-foreground text-xs">
+                      {holdStr}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
-
-          {/* Footer when items exist: count on left, New Journal button on right */}
-          {hasItems && (
-            <div className="flex items-center justify-between pt-3 border-t border-[#202229] mt-3">
-              <span className="text-xs text-zinc-500 font-mono">
-                {hasDayJournal && trades.length > 0
-                  ? `1 journal · ${trades.length} ${trades.length === 1 ? "trade" : "trades"}`
-                  : trades.length > 0
-                    ? `${trades.length} ${trades.length === 1 ? "recorded trade" : "recorded trades"}`
-                    : "1 recorded journal"}
-              </span>
-
-              <Button
-                size="sm"
-                onClick={handleCreateDraft}
-                className="h-8 gap-1.5 px-3 text-xs bg-zinc-100 text-zinc-950 hover:bg-zinc-200 font-semibold shadow-xs transition-transform active:scale-[0.98] rounded-lg"
-              >
-                <Plus className="size-3.5" />
-                <span>New Journal</span>
-              </Button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
+

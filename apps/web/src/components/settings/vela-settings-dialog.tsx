@@ -133,18 +133,29 @@ export function VelaSettingsDialog({
   onSelectDataset,
   onUploadCsvClick,
   onTimezoneChange,
-  currentTimezone = "Etc/UTC",
+  currentTimezone,
   onResetDefaults,
   onApplySetting,
 }: VelaSettingsDialogProps) {
+  const normalizeTz = (tz?: string | null) =>
+    !tz || tz === "UTC" || tz === "Etc/GMT" ? "Etc/UTC" : tz;
   const resolveTabId = (t: string) => {
     if (t === "advanced" || t === "data-source" || t === "fonte de dados") return "data";
     return t;
   };
   const [activeTabId, setActiveTabId] = useState<string>(() => resolveTabId(initialTab));
 
-  // Settings State initialized from storage / defaults
-  const [settings, setSettings] = useState<StoredVelaSettings>(() => loadStoredSettings());
+  // Settings State initialized from storage / defaults with normalized timezone
+  const [settings, setSettings] = useState<StoredVelaSettings>(() => {
+    const initial = loadStoredSettings();
+    return {
+      ...initial,
+      symbol: {
+        ...initial.symbol,
+        timezone: normalizeTz(currentTimezone || initial.symbol?.timezone),
+      },
+    };
+  });
 
   // Keep activeTabId in sync with initialTab whenever initialTab changes or modal opens
   useEffect(() => {
@@ -159,6 +170,12 @@ export function VelaSettingsDialog({
 
     const stored = loadStoredSettings();
     const liveConfig = chartInstance?.renderer?.getConfig?.();
+    const resolvedTimezone = normalizeTz(
+      currentTimezone ||
+        stored.symbol?.timezone ||
+        chartInstance?.renderer?.get?.("timezone") ||
+        liveConfig?.timeScale?.timezone,
+    );
 
     if (liveConfig) {
       const merged: StoredVelaSettings = {
@@ -198,7 +215,7 @@ export function VelaSettingsDialog({
             autoscale: liveConfig.animations?.autoscale ?? stored.symbol.animations.autoscale,
             intro: liveConfig.animations?.intro ?? stored.symbol.animations.intro,
           },
-          timezone: liveConfig.timeScale?.timezone ?? stored.symbol.timezone,
+          timezone: resolvedTimezone,
         },
         scalesAndLines: {
           ...stored.scalesAndLines,
@@ -254,13 +271,15 @@ export function VelaSettingsDialog({
         },
       };
 
-      if (currentTimezone && currentTimezone !== "Etc/UTC") {
-        merged.symbol.timezone = currentTimezone;
-      }
-
       setSettings(merged);
     } else {
-      setSettings(stored);
+      setSettings({
+        ...stored,
+        symbol: {
+          ...stored.symbol,
+          timezone: resolvedTimezone,
+        },
+      });
     }
   }, [isOpen, chartInstance, currentTimezone]);
 
@@ -479,6 +498,7 @@ export function VelaSettingsDialog({
 
     setSettings(DEFAULT_VELA_SETTINGS);
     applyStoredSettingsToChart(chartInstance, statusline, watermark, DEFAULT_VELA_SETTINGS);
+    onTimezoneChange?.(DEFAULT_VELA_SETTINGS.symbol.timezone);
     onResetDefaults?.();
   };
 
@@ -855,11 +875,12 @@ export function VelaSettingsDialog({
                         value={settings.symbol.timezone}
                         options={TIMEZONE_OPTIONS}
                         onChange={(tz) => {
+                          const normalizedTz = normalizeTz(tz);
                           updateSettings((prev) => ({
                             ...prev,
-                            symbol: { ...prev.symbol, timezone: tz },
+                            symbol: { ...prev.symbol, timezone: normalizedTz },
                           }));
-                          onTimezoneChange?.(tz);
+                          onTimezoneChange?.(normalizedTz);
                         }}
                         minWidth={110}
                         popupMinWidth={270}

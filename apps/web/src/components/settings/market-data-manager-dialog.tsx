@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   X,
   Database,
@@ -12,9 +12,12 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Search,
   Plus,
   ShieldCheck,
+  MoreHorizontal,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { MarketSeriesSummary, MarketCandleBatch } from "@/lib/market-csv";
 import { formatResolutionDisplay, parseResolutionMs } from "@/lib/market-data";
@@ -23,9 +26,42 @@ import {
   getAssetFamily,
   getAssetClass,
   getDefaultCompatibleSymbols,
+  type AssetClass,
 } from "@/lib/assets/symbol-utils";
+import { AssetIcon } from "@/components/ui/asset-icon";
 import { postJson } from "@/lib/use-api";
 import { cn } from "@/lib/utils";
+
+const CANONICAL_COVERAGE_TIMEFRAMES = [
+  "1m",
+  "3m",
+  "5m",
+  "15m",
+  "30m",
+  "1h",
+  "2h",
+  "4h",
+  "1d",
+  "1w",
+  "1mo",
+] as const;
+
+function getCategoryMarketLabel(assetClass: AssetClass): string {
+  switch (assetClass) {
+    case "futures":
+      return "CME";
+    case "cfd":
+      return "CFD";
+    case "commodities":
+      return "CFD · Commodity";
+    case "forex":
+      return "Forex";
+    case "crypto":
+      return "Crypto";
+    default:
+      return "Market";
+  }
+}
 
 export interface MarketDataManagerDialogProps {
   isOpen: boolean;
@@ -187,7 +223,11 @@ export function MarketDataManagerDialog({
 }: MarketDataManagerDialogProps) {
   const [activeTab, setActiveTab] = useState<"assets" | "batches">("assets");
   const [purgingKey, setPurgingKey] = useState<string | null>(null);
+  const [openMenuFor, setOpenMenuFor] = useState<string | null>(null);
+  const [expandedSettings, setExpandedSettings] = useState<Set<string>>(() => new Set());
   const [revertingBatchId, setRevertingBatchId] = useState<string | null>(null);
+  const [revertingSessionKey, setRevertingSessionKey] = useState<string | null>(null);
+  const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -237,19 +277,67 @@ export function MarketDataManagerDialog({
     });
   }, [groupedAssets, classFilter, searchQuery, customLinks]);
 
-  // Asset Accordion expansion state
-  const [expandedAssets, setExpandedAssets] = useState<Set<string>>(() => new Set());
-  const [hasInitializedExpansion, setHasInitializedExpansion] = useState(false);
+  // Filtered & session-grouped ingestion history batches
+  const groupedHistorySessions = useMemo(() => {
+    const q = historySearchQuery.trim().toLowerCase();
+    const filtered = !q
+      ? batches
+      : batches.filter((b) => {
+          const matchSym = b.symbol.toLowerCase().includes(q);
+          const matchTf = formatResolutionDisplay(b.resolution).toLowerCase().includes(q);
+          const matchName = (b.name ?? "").toLowerCase().includes(q);
+          return matchSym || matchTf || matchName;
+        });
 
-  useEffect(() => {
-    if (!hasInitializedExpansion && groupedAssets.length > 0) {
-      setExpandedAssets(new Set(groupedAssets.map((a) => a.symbol)));
-      setHasInitializedExpansion(true);
+    const groupsMap = new Map<
+      string,
+      {
+        sessionKey: string;
+        sessionLabel: string;
+        batches: MarketCandleBatch[];
+        totalNewBars: number;
+        totalBars: number;
+      }
+    >();
+
+    for (const b of filtered) {
+      const rawDate = formatBatchImportDate(b.importedAt);
+      const sessionLabel = rawDate === "—" ? "Unknown session" : rawDate.replace(", ", " · ");
+      if (!groupsMap.has(sessionLabel)) {
+        groupsMap.set(sessionLabel, {
+          sessionKey: sessionLabel,
+          sessionLabel,
+          batches: [],
+          totalNewBars: 0,
+          totalBars: 0,
+        });
+      }
+      const g = groupsMap.get(sessionLabel)!;
+      g.batches.push(b);
+      g.totalNewBars += b.newBarCount ?? 0;
+      g.totalBars += b.barCount ?? 0;
     }
-  }, [groupedAssets, hasInitializedExpansion]);
+
+    return Array.from(groupsMap.values());
+  }, [batches, historySearchQuery]);
+
+  // Asset Accordion expansion state (collapsed by default for clean overview)
+  const [expandedAssets, setExpandedAssets] = useState<Set<string>>(() => new Set());
 
   const toggleAssetExpanded = (sym: string) => {
     setExpandedAssets((prev) => {
+      const next = new Set(prev);
+      if (next.has(sym)) {
+        next.delete(sym);
+      } else {
+        next.add(sym);
+      }
+      return next;
+    });
+  };
+
+  const toggleSettingsExpanded = (sym: string) => {
+    setExpandedSettings((prev) => {
       const next = new Set(prev);
       if (next.has(sym)) {
         next.delete(sym);
@@ -372,6 +460,24 @@ export function MarketDataManagerDialog({
     }
   };
 
+  const handleConfirmRevertSession = async (sessionBatches: MarketCandleBatch[]) => {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      for (const b of sessionBatches) {
+        await onRevertBatch(b.id, b.name);
+      }
+      setRevertingSessionKey(null);
+      setFeedback(
+        `Reverted import session (${sessionBatches.length} ${sessionBatches.length === 1 ? "file" : "files"} removed).`,
+      );
+    } catch {
+      setFeedback("Failed to revert import session.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -381,16 +487,13 @@ export function MarketDataManagerDialog({
         role="dialog"
         aria-modal="true"
       >
-        {/* TOP HEADER */}
+        {/* TOP HEADER (Only Icon + Manage Market Data + Close Button) */}
         <div className="h-12 px-4 flex items-center justify-between border-b border-[#2a2b30] bg-[#121316] shrink-0">
           <div className="flex items-center gap-2.5">
             <Database className="w-4 h-4 text-[#089981]" />
             <h3 className="text-sm font-semibold text-[#d1d4dc] tracking-tight">
               Manage Market Data
             </h3>
-            <span className="text-[11px] font-mono text-[#868a96] px-2 py-0.5 rounded-full bg-[#1c1d22] border border-[#2a2b30]">
-              market_candles
-            </span>
           </div>
           <button
             type="button"
@@ -465,34 +568,45 @@ export function MarketDataManagerDialog({
               <div className="space-y-3">
                 {/* FILTER & SEARCH TOOLBAR */}
                 <div className="flex flex-wrap items-center justify-between gap-2.5 pb-1">
-                  <div className="flex items-center gap-1 text-xs flex-wrap">
+                  {/* Segmented Control — hides 0-count categories */}
+                  <div
+                    className="inline-flex items-center p-0.5 rounded-lg bg-[#121316] border border-[#25272e] text-xs"
+                    role="tablist"
+                    aria-label="Filter assets by market category"
+                  >
                     {(
                       [
                         { id: "all", label: "All", count: classCounts.all },
-                        { id: "futures", label: "Futures (CME)", count: classCounts.futures },
+                        { id: "futures", label: "Futures", count: classCounts.futures },
                         { id: "cfd", label: "CFD & Spot", count: classCounts.cfd },
                         { id: "forex", label: "Forex", count: classCounts.forex },
                         { id: "crypto", label: "Crypto", count: classCounts.crypto },
                       ] as const
-                    ).map((cat) => {
-                      const isActive = classFilter === cat.id;
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setClassFilter(cat.id)}
-                          className={cn(
-                            "h-7 px-2.5 rounded-md font-medium text-[11px] transition-colors flex items-center gap-1.5 cursor-pointer",
-                            isActive
-                              ? "bg-[#202228] text-[#d1d4dc] border border-[#2a2b30] shadow-xs"
-                              : "text-[#868a96] hover:text-[#d1d4dc] hover:bg-[#1a1b20]",
-                          )}
-                        >
-                          <span>{cat.label}</span>
-                          <span className="font-mono text-[10px] text-[#868a96]">({cat.count})</span>
-                        </button>
-                      );
-                    })}
+                    )
+                      .filter((cat) => cat.id === "all" || cat.count > 0)
+                      .map((cat) => {
+                        const isActive = classFilter === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={isActive}
+                            onClick={() => setClassFilter(cat.id)}
+                            className={cn(
+                              "h-7 px-2.5 rounded-md font-medium text-[11px] transition-colors flex items-center gap-1.5 cursor-pointer",
+                              isActive
+                                ? "bg-[#202228] text-[#d1d4dc] shadow-xs"
+                                : "text-[#868a96] hover:text-[#d1d4dc]",
+                            )}
+                          >
+                            <span>{cat.label}</span>
+                            <span className="font-mono tabular-nums text-[10px] text-[#868a96]">
+                              {cat.count}
+                            </span>
+                          </button>
+                        );
+                      })}
                   </div>
 
                   <div className="relative">
@@ -502,7 +616,8 @@ export function MarketDataManagerDialog({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search asset..."
-                      className="h-7 w-40 sm:w-48 pl-8 pr-6 rounded-md bg-[#17181c] border border-[#2a2b30] text-xs text-[#d1d4dc] placeholder:text-[#868a96] focus:outline-none focus:border-[#089981]"
+                      aria-label="Search asset"
+                      className="h-8 w-44 sm:w-52 pl-8 pr-6 rounded-lg bg-[#121316] border border-[#25272e] text-xs text-[#d1d4dc] placeholder:text-[#868a96] focus:outline-none focus:border-[#089981]"
                     />
                     {searchQuery && (
                       <button
@@ -536,78 +651,118 @@ export function MarketDataManagerDialog({
                 ) : (
                   filteredAssets.map((asset) => {
                     const isExpanded = expandedAssets.has(asset.symbol);
+                    const isSettingsOpen = expandedSettings.has(asset.symbol);
+                    const isMenuOpen = openMenuFor === asset.symbol;
                     const activeCompatible = customLinks[asset.symbol] ?? asset.compatibleSymbols;
                     const assetClass = getAssetClass(asset.symbol);
+                    const marketLabel = getCategoryMarketLabel(assetClass);
+
+                    // Build canonical + custom timeframe coverage list
+                    const availableSet = new Set(
+                      asset.timeframes.map((tf) => tf.resolution.toLowerCase()),
+                    );
+                    const extraTimeframes = asset.timeframes
+                      .map((tf) => tf.resolution.toLowerCase())
+                      .filter(
+                        (r) =>
+                          !(CANONICAL_COVERAGE_TIMEFRAMES as readonly string[]).includes(r),
+                      );
+                    const coverageResolutions = [
+                      ...CANONICAL_COVERAGE_TIMEFRAMES,
+                      ...extraTimeframes,
+                    ];
 
                     return (
                       <div
                         key={asset.symbol}
-                        className="border border-[#2a2b30] rounded-xl bg-[#121316] overflow-hidden transition-all duration-150"
+                        className="border border-[#25272e] rounded-xl bg-[#121316] overflow-hidden transition-all duration-150"
                       >
                         {/* ASSET ACCORDION HEADER */}
                         <div
-                          onClick={() => toggleAssetExpanded(asset.symbol)}
-                          className="px-4 py-3 bg-[#17181c] border-b border-[#2a2b30] flex flex-wrap items-center justify-between gap-2 cursor-pointer hover:bg-[#1c1d22]/80 transition-colors"
+                          onClick={() => {
+                            setOpenMenuFor(null);
+                            toggleAssetExpanded(asset.symbol);
+                          }}
+                          className="px-4 py-3 bg-[#15161a] flex items-center justify-between gap-3 cursor-pointer hover:bg-[#181a20] transition-colors"
                         >
-                          <div className="flex items-center gap-2.5 flex-wrap">
-                            <span className="px-2 py-0.5 rounded-md bg-[#089981]/15 border border-[#089981]/30 text-xs font-mono font-bold text-[#089981]">
-                              {asset.symbol}
-                            </span>
-                            {/* Asset Class Badge */}
-                            {assetClass === "futures" ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/25 text-amber-400 font-mono font-medium">
-                                Futures · CME
-                              </span>
-                            ) : assetClass === "cfd" ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-blue-400 font-mono font-medium">
-                                CFD Spot · Index
-                              </span>
-                            ) : assetClass === "commodities" ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-blue-400 font-mono font-medium">
-                                CFD Spot · Commodity
-                              </span>
-                            ) : assetClass === "forex" ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/25 text-purple-400 font-mono font-medium">
-                                Forex FX
-                              </span>
-                            ) : assetClass === "crypto" ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 font-mono font-medium">
-                                Crypto
-                              </span>
-                            ) : null}
-                            <span className="text-xs font-semibold text-[#d1d4dc]">
-                              {asset.displayName}
-                            </span>
-                            <span className="text-[11px] font-mono text-[#868a96]">
-                              {asset.currency} · {asset.priceBasis}
-                            </span>
-                            {/* Quick timeframe badges */}
-                            <div className="flex items-center gap-1 ml-1 flex-wrap">
-                              {asset.timeframes.map((tf) => (
-                                <span
-                                  key={tf.resolution}
-                                  className="bg-[#1c1d22] text-[#d1d4dc] text-[10px] px-1.5 py-0.5 rounded border border-[#2a2b30] font-mono font-medium"
-                                >
-                                  {formatResolutionDisplay(tf.resolution)}
+                          {/* Left: Real Asset Icon + 2-line hierarchy + compact TF coverage */}
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <div className="pt-0.5 shrink-0">
+                              <AssetIcon symbol={asset.symbol} size="sm" />
+                            </div>
+
+                            <div className="min-w-0 flex-1 space-y-1">
+                              {/* Line 1: Ticker (semibold) + Asset Name (medium gray) */}
+                              <div className="flex items-baseline gap-2 flex-wrap">
+                                <span className="text-sm font-semibold text-[#d1d4dc] tracking-tight">
+                                  {asset.symbol}
                                 </span>
-                              ))}
+                                <span className="text-xs text-[#868a96] truncate">
+                                  {asset.displayName}
+                                </span>
+                              </div>
+
+                              {/* Line 2: Metadata (CME · USD · raw) + Compact borderless Timeframe strip */}
+                              <div className="flex items-center gap-2 flex-wrap text-[11px] leading-none">
+                                <span className="text-[#868a96]">
+                                  {marketLabel} · {asset.currency} · {asset.priceBasis}
+                                </span>
+                                <span className="text-[#2a2b30]" aria-hidden="true">
+                                  │
+                                </span>
+                                <div
+                                  className="flex items-center gap-1 font-mono text-[10px] flex-wrap"
+                                  aria-label="Timeframe coverage"
+                                >
+                                  {coverageResolutions.map((res, idx) => {
+                                    const hasData = availableSet.has(res);
+                                    return (
+                                      <React.Fragment key={res}>
+                                        {idx > 0 && (
+                                          <span
+                                            className="text-[#868a96]/25 select-none"
+                                            aria-hidden="true"
+                                          >
+                                            ·
+                                          </span>
+                                        )}
+                                        <span
+                                          className={cn(
+                                            "transition-colors",
+                                            hasData
+                                              ? "text-[#d1d4dc] font-medium"
+                                              : "text-[#868a96]/30",
+                                          )}
+                                          title={
+                                            hasData
+                                              ? `${formatResolutionDisplay(res)}: Available`
+                                              : `${formatResolutionDisplay(res)}: No data`
+                                          }
+                                        >
+                                          {formatResolutionDisplay(res)}
+                                        </span>
+                                      </React.Fragment>
+                                    );
+                                  })}
+                                </div>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-[11px] font-mono text-[#868a96]">
-                              Total:{" "}
-                              <strong className="text-[#d1d4dc] font-semibold">
-                                {asset.totalBars.toLocaleString()}
-                              </strong>{" "}
-                              bars
-                            </span>
-
+                          {/* Right: Total Bars (mono) + ⋯ Menu (Purge with confirmation) + Expand Chevron */}
+                          <div className="flex items-center gap-2 shrink-0">
                             {purgingKey === asset.symbol ? (
                               <div
-                                className="flex items-center gap-1.5 ml-1"
+                                className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-[#1a1416] border border-[#f23645]/30"
                                 onClick={(e) => e.stopPropagation()}
                               >
+                                <span className="text-[11px] text-[#d1d4dc] font-mono tabular-nums">
+                                  Remove{" "}
+                                  <strong className="text-[#f23645]">
+                                    {asset.totalBars.toLocaleString()}
+                                  </strong>{" "}
+                                  bars?
+                                </span>
                                 <button
                                   type="button"
                                   onClick={() => handleConfirmPurge(asset.symbol)}
@@ -619,23 +774,63 @@ export function MarketDataManagerDialog({
                                 <button
                                   type="button"
                                   onClick={() => setPurgingKey(null)}
-                                  className="px-2 py-0.5 text-[11px] text-[#868a96] hover:text-[#d1d4dc] cursor-pointer transition-colors"
+                                  className="px-1.5 py-0.5 text-[11px] text-[#868a96] hover:text-[#d1d4dc] cursor-pointer transition-colors"
                                 >
                                   Cancel
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPurgingKey(asset.symbol);
-                                }}
-                                className="p-1 rounded text-[#868a96] hover:text-[#f23645] hover:bg-[#202228] transition-colors cursor-pointer"
-                                title={`Purge all bars for ${asset.symbol}`}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <>
+                                <span className="text-xs font-mono tabular-nums text-[#d1d4dc]">
+                                  {asset.totalBars.toLocaleString()}{" "}
+                                  <span className="text-[#868a96] font-sans text-[11px]">
+                                    bars
+                                  </span>
+                                </span>
+
+                                {/* ⋯ Action Menu */}
+                                <div
+                                  className="relative"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setOpenMenuFor(isMenuOpen ? null : asset.symbol)
+                                    }
+                                    className="w-7 h-7 rounded-md flex items-center justify-center text-[#868a96] hover:text-[#d1d4dc] hover:bg-[#202228] transition-colors cursor-pointer"
+                                    aria-label={`More actions for ${asset.symbol}`}
+                                    aria-expanded={isMenuOpen}
+                                  >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </button>
+
+                                  {isMenuOpen && (
+                                    <div
+                                      role="menu"
+                                      className="absolute right-0 top-8 z-20 min-w-[210px] rounded-lg border border-[#2a2b30] bg-[#18191e] p-1 shadow-xl"
+                                    >
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={() => {
+                                          setOpenMenuFor(null);
+                                          setPurgingKey(asset.symbol);
+                                        }}
+                                        className="w-full px-2.5 py-1.5 rounded-md text-left text-xs text-[#f23645] hover:bg-[#f23645]/10 flex items-center justify-between gap-2 cursor-pointer transition-colors"
+                                      >
+                                        <span className="flex items-center gap-1.5 font-medium">
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                          <span>Purge asset</span>
+                                        </span>
+                                        <span className="font-mono tabular-nums text-[10px] text-[#868a96]">
+                                          {asset.totalBars.toLocaleString()} bars
+                                        </span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </>
                             )}
 
                             <button
@@ -644,7 +839,7 @@ export function MarketDataManagerDialog({
                                 e.stopPropagation();
                                 toggleAssetExpanded(asset.symbol);
                               }}
-                              className="p-1 rounded text-[#868a96] hover:text-[#d1d4dc] hover:bg-[#202228] transition-colors cursor-pointer"
+                              className="w-7 h-7 rounded-md flex items-center justify-center text-[#868a96] hover:text-[#d1d4dc] hover:bg-[#202228] transition-colors cursor-pointer"
                               aria-label={isExpanded ? "Collapse asset" : "Expand asset"}
                             >
                               {isExpanded ? (
@@ -658,211 +853,276 @@ export function MarketDataManagerDialog({
 
                         {/* EXPANDED CONTENT */}
                         {isExpanded && (
-                          <div>
-                            {/* COMPATIBILITY NOTICE CHIPS */}
-                            <div className="px-4 py-2.5 bg-[#141518] border-b border-[#202228] flex items-center justify-between gap-2 text-[10px] text-[#868a96] flex-wrap">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-medium text-[#868a96]">Compatible with:</span>
-                                {activeCompatible.length === 0 ? (
-                                  <span className="italic text-[#868a96]/70">Strictly isolated (no other tickers linked)</span>
+                          <div className="border-t border-[#202228]">
+                            {/* COLLAPSIBLE ASSET SETTINGS (Separates config from candle data) */}
+                            <div className="border-b border-[#202228] bg-[#131418]">
+                              <button
+                                type="button"
+                                onClick={() => toggleSettingsExpanded(asset.symbol)}
+                                className="w-full px-4 py-2 flex items-center justify-between gap-2 text-[11px] text-[#868a96] hover:text-[#d1d4dc] transition-colors cursor-pointer"
+                                aria-expanded={isSettingsOpen}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <SlidersHorizontal className="w-3 h-3 text-[#868a96] shrink-0" />
+                                  <span className="font-medium">Asset settings</span>
+                                  <span className="text-[#868a96]/40">·</span>
+                                  <span className="font-mono text-[10px] text-[#868a96] truncate">
+                                    {activeCompatible.length > 0
+                                      ? `Compatible: ${activeCompatible.join(", ")}`
+                                      : "Isolated (no linked tickers)"}
+                                  </span>
+                                </div>
+                                {isSettingsOpen ? (
+                                  <ChevronDown className="w-3.5 h-3.5 shrink-0" />
                                 ) : (
-                                  activeCompatible.map((item) => (
-                                    <span
-                                      key={item}
-                                      className="group inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#1c1d22] border border-[#2a2b30] text-[#d1d4dc] font-mono text-[10px]"
-                                    >
-                                      <span>[{item}]</span>
+                                  <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+                                )}
+                              </button>
+
+                              {isSettingsOpen && (
+                                <div className="px-4 pb-3 pt-1 flex items-center justify-between gap-2 text-[11px] text-[#868a96] flex-wrap border-t border-[#1c1e24]">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[#868a96]">Compatible with:</span>
+                                    {activeCompatible.length === 0 ? (
+                                      <span className="italic text-[#868a96]/70">
+                                        Strictly isolated (no other tickers linked)
+                                      </span>
+                                    ) : (
+                                      activeCompatible.map((item) => (
+                                        <span
+                                          key={item}
+                                          className="group inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#1a1b20] border border-[#25272e] text-[#d1d4dc] font-mono text-[10px]"
+                                        >
+                                          <span>{item}</span>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              void handleRemoveCompatibleSymbol(
+                                                asset.symbol,
+                                                item,
+                                              );
+                                            }}
+                                            disabled={busy}
+                                            className="text-[#868a96] hover:text-[#f23645] transition-colors cursor-pointer"
+                                            title={`Unlink ${item} from ${asset.symbol}`}
+                                            aria-label={`Unlink ${item}`}
+                                          >
+                                            <X className="w-2.5 h-2.5" />
+                                          </button>
+                                        </span>
+                                      ))
+                                    )}
+
+                                    {/* Mini Add Ticker Inline Input */}
+                                    {addingSymbolFor === asset.symbol ? (
+                                      <div
+                                        className="inline-flex items-center gap-1"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <input
+                                          type="text"
+                                          value={newTickerInput}
+                                          onChange={(e) =>
+                                            setNewTickerInput(e.target.value.toUpperCase())
+                                          }
+                                          onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                              e.preventDefault();
+                                              void handleAddCompatibleSymbol(
+                                                asset.symbol,
+                                                newTickerInput,
+                                              );
+                                            } else if (e.key === "Escape") {
+                                              setAddingSymbolFor(null);
+                                              setNewTickerInput("");
+                                            }
+                                          }}
+                                          placeholder="TICKER"
+                                          autoFocus
+                                          className="h-5 w-16 px-1.5 rounded bg-[#17181c] border border-[#089981] text-[10px] font-mono text-[#d1d4dc] focus:outline-none uppercase"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleAddCompatibleSymbol(
+                                              asset.symbol,
+                                              newTickerInput,
+                                            )
+                                          }
+                                          disabled={busy || !newTickerInput.trim()}
+                                          className="h-5 px-1.5 rounded bg-[#089981]/20 hover:bg-[#089981]/30 text-[#089981] text-[10px] font-medium cursor-pointer"
+                                        >
+                                          Add
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setAddingSymbolFor(null);
+                                            setNewTickerInput("");
+                                          }}
+                                          className="h-5 px-1 text-[10px] text-[#868a96] hover:text-[#d1d4dc] cursor-pointer"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    ) : (
                                       <button
                                         type="button"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          void handleRemoveCompatibleSymbol(asset.symbol, item);
-                                        }}
-                                        disabled={busy}
-                                        className="text-[#868a96] hover:text-[#f23645] transition-colors cursor-pointer"
-                                        title={`Unlink ${item} from ${asset.symbol}`}
-                                        aria-label={`Unlink ${item}`}
-                                      >
-                                        <X className="w-2.5 h-2.5" />
-                                      </button>
-                                    </span>
-                                  ))
-                                )}
-
-                                {/* Mini Add Ticker Inline Input */}
-                                {addingSymbolFor === asset.symbol ? (
-                                  <div
-                                    className="inline-flex items-center gap-1"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <input
-                                      type="text"
-                                      value={newTickerInput}
-                                      onChange={(e) => setNewTickerInput(e.target.value.toUpperCase())}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          void handleAddCompatibleSymbol(asset.symbol, newTickerInput);
-                                        } else if (e.key === "Escape") {
-                                          setAddingSymbolFor(null);
+                                          setAddingSymbolFor(asset.symbol);
                                           setNewTickerInput("");
-                                        }
-                                      }}
-                                      placeholder="TICKER"
-                                      autoFocus
-                                      className="h-5 w-16 px-1 rounded bg-[#17181c] border border-[#089981] text-[10px] font-mono text-[#d1d4dc] focus:outline-none uppercase"
-                                    />
+                                        }}
+                                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-dashed border-[#2a2b30] hover:border-[#089981]/40 text-[#868a96] hover:text-[#089981] text-[10px] cursor-pointer transition-colors"
+                                      >
+                                        <Plus className="w-2.5 h-2.5" />
+                                        <span>Add Ticker</span>
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
                                     <button
                                       type="button"
-                                      onClick={() => handleAddCompatibleSymbol(asset.symbol, newTickerInput)}
-                                      disabled={busy || !newTickerInput.trim()}
-                                      className="h-5 px-1.5 rounded bg-[#089981]/20 hover:bg-[#089981]/30 text-[#089981] text-[10px] font-medium cursor-pointer"
-                                    >
-                                      Add
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setAddingSymbolFor(null);
-                                        setNewTickerInput("");
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void handleIsolateAssetClass(asset.symbol);
                                       }}
-                                      className="h-5 px-1 text-[10px] text-[#868a96] hover:text-[#d1d4dc] cursor-pointer"
+                                      disabled={busy}
+                                      className="text-[10px] text-[#868a96] hover:text-[#089981] transition-colors cursor-pointer flex items-center gap-1"
+                                      title={`Isolate ${asset.symbol} from cross-asset class fallback`}
                                     >
-                                      Cancel
+                                      <ShieldCheck className="w-3 h-3 text-[#089981]" />
+                                      <span>
+                                        Isolate{" "}
+                                        {assetClass === "futures" ? "from CFDs" : "from Futures"}
+                                      </span>
                                     </button>
                                   </div>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setAddingSymbolFor(asset.symbol);
-                                      setNewTickerInput("");
-                                    }}
-                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-dashed border-[#2a2b30] hover:border-[#089981]/40 text-[#868a96] hover:text-[#089981] text-[10px] cursor-pointer transition-colors"
-                                  >
-                                    <Plus className="w-2.5 h-2.5" />
-                                    <span>Add Ticker</span>
-                                  </button>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    void handleIsolateAssetClass(asset.symbol);
-                                  }}
-                                  disabled={busy}
-                                  className="text-[10px] text-[#868a96] hover:text-[#089981] transition-colors cursor-pointer flex items-center gap-1"
-                                  title={`Isolate ${asset.symbol} from cross-asset class fallback`}
-                                >
-                                  <ShieldCheck className="w-3 h-3 text-[#089981]" />
-                                  <span>Isolate {assetClass === "futures" ? "from CFDs" : "from Futures"}</span>
-                                </button>
-                              </div>
+                                </div>
+                              )}
                             </div>
 
-                          {/* TIMEFRAME ROWS */}
-                          <div className="divide-y divide-[#202228]">
-                            {asset.timeframes.map((tf) => {
-                              const tfKey = `${asset.symbol}__${tf.resolution}`;
-                              const isPurgingTf = purgingKey === tfKey;
-                              const tfBatches = batches.filter(
-                                (b) =>
-                                  b.symbol.toUpperCase() === asset.symbol.toUpperCase() &&
-                                  b.resolution.toLowerCase() === tf.resolution.toLowerCase(),
-                              );
+                            {/* ALIGNED TIMEFRAME TABLE (TF | Bars | Period | Source | Hover Purge) */}
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr className="border-b border-[#1c1e24] text-[10px] font-medium uppercase tracking-wider text-[#868a96]/80">
+                                    <th className="pl-4 pr-2 py-2 w-16">TF</th>
+                                    <th className="px-3 py-2 w-28 text-right">Bars</th>
+                                    <th className="px-3 py-2">Period</th>
+                                    <th className="px-3 py-2">Source</th>
+                                    <th className="pl-2 pr-4 py-2 w-44 text-right">
+                                      <span className="sr-only">Actions</span>
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[#1a1c22] text-xs">
+                                  {asset.timeframes.map((tf) => {
+                                    const tfKey = `${asset.symbol}__${tf.resolution}`;
+                                    const isPurgingTf = purgingKey === tfKey;
+                                    const tfBatches = batches.filter(
+                                      (b) =>
+                                        b.symbol.toUpperCase() === asset.symbol.toUpperCase() &&
+                                        b.resolution.toLowerCase() ===
+                                          tf.resolution.toLowerCase(),
+                                    );
+                                    const sourceNames = Array.from(
+                                      new Set(
+                                        tfBatches
+                                          .map((b) => b.name)
+                                          .filter((n): n is string => Boolean(n)),
+                                      ),
+                                    );
+                                    const primarySource =
+                                      sourceNames.length === 0
+                                        ? "—"
+                                        : sourceNames.length === 1
+                                          ? sourceNames[0]!
+                                          : `${sourceNames[0]} (+${sourceNames.length - 1})`;
+                                    const hasNewBars = tfBatches.some(
+                                      (b) => (b.newBarCount ?? 0) > 0,
+                                    );
 
-                              return (
-                                <div
-                                  key={tf.resolution}
-                                  className="px-4 py-3 hover:bg-[#151619] transition-colors"
-                                >
-                                  <div className="flex items-center justify-between gap-3 text-xs">
-                                    <div className="flex items-center gap-3">
-                                      <span className="w-10 text-center font-mono font-bold text-[#d1d4dc] bg-[#1c1d22] py-0.5 rounded border border-[#2a2b30] text-[11px]">
-                                        {formatResolutionDisplay(tf.resolution)}
-                                      </span>
-                                      <span className="font-mono text-[#d1d4dc] text-[12px]">
-                                        {tf.barCount.toLocaleString()} bars
-                                      </span>
-                                      <span className="text-[11px] text-[#868a96] font-mono">
-                                        │ {formatSeriesRange(tf.firstTime, tf.lastTime)}
-                                      </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                      {isPurgingTf ? (
-                                        <div className="flex items-center gap-1.5">
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              handleConfirmPurge(asset.symbol, tf.resolution)
-                                            }
-                                            disabled={busy}
-                                            className="px-2 py-0.5 rounded bg-[#f23645]/20 hover:bg-[#f23645]/30 border border-[#f23645]/40 text-[#f23645] text-[10px] font-medium cursor-pointer"
-                                          >
-                                            Confirm Purge
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => setPurgingKey(null)}
-                                            className="px-2 py-0.5 text-[10px] text-[#868a96] hover:text-[#d1d4dc] cursor-pointer"
-                                          >
-                                            Cancel
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <button
-                                          type="button"
-                                          onClick={() => setPurgingKey(tfKey)}
-                                          className="px-2 py-1 rounded text-[11px] text-[#868a96] hover:text-[#f23645] hover:bg-[#202228] transition-colors flex items-center gap-1 cursor-pointer"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                          <span>
-                                            Purge {formatResolutionDisplay(tf.resolution)}
-                                          </span>
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Ingestion Chunks associated with this timeframe */}
-                                  {tfBatches.length > 0 && (
-                                    <div className="mt-2 pl-4 border-l-2 border-[#202228] space-y-1">
-                                      {tfBatches.map((b) => (
-                                        <div
-                                          key={b.id}
-                                          className="flex items-center justify-between gap-2 text-[11px] font-mono text-[#868a96] bg-[#17181c]/60 rounded px-2.5 py-1 border border-[#202228]"
-                                        >
-                                          <div className="flex items-center gap-2 truncate">
-                                            <span className="text-[#d1d4dc]">
-                                              {formatChunkCanonical(b)}
-                                            </span>
-                                            {b.name && (
-                                              <span className="text-[10px] text-[#868a96] truncate">
-                                                (source: {b.name})
-                                              </span>
+                                    return (
+                                      <tr
+                                        key={tf.resolution}
+                                        className="group hover:bg-[#16181d] transition-colors"
+                                      >
+                                        <td className="pl-4 pr-2 py-2.5 font-mono font-semibold text-[#d1d4dc] whitespace-nowrap">
+                                          {formatResolutionDisplay(tf.resolution)}
+                                        </td>
+                                        <td className="px-3 py-2.5 font-mono tabular-nums text-[#d1d4dc] text-right whitespace-nowrap">
+                                          {tf.barCount.toLocaleString()}
+                                        </td>
+                                        <td className="px-3 py-2.5 font-mono tabular-nums text-[11px] text-[#868a96] whitespace-nowrap">
+                                          {formatSeriesRange(tf.firstTime, tf.lastTime)}
+                                        </td>
+                                        <td className="px-3 py-2.5 font-mono text-[11px] text-[#868a96] max-w-[220px] truncate">
+                                          <div className="flex items-center gap-1.5 truncate">
+                                            {hasNewBars && (
+                                              <span
+                                                className="w-1.5 h-1.5 rounded-full bg-[#089981] shrink-0"
+                                                title="Recently imported bars"
+                                              />
                                             )}
+                                            <span
+                                              className="truncate"
+                                              title={sourceNames.join(", ")}
+                                            >
+                                              {primarySource}
+                                            </span>
                                           </div>
-                                          <span className="text-[10px] text-[#089981] shrink-0 font-sans">
-                                            +{b.newBarCount.toLocaleString()} new
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                                        </td>
+                                        <td className="pl-2 pr-4 py-2 text-right whitespace-nowrap">
+                                          {isPurgingTf ? (
+                                            <div className="inline-flex items-center justify-end gap-1.5">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  handleConfirmPurge(
+                                                    asset.symbol,
+                                                    tf.resolution,
+                                                  )
+                                                }
+                                                disabled={busy}
+                                                className="px-2 py-0.5 rounded bg-[#f23645]/20 hover:bg-[#f23645]/30 border border-[#f23645]/40 text-[#f23645] text-[10px] font-medium cursor-pointer"
+                                              >
+                                                Confirm ({tf.barCount.toLocaleString()})
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => setPurgingKey(null)}
+                                                className="px-1.5 py-0.5 text-[10px] text-[#868a96] hover:text-[#d1d4dc] cursor-pointer"
+                                              >
+                                                Cancel
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              onClick={() => setPurgingKey(tfKey)}
+                                              className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded text-[#868a96] hover:text-[#f23645] hover:bg-[#202228] transition-all inline-flex items-center justify-center cursor-pointer"
+                                              title={`Purge ${formatResolutionDisplay(tf.resolution)} (${tf.barCount.toLocaleString()} bars)`}
+                                              aria-label={`Purge ${formatResolutionDisplay(tf.resolution)}`}
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                }))}
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             )
           ) : batches.length === 0 ? (
@@ -873,75 +1133,262 @@ export function MarketDataManagerDialog({
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {batches.map((batch) => {
-                const isReverting = revertingBatchId === batch.id;
+            <div className="space-y-4">
+              {/* TOP SEARCH BAR FOR INGESTION HISTORY */}
+              <div className="flex items-center justify-between gap-2 pb-1">
+                <div className="relative w-full sm:w-72">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#868a96]" />
+                  <input
+                    type="text"
+                    value={historySearchQuery}
+                    onChange={(e) => setHistorySearchQuery(e.target.value)}
+                    placeholder="Search by asset, timeframe, or file..."
+                    aria-label="Search ingestion history by asset or file"
+                    className="h-8 w-full pl-8 pr-6 rounded-lg bg-[#121316] border border-[#25272e] text-xs text-[#d1d4dc] placeholder:text-[#868a96] focus:outline-none focus:border-[#089981]"
+                  />
+                  {historySearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setHistorySearchQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[#868a96] hover:text-[#d1d4dc] cursor-pointer"
+                      aria-label="Clear history search"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
 
-                return (
-                  <div
-                    key={batch.id}
-                    className="p-3 border border-[#2a2b30] rounded-xl bg-[#121316] flex flex-wrap items-center justify-between gap-3 text-xs"
+              {groupedHistorySessions.length === 0 ? (
+                <div className="py-8 text-center space-y-1 border border-dashed border-[#2a2b30] rounded-xl bg-[#121316]">
+                  <p className="text-xs font-medium text-[#d1d4dc]">
+                    No ingestion chunks match your search query.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setHistorySearchQuery("")}
+                    className="text-[11px] text-[#089981] hover:underline cursor-pointer"
                   >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-1.5 py-0.5 rounded bg-[#1c1d22] border border-[#2a2b30] font-mono font-bold text-[#d1d4dc] text-[11px]">
-                          {batch.symbol} · {formatResolutionDisplay(batch.resolution)}
-                        </span>
-                        <span className="font-mono text-[#d1d4dc] font-medium text-xs">
-                          Chunk: {formatSeriesRange(batch.firstTime, batch.lastTime)}
-                        </span>
-                        {batch.name && (
-                          <span className="text-[11px] text-[#868a96] font-mono">
-                            (source: {batch.name})
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-[11px] text-[#868a96] font-mono flex-wrap">
-                        <span>{formatBatchImportDate(batch.importedAt)}</span>
-                        <span>│</span>
-                        <span className="text-[#089981]">
-                          +{batch.newBarCount.toLocaleString()} new
-                        </span>
-                        <span>│</span>
-                        <span>{batch.duplicateBarCount.toLocaleString()} duplicates</span>
-                        <span>│</span>
-                        <span>{batch.barCount.toLocaleString()} total</span>
-                      </div>
-                    </div>
+                    Clear search
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {groupedHistorySessions.map((session) => {
+                    const isRevertingSession = revertingSessionKey === session.sessionKey;
+                    const fileLabel = session.batches.length === 1 ? "file" : "files";
 
-                    <div>
-                      {isReverting ? (
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleConfirmRevertBatch(batch.id, batch.name)}
-                            disabled={busy}
-                            className="px-2.5 py-1 rounded bg-[#f23645]/20 hover:bg-[#f23645]/30 border border-[#f23645]/40 text-[#f23645] text-xs font-medium cursor-pointer"
-                          >
-                            Confirm Revert
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setRevertingBatchId(null)}
-                            className="px-2.5 py-1 text-xs text-[#868a96] hover:text-[#d1d4dc] cursor-pointer"
-                          >
-                            Cancel
-                          </button>
+                    return (
+                      <div key={session.sessionKey} className="space-y-1">
+                        {/* DISCRETE SESSION HEADER */}
+                        <div className="px-2 py-1.5 flex items-center justify-between gap-2 border-b border-[#25272e] text-[11px]">
+                          <span className="font-medium text-[#868a96]">
+                            {session.sessionLabel}
+                          </span>
+
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono tabular-nums text-[#868a96]">
+                              {session.batches.length} {fileLabel} ·{" "}
+                              {session.totalNewBars.toLocaleString()} bars
+                            </span>
+
+                            {isRevertingSession ? (
+                              <div className="inline-flex items-center gap-1.5">
+                                <span className="text-[11px] text-[#d1d4dc] font-mono tabular-nums">
+                                  Remove{" "}
+                                  <strong className="text-[#f23645]">
+                                    {session.totalNewBars.toLocaleString()}
+                                  </strong>{" "}
+                                  bars?
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleConfirmRevertSession(session.batches)
+                                  }
+                                  disabled={busy}
+                                  className="px-2 py-0.5 rounded bg-[#f23645]/20 hover:bg-[#f23645]/30 border border-[#f23645]/40 text-[#f23645] text-[10px] font-medium cursor-pointer transition-colors"
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setRevertingSessionKey(null)}
+                                  className="px-1.5 py-0.5 text-[10px] text-[#868a96] hover:text-[#d1d4dc] cursor-pointer transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRevertingSessionKey(session.sessionKey)
+                                }
+                                disabled={busy}
+                                className="text-[11px] text-[#868a96]/80 hover:text-[#f23645] transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                title={`Revert all ${session.batches.length} ${fileLabel} in this session (${session.totalNewBars.toLocaleString()} bars)`}
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                                <span>Revert import</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setRevertingBatchId(batch.id)}
-                          className="px-2.5 py-1 rounded border border-[#2a2b30] bg-[#17181c] hover:bg-[#202228] text-[#868a96] hover:text-[#f23645] text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <RotateCcw className="w-3 h-3" />
-                          <span>Revert Chunk</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+
+                        {/* BORDERLESS SESSION TABLE */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-[#1c1e24] text-[10px] font-medium uppercase tracking-wider text-[#868a96]/70">
+                                <th className="pl-2 pr-3 py-1.5 w-28">Asset</th>
+                                <th className="px-2 py-1.5 w-14">TF</th>
+                                <th className="px-3 py-1.5">Period</th>
+                                <th className="px-3 py-1.5 text-right w-36">Bars</th>
+                                <th className="px-3 py-1.5">File</th>
+                                <th className="pl-2 pr-2 py-1.5 w-44 text-right">
+                                  <span className="sr-only">Actions</span>
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#1a1c22] text-xs">
+                              {session.batches.map((batch) => {
+                                const isReverting = revertingBatchId === batch.id;
+                                const hasDiffTotal =
+                                  batch.newBarCount !== batch.barCount;
+                                const barsTooltip = hasDiffTotal
+                                  ? `${batch.newBarCount.toLocaleString()} new of ${batch.barCount.toLocaleString()} total bars in file`
+                                  : `${batch.newBarCount.toLocaleString()} bars imported`;
+
+                                return (
+                                  <tr
+                                    key={batch.id}
+                                    className="group hover:bg-[#16181d] transition-colors"
+                                  >
+                                    {/* Asset */}
+                                    <td className="pl-2 pr-3 py-2 whitespace-nowrap">
+                                      <div className="flex items-center gap-2">
+                                        <AssetIcon
+                                          symbol={batch.symbol}
+                                          size="xs"
+                                        />
+                                        <span className="font-semibold text-[#d1d4dc]">
+                                          {batch.symbol}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    {/* TF */}
+                                    <td className="px-2 py-2 font-mono text-[#868a96] whitespace-nowrap">
+                                      {formatResolutionDisplay(batch.resolution)}
+                                    </td>
+
+                                    {/* Period */}
+                                    <td className="px-3 py-2 font-mono tabular-nums text-[11px] text-[#868a96] whitespace-nowrap">
+                                      {formatSeriesRange(
+                                        batch.firstTime,
+                                        batch.lastTime,
+                                      )}
+                                    </td>
+
+                                    {/* Bars (+ discrete amber duplicates if > 0) */}
+                                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                                      <div className="inline-flex items-center justify-end gap-1.5 font-mono tabular-nums">
+                                        <span
+                                          className={cn(
+                                            batch.newBarCount > 0
+                                              ? "text-[#089981]"
+                                              : "text-[#868a96]",
+                                            hasDiffTotal &&
+                                              "underline decoration-dotted decoration-[#868a96]/50 underline-offset-2 cursor-help",
+                                          )}
+                                          title={barsTooltip}
+                                        >
+                                          +{batch.newBarCount.toLocaleString()}
+                                        </span>
+                                        {batch.duplicateBarCount > 0 && (
+                                          <span
+                                            className="text-[10px] text-amber-400/90"
+                                            title={`${batch.duplicateBarCount.toLocaleString()} duplicate bars skipped`}
+                                          >
+                                            ·{" "}
+                                            {batch.duplicateBarCount.toLocaleString()}{" "}
+                                            dup
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+
+                                    {/* File (truncated with tooltip) */}
+                                    <td className="px-3 py-2 font-mono text-[11px] text-[#868a96]/60 max-w-[190px] truncate">
+                                      <span
+                                        className="truncate block"
+                                        title={batch.name || undefined}
+                                      >
+                                        {batch.name || "—"}
+                                      </span>
+                                    </td>
+
+                                    {/* Action (Hover-only undo icon with confirmation) */}
+                                    <td className="pl-2 pr-2 py-1.5 text-right whitespace-nowrap">
+                                      {isReverting ? (
+                                        <div className="inline-flex items-center justify-end gap-1.5">
+                                          <span className="text-[10px] text-[#d1d4dc] font-mono tabular-nums">
+                                            Remove{" "}
+                                            <strong className="text-[#f23645]">
+                                              {batch.newBarCount.toLocaleString()}
+                                            </strong>{" "}
+                                            bars?
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleConfirmRevertBatch(
+                                                batch.id,
+                                                batch.name,
+                                              )
+                                            }
+                                            disabled={busy}
+                                            className="px-2 py-0.5 rounded bg-[#f23645]/20 hover:bg-[#f23645]/30 border border-[#f23645]/40 text-[#f23645] text-[10px] font-medium cursor-pointer transition-colors"
+                                          >
+                                            Confirm
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setRevertingBatchId(null)
+                                            }
+                                            className="px-1.5 py-0.5 text-[10px] text-[#868a96] hover:text-[#d1d4dc] cursor-pointer transition-colors"
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setRevertingBatchId(batch.id)
+                                          }
+                                          disabled={busy}
+                                          className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded text-[#868a96] hover:text-[#f23645] hover:bg-[#202228] transition-all inline-flex items-center justify-center cursor-pointer"
+                                          title={`Revert chunk (${batch.newBarCount.toLocaleString()} bars)`}
+                                          aria-label={`Revert ${batch.symbol} ${formatResolutionDisplay(batch.resolution)} chunk`}
+                                        >
+                                          <RotateCcw className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Vela } from "@luxalgo/vela";
 import {
   RESOLUTIONS,
   parseResolutionMs,
+  snapTimeToCandle,
   type MarketConnection,
   type ExcursionEstimate,
   type Resolution,
@@ -40,6 +41,7 @@ import {
   mapSettingsSectionToTab,
   applyStoredSettingsToChart,
   loadStoredSettings,
+  saveStoredSettings,
 } from "./settings/vela-settings-bridge";
 
 export function TradeMarketData({
@@ -1100,6 +1102,7 @@ function MarketCandlesChart({
   const sideRailHost = useRef<HTMLElement>(null);
   const chart = useRef<Vela | null>(null);
   const topbarRef = useRef<any>(null);
+  const bottombarRef = useRef<any>(null);
   const statuslineRef = useRef<any>(null);
   const watermarkRef = useRef<any>(null);
   const sidePanelsDockRef = useRef<VelaSidePanelsController | null>(null);
@@ -1131,6 +1134,39 @@ function MarketCandlesChart({
   const [activePanel, setActivePanel] = useState<"objects" | "dataWindow" | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState("symbol");
+  const normalizeChartTimezone = useCallback(
+    (tz?: string | null) => (!tz || tz === "UTC" || tz === "Etc/GMT" ? "Etc/UTC" : tz),
+    [],
+  );
+  const [chartTimezone, setChartTimezone] = useState<string>(() =>
+    normalizeChartTimezone(loadStoredSettings().symbol?.timezone),
+  );
+
+  const persistAndApplyTimezone = useCallback(
+    (zone: string, targetInstance?: any) => {
+      const normalizedZone = normalizeChartTimezone(zone);
+      const inst = targetInstance ?? chart.current;
+      try {
+        inst?.renderer?.set?.("timezone", normalizedZone);
+        inst?.renderer?.applyConfig?.({ timeScale: { timezone: normalizedZone } });
+      } catch {}
+      try {
+        bottombarRef.current?.setTimezone?.(normalizedZone);
+      } catch {}
+      try {
+        const s = loadStoredSettings();
+        saveStoredSettings({
+          ...s,
+          symbol: {
+            ...s.symbol,
+            timezone: normalizedZone,
+          },
+        });
+      } catch {}
+      setChartTimezone(normalizedZone);
+    },
+    [normalizeChartTimezone],
+  );
 
   const allVelaTimeframes = useMemo(() => ["1", "3", "5", "15", "60", "240", "D", "W", "M"], []);
 
@@ -1171,14 +1207,17 @@ function MarketCandlesChart({
         overlay: true,
         inputsSchema: () => [],
         defaultInputs: () => ({}),
-        create: () => ({
-          start(ctx) {
-            ctx.emit({
+        create: () => {
+          let activeCtx: any = null;
+          const emitLabels = () => {
+            if (!activeCtx) return;
+            const currentBars = frame.current.bars;
+            activeCtx.emit({
               labels: frame.current.fills.map((fill, index) => ({
                 id: `fill-${index}`,
                 paneId: "price",
                 xloc: "bar_time" as const,
-                x: Date.parse(fill.executedAt),
+                x: snapTimeToCandle(Date.parse(fill.executedAt), currentBars),
                 y: fill.price,
                 yloc: "price" as const,
                 text: `${fill.side.toUpperCase()} ${fill.quantity}`,
@@ -1191,15 +1230,25 @@ function MarketCandlesChart({
                 overlay: true,
               })),
             });
-            ctx.setStatus("idle");
-          },
-          onBars() {},
-          onViewport() {},
-          setInputs() {},
-          suspend() {},
-          resume() {},
-          stop() {},
-        }),
+            activeCtx.setStatus("idle");
+          };
+          return {
+            start(ctx) {
+              activeCtx = ctx;
+              emitLabels();
+            },
+            onBars() {
+              emitLabels();
+            },
+            onViewport() {},
+            setInputs() {},
+            suspend() {},
+            resume() {},
+            stop() {
+              activeCtx = null;
+            },
+          };
+        },
       });
 
       const dark = () => document.documentElement.classList.contains("dark");
@@ -1222,6 +1271,15 @@ function MarketCandlesChart({
 
       chart.current = instance;
       instance.addNativeIndicator(type);
+
+      // Hydrate persisted timezone immediately before Bottombar/widgets mount
+      const initialStored = loadStoredSettings();
+      const initialTz = normalizeChartTimezone(initialStored.symbol?.timezone);
+      try {
+        instance.renderer.set("timezone", initialTz);
+        instance.renderer.applyConfig?.({ timeScale: { timezone: initialTz } });
+      } catch {}
+      setChartTimezone(initialTz);
 
       // Fix 8px Overlap / Canvas Left-Clipping: synchronize 52px toolbar gutter (ADR-003)
       syncVelaToolbarGutter(instance, host.current);
@@ -1370,9 +1428,9 @@ function MarketCandlesChart({
       let cleanupChromeHoverBottom: (() => void) | null = null;
       if (bottombarHost.current) {
         bottombar = new Bottombar(bottombarHost.current, {
-          timezone: String(instance.renderer.get("timezone") ?? "Etc/UTC"),
+          timezone: initialTz,
           onTimezone: (zone: string) => {
-            instance.renderer.set("timezone", zone);
+            persistAndApplyTimezone(zone, instance);
           },
           onRange: (preset: { id: string; preset: any }) => {
             instance.setVisibleRangePreset(preset.preset);
@@ -1400,6 +1458,7 @@ function MarketCandlesChart({
           iconSpan.innerHTML = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/></svg>`;
         }
       }
+      bottombarRef.current = bottombar;
 
       // 3. Vela Native Statusline Widget
       const resolveIcon = (sym: string): string | undefined => {
@@ -1516,7 +1575,9 @@ function MarketCandlesChart({
           }
         },
         timezone: () => String(instance.renderer.get("timezone") ?? "Etc/UTC"),
-        setTimezone: (zone) => instance.renderer.set("timezone", zone),
+        setTimezone: (zone) => {
+          persistAndApplyTimezone(zone, instance);
+        },
       });
       contextMenu.onChart(instance);
 
@@ -1529,7 +1590,13 @@ function MarketCandlesChart({
       // Hydrate live chart with persisted settings on mount
       try {
         const stored = loadStoredSettings();
-        applyStoredSettingsToChart(instance, statusline, watermark, stored);
+        const hydratedTz = normalizeChartTimezone(stored.symbol?.timezone);
+        applyStoredSettingsToChart(instance, statusline, watermark, {
+          ...stored,
+          symbol: { ...stored.symbol, timezone: hydratedTz },
+        });
+        bottombar?.setTimezone?.(hydratedTz);
+        setChartTimezone(hydratedTz);
       } catch {}
 
       // 6. Vela Native Drawing Toolbar Enhancer
@@ -1672,6 +1739,7 @@ function MarketCandlesChart({
         unregisterNativeIndicator(type);
         if (chart.current === instance) chart.current = null;
         topbarRef.current = null;
+        bottombarRef.current = null;
         statuslineRef.current = null;
         watermarkRef.current = null;
       };
@@ -1683,7 +1751,7 @@ function MarketCandlesChart({
       disposed = true;
       cleanup();
     };
-  }, [history.symbol, initialPriceStyle, allVelaTimeframes]);
+  }, [history.symbol, initialPriceStyle, allVelaTimeframes, persistAndApplyTimezone]);
 
   // Re-attach drawings persistence if tradeKey changes while mounted (e.g. switching trades of same symbol)
   useEffect(() => {
@@ -2018,9 +2086,9 @@ function MarketCandlesChart({
         availableDatasets={availableDatasets}
         currentDatasetId={currentDatasetId}
         onSelectDataset={onSelectDataset}
-        currentTimezone={String(chart.current?.renderer?.get?.("timezone") ?? "Etc/UTC")}
+        currentTimezone={chartTimezone}
         onTimezoneChange={(tz) => {
-          chart.current?.renderer?.set?.("timezone", tz);
+          persistAndApplyTimezone(tz);
         }}
         onApplySetting={(path, value) => {
           if (path.includes("Chart style") || path.includes("style")) {

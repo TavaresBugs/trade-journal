@@ -1086,6 +1086,47 @@ html {
   pointer-events: none;
   animation: journal-overlay-out 110ms ease-in forwards;
 }
+
+/* Natural Bézier Join for Journal FilterBar Buttons (Layouts & AccountSelector) */
+.journal-bezier-trigger[data-state="open"],
+.journal-bezier-trigger[data-state="open"]:hover {
+  background: var(--background) !important;
+  border-color: var(--border) !important;
+  border-bottom-color: transparent !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  transform: none !important;
+  position: relative;
+  z-index: 51;
+}
+
+.journal-bezier-panel[data-bezier-joined] {
+  position: relative;
+  isolation: isolate;
+  overflow: visible !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+.journal-bezier-outline {
+  filter:
+    drop-shadow(0 18px 36px rgb(0 0 0 / 0.45))
+    drop-shadow(0 4px 10px rgb(0 0 0 / 0.22));
+  clip-path: inset(0px -48px -64px -48px);
+}
+
+.journal-bezier-outline-fill {
+  fill: var(--background);
+}
+
+.journal-bezier-outline-edge {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
 .dashboard-customize-heading {
   display: flex;
   flex-shrink: 0;

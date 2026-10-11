@@ -26,12 +26,13 @@ function owner(type: string, id: string) {
       .from(missedTrades)
       .where(eq(missedTrades.id, id))
       .get();
-  return (
-    type === "day" &&
-    /^\d{4}-\d{2}-\d{2}$/.test(id) &&
-    !isNaN(Date.parse(id)) &&
-    new Date(id).toISOString().slice(0, 10) === id
-  );
+  if (type === "day") {
+    const match = /^(\d{4}-\d{2}-\d{2})(?:#[a-zA-Z0-9_-]{1,32})?$/.exec(id);
+    if (!match) return false;
+    const baseDate = match[1]!;
+    return !isNaN(Date.parse(baseDate)) && new Date(baseDate).toISOString().slice(0, 10) === baseDate;
+  }
+  return false;
 }
 export const GET = handler((request: Request) => {
   const p = new URL(request.url).searchParams;

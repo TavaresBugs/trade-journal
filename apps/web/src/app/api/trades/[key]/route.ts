@@ -1,5 +1,5 @@
 import { tradeRisk, tradeR, plannedR } from "@luxalgo/journal-core";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db, trades, playbooks, accounts, journalDays } from "@/db";
 import { bad, handler, ok, requireValue } from "@/server/api";
 import { listExecutions } from "@/server/executions";
@@ -7,6 +7,7 @@ import { deleteTradeWithCleanup } from "@/server/trades";
 import { nowIso } from "@/server/ids";
 import { getTradeByKey, rowToTrade } from "@/server/trades-query";
 import { getTimeZone } from "@/server/settings";
+import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 
 type Params = { params: Promise<{ key: string }> };
 
@@ -47,6 +48,8 @@ interface AnnotateBody {
   reviewed?: boolean;
   drawingsJson?: string | null;
   linkedJournalDate?: string | null;
+  sourceTradeKey?: string | null;
+  linkSiblingKeys?: string[];
 }
 
 export const PATCH = handler(async (request: Request, { params }: Params) => {
@@ -90,21 +93,71 @@ export const PATCH = handler(async (request: Request, { params }: Params) => {
   const effectiveJournalDate =
     body.linkedJournalDate !== undefined ? body.linkedJournalDate : row.linkedJournalDate;
 
-  // Inherit session note if newly linked and trade has no existing note
-  if (body.linkedJournalDate && body.notes === undefined && !row.notes) {
+  // Bidirectional promotion & sharing when linking to a session journal or pulling from a sibling trade
+  if (body.linkedJournalDate) {
     const existingDay = db
-      .select({ note: journalDays.note })
+      .select()
       .from(journalDays)
       .where(eq(journalDays.date, body.linkedJournalDate))
       .get();
-    if (existingDay?.note) {
-      patch.notes = existingDay.note;
-    }
-  }
+    const sourceTrade = body.sourceTradeKey ? getTradeByKey(body.sourceTradeKey) : null;
 
-  if (body.notes !== undefined) {
+    const candidateNote =
+      body.notes !== undefined
+        ? (body.notes ?? "")
+        : sourceTrade?.notes?.trim()
+          ? sourceTrade.notes
+          : existingDay?.note?.trim()
+            ? existingDay.note
+            : (row.notes ?? "");
+
+    const candidateSymbol =
+      existingDay?.symbol ??
+      normalizeSymbol(sourceTrade?.symbol ?? row.symbol) ??
+      null;
+
+    db.insert(journalDays)
+      .values({
+        date: body.linkedJournalDate,
+        note: candidateNote,
+        symbol: candidateSymbol,
+        updatedAt: nowIso(),
+      })
+      .onConflictDoUpdate({
+        target: journalDays.date,
+        set: {
+          note: candidateNote,
+          symbol: candidateSymbol,
+          updatedAt: nowIso(),
+        },
+      })
+      .run();
+
+    patch.notes = candidateNote;
+
+    // Link source trade and any requested sibling trades of the same seara
+    const siblingKeysToLink = Array.from(
+      new Set([
+        ...(body.sourceTradeKey ? [body.sourceTradeKey] : []),
+        ...(Array.isArray(body.linkSiblingKeys) ? body.linkSiblingKeys : []),
+      ]),
+    ).filter((k) => k && k !== decoded);
+
+    if (siblingKeysToLink.length > 0) {
+      db.update(trades)
+        .set({ linkedJournalDate: body.linkedJournalDate, notes: candidateNote })
+        .where(inArray(trades.key, siblingKeysToLink))
+        .run();
+    }
+
+    // Keep all already-linked trades on this journal date in sync
+    db.update(trades)
+      .set({ notes: candidateNote })
+      .where(eq(trades.linkedJournalDate, body.linkedJournalDate))
+      .run();
+  } else if (body.notes !== undefined) {
     patch.notes = body.notes;
-    // When trade is linked to a session journal, sync note with the session journal and all sibling trades
+    // When trade is already linked to a session journal, sync note with the session journal and all sibling trades
     if (effectiveJournalDate) {
       const noteStr = body.notes ?? "";
       db.insert(journalDays)

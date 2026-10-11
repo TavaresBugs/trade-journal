@@ -154,3 +154,30 @@ export interface ExcursionEstimate {
 export interface TradeMarketResult extends MarketHistory {
   estimate: ExcursionEstimate;
 }
+
+/**
+ * Snaps an exact execution timestamp (milliseconds) to the enclosing candle's open time
+ * from a list of historical bars.
+ *
+ * In Vela and candlestick charting engines, markers with xloc: "bar_time" must align to
+ * discrete bar open timestamps. Without snapping, fractional positions across multi-hour
+ * or daily bars cause markers to float to the right (e.g. 12:45 inside a 10:00-14:00 4H
+ * candle renders 68.75% across, appearing on or near the subsequent bar).
+ */
+export function snapTimeToCandle(timeMs: number, bars?: Array<{ time: number }>): number {
+  if (!bars || bars.length === 0 || !Number.isFinite(timeMs)) return timeMs;
+  if (timeMs < bars[0]!.time) return timeMs;
+  if (timeMs >= bars[bars.length - 1]!.time) return bars[bars.length - 1]!.time;
+
+  let lo = 0;
+  let hi = bars.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (bars[mid]!.time <= timeMs) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return bars[lo]!.time;
+}

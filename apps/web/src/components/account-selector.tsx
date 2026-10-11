@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ButtonBezierOutline } from "@/components/ui/button-bezier-join";
 import { AddAccountDialog } from "@/components/add-account-dialog";
 import { BrokerIcon } from "@/components/ui/broker-icon";
 import { getAccountBrokerInfo } from "@/lib/brokers/broker-catalog";
@@ -49,6 +50,8 @@ export function AccountSelector() {
   const [syncing, setSyncing] = useState(false);
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [demoError, setDemoError] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const selected = params.get("accounts")?.split(",").filter(Boolean) ?? [];
   const accounts = data?.accounts.filter((a) => !a.archivedAt || selected.includes(a.id)) ?? [];
@@ -111,9 +114,11 @@ export function AccountSelector() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
+              ref={triggerRef}
               type="button"
               aria-label="Switch journal account"
-              className="flex h-8 min-w-0 items-center gap-2 rounded-md border border-border bg-background px-2.5 text-left text-xs font-medium text-foreground transition-[background-color,transform] duration-150 hover:bg-muted/60 active:scale-[0.98] max-w-44 sm:max-w-56 cursor-pointer select-none"
+              data-bezier-trigger="end"
+              className="journal-bezier-trigger flex h-8 min-w-0 items-center gap-2 rounded-md border border-border bg-background px-2.5 text-left text-xs font-medium text-foreground transition-[background-color,transform] duration-150 hover:bg-muted/60 active:scale-[0.98] max-w-44 sm:max-w-56 cursor-pointer select-none data-[state=open]:bg-background data-[state=open]:rounded-b-none data-[state=open]:border-b-transparent data-[state=open]:scale-100 data-[state=open]:active:scale-100"
             >
               {loadingDemo ? (
                 <FlaskConical className="size-3.5 shrink-0 text-muted-foreground animate-pulse" />
@@ -131,120 +136,132 @@ export function AccountSelector() {
                 <Wallet className="size-3.5 text-muted-foreground shrink-0" />
               )}
               <span className="min-w-0 truncate">{loadingDemo ? "Loading demo…" : label}</span>
-              <ChevronDown className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
+              <ChevronDown className="ml-auto size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
             </button>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
             align="end"
-            className="w-56 rounded-xl p-1 shadow-xl border border-border/70"
+            side="bottom"
+            sideOffset={-1}
+            data-bezier-joined="end"
+            className="journal-bezier-panel w-56 rounded-xl p-1 shadow-xl border border-border/70"
           >
-            {/* All accounts option */}
-            <DropdownMenuItem
-              onClick={() => selectAccount("all")}
-              className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <Layers className="size-3.5 text-muted-foreground shrink-0" />
-                <span>All accounts</span>
-              </div>
-              {value === "all" && <Check className="size-3.5 shrink-0 text-foreground" />}
-            </DropdownMenuItem>
-
-            {/* Multiple accounts selection indicator */}
-            {selected.length > 1 && (
+            <ButtonBezierOutline
+              triggerRef={triggerRef}
+              radius={10}
+              alignFallback="end"
+              defaultWidth={224}
+              defaultHeight={240}
+            />
+            <div className="relative z-10 overflow-x-hidden">
+              {/* All accounts option */}
               <DropdownMenuItem
-                disabled
-                className="flex items-center justify-between text-xs rounded-lg text-muted-foreground"
+                onClick={() => selectAccount("all")}
+                className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <Layers className="size-3.5 text-muted-foreground shrink-0" />
-                  <span>{label}</span>
+                  <span>All accounts</span>
                 </div>
-                <Check className="size-3.5 shrink-0 text-foreground" />
+                {value === "all" && <Check className="size-3.5 shrink-0 text-foreground" />}
               </DropdownMenuItem>
-            )}
 
-            {/* List of user accounts */}
-            {accounts
-              .filter((a) => a.broker !== "demo")
-              .map((account) => {
-                const isSelected = selected.length === 1 && selected[0] === account.id;
-                const brokerInfo = getAccountBrokerInfo(account);
-                return (
-                  <DropdownMenuItem
-                    key={account.id}
-                    onClick={() => selectAccount(account.id)}
-                    className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      {brokerInfo?.icon ? (
-                        <BrokerIcon
-                          icon={brokerInfo.icon}
-                          iconDark={brokerInfo.iconDark}
-                          name={account.name}
-                          invertInDark={brokerInfo.invertInDark}
-                          className="size-4 rounded-xs object-contain shrink-0"
-                        />
-                      ) : (
-                        <Wallet className="size-3.5 text-muted-foreground shrink-0" />
-                      )}
-                      <span className="truncate">
-                        {account.name}
-                        {account.archivedAt ? " (archived)" : ""}
-                      </span>
-                    </div>
-                    {isSelected && <Check className="size-3.5 shrink-0 text-foreground" />}
-                  </DropdownMenuItem>
-                );
-              })}
-
-            <DropdownMenuSeparator />
-
-            {/* Add account action */}
-            <DropdownMenuItem
-              onClick={() => setAddAccountOpen(true)}
-              className="flex items-center gap-2 cursor-pointer py-1.5 px-2.5 text-xs rounded-lg text-foreground hover:bg-muted"
-            >
-              <Plus className="size-3.5 text-muted-foreground" />
-              <span className="font-medium">Add account</span>
-            </DropdownMenuItem>
-
-            {/* Manage accounts action */}
-            <DropdownMenuItem
-              onClick={() => router.push("/accounts")}
-              className="flex items-center gap-2 cursor-pointer py-1.5 px-2.5 text-xs rounded-lg text-foreground hover:bg-muted"
-            >
-              <SlidersHorizontal className="size-3.5 text-muted-foreground" />
-              <span className="font-medium">Manage accounts</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            {/* Demo data account option or Load demo data button (at the bottom) */}
-            {demo ? (
-              <DropdownMenuItem
-                onClick={() => selectAccount(demo.id)}
-                className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium text-muted-foreground"
-              >
-                <span className="flex items-center gap-1.5 truncate">
-                  <FlaskConical className="size-3.5 shrink-0" />
-                  {demo.name}
-                </span>
-                {selected.length === 1 && selected[0] === demo.id && (
+              {/* Multiple accounts selection indicator */}
+              {selected.length > 1 && (
+                <DropdownMenuItem
+                  disabled
+                  className="flex items-center justify-between text-xs rounded-lg text-muted-foreground"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Layers className="size-3.5 text-muted-foreground shrink-0" />
+                    <span>{label}</span>
+                  </div>
                   <Check className="size-3.5 shrink-0 text-foreground" />
-                )}
-              </DropdownMenuItem>
-            ) : (
+                </DropdownMenuItem>
+              )}
+
+              {/* List of user accounts */}
+              {accounts
+                .filter((a) => a.broker !== "demo")
+                .map((account) => {
+                  const isSelected = selected.length === 1 && selected[0] === account.id;
+                  const brokerInfo = getAccountBrokerInfo(account);
+                  return (
+                    <DropdownMenuItem
+                      key={account.id}
+                      onClick={() => selectAccount(account.id)}
+                      className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {brokerInfo?.icon ? (
+                          <BrokerIcon
+                            icon={brokerInfo.icon}
+                            iconDark={brokerInfo.iconDark}
+                            name={account.name}
+                            invertInDark={brokerInfo.invertInDark}
+                            className="size-4 rounded-xs object-contain shrink-0"
+                          />
+                        ) : (
+                          <Wallet className="size-3.5 text-muted-foreground shrink-0" />
+                        )}
+                        <span className="truncate">
+                          {account.name}
+                          {account.archivedAt ? " (archived)" : ""}
+                        </span>
+                      </div>
+                      {isSelected && <Check className="size-3.5 shrink-0 text-foreground" />}
+                    </DropdownMenuItem>
+                  );
+                })}
+
+              <DropdownMenuSeparator />
+
+              {/* Add account action */}
               <DropdownMenuItem
-                onClick={handleLoadDemo}
-                disabled={loadingDemo}
-                className="flex items-center gap-1.5 cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium text-muted-foreground"
+                onClick={() => setAddAccountOpen(true)}
+                className="flex items-center gap-2 cursor-pointer py-1.5 px-2.5 text-xs rounded-lg text-foreground hover:bg-muted"
               >
-                <FlaskConical className="size-3.5 shrink-0" />
-                <span>{loadingDemo ? "Loading demo…" : "Load demo data"}</span>
+                <Plus className="size-3.5 text-muted-foreground" />
+                <span className="font-medium">Add account</span>
               </DropdownMenuItem>
-            )}
+
+              {/* Manage accounts action */}
+              <DropdownMenuItem
+                onClick={() => router.push("/accounts")}
+                className="flex items-center gap-2 cursor-pointer py-1.5 px-2.5 text-xs rounded-lg text-foreground hover:bg-muted"
+              >
+                <SlidersHorizontal className="size-3.5 text-muted-foreground" />
+                <span className="font-medium">Manage accounts</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              {/* Demo data account option or Load demo data button (at the bottom) */}
+              {demo ? (
+                <DropdownMenuItem
+                  onClick={() => selectAccount(demo.id)}
+                  className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium text-muted-foreground"
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <FlaskConical className="size-3.5 shrink-0" />
+                    {demo.name}
+                  </span>
+                  {selected.length === 1 && selected[0] === demo.id && (
+                    <Check className="size-3.5 shrink-0 text-foreground" />
+                  )}
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  onClick={handleLoadDemo}
+                  disabled={loadingDemo}
+                  className="flex items-center gap-1.5 cursor-pointer py-1.5 px-2.5 text-xs rounded-lg font-medium text-muted-foreground"
+                >
+                  <FlaskConical className="size-3.5 shrink-0" />
+                  <span>{loadingDemo ? "Loading demo…" : "Load demo data"}</span>
+                </DropdownMenuItem>
+              )}
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
 

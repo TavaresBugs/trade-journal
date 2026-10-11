@@ -28,6 +28,9 @@ export const getJournaledDatesForMonth = (year: number, month: number): string[]
     .all();
 
   return [
-    ...new Set([...noteRows.map((r) => r.date), ...attachmentRows.map((r) => r.ownerId)]),
+    ...new Set([
+      ...noteRows.map((r) => r.date.slice(0, 10)),
+      ...attachmentRows.map((r) => r.ownerId.slice(0, 10)),
+    ]),
   ].sort();
 };

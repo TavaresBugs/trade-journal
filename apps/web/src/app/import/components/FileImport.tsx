@@ -53,7 +53,9 @@ export function FileImport({ initialAccountId }: FileImportProps) {
   };
 
   const [content, setContent] = useState<string | null>(null);
-  const [filesPayload, setFilesPayload] = useState<{ name: string; content: string }[] | null>(null);
+  const [filesPayload, setFilesPayload] = useState<{ name: string; content: string }[] | null>(
+    null,
+  );
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
   const [symbol, setSymbol] = useState("");
@@ -103,15 +105,50 @@ export function FileImport({ initialAccountId }: FileImportProps) {
   );
   const isBlocked = (Boolean(hasAccountMismatch) || !compat.compatible) && !forceMismatch;
 
-  const handleAccountSelect = (id: string, account?: AccountRow) => {
+  const applyPreviewResponse = (res: PreviewResponse, requestedTz?: string) => {
+    setPreview(res);
+    if (res.timeZone && isTimeZone(res.timeZone)) {
+      setStatementTimeZone(res.timeZone);
+      if (!userOverrodeTz && requestedTz && res.timeZone !== requestedTz) {
+        setTzPresetInfo(`Auto-calibrated to ${res.timeZone} (candle alignment)`);
+      }
+    }
+  };
+
+  const handleAccountSelect = (
+    id: string,
+    account?: AccountRow,
+    overrideContext?: {
+      content: string;
+      files: { name: string; content: string }[];
+      fileName: string;
+      calibratedTz?: string;
+    },
+  ) => {
     setAccountId(id);
     setForceMismatch(false);
     setReviewOptions({});
-    let targetTz = statementTimeZone;
+    let targetTz = overrideContext?.calibratedTz ?? statementTimeZone;
     if (account) {
       const brokerMeta = account.broker ? getBrokerMetadata(account.broker) : undefined;
-      const recTz = account.timeZone || brokerMeta?.defaultTimeZone;
-      if (recTz && isTimeZone(recTz) && !userOverrodeTz) {
+      const platformCandidate = (
+        account.platform ||
+        brokerMeta?.platform ||
+        account.broker ||
+        ""
+      ).toLowerCase();
+      // Server-side statement platforms (MetaTrader / FTMO) export in broker server timezone (e.g. Europe/Helsinki).
+      // Client-side platforms (Tradovate, NinjaTrader, TradingView) export CSVs in the user's local machine timezone.
+      const isServerTzPlatform =
+        platformCandidate.includes("metatrader") ||
+        platformCandidate.includes("mt5") ||
+        platformCandidate.includes("mt4");
+      const recTz = isServerTzPlatform
+        ? account.timeZone || brokerMeta?.defaultTimeZone
+        : account.timeZone && account.timeZone !== "America/Chicago"
+          ? account.timeZone
+          : settingsData?.importTimeZone || account.timeZone || brokerMeta?.defaultTimeZone;
+      if (!overrideContext?.calibratedTz && recTz && isTimeZone(recTz) && !userOverrodeTz) {
         targetTz = recTz;
         setStatementTimeZone(recTz);
         const brokerLabel = brokerMeta?.name ?? account.broker;
@@ -121,12 +158,6 @@ export function FileImport({ initialAccountId }: FileImportProps) {
             : `Preset from ${account.name}`,
         );
       }
-      const platformCandidate = (
-        account.platform ||
-        brokerMeta?.platform ||
-        account.broker ||
-        ""
-      ).toLowerCase();
       if (
         platformCandidate.includes("metatrader") ||
         platformCandidate.includes("mt5") ||
@@ -143,18 +174,24 @@ export function FileImport({ initialAccountId }: FileImportProps) {
         setSelectedExportGuide(platformCandidate);
       }
     }
-    if (content && validTimeZone) {
-      void postJson<PreviewResponse>("/api/import", {
+    const activeContent = overrideContext?.content ?? content;
+    const activeFiles = overrideContext?.files ?? filesPayload;
+    const activeFileName = overrideContext?.fileName ?? fileName;
+    const reqTz = targetTz && isTimeZone(targetTz) ? targetTz : timeZone;
+    if (activeContent && isTimeZone(reqTz)) {
+      return postJson<PreviewResponse>("/api/import", {
         mode: "preview",
-        content,
+        content: activeContent,
+        files: activeFiles ?? undefined,
         accountId: id || undefined,
         review: {},
-        fileName,
+        fileName: activeFileName,
         symbol,
-        timeZone: targetTz && isTimeZone(targetTz) ? targetTz : timeZone,
+        timeZone: reqTz,
+        lockTimeZone: userOverrodeTz,
       })
         .then((res) => {
-          setPreview(res);
+          applyPreviewResponse(res, reqTz);
           if (res.errors && res.errors.length > 0 && !res.needsMapping && !res.needsSymbol) {
             setError(res.errors[0] ?? null);
           }
@@ -171,7 +208,7 @@ export function FileImport({ initialAccountId }: FileImportProps) {
     if (!accountId && accountsData?.accounts) {
       const active = accountsData.accounts.filter((a) => !a.archivedAt);
       if (active.length === 1 && active[0]) {
-        handleAccountSelect(active[0].id, active[0]);
+        void handleAccountSelect(active[0].id, active[0]);
       }
     }
   }, [accountsData, accountId]);
@@ -206,11 +243,12 @@ export function FileImport({ initialAccountId }: FileImportProps) {
       );
       setFilesPayload(decodedFiles);
       const firstDecoded = decodedFiles[0];
-      if (decodedFiles.length === 1 && firstDecoded) {
-        setContent(firstDecoded.content);
-      } else {
-        setContent(decodedFiles.map((d) => d.content).join("\n"));
-      }
+      const nextContent =
+        decodedFiles.length === 1 && firstDecoded
+          ? firstDecoded.content
+          : decodedFiles.map((d) => d.content).join("\n");
+      setContent(nextContent);
+      const reqFileName = files.length > 1 ? `${files.length} files` : firstFile.name;
 
       const res = await postJson<PreviewResponse>("/api/import", {
         mode: "preview",
@@ -218,12 +256,18 @@ export function FileImport({ initialAccountId }: FileImportProps) {
         content: decodedFiles.length === 1 && firstDecoded ? firstDecoded.content : undefined,
         accountId: accountId || undefined,
         review: {},
-        fileName: files.length > 1 ? `${files.length} files` : firstFile.name,
+        fileName: reqFileName,
         timeZone,
+        lockTimeZone: userOverrodeTz,
       });
-      setPreview(res);
+      applyPreviewResponse(res, timeZone);
 
-      // Auto-match account if statement has detectedAccount and target isn't explicitly set yet
+      const calibratedTz =
+        res.timeZone && isTimeZone(res.timeZone) && res.timeZone !== timeZone
+          ? res.timeZone
+          : undefined;
+
+      // Auto-match account if statement has detectedAccount and target isn't already matched
       if (res.detectedAccount && accountsData?.accounts) {
         const match = accountsData.accounts.find(
           (a) =>
@@ -233,15 +277,25 @@ export function FileImport({ initialAccountId }: FileImportProps) {
               (a.name &&
                 a.name.trim().toLowerCase() === res.detectedAccount?.trim().toLowerCase())),
         );
-        if (match) {
-          handleAccountSelect(match.id, match);
+        if (match && match.id !== accountId) {
+          await handleAccountSelect(match.id, match, {
+            content: nextContent,
+            files: decodedFiles,
+            fileName: reqFileName,
+            calibratedTz,
+          });
         }
       } else if (!accountId && res.accountReconciliation?.accountId && accountsData?.accounts) {
         const match = accountsData.accounts.find(
           (a) => !a.archivedAt && a.id === res.accountReconciliation?.accountId,
         );
-        if (match) {
-          handleAccountSelect(match.id, match);
+        if (match && match.id !== accountId) {
+          await handleAccountSelect(match.id, match, {
+            content: nextContent,
+            files: decodedFiles,
+            fileName: reqFileName,
+            calibratedTz,
+          });
         }
       }
 
@@ -282,8 +336,9 @@ export function FileImport({ initialAccountId }: FileImportProps) {
         symbol: nextSymbol,
         mapping: nextMapping,
         timeZone,
+        lockTimeZone: userOverrodeTz,
       });
-      setPreview(res);
+      applyPreviewResponse(res, timeZone);
       if (res.errors && res.errors.length > 0 && !res.needsMapping && !res.needsSymbol) {
         setError(res.errors[0] ?? null);
       }
@@ -328,7 +383,8 @@ export function FileImport({ initialAccountId }: FileImportProps) {
         mapping: mappingApplied ? mapping : undefined,
         fileName,
         symbol,
-        timeZone: preview.timeZone,
+        timeZone: preview.timeZone || timeZone,
+        lockTimeZone: userOverrodeTz,
         forceMismatch,
       });
       const skippedNote =

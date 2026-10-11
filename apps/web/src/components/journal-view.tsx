@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { RichEditor, type RichEditorHandle } from "@/components/rich-editor";
 import { ReviewExport } from "@/components/review-export";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
@@ -15,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  Link2,
   List,
   Loader2,
   Pencil,
@@ -22,6 +24,7 @@ import {
   Save,
   Sparkles,
   Star,
+  Unlink,
 } from "lucide-react";
 import { DayJournalsDialog } from "./day-journals-dialog";
 import { JournalAssetDropdown } from "./journal-asset-dropdown";
@@ -110,16 +113,34 @@ export interface TradeRowLite {
   symbol: string;
   direction: string;
   status: string;
+  openedAt?: string;
+  closedAt?: string | null;
   netPnl: number;
   quantity: number;
   avgEntry: number;
   avgExit: number | null;
   fees: number;
+  notes?: string | null;
   linkedJournalDate?: string | null;
+}
+
+export interface DayJournalItem {
+  id: string;
+  date: string;
+  symbol: string | null;
+  note: string;
+  rating: number | null;
+  reviewedAt: string | null;
+  tagsJson: string | null;
+  mistakesJson: string | null;
+  attachmentsCount: number;
+  linkedTradesCount: number;
 }
 
 export interface DayPayload {
   date: string;
+  activeJournalId?: string;
+  journals?: DayJournalItem[];
   metrics: TradeMetrics;
   trades: TradeRowLite[];
   intraday: IntradayPoint[];
@@ -145,10 +166,26 @@ export interface JournalViewProps {
  * 2. Face B (Clean Day Journal): Minimalist mode for daily session notes when viewing macro date or no trade is selected.
  */
 export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: JournalViewProps) {
+  const router = useRouter();
   const { query, values: filters, timeZone: filterTimeZone } = useFilters();
 
+  const activeJournalSubId = useMemo(() => {
+    if (initialTradeKey?.startsWith("day:")) {
+      return initialTradeKey.slice(4).trim() || null;
+    }
+    return null;
+  }, [initialTradeKey]);
+
   // If an initial tradeKey is provided, use it directly. Otherwise query day data to detect trades.
-  const dayApiUrl = initialDate ? `/api/journal/${initialDate}?${query}` : null;
+  const dayApiUrl = useMemo(() => {
+    if (!initialDate) return null;
+    const base = `/api/journal/${initialDate}?${query}`;
+    if (activeJournalSubId) {
+      return `${base}&journalId=${encodeURIComponent(`${initialDate}#${activeJournalSubId}`)}`;
+    }
+    return base;
+  }, [initialDate, query, activeJournalSubId]);
+
   const {
     data: dayData,
     error: dayError,
@@ -157,17 +194,24 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
 
   // Determine active trade key
   const activeTradeKey = useMemo(() => {
-    // Macro day overview explicitly requested
-    if (initialTradeKey === "day" || initialTradeKey === "macro") {
+    // Macro day overview / standalone journal explicitly requested
+    if (
+      initialTradeKey === "day" ||
+      initialTradeKey === "macro" ||
+      initialTradeKey === "new" ||
+      initialTradeKey?.startsWith("day:")
+    ) {
       return null;
     }
 
-    // Trade index number (e.g. "1", "2", "3")
-    if (initialTradeKey && /^\d+$/.test(initialTradeKey) && dayData?.trades) {
+    // Trade index number (e.g. "1", "2", "3") — never pass raw numbers as trade keys
+    if (initialTradeKey && /^\d+$/.test(initialTradeKey)) {
+      if (!dayData?.trades) return null;
       const idx = parseInt(initialTradeKey, 10) - 1;
       if (idx >= 0 && idx < dayData.trades.length) {
         return dayData.trades[idx]?.key ?? null;
       }
+      return null;
     }
 
     // Non-numeric trade key match
@@ -181,7 +225,7 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
       return initialTradeKey;
     }
 
-    // Default to first trade if date has trades
+    // Default to first trade if date has trades and no explicit day journal exists alone
     if (dayData && dayData.trades && dayData.trades.length > 0) {
       return dayData.trades[0]?.key ?? null;
     }
@@ -206,7 +250,7 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
   const executions = tradeApiData?.executions ?? [];
   const timeZone = tradeApiData?.timeZone ?? filterTimeZone ?? "UTC";
 
-  // Effective date for screenshots grid
+  // Effective date for calendar / API route
   const effectiveDate = useMemo(() => {
     if (initialDate) return initialDate;
     if (trade?.openedAt) return dayKeyOf(trade.openedAt, timeZone);
@@ -214,20 +258,52 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
     return new Date().toISOString().slice(0, 10);
   }, [initialDate, trade?.openedAt, timeZone, dayData?.date]);
 
+  // Active composite Journal ID ("YYYY-MM-DD" or "YYYY-MM-DD#<subId>")
+  const activeJournalId = useMemo(() => {
+    if (hasTrade && trade?.linkedJournalDate) {
+      return trade.linkedJournalDate;
+    }
+    if (activeJournalSubId) {
+      return `${effectiveDate}#${activeJournalSubId}`;
+    }
+    return effectiveDate;
+  }, [hasTrade, trade?.linkedJournalDate, activeJournalSubId, effectiveDate]);
+
   // Linked asset for day journal (Face B)
   const [customAsset, setCustomAsset] = useState<string | null>(null);
+  useEffect(() => {
+    setCustomAsset(null);
+  }, [activeJournalId]);
   const currentJournalAsset = customAsset !== null ? customAsset : (dayData?.symbol ?? null);
 
   const handleSelectJournalAsset = async (newSymbol: string | null) => {
     const formatted = newSymbol ? newSymbol.trim().toUpperCase() : null;
     setCustomAsset(formatted);
     try {
-      await postJson(`/api/journal/${effectiveDate}`, { symbol: formatted }, "PATCH");
+      await postJson(
+        `/api/journal/${effectiveDate}`,
+        { journalId: activeJournalId, symbol: formatted },
+        "PATCH",
+      );
       refreshDay();
     } catch (err) {
       console.error("Failed to update journal asset:", err);
     }
   };
+
+  const handleCreateNewJournal = useCallback(() => {
+    const hasExistingJournals =
+      Boolean(dayData?.hasDayJournal) ||
+      (dayData?.journals?.length ?? 0) > 0 ||
+      Boolean(!hasTrade && (currentJournalAsset || dayData?.note?.trim()));
+
+    if (!hasExistingJournals) {
+      router.push(`/journal/${effectiveDate}?t=day&new=true`);
+      return;
+    }
+    const shortId = `j_${Date.now().toString(36).slice(-4)}${Math.random().toString(36).slice(2, 4)}`;
+    router.push(`/journal/${effectiveDate}?t=day:${shortId}&new=true`);
+  }, [dayData?.hasDayJournal, dayData?.journals?.length, dayData?.note, hasTrade, currentJournalAsset, effectiveDate, router]);
 
   // AI State (Critique or Recap)
   const [aiBusy, setAiBusy] = useState(false);
@@ -273,11 +349,15 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
   const patchDay = useCallback(
     async (body: Record<string, unknown>) => {
       if (effectiveDate && Object.keys(body).length > 0) {
-        await postJson(`/api/journal/${effectiveDate}`, body, "PATCH");
+        await postJson(
+          `/api/journal/${effectiveDate}`,
+          { ...body, journalId: activeJournalId },
+          "PATCH",
+        );
         refreshDay();
       }
     },
-    [effectiveDate, refreshDay],
+    [effectiveDate, activeJournalId, refreshDay],
   );
 
   // Cumulative trade P&L curve
@@ -517,21 +597,24 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
         }
         actions={
           <div className="flex items-center gap-2">
-            {totalTrades > 0 && (
+            {(totalTrades > 0 || dayData?.hasDayJournal) && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setJournalsDialogOpen(true)}
-                className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <List className="size-3.5" />
-                <span>Journals ({totalTrades})</span>
+                <span>
+                  {hasTrade ? `Journals (${totalTrades})` : `Trades (${totalTrades})`}
+                </span>
               </Button>
             )}
             <Button
+              type="button"
               size="sm"
-              onClick={() => setJournalsDialogOpen(true)}
-              className="h-8 gap-1.5 px-3 text-xs bg-zinc-100 text-zinc-950 hover:bg-zinc-200 font-semibold shadow-xs transition-transform active:scale-[0.98]"
+              onClick={handleCreateNewJournal}
+              className="h-8 gap-1.5 px-3 text-xs bg-zinc-100 text-zinc-950 hover:bg-zinc-200 font-semibold shadow-xs transition-transform active:scale-[0.98] cursor-pointer"
             >
               <Plus className="size-3.5" />
               <span>New Journal</span>
@@ -554,8 +637,8 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
             />
           )}
 
-          {/* Timeframe Screenshots (always present in both faces) */}
-          <TimeframeScreenshotGrid date={effectiveDate} />
+          {/* Timeframe Screenshots (isolated per activeJournalId) */}
+          <TimeframeScreenshotGrid key={activeJournalId} date={activeJournalId} />
 
           {/* Market Data & Replay (omitted in Clean Journal) */}
           {hasTrade && trade && executions && (
@@ -583,11 +666,12 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
         */}
         <div className="min-w-0 space-y-3">
           <UnifiedReviewCard
-            key={hasTrade && trade ? `trade-${trade.key}` : `day-${effectiveDate}`}
+            key={hasTrade && trade ? `trade-${trade.key}` : `day-${activeJournalId}`}
             hasTrade={hasTrade}
             trade={trade}
             dayData={dayData}
             date={effectiveDate}
+            activeJournalId={activeJournalId}
             timeZone={timeZone}
             onPatch={hasTrade ? patchTrade : patchDay}
           />
@@ -888,6 +972,7 @@ function UnifiedReviewCard({
   trade,
   dayData,
   date,
+  activeJournalId,
   timeZone,
   onPatch,
 }: {
@@ -895,6 +980,7 @@ function UnifiedReviewCard({
   trade?: TradeDetail;
   dayData?: DayPayload | null;
   date: string;
+  activeJournalId: string;
   timeZone: string;
   onPatch: (body: Record<string, unknown>) => Promise<void>;
 }) {
@@ -907,8 +993,15 @@ function UnifiedReviewCard({
   };
 
   const isLinkedToJournal = Boolean(hasTrade && trade?.linkedJournalDate);
+  const linkedJournalEntry = useMemo(() => {
+    if (!hasTrade || !trade?.linkedJournalDate) return null;
+    return (
+      dayData?.journals?.find((j) => j.id === trade.linkedJournalDate) ?? null
+    );
+  }, [hasTrade, trade?.linkedJournalDate, dayData?.journals]);
+
   const initialNotes = isLinkedToJournal
-    ? dayData?.note || trade?.notes || ""
+    ? linkedJournalEntry?.note || trade?.notes || dayData?.note || ""
     : hasTrade
       ? (trade?.notes ?? "")
       : (dayData?.note ?? "");
@@ -928,12 +1021,52 @@ function UnifiedReviewCard({
   const [tags, setTags] = useState(initialTags);
   const [mistakes, setMistakes] = useState(initialMistakes);
 
+  // Sync editor notes when linking to a journal or pulling from a sibling trade
+  useEffect(() => {
+    setNotes((prev) => (prev === initialNotes ? prev : initialNotes));
+    if (initialNotes.trim()) {
+      setNoteMode("preview");
+    }
+  }, [isLinkedToJournal, initialNotes]);
+
+  const siblingTradesWithNotes = useMemo(() => {
+    if (!hasTrade || !trade || !dayData?.trades) return [];
+    return dayData.trades
+      .map((t, index) => ({ trade: t, index }))
+      .filter(
+        ({ trade: t }) =>
+          t.key !== trade.key && Boolean(t.notes && t.notes.trim().length > 0),
+      );
+  }, [hasTrade, trade, dayData?.trades]);
+
+  const sameSymbolTrades = useMemo(() => {
+    if (!hasTrade || !trade || !dayData?.trades) return [];
+    return dayData.trades.filter((t) => t.symbol === trade.symbol);
+  }, [hasTrade, trade, dayData?.trades]);
+
+  const linkedTradesCount = useMemo(() => {
+    if (!dayData?.trades) return 0;
+    const targetJournalId =
+      hasTrade && trade?.linkedJournalDate ? trade.linkedJournalDate : activeJournalId;
+    return dayData.trades.filter((t) => t.linkedJournalDate === targetJournalId).length;
+  }, [dayData?.trades, hasTrade, trade?.linkedJournalDate, activeJournalId]);
+
+  const linkedJournalHref = useMemo(() => {
+    const targetId = trade?.linkedJournalDate;
+    if (!targetId) return `/journal/${date}?t=day`;
+    const hashIdx = targetId.indexOf("#");
+    if (hashIdx === -1) return `/journal/${date}?t=day`;
+    return `/journal/${date}?t=day:${encodeURIComponent(targetId.slice(hashIdx + 1))}`;
+  }, [date, trade?.linkedJournalDate]);
+
   const { data: playbookData } = useApi<{ playbooks: { id: string; name: string }[] }>(
     hasTrade ? "/api/playbooks" : "",
   );
 
   const autosaveEndpoint =
-    hasTrade && trade ? `/api/trades/${encodeURIComponent(trade.key)}` : `/api/journal/${date}`;
+    hasTrade && trade
+      ? `/api/trades/${encodeURIComponent(trade.key)}`
+      : `/api/journal/${date}?journalId=${encodeURIComponent(activeJournalId)}`;
 
   const {
     save: debounced,
@@ -1035,16 +1168,160 @@ function UnifiedReviewCard({
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="space-y-0.5">
-          <CardTitle className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
-            <BookOpen className="size-4 text-muted-foreground" />
-            <span>{hasTrade ? "Trade review" : "Day review"}</span>
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            {hasTrade
-              ? "Execution rating, tags, mistakes, and trade reflection"
-              : "Daily session rating, tags, mistakes, and reflection"}
-          </p>
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-0.5 min-w-0">
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
+              <BookOpen className="size-4 text-muted-foreground shrink-0" />
+              <span>{hasTrade ? "Trade review" : "Day review"}</span>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              {hasTrade
+                ? "Execution rating, tags, mistakes, and trade reflection"
+                : "Daily session rating, tags, mistakes, and reflection"}
+            </p>
+          </div>
+
+          {hasTrade && trade && (
+            <div className="shrink-0">
+              {isLinkedToJournal ? (
+                <div className="flex items-center gap-1.5">
+                  <Link
+                    href={linkedJournalHref}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] font-medium text-sky-400 hover:bg-sky-500/20 transition-colors"
+                    title="Open shared Session Journal"
+                  >
+                    <BookOpen className="size-3" />
+                    <span>
+                      {linkedJournalEntry?.symbol
+                        ? `${linkedJournalEntry.symbol} Journal`
+                        : "Shared Journal"}
+                      {linkedTradesCount > 1 ? ` (${linkedTradesCount})` : ""}
+                    </span>
+                  </Link>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => void onPatch({ linkedJournalDate: null })}
+                    className="size-7 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
+                    title="Unlink from shared Session Journal (keep individual note)"
+                  >
+                    <Unlink className="size-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 gap-1.5 px-2.5 text-xs border-border/70 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
+                    >
+                      <Link2 className="size-3 text-sky-400" />
+                      <span>Link Journal</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-72 p-1">
+                    <DropdownMenuLabel className="text-[10px] uppercase font-semibold text-muted-foreground px-2 py-1">
+                      Share / Link Journal on {date}
+                    </DropdownMenuLabel>
+
+                    {siblingTradesWithNotes.map(({ trade: sibling, index }) => {
+                      const timeStr = sibling.openedAt
+                        ? formatTimestamp(sibling.openedAt, timeZone).slice(11, 16)
+                        : `#${index + 1}`;
+                      const targetJournalId =
+                        sibling.linkedJournalDate ||
+                        dayData?.journals?.find((j) => j.symbol === sibling.symbol)?.id ||
+                        date;
+                      return (
+                        <DropdownMenuItem
+                          key={sibling.key}
+                          onClick={() =>
+                            void onPatch({
+                              linkedJournalDate: targetJournalId,
+                              sourceTradeKey: sibling.key,
+                            })
+                          }
+                          className="flex flex-col items-start gap-0.5 px-2.5 py-2 rounded-md text-xs cursor-pointer"
+                        >
+                          <div className="flex items-center gap-1.5 font-medium text-foreground">
+                            <BookOpen className="size-3.5 text-sky-400 shrink-0" />
+                            <span>
+                              Pull &amp; Share from {sibling.symbol} ({timeStr})
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground line-clamp-1 pl-5">
+                            {sibling.notes?.replace(/[#*_`>-]/g, "").trim().slice(0, 60)}
+                          </span>
+                        </DropdownMenuItem>
+                      );
+                    })}
+
+                    {sameSymbolTrades.length > 1 && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const matchingJournal = dayData?.journals?.find(
+                            (j) => j.symbol === trade.symbol,
+                          );
+                          const targetJournalId =
+                            matchingJournal?.id ||
+                            ((dayData?.journals?.length ?? 0) === 0
+                              ? date
+                              : `${date}#j_${Date.now().toString(36).slice(-4)}`);
+                          void onPatch({
+                            linkedJournalDate: targetJournalId,
+                            linkSiblingKeys: sameSymbolTrades.map((t) => t.key),
+                            ...(siblingTradesWithNotes[0]
+                              ? { sourceTradeKey: siblingTradesWithNotes[0].trade.key }
+                              : {}),
+                          });
+                        }}
+                        className="flex items-center gap-2 px-2.5 py-2 rounded-md text-xs cursor-pointer"
+                      >
+                        <Link2 className="size-3.5 text-sky-400 shrink-0" />
+                        <span>
+                          Share across all {trade.symbol} trades today ({sameSymbolTrades.length})
+                        </span>
+                      </DropdownMenuItem>
+                    )}
+
+                    {(dayData?.journals ?? []).map((j) => (
+                      <DropdownMenuItem
+                        key={j.id}
+                        onClick={() => void onPatch({ linkedJournalDate: j.id })}
+                        className="flex items-center gap-2 px-2.5 py-2 rounded-md text-xs cursor-pointer"
+                      >
+                        <Calendar className="size-3.5 text-sky-400 shrink-0" />
+                        <span>
+                          Link to {j.symbol ? `${j.symbol} Journal` : "Session Journal"}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const hasExisting = (dayData?.journals?.length ?? 0) > 0;
+                        const newJournalId = hasExisting
+                          ? `${date}#j_${Date.now().toString(36).slice(-4)}`
+                          : date;
+                        void onPatch({ linkedJournalDate: newJournalId });
+                      }}
+                      className="flex items-center gap-2 px-2.5 py-2 rounded-md text-xs cursor-pointer"
+                    >
+                      <Plus className="size-3.5 text-muted-foreground shrink-0" />
+                      <span>
+                        {(dayData?.journals?.length ?? 0) > 0
+                          ? `Create & Link New ${trade.symbol} Journal`
+                          : `Link to ${trade.symbol} Session Journal (${date})`}
+                      </span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

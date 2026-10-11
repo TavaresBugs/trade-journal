@@ -4,8 +4,11 @@ import { useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Check,
+  ChevronDown,
+  ChevronRight,
   Database,
   FileSpreadsheet,
+  Info,
   Layers,
   Loader2,
   Plus,
@@ -60,6 +63,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
   const [priceBasis, setPriceBasis] = useState("raw");
   const [compatibleSymbols, setCompatibleSymbols] = useState<string[]>([]);
   const [customSymbolInput, setCustomSymbolInput] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -71,14 +75,6 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
   const activeSeries: MarketSeriesSummary[] = useMemo(() => {
     return data?.series ?? [];
   }, [data]);
-
-  const distinctSymbolsCount = useMemo(() => {
-    return new Set(activeSeries.map((s) => s.symbol.toUpperCase())).size;
-  }, [activeSeries]);
-
-  const totalCandlesCount = useMemo(() => {
-    return activeSeries.reduce((acc, s) => acc + s.barCount, 0);
-  }, [activeSeries]);
 
   const change = () => {
     setMessage("");
@@ -385,34 +381,15 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
             Import market candles for high-resolution chart rendering in Vela and precise trade
             excursion (MAE/MFE) calculations. Supports single or bulk multi-file uploads up to 30 MB / 100,000 bars per file.
           </p>
-          <div className="pt-0.5">
-            <a
-              className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
-              href="/market-data-template.csv"
-              download
-            >
-              Download CSV template
-            </a>
-          </div>
         </div>
 
-        <div className="flex items-center gap-2 pt-0.5 shrink-0">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setManagerOpen(true)}
-            className="h-8 px-3 text-xs gap-1.5 border-border/70 hover:border-emerald-500/40 hover:text-emerald-400 cursor-pointer font-medium"
-          >
-            <Database className="size-3.5 text-emerald-400" />
-            <span>Manage Data & Coverage</span>
-            {totalCandlesCount > 0 && (
-              <span className="ml-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[10px] font-mono font-medium text-emerald-400">
-                {distinctSymbolsCount} {distinctSymbolsCount === 1 ? "asset" : "assets"}
-              </span>
-            )}
-          </Button>
-        </div>
+        <a
+          className="text-xs text-muted-foreground hover:text-foreground underline transition-colors pt-0.5 shrink-0"
+          href="/market-data-template.csv"
+          download
+        >
+          Download CSV template
+        </a>
       </div>
 
       {/* Hidden File Input (supports multiple file selection) */}
@@ -438,7 +415,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
               <Loader2 className="size-4 animate-spin" />
               Batch Ingestion: Importing file {batchProgress.current} of {batchProgress.total}
             </span>
-            <span className="font-mono text-emerald-300 font-semibold">
+            <span className="font-mono tabular-nums text-emerald-300 font-semibold">
               {Math.round((batchProgress.current / batchProgress.total) * 100)}%
             </span>
           </div>
@@ -450,7 +427,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
           </div>
           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
             <span className="truncate max-w-sm">File: {batchProgress.currentName}</span>
-            <span className="font-mono text-emerald-400 font-medium">
+            <span className="font-mono tabular-nums text-emerald-400 font-medium">
               +{batchProgress.totalBars.toLocaleString()} new bars ·{" "}
               {batchProgress.duplicateBars.toLocaleString()} duplicates skipped
             </span>
@@ -477,112 +454,279 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
             if (!busy) fileInputRef.current?.click();
           }}
           className={cn(
-            "group relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-7 text-center transition-all cursor-pointer select-none",
+            "group relative flex flex-col items-center justify-center rounded-xl border border-dashed p-6 text-center transition-all cursor-pointer select-none",
             isDragging
               ? "border-emerald-500 bg-emerald-500/10 scale-[0.99]"
-              : "border-border/70 hover:border-emerald-500/50 hover:bg-muted/30 bg-muted/10",
+              : "border-border/60 hover:border-emerald-500/40 hover:bg-muted/20 bg-muted/5",
             busy && "pointer-events-none opacity-60",
           )}
         >
           {busy ? (
-            <Loader2 className="size-8 animate-spin text-emerald-400 mb-2.5" />
+            <Loader2 className="size-7 animate-spin text-emerald-400 mb-2" />
           ) : (
-            <Upload className="size-8 text-muted-foreground group-hover:text-emerald-400 group-hover:scale-110 transition-all duration-150 mb-2.5" />
+            <Upload className="size-7 text-muted-foreground group-hover:text-emerald-400 transition-colors duration-150 mb-2" />
           )}
           <div className="space-y-1">
-            <p className="text-xs font-semibold text-foreground">
+            <p className="text-xs font-medium text-foreground">
               Drop candle CSV files here (single or multiple), or{" "}
               <span className="text-emerald-400 underline">click to browse</span>
             </p>
             <p className="text-[11px] text-muted-foreground">
-              Supports multi-file bulk upload with automatic timeframe detection and smart de-duplication
+              Automatic timeframe detection and smart UTC deduplication
             </p>
           </div>
         </div>
       ) : !file ? null : (
-        /* Selected File Card */
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-muted/20 p-3.5">
+        /* Selected File Row */
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/10 px-3.5 py-2.5">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0">
-              <FileSpreadsheet className="size-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-xs font-medium text-foreground truncate max-w-sm">{file.name}</p>
-                <span className="text-[10px] rounded bg-muted px-1.5 py-0.5 text-muted-foreground font-mono">
-                  {formatFileSize(file.size)}
-                </span>
-              </div>
-              <p className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
-                <Check className="size-3" /> Metadata automatically detected
-              </p>
+            <FileSpreadsheet className="size-4 text-emerald-400 shrink-0" />
+            <div className="min-w-0 flex items-center gap-2 flex-wrap">
+              <p className="text-xs font-medium text-foreground truncate max-w-sm">{file.name}</p>
+              <span className="text-[11px] text-muted-foreground font-mono tabular-nums">
+                · {formatFileSize(file.size)}
+              </span>
+              <span className="text-[11px] text-emerald-400 inline-flex items-center gap-1">
+                · <Check className="size-3" /> Auto-detected
+              </span>
             </div>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            onClick={() => fileInputRef.current?.click()}
-            className="text-xs gap-1.5 h-8"
-          >
-            <RotateCcw className="size-3.5" /> Change file
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => fileInputRef.current?.click()}
+              className="text-xs gap-1.5 h-7 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <RotateCcw className="size-3" /> Change file
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => {
+                setFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+              className="text-xs h-7 px-2 text-muted-foreground hover:text-destructive cursor-pointer"
+              aria-label="Clear selected file"
+            >
+              <X className="size-3.5" />
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Configuration Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 pt-1">
-        {/* Left Column: Instrument Symbol & Family Chips */}
-        <div className="space-y-3 rounded-lg border border-border/50 bg-background/40 p-3.5">
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
+      {/* Clean 2-Column Configuration Grid (no nested bordered containers) */}
+      <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 pt-1">
+        {/* Field 1: Instrument Symbol */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
               <Label htmlFor="candle-symbol" className="text-xs font-medium">
                 Instrument Symbol
               </Label>
-              {family && (
-                <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
-                  Family {family.name}
-                </span>
-              )}
+              <span
+                title="Source instrument symbol. Preserves empirical identity in the database."
+                className="text-muted-foreground/70 hover:text-foreground transition-colors cursor-help"
+              >
+                <Info className="size-3" />
+              </span>
             </div>
-            <JournalAssetDropdown
-              currentAsset={symbol || null}
-              onSelectAsset={(val) => handleSymbolChange(val ?? "")}
-              allTradedSymbols={data?.tradedSymbols}
-              triggerVariant="form"
-              hideGeneralJournal={true}
-              placeholder="Search or enter symbol (e.g. MES, US500)..."
-              className="h-9"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Source instrument symbol. Preserves empirical identity in the database.
-            </p>
+            {family && (
+              <span className="text-[11px] text-muted-foreground">
+                {family.name}
+              </span>
+            )}
           </div>
+          <JournalAssetDropdown
+            currentAsset={symbol || null}
+            onSelectAsset={(val) => handleSymbolChange(val ?? "")}
+            allTradedSymbols={data?.tradedSymbols}
+            triggerVariant="form"
+            hideGeneralJournal={true}
+            placeholder="Search or enter symbol (e.g. MES, US500)..."
+            className="h-9"
+          />
+          <p className="text-[11px] text-muted-foreground truncate">
+            Source ticker stored in the database.
+          </p>
+        </div>
 
-          {/* Interactive Family Chips / Permissions */}
-          <div className="space-y-1.5 pt-1 border-t border-border/40">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-foreground">
-                Linked Compatible Instruments:
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                Click to toggle allowed symbols
+        {/* Field 2: Candle Resolution (Timeframe) */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="candle-resolution" className="text-xs font-medium">
+                Candle Resolution (Timeframe)
+              </Label>
+              <span
+                title="Automatically inferred from timestamp deltas or filename."
+                className="text-muted-foreground/70 hover:text-foreground transition-colors cursor-help"
+              >
+                <Info className="size-3" />
               </span>
             </div>
+            {resolution && (
+              <span className="text-[11px] text-emerald-400 font-mono">
+                {formatResolutionDisplay(resolution)} · detected
+              </span>
+            )}
+          </div>
+          <OptionSelect
+            id="candle-resolution"
+            value={resolution}
+            disabled={busy}
+            onValueChange={(value) => {
+              change();
+              setResolution(value as Resolution);
+            }}
+          >
+            <option value="" disabled>
+              Select file timeframe
+            </option>
+            {resolution && !Object.keys(RESOLUTIONS).includes(resolution) && (
+              <optgroup label="Custom / Detected">
+                <option value={resolution}>{formatResolutionDisplay(resolution)} (Custom)</option>
+              </optgroup>
+            )}
+            <optgroup label="Minutes">
+              {(["1m", "2m", "3m", "5m", "10m", "15m", "30m", "45m"] as const).map((value) => (
+                <option key={value} value={value}>
+                  {formatResolutionDisplay(value)}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Hours">
+              {(["1h", "2h", "3h", "4h", "6h", "8h", "12h"] as const).map((value) => (
+                <option key={value} value={value}>
+                  {formatResolutionDisplay(value)}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Daily & Above">
+              {(["1d", "3d", "1w", "1mo"] as const).map((value) => (
+                <option key={value} value={value}>
+                  {formatResolutionDisplay(value)}
+                </option>
+              ))}
+            </optgroup>
+          </OptionSelect>
+          <p className="text-[11px] text-muted-foreground truncate">
+            Auto-detected from row intervals or file name.
+          </p>
+        </div>
 
-            {/* Chips Container */}
+        {/* Field 3: Quote Currency */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="candle-currency" className="text-xs font-medium">
+              Quote Currency
+            </Label>
+            <span
+              title="Price currency (USD for CME futures / US equities, BRL for B3)."
+              className="text-muted-foreground/70 hover:text-foreground transition-colors cursor-help"
+            >
+              <Info className="size-3" />
+            </span>
+          </div>
+          <Input
+            id="candle-currency"
+            value={currency}
+            disabled={busy}
+            maxLength={12}
+            placeholder="Ex: USD, BRL, EUR"
+            className="text-xs uppercase font-mono h-9"
+            onChange={(event) => {
+              change();
+              setCurrency(event.target.value.toUpperCase());
+            }}
+          />
+          <p className="text-[11px] text-muted-foreground truncate">
+            USD for CME futures & US indices, BRL for B3.
+          </p>
+        </div>
+
+        {/* Field 4: Price Basis */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="candle-basis" className="text-xs font-medium">
+              Price Basis
+            </Label>
+            <span
+              title="Keep Unadjusted / raw for futures contracts and pure price action."
+              className="text-muted-foreground/70 hover:text-foreground transition-colors cursor-help"
+            >
+              <Info className="size-3" />
+            </span>
+          </div>
+          <OptionSelect
+            id="candle-basis"
+            value={priceBasis}
+            disabled={busy}
+            onValueChange={(value) => {
+              change();
+              setPriceBasis(value);
+            }}
+          >
+            <option value="" disabled>
+              Select price basis
+            </option>
+            <option value="raw">Unadjusted / raw (Recommended)</option>
+            <option value="split">Split adjusted</option>
+            <option value="adjusted">Other adjusted</option>
+            <option value="midpoint">Midpoint</option>
+            <option value="bid">Bid</option>
+            <option value="ask">Ask</option>
+          </OptionSelect>
+          <p className="text-[11px] text-muted-foreground truncate">
+            Keep “Unadjusted / raw” for futures and spot price action.
+          </p>
+        </div>
+      </div>
+
+      {/* Collapsible Advanced Section: Linked Compatible Instruments */}
+      <div className="pt-2 border-t border-border/40">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced((prev) => !prev)}
+          aria-expanded={showAdvanced}
+          className="w-full py-1.5 flex items-center justify-between gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            {showAdvanced ? (
+              <ChevronDown className="size-3.5 shrink-0" />
+            ) : (
+              <ChevronRight className="size-3.5 shrink-0" />
+            )}
+            <span className="font-medium">Advanced</span>
+            <span className="text-muted-foreground/50">·</span>
+            <span className="truncate">
+              Linked compatible instruments ({compatibleSymbols.length})
+            </span>
+            {!showAdvanced && compatibleSymbols.length > 0 && (
+              <span className="font-mono text-[11px] text-muted-foreground/70 truncate">
+                — {compatibleSymbols.join(", ")}
+              </span>
+            )}
+          </div>
+        </button>
+
+        {showAdvanced && (
+          <div className="pt-2 pb-1 pl-5 space-y-2">
             <div className="flex flex-wrap items-center gap-1.5">
               {compatibleSymbols.map((sym) => (
                 <button
                   type="button"
                   key={sym}
                   onClick={() => toggleCompatibleSymbol(sym)}
-                  className="group inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-all select-none cursor-pointer"
+                  className="group inline-flex items-center gap-1 rounded-md bg-muted/40 border border-border/60 px-2 py-1 text-xs font-mono text-foreground hover:border-emerald-500/40 transition-all select-none cursor-pointer"
                   title="Click to remove this instrument"
                 >
                   <Check className="size-3 text-emerald-400" />
                   <span>{sym}</span>
-                  <X className="size-3 text-emerald-400/60 group-hover:text-emerald-300 ml-0.5" />
+                  <X className="size-3 text-muted-foreground group-hover:text-foreground ml-0.5" />
                 </button>
               ))}
 
@@ -592,7 +736,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
                   type="button"
                   key={sym}
                   onClick={() => toggleCompatibleSymbol(sym)}
-                  className="inline-flex items-center gap-1 rounded-md bg-muted/40 border border-border/40 px-2 py-1 text-xs text-muted-foreground line-through hover:bg-muted/70 hover:no-underline transition-all select-none cursor-pointer"
+                  className="inline-flex items-center gap-1 rounded-md bg-muted/20 border border-border/40 px-2 py-1 text-xs font-mono text-muted-foreground line-through hover:bg-muted/50 hover:no-underline transition-all select-none cursor-pointer"
                   title="Click to re-enable this instrument"
                 >
                   <Plus className="size-3" />
@@ -607,7 +751,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
                   value={customSymbolInput}
                   disabled={busy}
                   placeholder="+ Ticker"
-                  className="h-6 w-20 rounded border border-border/60 bg-transparent px-1.5 text-[11px] uppercase placeholder:normal-case placeholder:text-muted-foreground/60 focus:outline-none focus:border-emerald-500"
+                  className="h-6 w-20 rounded border border-border/60 bg-transparent px-1.5 text-[11px] font-mono uppercase placeholder:normal-case placeholder:text-muted-foreground/60 focus:outline-none focus:border-emerald-500"
                   onChange={(e) => setCustomSymbolInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -620,7 +764,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
                   <button
                     type="button"
                     onClick={handleAddCustomSymbol}
-                    className="flex size-6 items-center justify-center rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-xs cursor-pointer"
+                    className="flex size-6 items-center justify-center rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xs cursor-pointer"
                   >
                     <Plus className="size-3" />
                   </button>
@@ -628,150 +772,39 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
               </div>
             </div>
 
-            <p className="text-[10px] text-muted-foreground">
-              Trades in these instruments can use these candles as chart data.
+            <p className="text-[11px] text-muted-foreground">
+              Trades in these instruments can use these candles as chart data. Click any ticker to unlink or re-enable.
             </p>
           </div>
-        </div>
-
-        {/* Right Column: Resolution, Quote Currency, Price Basis */}
-        <div className="space-y-3 rounded-lg border border-border/50 bg-background/40 p-3.5">
-          {/* Resolution */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="candle-resolution" className="text-xs font-medium">
-                Candle Resolution (Timeframe)
-              </Label>
-              {resolution && (
-                <span className="text-[10px] text-emerald-400 font-mono">
-                  {formatResolutionDisplay(resolution)} (detected)
-                </span>
-              )}
-            </div>
-            <OptionSelect
-              id="candle-resolution"
-              value={resolution}
-              disabled={busy}
-              onValueChange={(value) => {
-                change();
-                setResolution(value as Resolution);
-              }}
-            >
-              <option value="" disabled>
-                Select file timeframe
-              </option>
-              {resolution && !Object.keys(RESOLUTIONS).includes(resolution) && (
-                <optgroup label="Custom / Detected">
-                  <option value={resolution}>{formatResolutionDisplay(resolution)} (Custom)</option>
-                </optgroup>
-              )}
-              <optgroup label="Minutes">
-                {(["1m", "2m", "3m", "5m", "10m", "15m", "30m", "45m"] as const).map((value) => (
-                  <option key={value} value={value}>
-                    {formatResolutionDisplay(value)}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Hours">
-                {(["1h", "2h", "3h", "4h", "6h", "8h", "12h"] as const).map((value) => (
-                  <option key={value} value={value}>
-                    {formatResolutionDisplay(value)}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Daily & Above">
-                {(["1d", "3d", "1w", "1mo"] as const).map((value) => (
-                  <option key={value} value={value}>
-                    {formatResolutionDisplay(value)}
-                  </option>
-                ))}
-              </optgroup>
-            </OptionSelect>
-          </div>
-
-          {/* Quote Currency */}
-          <div className="space-y-1">
-            <Label htmlFor="candle-currency" className="text-xs font-medium">
-              Quote Currency
-            </Label>
-            <Input
-              id="candle-currency"
-              value={currency}
-              disabled={busy}
-              maxLength={12}
-              placeholder="Ex: USD, BRL, EUR"
-              className="text-xs uppercase font-mono h-9"
-              onChange={(event) => {
-                change();
-                setCurrency(event.target.value.toUpperCase());
-              }}
-            />
-            <p className="text-[10px] text-muted-foreground">
-              Price currency (USD for CME futures / US equities, BRL for B3).
-            </p>
-          </div>
-
-          {/* Price Basis */}
-          <div className="space-y-1">
-            <Label htmlFor="candle-basis" className="text-xs font-medium">
-              Price Basis
-            </Label>
-            <OptionSelect
-              id="candle-basis"
-              value={priceBasis}
-              disabled={busy}
-              onValueChange={(value) => {
-                change();
-                setPriceBasis(value);
-              }}
-            >
-              <option value="" disabled>
-                Select price basis
-              </option>
-              <option value="raw">Unadjusted / raw (Recommended)</option>
-              <option value="split">Split adjusted</option>
-              <option value="adjusted">Other adjusted</option>
-              <option value="midpoint">Midpoint</option>
-              <option value="bid">Bid</option>
-              <option value="ask">Ask</option>
-            </OptionSelect>
-            <p className="text-[10px] text-muted-foreground">
-              Keep “Unadjusted / raw” for futures contracts and pure price action.
-            </p>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Centered Action Button at Bottom */}
-      <div className="flex flex-col items-center justify-center pt-3 gap-2 border-t border-border/40">
+      {/* Bottom Action Bar: 50% / 50% Equal-Width Buttons */}
+      <div className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2 pt-3 border-t border-border/40">
         <Button
-          size="lg"
-          className="bg-white text-zinc-950 hover:bg-zinc-100 font-semibold shadow-md active:scale-[0.98] px-8 h-10 gap-2 min-w-[240px] dark:bg-white dark:text-zinc-950 transition-all cursor-pointer"
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setManagerOpen(true)}
+          className="h-9 w-full justify-center text-xs gap-2 border-border/70 hover:border-emerald-500/40 hover:text-emerald-400 cursor-pointer font-medium"
+        >
+          <Database className="size-3.5 text-emerald-400 shrink-0" />
+          <span>Manage Data & Coverage</span>
+        </Button>
+
+        <Button
+          size="sm"
+          className="h-9 w-full justify-center text-xs font-semibold gap-2 cursor-pointer"
           disabled={busy || !file || !symbol || !currency || !resolution || !priceBasis}
           onClick={() => void handleImport()}
         >
           {busy ? (
-            <Loader2 className="size-4 animate-spin text-zinc-950" />
+            <Loader2 className="size-3.5 animate-spin shrink-0" />
           ) : (
-            <Save className="size-4 text-zinc-950" />
+            <Save className="size-3.5 shrink-0" />
           )}
-          Import Market Candles
+          <span>Import Market Candles</span>
         </Button>
-
-        {file && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-muted-foreground hover:text-destructive h-7 cursor-pointer"
-            disabled={busy}
-            onClick={() => {
-              setFile(null);
-              if (fileInputRef.current) fileInputRef.current.value = "";
-            }}
-          >
-            Clear file
-          </Button>
-        )}
       </div>
 
       {/* Notifications / Live Ingestion Feedback */}

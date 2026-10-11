@@ -16,7 +16,14 @@ export const GET = handler(async (request: Request) => {
 
   const tradeDays = new Map(dailyStats(trades, timeZone).map((day) => [day.date, day]));
   const noteRows = db.select().from(journalDays).orderBy(desc(journalDays.date)).all();
-  const noteDays = new Map(noteRows.map((row) => [row.date, row]));
+  const noteDays = new Map<string, (typeof noteRows)[number]>();
+  for (const row of noteRows) {
+    const baseDate = row.date.slice(0, 10);
+    const existing = noteDays.get(baseDate);
+    if (!existing || (!existing.note && row.note)) {
+      noteDays.set(baseDate, row);
+    }
+  }
 
   // Index unique symbols traded on each calendar day
   const daySymbolsMap = new Map<string, string[]>();

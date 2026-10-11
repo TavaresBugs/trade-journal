@@ -12,6 +12,7 @@ import { isTimeZone } from "@/lib/timezone";
 import type { ImportReviewOptions } from "@/lib/import-review";
 import { previewNinjaTraderImport } from "@/server/ninjatrader-import";
 import { reconcileImport } from "@/server/import-reconciliation";
+import { inferImportTimeZoneFromCandles } from "@/server/import-timezone-inference";
 import { db } from "@/db";
 
 import { accounts } from "@/db/schema";
@@ -33,6 +34,7 @@ interface ImportBody {
   /** Column mapping when auto-detection found nothing. */
   mapping?: GenericMapping;
   timeZone?: string;
+  lockTimeZone?: boolean;
   dateOrder?: "DMY" | "MDY";
   fileName?: string;
   symbol?: string;
@@ -71,7 +73,7 @@ export const POST = handler(async (request: Request) => {
   if (body.timeZone !== undefined)
     requireValue(isTimeZone(body.timeZone), "Enter a valid IANA statement timezone.");
 
-  const timeZone = body.timeZone ?? getImportTimeZone();
+  let timeZone = body.timeZone ?? getImportTimeZone();
 
   const dateOrder =
     body.dateOrder ??
@@ -92,23 +94,109 @@ export const POST = handler(async (request: Request) => {
   let parsed: import("@luxalgo/journal-importers").ParsedImport | null = null;
 
   if (hasFiles && filesList.length > 1) {
-    const parsedFiles: { file: ImportFilePayload; parsed: import("@luxalgo/journal-importers").ParsedImport }[] = [];
-    const unparsedFiles: string[] = [];
+    const parseBatchWithTz = (targetTz: string) => {
+      const parsedFiles: {
+        file: ImportFilePayload;
+        parsed: import("@luxalgo/journal-importers").ParsedImport;
+      }[] = [];
+      const unparsedFiles: string[] = [];
 
-    for (const f of filesList) {
-      const fOptions = { ...importOptions, fileName: f.name };
-      const p = body.mapping
-        ? parseWithMapping(f.content, body.mapping, fOptions)
-        : parseAuto(f.content, fOptions);
+      for (const f of filesList) {
+        const fOptions = { ...importOptions, timeZone: targetTz, fileName: f.name };
+        const p = body.mapping
+          ? parseWithMapping(f.content, body.mapping, fOptions)
+          : parseAuto(f.content, fOptions);
 
-      if (p) {
-        parsedFiles.push({ file: f, parsed: p });
-      } else {
-        unparsedFiles.push(f.name);
+        if (p) {
+          parsedFiles.push({ file: f, parsed: p });
+        } else {
+          unparsedFiles.push(f.name);
+        }
       }
-    }
 
-    if (parsedFiles.length === 0) {
+      if (parsedFiles.length === 0) {
+        return { parsedFiles, unparsedFiles, parsed: null, batchSummary: undefined };
+      }
+
+      // Deduplicate executions across files
+      const combinedExecutions: ImportedExecution[] = [];
+      const seenSignatures = new Set<string>();
+      let duplicatesSkipped = 0;
+      let totalSkippedRows = 0;
+      const allWarnings: string[] = [];
+      const allErrors: string[] = [];
+      const detectedAccounts = new Set<string>();
+      const sourceAccounts = new Set<string>();
+      const fileStats: import("@/types/import").BatchFileSummary[] = [];
+
+      for (const pf of parsedFiles) {
+        if (pf.parsed.account) detectedAccounts.add(pf.parsed.account);
+        if (pf.parsed.sourceAccounts) {
+          for (const sa of pf.parsed.sourceAccounts) sourceAccounts.add(sa);
+        }
+        totalSkippedRows += pf.parsed.skippedRows ?? 0;
+        if (pf.parsed.warnings) allWarnings.push(...pf.parsed.warnings);
+        if (pf.parsed.errors) allErrors.push(...pf.parsed.errors);
+
+        let fileUnique = 0;
+        let fileDup = 0;
+        for (const exec of pf.parsed.executions) {
+          const sig = executionHash(exec);
+          if (seenSignatures.has(sig)) {
+            duplicatesSkipped++;
+            fileDup++;
+          } else {
+            seenSignatures.add(sig);
+            combinedExecutions.push(exec);
+            fileUnique++;
+          }
+        }
+        fileStats.push({
+          fileName: pf.file.name,
+          format: pf.parsed.format,
+          count: pf.parsed.executions.length,
+          uniqueAdded: fileUnique,
+          duplicateCount: fileDup,
+          account: pf.parsed.account,
+        });
+      }
+
+      // Sort chronologically by execution time
+      combinedExecutions.sort(
+        (a, b) => new Date(a.executedAt).getTime() - new Date(b.executedAt).getTime(),
+      );
+
+      if (unparsedFiles.length > 0) {
+        allWarnings.push(
+          `${unparsedFiles.length} file(s) could not be parsed: ${unparsedFiles.join(", ")}`,
+        );
+      }
+
+      const batchParsed: import("@luxalgo/journal-importers").ParsedImport = {
+        format: parsedFiles[0]?.parsed.format ?? "unknown",
+        executions: combinedExecutions,
+        skippedRows: totalSkippedRows,
+        warnings: Array.from(new Set(allWarnings)),
+        errors: allErrors.length > 0 ? Array.from(new Set(allErrors)) : undefined,
+        account: detectedAccounts.size > 0 ? Array.from(detectedAccounts)[0] : undefined,
+        sourceAccounts: sourceAccounts.size > 0 ? Array.from(sourceAccounts) : undefined,
+      };
+
+      const totalParsed = parsedFiles.reduce((acc, pf) => acc + pf.parsed.executions.length, 0);
+      const summary: import("@/types/import").BatchSummary = {
+        totalFiles: filesList.length,
+        totalParsed,
+        uniqueExecutions: combinedExecutions.length,
+        duplicateExecutions: duplicatesSkipped,
+        duplicatesSkipped,
+        files: fileStats,
+      };
+
+      return { parsedFiles, unparsedFiles, parsed: batchParsed, batchSummary: summary };
+    };
+
+    const initialBatch = parseBatchWithTz(timeZone);
+    if (initialBatch.parsedFiles.length === 0 || !initialBatch.parsed) {
       const firstContent = filesList[0]?.content ?? "";
       return ok({
         detected: null,
@@ -119,84 +207,40 @@ export const POST = handler(async (request: Request) => {
       });
     }
 
-    // Deduplicate executions across files
-    const combinedExecutions: ImportedExecution[] = [];
-    const seenSignatures = new Set<string>();
-    let duplicatesSkipped = 0;
-    let totalSkippedRows = 0;
-    const allWarnings: string[] = [];
-    const allErrors: string[] = [];
-    const detectedAccounts = new Set<string>();
-    const sourceAccounts = new Set<string>();
-    const fileStats: import("@/types/import").BatchFileSummary[] = [];
+    parsed = initialBatch.parsed;
+    batchSummary = initialBatch.batchSummary;
 
-    for (const pf of parsedFiles) {
-      if (pf.parsed.account) detectedAccounts.add(pf.parsed.account);
-      if (pf.parsed.sourceAccounts) {
-        for (const sa of pf.parsed.sourceAccounts) sourceAccounts.add(sa);
-      }
-      totalSkippedRows += pf.parsed.skippedRows ?? 0;
-      if (pf.parsed.warnings) allWarnings.push(...pf.parsed.warnings);
-      if (pf.parsed.errors) allErrors.push(...pf.parsed.errors);
+    if (!body.lockTimeZone) {
+      const calibration = inferImportTimeZoneFromCandles({
+        executions: parsed.executions,
+        initialTimeZone: timeZone,
+        accountTimeZone: account?.timeZone,
+        reparseExecutions: (probeTz) => parseBatchWithTz(probeTz).parsed?.executions,
+        rawContent: initialBatch.parsedFiles.map((pf) => pf.file.content),
+      });
 
-      let fileUnique = 0;
-      let fileDup = 0;
-      for (const exec of pf.parsed.executions) {
-        const sig = executionHash(exec);
-        if (seenSignatures.has(sig)) {
-          duplicatesSkipped++;
-          fileDup++;
-        } else {
-          seenSignatures.add(sig);
-          combinedExecutions.push(exec);
-          fileUnique++;
+      if (calibration.autoCalibrated && calibration.timeZone !== timeZone) {
+        const originalTimeZone = timeZone;
+        timeZone = calibration.timeZone;
+        const recalibratedBatch = parseBatchWithTz(timeZone);
+        if (recalibratedBatch.parsed) {
+          parsed = recalibratedBatch.parsed;
+          batchSummary = recalibratedBatch.batchSummary;
+          const calibrationWarning = `Auto-calibrated statement timezone to ${calibration.timeZone} based on market candle price alignment (${Math.round(calibration.bestHitRate * 100)}% match vs ${Math.round(calibration.initialHitRate * 100)}% in ${originalTimeZone}).`;
+          parsed.warnings = Array.from(new Set([...(parsed.warnings ?? []), calibrationWarning]));
         }
       }
-      fileStats.push({
-        fileName: pf.file.name,
-        format: pf.parsed.format,
-        count: pf.parsed.executions.length,
-        uniqueAdded: fileUnique,
-        duplicateCount: fileDup,
-        account: pf.parsed.account,
-      });
     }
-
-    // Sort chronologically by execution time
-    combinedExecutions.sort(
-      (a, b) => new Date(a.executedAt).getTime() - new Date(b.executedAt).getTime(),
-    );
-
-    if (unparsedFiles.length > 0) {
-      allWarnings.push(
-        `${unparsedFiles.length} file(s) could not be parsed: ${unparsedFiles.join(", ")}`,
-      );
-    }
-
-    parsed = {
-      format: parsedFiles[0]?.parsed.format ?? "unknown",
-      executions: combinedExecutions,
-      skippedRows: totalSkippedRows,
-      warnings: Array.from(new Set(allWarnings)),
-      errors: allErrors.length > 0 ? Array.from(new Set(allErrors)) : undefined,
-      account: detectedAccounts.size > 0 ? Array.from(detectedAccounts)[0] : undefined,
-      sourceAccounts: sourceAccounts.size > 0 ? Array.from(sourceAccounts) : undefined,
-    };
-
-    const totalParsed = parsedFiles.reduce((acc, pf) => acc + pf.parsed.executions.length, 0);
-    batchSummary = {
-      totalFiles: filesList.length,
-      totalParsed,
-      uniqueExecutions: combinedExecutions.length,
-      duplicateExecutions: duplicatesSkipped,
-      duplicatesSkipped,
-      files: fileStats,
-    };
   } else {
     const singleContent = filesList[0]?.content ?? "";
-    parsed = body.mapping
-      ? parseWithMapping(singleContent, body.mapping, importOptions)
-      : parseAuto(singleContent, importOptions);
+    const parseSingleWithTz = (targetTz: string) => {
+      const opts = { ...importOptions, timeZone: targetTz };
+      return body.mapping
+        ? parseWithMapping(singleContent, body.mapping, opts)
+        : parseAuto(singleContent, opts);
+    };
+
+    parsed = parseSingleWithTz(timeZone);
 
     if (!parsed) {
       return ok({
@@ -206,6 +250,27 @@ export const POST = handler(async (request: Request) => {
         headers: readHeaders(singleContent),
         needsMapping: true,
       });
+    }
+
+    if (!body.lockTimeZone) {
+      const calibration = inferImportTimeZoneFromCandles({
+        executions: parsed.executions,
+        initialTimeZone: timeZone,
+        accountTimeZone: account?.timeZone,
+        reparseExecutions: (probeTz) => parseSingleWithTz(probeTz)?.executions,
+        rawContent: singleContent,
+      });
+
+      if (calibration.autoCalibrated && calibration.timeZone !== timeZone) {
+        const originalTimeZone = timeZone;
+        timeZone = calibration.timeZone;
+        const reparsed = parseSingleWithTz(timeZone);
+        if (reparsed) {
+          parsed = reparsed;
+          const calibrationWarning = `Auto-calibrated statement timezone to ${calibration.timeZone} based on market candle price alignment (${Math.round(calibration.bestHitRate * 100)}% match vs ${Math.round(calibration.initialHitRate * 100)}% in ${originalTimeZone}).`;
+          parsed.warnings = Array.from(new Set([...(parsed.warnings ?? []), calibrationWarning]));
+        }
+      }
     }
   }
 

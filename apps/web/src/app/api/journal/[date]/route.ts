@@ -1,5 +1,5 @@
 import { readFilters } from "@luxalgo/journal-core";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { computeMetrics, dayKeyOf, intradayCurve } from "@luxalgo/journal-core";
 import { attachments, db, executions, journalDays, trades as tradesTable } from "@/db";
 import { bad, handler, ok } from "@/server/api";
@@ -10,17 +10,40 @@ import { normalizeSymbol } from "@/lib/assets/symbol-utils";
 
 type Params = { params: Promise<{ date: string }> };
 
+export interface DayJournalEntry {
+  id: string;
+  date: string;
+  note: string;
+  symbol: string | null;
+  rating: number | null;
+  reviewedAt: string | null;
+  tagsJson: string | null;
+  mistakesJson: string | null;
+  attachmentsCount: number;
+  linkedTradesCount: number;
+  updatedAt: string | null;
+}
+
+const isValidJournalIdForDate = (journalId: string, baseDate: string) =>
+  journalId === baseDate ||
+  (journalId.startsWith(`${baseDate}#`) &&
+    /^[a-zA-Z0-9_-]{1,32}$/.test(journalId.slice(baseDate.length + 1)));
+
 export const GET = handler(async (request: Request, { params }: Params) => {
-  const { date } = await params;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return bad("date must be YYYY-MM-DD");
+  const { date: rawDate } = await params;
+  const baseDate = rawDate.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(baseDate)) return bad("date must be YYYY-MM-DD");
   const url = new URL(request.url);
+  const requestedJournalId =
+    url.searchParams.get("journalId") ?? (rawDate.includes("#") ? rawDate : null);
   const timeZone = getTimeZone();
 
   const { rows, trades } = queryTrades(readFilters(url.searchParams));
   const dayTradeIndexes = trades
     .map((trade, index) => ({ trade, index }))
-    .filter(({ trade }) => trade.closedAt && dayKeyOf(trade.closedAt, timeZone) === date);
+    .filter(({ trade }) => trade.closedAt && dayKeyOf(trade.closedAt, timeZone) === baseDate);
   const dayTrades = dayTradeIndexes.map(({ trade }) => trade);
+  const dayRows = dayTradeIndexes.map(({ index }) => rows[index]!);
 
   // Intraday curve needs exit timestamps — only fetch executions for the day's trades.
   const times = new Map<string, string>();
@@ -37,20 +60,93 @@ export const GET = handler(async (request: Request, { params }: Params) => {
     }
   }
 
-  const dayRecord = db.select().from(journalDays).where(eq(journalDays.date, date)).get();
-  const dayAttachmentsCount =
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(attachments)
-      .where(and(eq(attachments.ownerType, "day"), eq(attachments.ownerId, date)))
-      .get()?.count ?? 0;
+  // Fetch all journal_days rows for this date (primary YYYY-MM-DD and secondary YYYY-MM-DD#<subId>)
+  const dayRecords = db
+    .select()
+    .from(journalDays)
+    .where(or(eq(journalDays.date, baseDate), like(journalDays.date, `${baseDate}#%`)))
+    .orderBy(asc(journalDays.date))
+    .all();
 
-  const hasDayJournal = Boolean(
-    dayRecord?.note?.trim() ||
-    dayRecord?.symbol ||
-    dayRecord?.rating != null ||
-    dayAttachmentsCount > 0,
+  const attachmentCountsRows = db
+    .select({
+      ownerId: attachments.ownerId,
+      count: sql<number>`count(*)`,
+    })
+    .from(attachments)
+    .where(
+      and(
+        eq(attachments.ownerType, "day"),
+        or(eq(attachments.ownerId, baseDate), like(attachments.ownerId, `${baseDate}#%`)),
+      ),
+    )
+    .groupBy(attachments.ownerId)
+    .all();
+
+  const attachmentCountsMap = new Map<string, number>(
+    attachmentCountsRows.map((r) => [r.ownerId, r.count]),
   );
+
+  const recordMap = new Map(dayRecords.map((r) => [r.date, r]));
+
+  const candidateIds = new Set<string>([
+    ...dayRecords.map((r) => r.date),
+    ...attachmentCountsRows.map((r) => r.ownerId),
+    ...dayRows
+      .map((r) => r.linkedJournalDate)
+      .filter((id): id is string => Boolean(id && isValidJournalIdForDate(id, baseDate))),
+  ]);
+
+  const journals: DayJournalEntry[] = Array.from(candidateIds)
+    .map((id) => {
+      const rec = recordMap.get(id);
+      const attCount = attachmentCountsMap.get(id) ?? 0;
+      const linkedCount = dayRows.filter((t) => t.linkedJournalDate === id).length;
+      return {
+        id,
+        date: baseDate,
+        note: rec?.note ?? "",
+        symbol: rec?.symbol ?? null,
+        rating: rec?.rating ?? null,
+        reviewedAt: rec?.reviewedAt ?? null,
+        tagsJson: rec?.tagsJson ?? null,
+        mistakesJson: rec?.mistakesJson ?? null,
+        attachmentsCount: attCount,
+        linkedTradesCount: linkedCount,
+        updatedAt: rec?.updatedAt ?? null,
+      };
+    })
+    .filter(
+      (j) =>
+        Boolean(j.note.trim()) ||
+        Boolean(j.symbol) ||
+        j.rating != null ||
+        j.attachmentsCount > 0 ||
+        j.linkedTradesCount > 0,
+    )
+    .sort((a, b) => {
+      if (a.id === baseDate) return -1;
+      if (b.id === baseDate) return 1;
+      return (a.updatedAt ?? "").localeCompare(b.updatedAt ?? "");
+    });
+
+  const activeEntry = requestedJournalId
+    ? (journals.find((j) => j.id === requestedJournalId) ?? {
+        id: requestedJournalId,
+        date: baseDate,
+        note: recordMap.get(requestedJournalId)?.note ?? "",
+        symbol: recordMap.get(requestedJournalId)?.symbol ?? null,
+        rating: recordMap.get(requestedJournalId)?.rating ?? null,
+        reviewedAt: recordMap.get(requestedJournalId)?.reviewedAt ?? null,
+        tagsJson: recordMap.get(requestedJournalId)?.tagsJson ?? null,
+        mistakesJson: recordMap.get(requestedJournalId)?.mistakesJson ?? null,
+        attachmentsCount: attachmentCountsMap.get(requestedJournalId) ?? 0,
+        linkedTradesCount: dayRows.filter((t) => t.linkedJournalDate === requestedJournalId).length,
+        updatedAt: recordMap.get(requestedJournalId)?.updatedAt ?? null,
+      })
+    : (journals[0] ?? null);
+
+  const hasDayJournal = journals.length > 0;
 
   const allTradedSymbols = Array.from(
     new Set(
@@ -64,26 +160,30 @@ export const GET = handler(async (request: Request, { params }: Params) => {
   );
 
   return ok({
-    date,
+    date: baseDate,
+    activeJournalId: activeEntry?.id ?? requestedJournalId ?? baseDate,
+    journals,
     metrics: computeMetrics(dayTrades, { timeZone }),
-    trades: dayTradeIndexes.map(({ index }) => rows[index]),
-    intraday: intradayCurve(dayTrades, times, date, timeZone),
-    note: dayRecord?.note ?? "",
-    symbol: dayRecord?.symbol ?? null,
+    trades: dayRows,
+    intraday: intradayCurve(dayTrades, times, baseDate, timeZone),
+    note: activeEntry?.note ?? "",
+    symbol: activeEntry?.symbol ?? null,
     allTradedSymbols,
-    rating: dayRecord?.rating ?? null,
-    reviewedAt: dayRecord?.reviewedAt ?? null,
-    tagsJson: dayRecord?.tagsJson ?? null,
-    mistakesJson: dayRecord?.mistakesJson ?? null,
-    attachmentsCount: dayAttachmentsCount,
+    rating: activeEntry?.rating ?? null,
+    reviewedAt: activeEntry?.reviewedAt ?? null,
+    tagsJson: activeEntry?.tagsJson ?? null,
+    mistakesJson: activeEntry?.mistakesJson ?? null,
+    attachmentsCount: activeEntry?.attachmentsCount ?? 0,
     hasDayJournal,
   });
 });
 
-const saveJournalDay = async (request: Request, date: string) => {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return bad("date must be YYYY-MM-DD");
+const saveJournalDay = async (request: Request, rawDate: string) => {
+  const baseDate = rawDate.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(baseDate)) return bad("date must be YYYY-MM-DD");
 
   let body: {
+    journalId?: string | null;
     note?: string;
     notes?: string;
     symbol?: string | null;
@@ -99,6 +199,13 @@ const saveJournalDay = async (request: Request, date: string) => {
   } catch {
     return bad("Invalid JSON request body");
   }
+
+  const url = new URL(request.url);
+  const rawJournalId =
+    body.journalId ?? url.searchParams.get("journalId") ?? (rawDate.includes("#") ? rawDate : baseDate);
+  const targetJournalId = isValidJournalIdForDate(rawJournalId, baseDate)
+    ? rawJournalId
+    : baseDate;
 
   if (body.rating !== undefined) {
     if (
@@ -131,7 +238,7 @@ const saveJournalDay = async (request: Request, date: string) => {
   };
 
   const noteContent = body.note !== undefined ? body.note : body.notes;
-  const existing = db.select().from(journalDays).where(eq(journalDays.date, date)).get();
+  const existing = db.select().from(journalDays).where(eq(journalDays.date, targetJournalId)).get();
 
   const patch: Partial<typeof journalDays.$inferInsert> = {
     updatedAt: nowIso(),
@@ -141,7 +248,7 @@ const saveJournalDay = async (request: Request, date: string) => {
     patch.note = noteContent;
     db.update(tradesTable)
       .set({ notes: noteContent })
-      .where(eq(tradesTable.linkedJournalDate, date))
+      .where(eq(tradesTable.linkedJournalDate, targetJournalId))
       .run();
   }
   if (body.symbol !== undefined) patch.symbol = body.symbol ? normalizeSymbol(body.symbol) : null;
@@ -153,7 +260,7 @@ const saveJournalDay = async (request: Request, date: string) => {
 
   db.insert(journalDays)
     .values({
-      date,
+      date: targetJournalId,
       note: noteContent ?? existing?.note ?? "",
       symbol: patch.symbol !== undefined ? patch.symbol : (existing?.symbol ?? null),
       rating: patch.rating !== undefined ? patch.rating : (existing?.rating ?? null),
@@ -170,7 +277,7 @@ const saveJournalDay = async (request: Request, date: string) => {
     })
     .run();
 
-  return ok({ saved: true });
+  return ok({ saved: true, journalId: targetJournalId });
 };
 
 export const PUT = handler(async (request: Request, { params }: Params) => {

@@ -11,6 +11,7 @@ import {
   type DashboardArrangement,
 } from "@/lib/dashboard-layout";
 import { type DashboardWidget, DashboardCardCustomizer } from "./dashboard-customizer";
+import { ButtonBezierOutline } from "./ui/button-bezier-join";
 
 export function DashboardSavedLayouts({
   layouts,
@@ -40,6 +41,8 @@ export function DashboardSavedLayouts({
   const [saved, setSaved] = useState("");
   const titleId = useId();
   const listRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
@@ -68,9 +71,11 @@ export function DashboardSavedLayouts({
     <Popover.Root open={open} onOpenChange={handleOpenChange}>
       <Popover.Trigger asChild>
         <button
+          ref={triggerRef}
           type="button"
           aria-label="Saved dashboard layouts"
-          className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground transition-[background-color,transform] duration-150 hover:bg-muted/60 active:scale-[0.98] cursor-pointer select-none data-[state=open]:bg-muted/60"
+          data-bezier-trigger="start"
+          className="journal-bezier-trigger flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground transition-[background-color,transform] duration-150 hover:bg-muted/60 active:scale-[0.98] cursor-pointer select-none data-[state=open]:bg-background data-[state=open]:rounded-b-none data-[state=open]:border-b-transparent data-[state=open]:scale-100 data-[state=open]:active:scale-100"
         >
           <LayoutTemplate size={14} className="text-muted-foreground shrink-0" />
           <span>Layouts</span>
@@ -82,23 +87,33 @@ export function DashboardSavedLayouts({
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="dashboard-customize-panel dashboard-layout-panel"
+          data-bezier-joined="start"
+          className="dashboard-customize-panel dashboard-layout-panel journal-bezier-panel"
           align="start"
-          sideOffset={10}
+          side="bottom"
+          sideOffset={-1}
           collisionPadding={12}
           aria-labelledby={titleId}
         >
-          {view === "customize" && widgets && onVisibilityChange && onShowAll && onRestore ? (
-            <DashboardCardCustomizer
-              widgets={widgets}
-              hidden={current.hidden}
-              onVisibilityChange={onVisibilityChange}
-              onShowAll={onShowAll}
-              onRestore={onRestore}
-              onBack={() => handleSetView("layouts")}
-              titleId={titleId}
-            />
-          ) : (
+          <ButtonBezierOutline
+            triggerRef={triggerRef}
+            radius={14}
+            alignFallback="start"
+            defaultWidth={344}
+            defaultHeight={200}
+          />
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+            {view === "customize" && widgets && onVisibilityChange && onShowAll && onRestore ? (
+              <DashboardCardCustomizer
+                widgets={widgets}
+                hidden={current.hidden}
+                onVisibilityChange={onVisibilityChange}
+                onShowAll={onShowAll}
+                onRestore={onRestore}
+                onBack={() => handleSetView("layouts")}
+                titleId={titleId}
+              />
+            ) : (
             <>
               <div className="dashboard-customize-heading">
                 <h2 id={titleId}>Saved layouts</h2>
@@ -253,7 +268,8 @@ export function DashboardSavedLayouts({
                 )}
               </form>
             </>
-          )}
+            )}
+          </div>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
