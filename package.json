@@ -19,6 +19,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "pnpm -r --parallel typecheck",
+    "pack:web": "npx repomix --include 'apps/web/src/**,packages/core/src/**' --ignore '**/*.test.*,apps/web/src/lib/assets/tv-icons-manifest.json,apps/web/public/**' -o repomix-webapp.xml",
+    "pack:full": "npx repomix --include 'apps/web/src/**,apps/web/tests/**,packages/core/src/**,packages/core/tests/**,packages/importers/src/**,packages/importers/tests/**,packages/vela/src/**,packages/vela/vendor/**/*.d.ts,docs/**,scripts/**,package.json,pnpm-workspace.yaml,vitest.config.ts,tsconfig.base.json,docker-compose.yml,Dockerfile,GEMINI.md,README.md,apps/web/package.json,apps/web/next.config.ts,apps/web/tsconfig.json,packages/core/package.json,packages/importers/package.json,packages/vela/package.json' --ignore 'apps/web/src/lib/assets/tv-icons-manifest.json,apps/web/public/**,packages/importers/tests/fixtures/**,export/**,**/*.db,**/*.sqlite*,**/*.csv' --remove-empty-lines -o repomix-tradejournal-full.xml",
+    "pack:ast": "npx repomix --include 'apps/web/src/**,packages/core/src/**,packages/importers/src/**,packages/vela/src/**,docs/**,package.json' --ignore 'apps/web/src/lib/assets/tv-icons-manifest.json,apps/web/public/**,packages/importers/tests/fixtures/**,export/**,**/*.db,**/*.sqlite*,**/*.csv' --compress --remove-empty-lines -o repomix-tradejournal-compressed-ast.xml",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

@@ -3,7 +3,7 @@ export type AiProvider = (typeof AI_PROVIDERS)[number];
 
 export const AI_DEFAULT_MODELS: Record<AiProvider, string> = {
   anthropic: "claude-opus-5",
-  openai: "gpt-4.1-mini",
+  openai: "gpt-6.1-mini",
   google: "gemini-3.8-flash",
 };
 

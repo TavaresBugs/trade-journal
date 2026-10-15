@@ -269,6 +269,11 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
     return effectiveDate;
   }, [hasTrade, trade?.linkedJournalDate, activeJournalSubId, effectiveDate]);
 
+  const linkedJournalEntry = useMemo(() => {
+    if (!hasTrade || !trade?.linkedJournalDate) return null;
+    return dayData?.journals?.find((j) => j.id === trade.linkedJournalDate) ?? null;
+  }, [hasTrade, trade?.linkedJournalDate, dayData?.journals]);
+
   // Linked asset for day journal (Face B)
   const [customAsset, setCustomAsset] = useState<string | null>(null);
   useEffect(() => {
@@ -637,8 +642,32 @@ export function JournalView({ date: initialDate, tradeKey: initialTradeKey }: Jo
             />
           )}
 
-          {/* Timeframe Screenshots (isolated per activeJournalId) */}
-          <TimeframeScreenshotGrid key={activeJournalId} date={activeJournalId} />
+          {/* Timeframe Screenshots (isolated per activeTradeKey vs activeJournalId) */}
+          {hasTrade && trade ? (
+            <TimeframeScreenshotGrid
+              key={`trade-${trade.key}`}
+              ownerType="trade"
+              ownerId={trade.key}
+              title="Visual context & screenshots"
+              subtitle={`Trade execution, entry & timeframe context for ${trade.symbol}`}
+              linkedJournalId={trade.linkedJournalDate}
+              linkedJournalTitle={
+                linkedJournalEntry?.symbol
+                  ? `${linkedJournalEntry.symbol} Session Journal`
+                  : trade.linkedJournalDate
+                    ? "Session Journal"
+                    : undefined
+              }
+            />
+          ) : (
+            <TimeframeScreenshotGrid
+              key={`day-${activeJournalId}`}
+              ownerType="day"
+              ownerId={activeJournalId}
+              title="Visual context & screenshots"
+              subtitle="Macro context and market structure prior to session open"
+            />
+          )}
 
           {/* Market Data & Replay (omitted in Clean Journal) */}
           {hasTrade && trade && executions && (

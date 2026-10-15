@@ -26,7 +26,12 @@ import { Label } from "./ui/label";
 import { OptionSelect } from "./ui/option-select";
 import { enhanceVelaDrawingToolbar } from "./vela-drawing-enhancer";
 import * as drawingEnhancerMod from "./vela-drawing-enhancer";
-import { attachVelaDrawingsPersistence } from "./vela-drawings-bridge";
+import { attachVelaDrawingsPersistence } from "./market/drawings/market-drawings-persistence";
+import {
+  toVelaTf,
+  fromVelaTf,
+  normalizeChartTimezone,
+} from "@luxalgo/vela/workspace";
 import { attachVelaTimeframePicker } from "./vela-timeframe-picker";
 import { attachVelaStylePicker } from "./vela-style-picker";
 import { enhanceVelaChromeHover, enhanceVelaSideRail } from "./vela-chrome-enhancer";
@@ -43,6 +48,17 @@ import {
   loadStoredSettings,
   saveStoredSettings,
 } from "./settings/vela-settings-bridge";
+import { VelaChartAlertsOverlay } from "./alerts/vela-chart-alerts-overlay";
+import { VelaAlertDialog } from "./alerts/vela-alert-dialog";
+import { VelaDeleteAlertModal } from "./alerts/vela-delete-alert-modal";
+import { VelaAlertsDockPanel } from "./alerts/vela-alerts-dock-panel";
+import {
+  useAlerts,
+  alertsStore,
+  createScreenSymbolItem,
+} from "@/lib/alerts/alerts-store";
+import { preOrderStore } from "@/lib/paper-trading/pre-order-store";
+import { getPaperInstrumentSpec, formatPrice as formatPaperPrice } from "@/lib/paper-trading/symbol-specs";
 
 export function TradeMarketData({
   trade,
@@ -686,263 +702,19 @@ export function TradeMarketData({
   );
 }
 
-function toVelaTf(res: Resolution): string {
-  const map: Record<Resolution, string> = {
-    "1m": "1",
-    "2m": "2",
-    "3m": "3",
-    "5m": "5",
-    "10m": "10",
-    "15m": "15",
-    "30m": "30",
-    "45m": "45",
-    "1h": "60",
-    "2h": "120",
-    "3h": "180",
-    "4h": "240",
-    "6h": "360",
-    "8h": "480",
-    "12h": "720",
-    "1d": "D",
-    "3d": "3D",
-    "1w": "W",
-    "1mo": "M",
-  };
-  return map[res] ?? "5";
-}
 
-function fromVelaTf(tf: string): Resolution | undefined {
-  const map: Record<string, Resolution> = {
-    "1": "1m",
-    "1m": "1m",
-    "2": "2m",
-    "2m": "2m",
-    "3": "3m",
-    "3m": "3m",
-    "5": "5m",
-    "5m": "5m",
-    "10": "10m",
-    "10m": "10m",
-    "15": "15m",
-    "15m": "15m",
-    "30": "30m",
-    "30m": "30m",
-    "45": "45m",
-    "45m": "45m",
-    "60": "1h",
-    "1h": "1h",
-    "120": "2h",
-    "2h": "2h",
-    "180": "3h",
-    "3h": "3h",
-    "240": "4h",
-    "4h": "4h",
-    "360": "6h",
-    "6h": "6h",
-    "480": "8h",
-    "8h": "8h",
-    "720": "12h",
-    "12h": "12h",
-    "1D": "1d",
-    "1d": "1d",
-    D: "1d",
-    "3D": "3d",
-    "3d": "3d",
-    "1W": "1w",
-    "1w": "1w",
-    W: "1w",
-    "1M": "1mo",
-    "1mo": "1mo",
-    M: "1mo",
-  };
-  return map[tf];
-}
+import {
+  syncVelaToolbarGutter,
+  setupVelaSidePanels,
+  type VelaSidePanelsController,
+} from "@luxalgo/vela/widget";
 
-/**
- * Synchronizes Vela's left toolbar gutter to 52px to prevent canvas overlap and left-clipping.
- * In @luxalgo/vela, TOOLBAR_WIDTH defaults to 44px, whereas TradeJournal styles the toolbar to 52px.
- * This helper sets the renderer's toolbar gutter to 52px, intercepts syncToolbarGutter on the
- * drawings controllers so it preserves 52px (and 16px when collapsed), sets --vela-toolbar-gutter: 52px
- * on the host container, and triggers syncSize() to recalculate canvas bounds.
- */
-export function syncVelaToolbarGutter(instance: any, container?: HTMLElement | null): void {
-  if (!instance) return;
+export {
+  syncVelaToolbarGutter,
+  setupVelaSidePanels,
+  type VelaSidePanelsController,
+};
 
-  const renderer = (instance.renderer as any)?.renderer || instance.renderer;
-
-  if (renderer?.setToolbarGutter) {
-    renderer.setToolbarGutter(52);
-  }
-
-  const drawings = instance.drawings;
-  if (drawings && typeof drawings.syncToolbarGutter === "function") {
-    drawings.syncToolbarGutter = () => {
-      const shown = drawings.toolbarVisible && !drawings.mobileLayout;
-      const gutter = shown ? (drawings.toolbarCollapsed ? 16 : 52) : 0;
-      renderer?.setToolbarGutter?.(gutter);
-    };
-    drawings.syncToolbarGutter();
-  }
-
-  const userDrawings = renderer?.userDrawings || (instance.renderer as any)?.userDrawings;
-  if (userDrawings && typeof userDrawings.syncToolbarGutter === "function") {
-    userDrawings.syncToolbarGutter = () => {
-      const shown = userDrawings.toolbarVisible && !userDrawings.mobileLayout;
-      const gutter = shown ? (userDrawings.toolbarCollapsed ? 16 : 52) : 0;
-      renderer?.setToolbarGutter?.(gutter);
-    };
-    userDrawings.syncToolbarGutter();
-  }
-
-  if (container) {
-    container.style.setProperty("--vela-toolbar-gutter", "52px");
-  }
-
-  // Explicitly align plot left immediately so layout is guaranteed 52px before any deferred resize
-  if (renderer?.plot) {
-    renderer.plot.style.left = "52px";
-  }
-
-  renderer?.syncSize?.();
-  (instance.renderer as any)?.syncSize?.();
-}
-
-export interface VelaSidePanelsController {
-  objectTree: any;
-  dataWindow: any;
-  openId: () => "objects" | "dataWindow" | null;
-  toggle: (id: "objects" | "dataWindow", open?: boolean) => void;
-  close: () => void;
-  setSymbol: (symbol: string) => void;
-  refresh?: () => void;
-  onChart: (instance: any) => void;
-  destroy: () => void;
-}
-
-export function setupVelaSidePanels({
-  panelContainer,
-  chartInstance,
-  symbol,
-  resolveIcon,
-  onOpenChange,
-  ObjectTreeClass,
-  DataWindowClass,
-}: {
-  panelContainer: HTMLElement;
-  chartInstance?: any;
-  symbol: string;
-  resolveIcon?: (sym: string) => string | undefined;
-  onOpenChange?: (activeId: "objects" | "dataWindow" | null) => void;
-  ObjectTreeClass?: any;
-  DataWindowClass?: any;
-}): VelaSidePanelsController {
-  let activeId: "objects" | "dataWindow" | null = null;
-  let currentChart = chartInstance ?? null;
-
-  const OT = ObjectTreeClass;
-  const DW = DataWindowClass;
-
-  const objectTree = new OT(panelContainer, resolveIcon);
-  objectTree.setSymbol?.(symbol);
-  if (currentChart) objectTree.onChart?.(currentChart);
-
-  const dataWindow = new DW(panelContainer);
-  if (currentChart) dataWindow.onChart?.(currentChart);
-
-  let syncRaf: number | null = null;
-  const sync = () => {
-    currentChart?.renderer?.syncSize?.();
-    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
-      if (syncRaf !== null) {
-        window.cancelAnimationFrame(syncRaf);
-      }
-      syncRaf = window.requestAnimationFrame(() => {
-        syncRaf = null;
-        currentChart?.renderer?.syncSize?.();
-      });
-    }
-  };
-
-  objectTree.onOpenChange = (open: boolean) => {
-    if (open) {
-      dataWindow?.toggle?.(false, true);
-      activeId = "objects";
-    } else if (activeId === "objects") {
-      activeId = null;
-    }
-    onOpenChange?.(activeId);
-    sync();
-  };
-
-  dataWindow.onOpenChange = (open: boolean) => {
-    if (open) {
-      objectTree?.toggle?.(false, true);
-      activeId = "dataWindow";
-    } else if (activeId === "dataWindow") {
-      activeId = null;
-    }
-    onOpenChange?.(activeId);
-    sync();
-  };
-
-  return {
-    objectTree,
-    dataWindow,
-    openId: () => activeId,
-    toggle: (id: "objects" | "dataWindow", open?: boolean) => {
-      const willOpen = open !== undefined ? open : activeId !== id;
-      if (id === "objects") {
-        if (willOpen) {
-          dataWindow?.toggle?.(false, true);
-          objectTree?.toggle?.(true);
-        } else {
-          objectTree?.toggle?.(false);
-        }
-      } else {
-        if (willOpen) {
-          objectTree?.toggle?.(false, true);
-          dataWindow?.toggle?.(true);
-        } else {
-          dataWindow?.toggle?.(false);
-        }
-      }
-    },
-    close: () => {
-      objectTree?.toggle?.(false, true);
-      dataWindow?.toggle?.(false, true);
-      activeId = null;
-      onOpenChange?.(null);
-      sync();
-    },
-    setSymbol: (newSymbol: string) => {
-      objectTree?.setSymbol?.(newSymbol);
-      objectTree?.refresh?.();
-    },
-    refresh: () => {
-      objectTree?.refresh?.();
-    },
-    onChart: (inst: any) => {
-      currentChart = inst;
-      objectTree?.onChart?.(inst);
-      dataWindow?.onChart?.(inst);
-    },
-    destroy: () => {
-      if (syncRaf !== null && typeof window !== "undefined") {
-        window.cancelAnimationFrame(syncRaf);
-        syncRaf = null;
-      }
-      try {
-        objectTree?.destroy?.();
-      } catch {}
-      try {
-        dataWindow?.destroy?.();
-      } catch {}
-      activeId = null;
-      onOpenChange?.(null);
-      currentChart = null;
-    },
-  };
-}
 
 function HistoricalMarketChart({
   history,
@@ -1131,13 +903,15 @@ function MarketCandlesChart({
 
   const update = useRef<(() => void) | null>(null);
   const [error, setError] = useState("");
-  const [activePanel, setActivePanel] = useState<"objects" | "dataWindow" | null>(null);
+  const [activePanel, setActivePanel] = useState<"objects" | "dataWindow" | "alerts" | null>(null);
+  const { logs: alertLogs } = useAlerts();
+  const [isClientMounted, setIsClientMounted] = useState(false);
+  useEffect(() => {
+    setIsClientMounted(true);
+  }, []);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState("symbol");
-  const normalizeChartTimezone = useCallback(
-    (tz?: string | null) => (!tz || tz === "UTC" || tz === "Etc/GMT" ? "Etc/UTC" : tz),
-    [],
-  );
+
   const [chartTimezone, setChartTimezone] = useState<string>(() =>
     normalizeChartTimezone(loadStoredSettings().symbol?.timezone),
   );
@@ -1165,7 +939,7 @@ function MarketCandlesChart({
       } catch {}
       setChartTimezone(normalizedZone);
     },
-    [normalizeChartTimezone],
+    [],
   );
 
   const allVelaTimeframes = useMemo(() => ["1", "3", "5", "15", "60", "240", "D", "W", "M"], []);
@@ -1291,18 +1065,33 @@ function MarketCandlesChart({
         setSettingsOpen(true);
       };
 
-      instance.renderer.openSettings = (section?: string) => {
-        handleOpenSettings(section);
-        return instance.renderer;
-      };
-
-      if ((instance.renderer as any)?.renderer) {
-        (instance.renderer as any).renderer.openSettingsDialog = instance.renderer.openSettings;
-        (instance.renderer as any).renderer.settingsEnabled = false;
+      const sanitizeRendererSettings = (r: any) => {
+        if (!r) return;
+        r.openSettings = (section?: string) => {
+          handleOpenSettings(section);
+          return r;
+        };
+        r.openSettingsDialog = (section?: string) => {
+          handleOpenSettings(section);
+          return r;
+        };
+        r.toggleSettingsDialog = (section?: string) => {
+          handleOpenSettings(section);
+          return r;
+        };
+        r.setSettingsEnabled = () => {};
+        r.settingsEnabled = false;
         try {
-          (instance.renderer as any).renderer.settingsDialog?.close?.();
+          r.settingsButton?.remove?.();
+          r.settingsDialog?.close?.();
+          r.settingsDialog?.destroy?.();
+          r.settingsDialog = null;
         } catch {}
-      }
+        if (r.renderer && r.renderer !== r) {
+          sanitizeRendererSettings(r.renderer);
+        }
+      };
+      sanitizeRendererSettings(instance.renderer);
 
       // 1. Vela Native Topbar Widget
       let topbar: any = null;
@@ -1475,15 +1264,16 @@ function MarketCandlesChart({
           ? "CSV"
           : initialHistory.provider;
       statusline.setMeta(toVelaTf(initialHistory.resolution), initialProviderLabel);
+      statusline.setMarketStatus?.("closed");
       statusline.onChart(instance);
       if (frame.current.bars.length > 0) {
         (statusline as any).lastBar = frame.current.bars[frame.current.bars.length - 1];
         (statusline as any).render?.();
       }
       statusline.attachMenu({
-        setPart: (part, visible) => statusline.setPartVisible(part, visible),
+        setPart: (part: any, visible: boolean) => statusline.setPartVisible(part, visible),
         chartVisible: () => instance.renderer.get("candleVisible") !== false,
-        setChartVisible: (visible) => instance.renderer.set("candleVisible", visible),
+        setChartVisible: (visible: boolean) => instance.renderer.set("candleVisible", visible),
       });
       statuslineRef.current = statusline;
 
@@ -1585,6 +1375,18 @@ function MarketCandlesChart({
         host.current,
         contextMenu,
         () => lastCrosshair,
+        {
+          getSymbol: () => initialHistory.symbol,
+          getCurrentPrice: () => frame.current.bars.at(-1)?.close ?? 0,
+          onCreateAlert: (sym, price) => {
+            alertsStore.openCreateDialog(sym, price);
+          },
+          onPlaceOrder: (side, type, price, sym) => {
+            preOrderStore.open(sym ?? initialHistory.symbol, side, type, price);
+          },
+          getTickSize: (sym) => getPaperInstrumentSpec(sym)?.tickSize ?? 0.25,
+          formatPrice: (sym, p) => formatPaperPrice(sym, p),
+        },
       );
 
       // Hydrate live chart with persisted settings on mount
@@ -1610,7 +1412,7 @@ function MarketCandlesChart({
           chartInstance: instance,
           symbol: initialHistory.symbol,
           resolveIcon,
-          onOpenChange: (active) => setActivePanel(active),
+          onOpenChange: (active: "objects" | "dataWindow" | null) => setActivePanel(active),
           ObjectTreeClass: ObjectTree,
           DataWindowClass: DataWindow,
         });
@@ -1696,6 +1498,7 @@ function MarketCandlesChart({
               ? "CSV"
               : cur.provider;
           statuslineRef.current?.setMeta(toVelaTf(cur.resolution), pLabel);
+          statuslineRef.current?.setMarketStatus?.("closed");
           if (cur.bars.length > 0) {
             (statuslineRef.current as any).lastBar = cur.bars[cur.bars.length - 1];
             (statuslineRef.current as any).render?.();
@@ -1752,6 +1555,13 @@ function MarketCandlesChart({
       cleanup();
     };
   }, [history.symbol, initialPriceStyle, allVelaTimeframes, persistAndApplyTimezone]);
+
+  // Synchronize active chart symbol on screen with alertsStore
+  useEffect(() => {
+    alertsStore.setScreenSymbols([
+      createScreenSymbolItem(history.symbol, 1, history.resolution),
+    ]);
+  }, [history.symbol, history.resolution]);
 
   // Re-attach drawings persistence if tradeKey changes while mounted (e.g. switching trades of same symbol)
   useEffect(() => {
@@ -1822,6 +1632,7 @@ function MarketCandlesChart({
             ? "CSV"
             : history.provider;
         statuslineRef.current?.setMeta(toVelaTf(history.resolution), providerLabel);
+        statuslineRef.current?.setMarketStatus?.("closed");
         if (history.bars.length > 0) {
           (statuslineRef.current as any).lastBar = history.bars[history.bars.length - 1];
           (statuslineRef.current as any).render?.();
@@ -1896,11 +1707,11 @@ function MarketCandlesChart({
   };
 
   return (
-    <div className="relative rounded-xl border border-[var(--vela-border)] bg-[#151619] overflow-hidden shadow-xs vela-ui quant-chart-chrome flex flex-row">
+    <div className="relative rounded-xl border border-[var(--vela-border)] bg-[var(--vela-bg)] overflow-hidden shadow-xs vela-ui quant-chart-chrome flex flex-row">
       {error && (
         <p
           role="alert"
-          className="absolute top-0 left-0 right-0 z-50 text-sm text-destructive p-3 bg-[#151619]/90 border-b border-destructive/30"
+          className="absolute top-0 left-0 right-0 z-50 text-sm text-destructive p-3 bg-[var(--vela-bg)]/90 border-b border-destructive/30"
         >
           {error}
         </p>
@@ -1909,8 +1720,8 @@ function MarketCandlesChart({
       {/* Main Chart Column: Topbar, Canvas + Panel Dock, Bottombar */}
       <div className="flex flex-col min-w-0 flex-1 h-full">
         {/* Topbar row: Native Vela Topbar */}
-        <div className="flex items-center border-b border-[var(--vela-border)] bg-[#151619] min-h-[39px]">
-          <div ref={topbarHost} className="w-full bg-[#151619]" />
+        <div className="flex items-center border-b border-[var(--vela-border)] bg-[var(--vela-bg)] min-h-[39px]">
+          <div ref={topbarHost} className="w-full bg-[var(--vela-bg)]" />
         </div>
 
         {/* Subtle in-place progress indicator for hot-swap without layout shift */}
@@ -1925,19 +1736,32 @@ function MarketCandlesChart({
         )}
 
         {/* Relative Canvas Area & Side Panel Dock Row */}
-        <div className="relative flex flex-row flex-1 h-[700px] min-h-[700px] w-full bg-[#151619] overflow-hidden">
+        <div className="relative flex flex-row flex-1 h-[700px] min-h-[700px] w-full bg-[var(--vela-bg)] overflow-hidden">
           {/* Relative Canvas Area */}
           <div
             ref={host}
-            className="relative h-[700px] min-h-[700px] flex-1 min-w-0 bg-[#151619]"
-          />
+            className="relative h-[700px] min-h-[700px] flex-1 min-w-0 bg-[var(--vela-bg)]"
+          >
+            {chart.current && (
+              <VelaChartAlertsOverlay
+                chartInstance={chart.current}
+                symbol={history.symbol}
+              />
+            )}
+          </div>
 
           {/* Dock Host for ObjectTree and DataWindow */}
           <div ref={panelDockHost} className="relative flex flex-row self-stretch shrink-0" />
+          {activePanel === "alerts" && (
+            <VelaAlertsDockPanel
+              currentSymbol={history.symbol}
+              onClose={() => setActivePanel(null)}
+            />
+          )}
         </div>
 
         {/* Bottombar row: Native Vela Bottombar */}
-        <div ref={bottombarHost} className="w-full shrink-0 bg-[#151619] h-[39px]" />
+        <div ref={bottombarHost} className="w-full shrink-0 bg-[var(--vela-bg)] h-[39px]" />
       </div>
 
       {/* Right Sidebar Rail matching official Vela 1:1 (print_20261009_232822.png & print_20261009_232839.png) */}
@@ -1970,6 +1794,64 @@ function MarketCandlesChart({
         <div className="quant-side-rail-body">
           <div className="quant-side-rail-end quant-side-rail-foot mt-auto">
             <div className="quant-side-rail-group">
+              {/* Alerts button matching TradingView 1:1 */}
+              <button
+                type="button"
+                aria-label="Alerts"
+                aria-pressed={activePanel === "alerts" ? "true" : "false"}
+                data-rail-item="dock-alerts"
+                data-open={activePanel === "alerts" ? "1" : undefined}
+                className="quant-side-rail-row"
+                onClick={() => {
+                  if (activePanel === "alerts") {
+                    setActivePanel(null);
+                  } else {
+                    sidePanelsDockRef.current?.close();
+                    setActivePanel("alerts");
+                  }
+                }}
+              >
+                <span className="quant-side-rail-tile relative">
+                  <span className="quant-side-rail-icon">
+                    <span aria-hidden="true" className="quant-side-rail-vela-icon">
+                      <span className="vela-icon" aria-hidden="true">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="8 7 28 28"
+                          width="1em"
+                          height="1em"
+                          fill="none"
+                        >
+                          <path
+                            fill="currentColor"
+                            stroke="currentColor"
+                            strokeWidth="0.75"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M35 14.66 29.16 9l-.7.72 5.84 5.66.7-.72ZM9 14.66 14.84 9l.7.72-5.84 5.66-.7-.72ZM22 16v7h-5v1h6v-8h-1Z"
+                          />
+                          <path
+                            fill="currentColor"
+                            stroke="currentColor"
+                            strokeWidth="0.75"
+                            strokeLinejoin="round"
+                            fillRule="evenodd"
+                            d="M22 33a11 11 0 1 0 0-22 11 11 0 0 0 0 22Zm0-1a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z"
+                          />
+                        </svg>
+                      </span>
+                    </span>
+                  </span>
+                  {isClientMounted && alertLogs.length > 0 && (
+                    <div className="counterRow-SEyQozUN absolute top-[1px] right-[2px] pointer-events-none z-10">
+                      <span className="counter-Afd6t4Zj min-w-[13px] h-[13px] px-[2.5px] text-[9px] font-semibold leading-[13px] text-white bg-[#f23645] rounded-full border border-[#131722] flex items-center justify-center shadow-xs">
+                        {alertLogs.length > 99 ? "99+" : alertLogs.length}
+                      </span>
+                    </div>
+                  )}
+                </span>
+              </button>
+
               {/* Object tree button */}
               <button
                 type="button"
@@ -2096,6 +1978,8 @@ function MarketCandlesChart({
           }
         }}
       />
+      <VelaAlertDialog />
+      <VelaDeleteAlertModal />
     </div>
   );
 }

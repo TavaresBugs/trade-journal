@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Moon, Sun } from "lucide-react";
 import { THEME_KEY, themePreference, type Theme } from "@/lib/theme";
+import { syncGlobalColorTheme, syncVelaUiCssTokens, loadStoredSettings } from "./settings/vela-settings-bridge";
 import { Button } from "./ui/button";
 
 const ThemeContext = createContext({ theme: "dark" as Theme, ready: false, toggle: () => {} });
@@ -17,22 +18,49 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   };
   useEffect(() => {
     // Read the pre-paint result, including its storage-unavailable fallback.
-    setTheme(document.documentElement.classList.contains("dark") ? "dark" : "light");
+    const initial = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    setTheme(initial);
     setReady(true);
+    try {
+      const stored = loadStoredSettings();
+      if (stored.canvas.colorTheme !== initial) {
+        syncGlobalColorTheme(initial, { dispatchEvent: false });
+      } else {
+        syncVelaUiCssTokens(initial, stored);
+      }
+    } catch {}
     const sync = (event: StorageEvent) => {
       if (event.key === THEME_KEY || event.key === null) {
-        apply(themePreference(event.newValue));
+        const next = themePreference(event.newValue);
+        apply(next);
+        syncGlobalColorTheme(next, { dispatchEvent: false });
+        setError("");
+      }
+    };
+    const onVelaThemeChange = (e: Event) => {
+      const custom = e as CustomEvent<{ theme?: Theme }>;
+      const next = custom.detail?.theme;
+      if (next === "dark" || next === "light") {
+        apply(next);
+        try {
+          localStorage.setItem(THEME_KEY, next);
+        } catch {}
         setError("");
       }
     };
     window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
+    window.addEventListener("vela-theme-change", onVelaThemeChange);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("vela-theme-change", onVelaThemeChange);
+    };
   }, []);
   const toggle = () => {
     const next = theme === "dark" ? "light" : "dark";
     apply(next);
     try {
       localStorage.setItem(THEME_KEY, next);
+      syncGlobalColorTheme(next);
       setError("");
     } catch {
       setError("Appearance changed, but your browser could not save it for next time.");

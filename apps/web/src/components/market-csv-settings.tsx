@@ -12,6 +12,7 @@ import {
   Layers,
   Loader2,
   Plus,
+  RefreshCw,
   RotateCcw,
   Save,
   Upload,
@@ -65,6 +66,7 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
   const [customSymbolInput, setCustomSymbolInput] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [syncingTv, setSyncingTv] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [managerOpen, setManagerOpen] = useState(false);
@@ -359,6 +361,50 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
     }
   };
 
+  const handleSmartSyncTv = async () => {
+    setBusy(true);
+    setSyncingTv(true);
+    setError("");
+    setMessage("");
+    try {
+      const res = await postJson<{
+        sync?: {
+          symbols: string[];
+          seriesSynced: number;
+          totalFetchedBars: number;
+          totalNewBars: number;
+          totalUpdatedBars: number;
+          totalDuplicateBars: number;
+          fullDownloadEquivalentBars: number;
+          bandwidthSavedPct: number;
+          durationMs: number;
+        };
+      }>("/api/market-data/csv", {
+        action: "sync_tradingview",
+        symbols: ["MES", "MNQ"],
+      });
+
+      if (res.sync) {
+        const s = res.sync;
+        const secs = (s.durationMs / 1000).toFixed(1);
+        setMessage(
+          `Smart Sync (${s.symbols.join(" & ")}) completed in ${secs}s across ${s.seriesSynced} timeframes: +${s.totalNewBars.toLocaleString()} new bars added, ${s.totalUpdatedBars.toLocaleString()} forming bars updated (fetched only ${s.totalFetchedBars.toLocaleString()} missing bars instead of ${s.fullDownloadEquivalentBars.toLocaleString()} — ${s.bandwidthSavedPct}% redundant data avoided).`,
+        );
+      } else {
+        setMessage("MES & MNQ market candles synced from TradingView successfully!");
+      }
+      refresh();
+      onChange();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Failed to sync MES & MNQ from TradingView.",
+      );
+    } finally {
+      setSyncingTv(false);
+      setBusy(false);
+    }
+  };
+
   const family = symbol ? getAssetFamily(symbol) : null;
   const brotherSymbols = symbol ? getDefaultCompatibleSymbols(symbol) : [];
   const inactiveBrotherSymbols = brotherSymbols.filter((s) => !compatibleSymbols.includes(s));
@@ -383,13 +429,29 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
           </p>
         </div>
 
-        <a
-          className="text-xs text-muted-foreground hover:text-foreground underline transition-colors pt-0.5 shrink-0"
-          href="/market-data-template.csv"
-          download
-        >
-          Download CSV template
-        </a>
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            data-qa-id="smart-sync-tv-button"
+            disabled={busy || syncingTv}
+            onClick={() => void handleSmartSyncTv()}
+            title="Inspects latest stored timestamp per timeframe (1m..1mo) and downloads only missing bars for MES & MNQ from TradingView"
+            className="h-8 px-3 text-xs font-semibold gap-1.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/60 hover:text-emerald-300 cursor-pointer transition-all"
+          >
+            <RefreshCw className={cn("size-3.5 shrink-0", syncingTv && "animate-spin")} />
+            <span>{syncingTv ? "Syncing MES & MNQ..." : "Sync MES & MNQ"}</span>
+          </Button>
+
+          <a
+            className="text-xs text-muted-foreground hover:text-foreground underline transition-colors shrink-0"
+            href="/market-data-template.csv"
+            download
+          >
+            Download CSV template
+          </a>
+        </div>
       </div>
 
       {/* Hidden File Input (supports multiple file selection) */}
@@ -406,6 +468,19 @@ export function MarketCsvSettings({ onChange }: { onChange: () => void }) {
           event.target.value = "";
         }}
       />
+
+      {/* Smart TradingView Sync Progress Banner */}
+      {syncingTv && (
+        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3.5 flex items-center justify-between gap-3 text-xs">
+          <span className="font-semibold text-emerald-400 flex items-center gap-2">
+            <Loader2 className="size-4 animate-spin shrink-0" />
+            Smart Syncing MES & MNQ across 11 timeframes (fetching only missing delta bars from TradingView WebSocket)...
+          </span>
+          <span className="font-mono text-[11px] text-emerald-300/90 shrink-0">
+            1m · 3m · 5m · 15m · 30m · 1h · 2h · 4h · 1d · 1w · 1mo
+          </span>
+        </div>
+      )}
 
       {/* Batch Ingestion Progress Banner */}
       {batchProgress && (

@@ -116,43 +116,135 @@ export const getAiSettings = (): AiSettingsPayload => {
 export interface VelaPreferences {
   velaDrawingFavorites: string[];
   velaDrawingPrefs: Record<string, unknown>;
+  velaChartSettings?: Record<string, unknown> | null;
+  replayWorkspace?: Record<string, unknown> | null;
+  replayIndicatorTemplates?: unknown[] | null;
+  replayFavoriteIndicators?: string[] | null;
+  replayPersonalPineScripts?: unknown[] | null;
+  velaReplayDrawings?: Record<string, string> | null;
 }
 
+const parseJsonObject = (raw: string | null): Record<string, unknown> | null => {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {}
+  return null;
+};
+
+const parseJsonArray = (raw: string | null): unknown[] | null => {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch {}
+  return null;
+};
+
+const parseStringArray = (raw: string | null): string[] | null => {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
+      return parsed;
+    }
+  } catch {}
+  return null;
+};
+
+const parseStringMap = (raw: string | null): Record<string, string> | null => {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      const out: Record<string, string> = {};
+      for (const [key, val] of Object.entries(parsed as Record<string, unknown>)) {
+        if (typeof val === "string") {
+          out[key] = val;
+        }
+      }
+      return out;
+    }
+  } catch {}
+  return null;
+};
+
 export const getVelaPreferences = (): VelaPreferences => {
-  let velaDrawingFavorites: string[] = [];
-  const rawFavorites = getSetting("velaDrawingFavorites");
-  if (rawFavorites) {
-    try {
-      const parsed = JSON.parse(rawFavorites);
-      if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
-        velaDrawingFavorites = parsed;
-      }
-    } catch {}
-  }
+  const velaDrawingFavorites = parseStringArray(getSetting("velaDrawingFavorites")) ?? [];
+  const velaDrawingPrefs = parseJsonObject(getSetting("velaDrawingPrefs")) ?? {};
+  const velaChartSettings = parseJsonObject(getSetting("velaChartSettings"));
+  const replayWorkspace = parseJsonObject(getSetting("replayWorkspace"));
+  const replayIndicatorTemplates = parseJsonArray(getSetting("replayIndicatorTemplates"));
+  const replayFavoriteIndicators = parseStringArray(getSetting("replayFavoriteIndicators"));
+  const replayPersonalPineScripts = parseJsonArray(getSetting("replayPersonalPineScripts"));
+  const velaReplayDrawings = parseStringMap(getSetting("velaReplayDrawings"));
 
-  let velaDrawingPrefs: Record<string, unknown> = {};
-  const rawPrefs = getSetting("velaDrawingPrefs");
-  if (rawPrefs) {
-    try {
-      const parsed = JSON.parse(rawPrefs);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        velaDrawingPrefs = parsed;
-      }
-    } catch {}
-  }
-
-  return { velaDrawingFavorites, velaDrawingPrefs };
+  return {
+    velaDrawingFavorites,
+    velaDrawingPrefs,
+    velaChartSettings,
+    replayWorkspace,
+    replayIndicatorTemplates,
+    replayFavoriteIndicators,
+    replayPersonalPineScripts,
+    velaReplayDrawings,
+  };
 };
 
 export const setVelaPreferences = (prefs: {
   velaDrawingFavorites?: string[];
   velaDrawingPrefs?: Record<string, unknown>;
+  velaChartSettings?: Record<string, unknown> | null;
+  replayWorkspace?: Record<string, unknown> | null;
+  replayIndicatorTemplates?: unknown[] | null;
+  replayFavoriteIndicators?: string[] | null;
+  replayPersonalPineScripts?: unknown[] | null;
+  velaReplayDrawings?: Record<string, string> | null;
 }): void => {
   if (prefs.velaDrawingFavorites !== undefined) {
     setSetting("velaDrawingFavorites", JSON.stringify(prefs.velaDrawingFavorites));
   }
   if (prefs.velaDrawingPrefs !== undefined) {
     setSetting("velaDrawingPrefs", JSON.stringify(prefs.velaDrawingPrefs));
+  }
+  if (prefs.velaChartSettings !== undefined) {
+    if (prefs.velaChartSettings === null) deleteSetting("velaChartSettings");
+    else setSetting("velaChartSettings", JSON.stringify(prefs.velaChartSettings));
+  }
+  if (prefs.replayWorkspace !== undefined) {
+    if (prefs.replayWorkspace === null) deleteSetting("replayWorkspace");
+    else setSetting("replayWorkspace", JSON.stringify(prefs.replayWorkspace));
+  }
+  if (prefs.replayIndicatorTemplates !== undefined) {
+    if (prefs.replayIndicatorTemplates === null) deleteSetting("replayIndicatorTemplates");
+    else setSetting("replayIndicatorTemplates", JSON.stringify(prefs.replayIndicatorTemplates));
+  }
+  if (prefs.replayFavoriteIndicators !== undefined) {
+    if (prefs.replayFavoriteIndicators === null) deleteSetting("replayFavoriteIndicators");
+    else setSetting("replayFavoriteIndicators", JSON.stringify(prefs.replayFavoriteIndicators));
+  }
+  if (prefs.replayPersonalPineScripts !== undefined) {
+    if (prefs.replayPersonalPineScripts === null) deleteSetting("replayPersonalPineScripts");
+    else setSetting("replayPersonalPineScripts", JSON.stringify(prefs.replayPersonalPineScripts));
+  }
+  if (prefs.velaReplayDrawings !== undefined) {
+    if (prefs.velaReplayDrawings === null) {
+      deleteSetting("velaReplayDrawings");
+    } else {
+      const existing = parseStringMap(getSetting("velaReplayDrawings")) ?? {};
+      const merged: Record<string, string> = { ...existing };
+      for (const [k, v] of Object.entries(prefs.velaReplayDrawings)) {
+        if (typeof v === "string") {
+          merged[k] = v;
+        }
+      }
+      setSetting("velaReplayDrawings", JSON.stringify(merged));
+    }
   }
 };
 

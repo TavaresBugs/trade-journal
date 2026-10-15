@@ -30,3 +30,5 @@ coverage/
 scripts/download-tv-icons.mjs
 packages/importers/tests/fixtures/tradezella/guides/
 export/
+.agents/
+repomix-*

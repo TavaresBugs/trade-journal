@@ -68,7 +68,7 @@ export function result(
   const step = RESOLUTIONS[request.resolution];
   const rows = validateBars(bars).filter(
     (bar) =>
-      bar.time < request.to && bar.time + step > request.from && bar.time + step <= Date.now(),
+      bar.time < request.to && bar.time + step > request.from && bar.time <= Date.now(),
   );
   return {
     provider: name,

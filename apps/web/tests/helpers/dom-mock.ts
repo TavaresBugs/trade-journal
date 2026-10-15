@@ -146,6 +146,9 @@ function matchCompoundSelector(el: MockElement, sel: string): boolean {
         if (op === "*=" && !actualVal.includes(expectedVal)) return false;
       }
       remaining = remaining.slice(attrMatch[0].length);
+    } else if (remaining.startsWith(":hover")) {
+      if (!(el as any)._isHovered) return false;
+      remaining = remaining.slice(6);
     } else {
       break;
     }

@@ -19,6 +19,7 @@ import {
   Wallet,
   Landmark,
   Calculator,
+  PlaySquare,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -43,6 +44,7 @@ const NAV = [
   { href: "/playbooks", label: "Playbooks", icon: BookOpen },
   { href: "/progress", label: "Progress", icon: ListChecks },
   { href: "/missed", label: "Missed trades", icon: BookmarkPlus },
+  { href: "/replay", label: "Replay", icon: PlaySquare },
 ] as const;
 
 const NAV_SETUP = [

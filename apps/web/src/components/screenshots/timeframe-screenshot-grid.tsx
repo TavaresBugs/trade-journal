@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Camera, Clock, CheckCircle2 } from "lucide-react";
+import { Camera, Clock, CheckCircle2, BookOpen } from "lucide-react";
 import { useApi, postJson } from "@/lib/use-api";
 import { compressImageToWebP } from "@/lib/image-compression";
 import { ImageUploadZone } from "./image-upload-zone";
@@ -15,14 +15,49 @@ import {
   extractImageFromDataTransfer,
 } from "./screenshot-types";
 
-interface TimeframeScreenshotGridProps {
-  date: string;
+export interface TimeframeScreenshotGridProps {
+  date?: string;
+  ownerType?: "day" | "trade";
+  ownerId?: string;
+  title?: string;
+  subtitle?: string;
+  linkedJournalId?: string | null;
+  linkedJournalTitle?: string | null;
 }
 
-export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) {
+export function TimeframeScreenshotGrid({
+  date,
+  ownerType = "day",
+  ownerId,
+  title,
+  subtitle,
+  linkedJournalId,
+  linkedJournalTitle,
+}: TimeframeScreenshotGridProps) {
+  const baseOwnerId = ownerId ?? date ?? "";
+  const isTradeOwner = ownerType === "trade";
+  const hasLinkedJournal = Boolean(isTradeOwner && linkedJournalId);
+
+  // Active scope when linked journal is present: "trade" (default) or "journal" (reference macro)
+  const [activeScope, setActiveScope] = useState<"trade" | "journal">("trade");
+
+  // Reset activeScope when ownerId changes
+  useEffect(() => {
+    setActiveScope("trade");
+  }, [baseOwnerId]);
+
+  const effectiveOwnerType = hasLinkedJournal && activeScope === "journal" ? "day" : ownerType;
+  const effectiveOwnerId =
+    hasLinkedJournal && activeScope === "journal" ? linkedJournalId! : baseOwnerId;
+  const isViewingLinkedJournal = Boolean(hasLinkedJournal && activeScope === "journal");
+
+  const apiUrl = effectiveOwnerId
+    ? `/api/attachments?type=${encodeURIComponent(effectiveOwnerType)}&id=${encodeURIComponent(effectiveOwnerId)}`
+    : "";
+
   const { data, error, refresh } = useApi<{
     attachments: ScreenshotAttachment[];
-  }>(`/api/attachments?type=day&id=${encodeURIComponent(date)}`);
+  }>(apiUrl);
 
   const [activeCategory, setActiveCategory] = useState<"pre" | "post">("pre");
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
@@ -95,6 +130,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
 
   const handleUpload = useCallback(
     async (timeframeKey: string, file: File) => {
+      if (isViewingLinkedJournal) return;
       const slotKey = buildSlotKey(activeCategory, timeframeKey);
       setUploadingSlot(timeframeKey);
       setUploadError(null);
@@ -102,8 +138,8 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
       try {
         const compressed = await compressImageToWebP(file);
         const body = new FormData();
-        body.append("type", "day");
-        body.append("id", date);
+        body.append("type", effectiveOwnerType);
+        body.append("id", effectiveOwnerId);
         body.append("slot", slotKey);
         body.append("file", compressed);
 
@@ -124,11 +160,12 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
         setUploadingSlot(null);
       }
     },
-    [activeCategory, date, refresh],
+    [activeCategory, effectiveOwnerType, effectiveOwnerId, isViewingLinkedJournal, refresh],
   );
 
   const handleDelete = useCallback(
     async (id: string) => {
+      if (isViewingLinkedJournal) return;
       try {
         await postJson(`/api/attachments/${id}`, undefined, "DELETE");
         refresh();
@@ -137,7 +174,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
         setUploadError(err instanceof Error ? err.message : "Failed to delete screenshot");
       }
     },
-    [refresh],
+    [isViewingLinkedJournal, refresh],
   );
 
   const handleZoom = useCallback(
@@ -154,6 +191,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
   // Global window-level paste listener: captures Ctrl+V and directs file to target slot
   useEffect(() => {
     const handleGlobalPaste = async (e: ClipboardEvent) => {
+      if (isViewingLinkedJournal) return;
       // Do not intercept if user is typing into input, textarea, or rich editor
       const activeEl = document.activeElement as HTMLElement | null;
       const target = e.target as HTMLElement | null;
@@ -183,7 +221,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
 
     window.addEventListener("paste", handleGlobalPaste);
     return () => window.removeEventListener("paste", handleGlobalPaste);
-  }, [handleUpload]);
+  }, [handleUpload, isViewingLinkedJournal]);
 
   return (
     <Card className="overflow-hidden border-border/80 bg-card isolate">
@@ -192,57 +230,109 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
           <div className="space-y-0.5">
             <CardTitle className="text-sm font-semibold tracking-tight flex items-center gap-2">
               <Camera className="size-4 text-muted-foreground" />
-              <span>Visual context & screenshots</span>
+              <span>{title ?? "Visual context & screenshots"}</span>
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              {activeCategory === "pre"
-                ? "Macro context and market structure prior to session open"
-                : "Trade executions, order management, and session review"}
+              {subtitle
+                ? subtitle
+                : activeCategory === "pre"
+                  ? "Macro context and market structure prior to session open"
+                  : "Trade executions, order management, and session review"}
             </p>
           </div>
 
-          {/* Category Tabs: Pre-market vs Post-market */}
-          <div className="flex items-center rounded-lg bg-muted/60 p-1 text-xs border border-border/40">
-            <button
-              type="button"
-              onClick={() => setActiveCategory("pre")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-all ${
-                activeCategory === "pre"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Clock className="h-3.5 w-3.5" />
-              <span>Pre-market</span>
-              {preTotalCount > 0 && (
-                <span className="rounded-full bg-primary/15 px-1.5 py-0.2 text-[10px] font-semibold text-primary">
-                  {preTotalCount}
-                </span>
-              )}
-            </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Scope Switcher when trade is linked to a session journal */}
+            {hasLinkedJournal && (
+              <div className="flex items-center rounded-lg bg-muted/60 p-1 text-xs border border-border/40">
+                <button
+                  type="button"
+                  onClick={() => setActiveScope("trade")}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    activeScope === "trade"
+                      ? "bg-background text-foreground shadow-xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Trade Execution
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveScope("journal")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-all ${
+                    activeScope === "journal"
+                      ? "bg-background text-sky-400 shadow-xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  title={`View shared ${linkedJournalTitle ?? "Session Journal"} screenshots`}
+                >
+                  <BookOpen className="size-3 shrink-0" />
+                  <span className="truncate max-w-[160px]">{linkedJournalTitle ?? "Session Journal"}</span>
+                </button>
+              </div>
+            )}
 
-            <button
-              type="button"
-              onClick={() => setActiveCategory("post")}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-all ${
-                activeCategory === "post"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>Post-market</span>
-              {postTotalCount > 0 && (
-                <span className="rounded-full bg-primary/15 px-1.5 py-0.2 text-[10px] font-semibold text-primary">
-                  {postTotalCount}
-                </span>
-              )}
-            </button>
+            {/* Category Tabs: Pre-market vs Post-market */}
+            <div className="flex items-center rounded-lg bg-muted/60 p-1 text-xs border border-border/40">
+              <button
+                type="button"
+                onClick={() => setActiveCategory("pre")}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-all ${
+                  activeCategory === "pre"
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Clock className="h-3.5 w-3.5" />
+                <span>Pre-market</span>
+                {preTotalCount > 0 && (
+                  <span className="rounded-full bg-primary/15 px-1.5 py-0.2 text-[10px] font-semibold text-primary">
+                    {preTotalCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveCategory("post")}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-all ${
+                  activeCategory === "post"
+                    ? "bg-background text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>Post-market</span>
+                {postTotalCount > 0 && (
+                  <span className="rounded-full bg-primary/15 px-1.5 py-0.2 text-[10px] font-semibold text-primary">
+                    {postTotalCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="pt-0 px-4 sm:px-6 pb-5 space-y-3">
+        {isViewingLinkedJournal && (
+          <div className="flex items-center justify-between text-xs px-3 py-2 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400">
+            <div className="flex items-center gap-2">
+              <BookOpen className="size-3.5 shrink-0" />
+              <span>
+                Viewing shared screenshots from {linkedJournalTitle ?? "Session Journal"} (reference mode).
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveScope("trade")}
+              className="text-[11px] underline hover:text-sky-300 font-medium cursor-pointer"
+            >
+              Switch back to Trade
+            </button>
+          </div>
+        )}
+
         {(uploadError || error) && (
           <p
             role="alert"
@@ -262,6 +352,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
                 timeframe={tf}
                 attachments={slotAttachments}
                 isUploading={uploadingSlot === tf.key}
+                readOnly={isViewingLinkedJournal}
                 onUpload={handleUpload}
                 onDelete={handleDelete}
                 onZoom={handleZoom}
@@ -284,7 +375,7 @@ export function TimeframeScreenshotGrid({ date }: TimeframeScreenshotGridProps) 
           currentIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onNavigate={(newIdx) => setLightboxIndex(newIdx)}
-          onDelete={handleDelete}
+          onDelete={isViewingLinkedJournal ? undefined : handleDelete}
         />
       )}
     </Card>

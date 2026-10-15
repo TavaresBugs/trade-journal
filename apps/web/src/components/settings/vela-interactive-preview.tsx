@@ -12,6 +12,8 @@ export interface VelaInteractivePreviewProps {
   symbol: string;
   resolution?: string;
   className?: string;
+  referencePrice?: number;
+  tickSize?: number;
 }
 
 export interface CandleBar {
@@ -45,6 +47,13 @@ export const SIGNATURE_DELTAS = [
   [0, 0.5, 0.9, 0.4],
   [0, 0.4, 0.4, 0.4],
 ] as const;
+
+import {
+  resolveSampleAnchor,
+  SAMPLE_BASE_PRICES,
+  type SampleAnchorConfig,
+} from "@luxalgo/vela";
+export { resolveSampleAnchor, SAMPLE_BASE_PRICES, type SampleAnchorConfig };
 
 /**
  * Synthetic Data Generator replicating lines 47140–47203 of chunk-main.pretty.js:
@@ -105,7 +114,23 @@ export function generateSyntheticBars(
     }
   );
 
-  return [...wavyBars, ...signatureBars];
+  const allBars = [...wavyBars, ...signatureBars];
+  if (allBars.length === 0) return [];
+
+  // Align dataset so the final forming candle is centered at basePrice
+  const lastBar = allBars[allBars.length - 1]!;
+  const offset = basePrice - lastBar.close;
+  if (Math.abs(offset) > 1e-6) {
+    return allBars.map((b) => ({
+      ...b,
+      open: roundTick(b.open + offset),
+      high: roundTick(b.high + offset),
+      low: roundTick(b.low + offset),
+      close: roundTick(b.close + offset),
+    }));
+  }
+
+  return allBars;
 }
 
 /**
@@ -163,8 +188,6 @@ export function hexToRgba(color: string, alpha: number): string {
   return `rgba(8, 153, 129, ${alpha})`;
 }
 
-const TICK_FRACTIONS = [0.2, 0.8, 0.4, 0.9, 0.55, 0.15, 0.7];
-
 /**
  * Official LuxAlgo Vela Interactive Settings Preview Chart Engine
  *
@@ -197,6 +220,8 @@ export function VelaInteractivePreview({
   symbol,
   resolution = "15m",
   className = "",
+  referencePrice,
+  tickSize,
 }: VelaInteractivePreviewProps) {
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -210,9 +235,6 @@ export function VelaInteractivePreview({
   // Client hydration flag
   const [isClientMounted, setIsClientMounted] = useState<boolean>(false);
 
-  // Generate synthetic base dataset (72 bars of 15m BTCUSDT)
-  const baseBars = useMemo(() => generateSyntheticBars(85300, 0.5, 72), []);
-
   // Display symbol and avatar
   const rawSymbol = symbol || "BTCUSDT";
   const displaySymbol = rawSymbol.includes(":")
@@ -221,35 +243,64 @@ export function VelaInteractivePreview({
   const avatarText =
     displaySymbol.replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase() || "BT";
 
+  // Capture price scale & tick size per symbol via resolveSampleAnchor
+  const anchor = useMemo(
+    () => resolveSampleAnchor(displaySymbol, referencePrice, tickSize),
+    [displaySymbol, referencePrice, tickSize],
+  );
+  const basePrice = anchor.price;
+  const actualTick = anchor.tickSize;
+
+  // Generate synthetic base dataset calibrated to active asset price scale
+  const baseBars = useMemo(
+    () => generateSyntheticBars(basePrice, actualTick, 72),
+    [basePrice, actualTick]
+  );
+
   // Active bar numbers for SSR fallback
   const lastBar = baseBars[baseBars.length - 1] ?? {
     time: START_TIME,
-    open: 85300,
-    high: 85500,
-    low: 85200,
-    close: 85450,
+    open: basePrice,
+    high: basePrice + actualTick * 4,
+    low: basePrice - actualTick * 2,
+    close: basePrice + actualTick * 3,
     volume: 1200,
   };
   const prevBar = baseBars[baseBars.length - 2] ?? lastBar;
   const diff = lastBar.close - prevBar.close;
-  const pct = (diff / prevBar.close) * 100;
+  const pct = prevBar.close > 0 ? (diff / prevBar.close) * 100 : 0;
   const isUp = diff >= 0;
   const changeFormatted = `${diff >= 0 ? "+" : ""}${diff.toFixed(2)} (${diff >= 0 ? "+" : ""}${pct.toFixed(2)}%)`;
   const activeColor = isUp
     ? settings?.symbol?.candles?.upColor || "#089981"
     : settings?.symbol?.candles?.downColor || "#f23645";
 
-  const formatPrice = (p: number) =>
-    p.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+  const formatPrice = (p: number) => {
+    const decimals = actualTick < 0.01 ? 4 : actualTick < 1 ? 2 : 2;
+    return p.toLocaleString("en-US", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     });
+  };
 
   // 1. Client mount lifecycle: dynamically imports Vela & mounts the real chart
   useEffect(() => {
     setIsClientMounted(true);
     let disposed = false;
     let tickerInterval: any = null;
+
+    // Destrói imediatamente qualquer instância anterior ANTES do import assíncrono
+    // para impedir que o canvas do ativo anterior (ex: MNQ @ 30,569) continue visível no MES!
+    if (chartRef.current) {
+      try {
+        watermarkRef.current?.destroy?.();
+        statuslineRef.current?.destroy?.();
+        chartRef.current?.destroy?.();
+      } catch {}
+      chartRef.current = null;
+      statuslineRef.current = null;
+      watermarkRef.current = null;
+    }
 
     void (async () => {
       try {
@@ -276,27 +327,94 @@ export function VelaInteractivePreview({
           } catch {}
         }
 
-        // Initialize mini Vela instance (1:1 with official chunk 394lt55mz__4m.js)
-        const instance = new Vela(chartWrapperRef.current, {
-          symbol: "BINANCE:BTCUSDT",
-          timeframe: "15",
-          data: baseBars,
-          live: true,
-          theme: isDark ? "dark" : "light",
-          drawings: false,
-          volume: false,
-          priceStyle: settings?.symbol?.priceStyle || "candles",
-          nativeBackend: "canvas2d",
-          animations: {
-            intro: settings?.symbol?.animations?.intro,
+        const roundTick = (v: number) => {
+          const decimals = actualTick < 0.01 ? 4 : actualTick < 1 ? 2 : 2;
+          return Number((Math.round(v / actualTick) * actualTick).toFixed(decimals));
+        };
+
+        // Initialize mini Vela instance with isolated data feed and synthesizeTicks confined EXCLUSIVELY to settings preview
+        const instance = new Vela(
+          chartWrapperRef.current,
+          {
+            symbol: `SAMPLE:${displaySymbol}`,
+            timeframe: "15",
+            data: baseBars,
+            live: true,
+            theme: isDark ? "dark" : "light",
+            drawings: false,
+            volume: false,
+            priceStyle: settings?.symbol?.priceStyle || "candles",
+            nativeBackend: "canvas2d",
+            animations: {
+              intro: settings?.symbol?.animations?.intro,
+            },
           },
-        });
+          {
+            dataFeed: {
+              load: async () => baseBars,
+              subscribe: (_cfg: any, onBar: (bar: CandleBar) => void) => {
+                const liveBars = baseBars.map((b) => ({ ...b }));
+                const lastIdx = liveBars.length - 1;
+                const initialLast = { ...liveBars[lastIdx]! };
+
+                tickerInterval = setInterval(() => {
+                  if (
+                    typeof document !== "undefined" &&
+                    (document.hidden || !chartWrapperRef.current?.isConnected)
+                  ) {
+                    return;
+                  }
+                  const forming = liveBars[lastIdx];
+                  if (!forming) return;
+
+                  // Micro-jitter: oscillate within a realistic bounded range near initialLast.close
+                  const jitterRange = Math.max(actualTick * 1.5, actualTick * 4);
+                  const jitter = (Math.random() - 0.49) * 2 * jitterRange;
+                  const close = roundTick(initialLast.close + jitter);
+                  const updated: CandleBar = {
+                    ...forming,
+                    close,
+                    high: roundTick(Math.max(initialLast.high, close)),
+                    low: roundTick(Math.min(initialLast.low, close)),
+                    volume: forming.volume + Math.round(Math.random() * 3),
+                  };
+                  liveBars[lastIdx] = updated;
+
+                  // Update forming bar on the chart engine in-place (no new candles, static chart)
+                  onBar(updated);
+                  try {
+                    (instance.renderer as any)?.updateBar?.(updated);
+                  } catch {}
+
+                  // Update statusline preview values synchronously
+                  if (statuslineRef.current) {
+                    try {
+                      statuslineRef.current.lastBar = updated;
+                      statuslineRef.current.render?.();
+                    } catch {}
+                  }
+                }, 1000);
+
+                return () => {
+                  if (tickerInterval) {
+                    clearInterval(tickerInterval);
+                    tickerInterval = null;
+                  }
+                };
+              },
+            },
+          }
+        );
 
         instance.renderer.set({
           settings: false,
           attribution: false,
           keyboard: false,
         });
+        try {
+          instance.renderer?.set?.("autoScale", true);
+          (instance.renderer as any)?.resetView?.();
+        } catch {}
         chartRef.current = instance;
 
         // Stacked statusline attached to chart with project vector SVG icon
@@ -311,10 +429,10 @@ export function VelaInteractivePreview({
 
         const statusline = new Statusline(
           chartWrapperRef.current,
-          "BINANCE:BTCUSDT",
+          `SAMPLE:${displaySymbol}`,
           resolveIcon
         );
-        statusline.setMeta("15", "");
+        statusline.setMeta("15", "Sample");
         statusline.onChart?.(instance);
         if (baseBars.length > 0) {
           (statusline as any).lastBar = baseBars[baseBars.length - 1];
@@ -325,7 +443,7 @@ export function VelaInteractivePreview({
         // Watermark
         const watermark = new Watermark(
           chartWrapperRef.current,
-          "BINANCE:BTCUSDT",
+          displaySymbol,
           "15"
         );
         watermark.setLoading?.(false);
@@ -338,35 +456,6 @@ export function VelaInteractivePreview({
           watermark,
           settings
         );
-
-        // Simulated price updates every 1200ms
-        const lastCandle = { ...baseBars[baseBars.length - 1]! };
-        tickerInterval = setInterval(() => {
-          if (
-            typeof document !== "undefined" &&
-            (document.hidden || !chartWrapperRef.current?.isConnected)
-          ) {
-            return;
-          }
-          const fraction =
-            TICK_FRACTIONS[tickIndexRef.current++ % TICK_FRACTIONS.length] ??
-            0.5;
-          const oscClose = Number(
-            (
-              lastCandle.low +
-              (lastCandle.high - lastCandle.low) * fraction
-            ).toFixed(2)
-          );
-          const updated = {
-            ...lastCandle,
-            close: oscClose,
-            high: Math.max(lastCandle.high, oscClose),
-            low: Math.min(lastCandle.low, oscClose),
-          };
-          try {
-            (instance.renderer as any)?.updateBar?.(updated);
-          } catch {}
-        }, 1200);
       } catch (err) {
         console.warn("[VelaInteractivePreview] Chart engine mount failed:", err);
       }
@@ -374,7 +463,10 @@ export function VelaInteractivePreview({
 
     return () => {
       disposed = true;
-      if (tickerInterval) clearInterval(tickerInterval);
+      if (tickerInterval) {
+        clearInterval(tickerInterval);
+        tickerInterval = null;
+      }
       try {
         watermarkRef.current?.destroy?.();
       } catch {}
@@ -388,7 +480,7 @@ export function VelaInteractivePreview({
       statuslineRef.current = null;
       watermarkRef.current = null;
     };
-  }, [baseBars]);
+  }, [baseBars, displaySymbol, actualTick]);
 
   // 2. Reactive settings updates to the live chart engine
   useEffect(() => {
@@ -428,7 +520,7 @@ export function VelaInteractivePreview({
         {/* Top Meta Bar */}
         <div className="quant-settings-preview-meta">
           <span>Sample data</span>
-          <b>BTCUSDT</b>
+          <b>{displaySymbol}</b>
         </div>
 
         {/* Interactive Chart Container */}
@@ -524,7 +616,7 @@ export function VelaInteractivePreview({
 
       {/* Subtitle / Caption outside the card matching official Vela DOM */}
       <p className="quant-settings-preview-caption">
-        Simulated prices · scroll to zoom, drag to pan.
+        Sample data preview · scroll to zoom, drag to pan.
       </p>
     </aside>
   );

@@ -21,6 +21,7 @@ interface ImageUploadZoneProps {
   timeframe: TimeframeConfig;
   attachments: ScreenshotAttachment[];
   isUploading?: boolean;
+  readOnly?: boolean;
   onUpload: (timeframeKey: string, file: File) => void | Promise<void>;
   onDelete: (id: string) => void | Promise<void>;
   onZoom: (attachments: ScreenshotAttachment[], index: number) => void;
@@ -32,6 +33,7 @@ export function ImageUploadZone({
   timeframe,
   attachments,
   isUploading = false,
+  readOnly = false,
   onUpload,
   onDelete,
   onZoom,
@@ -49,6 +51,7 @@ export function ImageUploadZone({
 
   const handlePaste = useCallback(
     async (e: React.ClipboardEvent<HTMLDivElement>) => {
+      if (readOnly) return;
       const file = extractImageFromDataTransfer(e.clipboardData);
       if (file) {
         e.preventDefault();
@@ -57,11 +60,12 @@ export function ImageUploadZone({
         setCurrentIndex(attachments.length); // Navigate to new image
       }
     },
-    [attachments.length, onUpload, timeframe.key],
+    [attachments.length, onUpload, readOnly, timeframe.key],
   );
 
   const handleDrop = useCallback(
     async (e: React.DragEvent<HTMLDivElement>) => {
+      if (readOnly) return;
       e.preventDefault();
       e.stopPropagation();
       setIsDragOver(false);
@@ -72,11 +76,12 @@ export function ImageUploadZone({
         setCurrentIndex(attachments.length);
       }
     },
-    [attachments.length, onUpload, timeframe.key],
+    [attachments.length, onUpload, readOnly, timeframe.key],
   );
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (readOnly) return;
       const file = e.target.files?.[0];
       if (file) {
         await onUpload(timeframe.key, file);
@@ -84,7 +89,7 @@ export function ImageUploadZone({
       }
       e.target.value = "";
     },
-    [attachments.length, onUpload, timeframe.key],
+    [attachments.length, onUpload, readOnly, timeframe.key],
   );
 
   return (
@@ -103,9 +108,13 @@ export function ImageUploadZone({
       onClick={() => {
         onActivate?.(timeframe.key);
         containerRef.current?.focus();
+        if (readOnly && attachments.length > 0) {
+          onZoom(attachments, safeIndex);
+        }
       }}
       onPaste={handlePaste}
       onDragOver={(e) => {
+        if (readOnly) return;
         e.preventDefault();
         setIsDragOver(true);
       }}
@@ -115,17 +124,21 @@ export function ImageUploadZone({
         isDragOver
           ? "border-primary bg-primary/10 shadow-lg scale-[1.01]"
           : attachments.length > 0
-            ? "border-border/80 bg-muted/20 shadow-2xs hover:border-border focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary"
-            : "border-dashed border-border/80 bg-muted/30 hover:border-foreground/30 hover:bg-muted/60 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
+            ? "border-border/80 bg-muted/20 shadow-2xs hover:border-border focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
+            : readOnly
+              ? "border-dashed border-border/40 bg-muted/15 cursor-default"
+              : "border-dashed border-border/80 bg-muted/30 hover:border-foreground/30 hover:bg-muted/60 focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary cursor-pointer"
       }`}
     >
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        className="hidden"
-        onChange={handleFileChange}
-      />
+      {!readOnly && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+      )}
 
       {/* Timeframe Label Badge (Top Left) */}
       <div
@@ -165,21 +178,23 @@ export function ImageUploadZone({
           />
 
           {/* Delete Button (Top Right) */}
-          <Button
-            type="button"
-            variant="destructive"
-            size="icon"
-            className="absolute top-2 right-2 z-20 h-7 w-7 rounded bg-black/65 hover:bg-destructive text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity border border-white/20 shadow-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (confirm(`Remove screenshot for ${timeframe.label}?`)) {
-                onDelete(currentAttachment.id);
-              }
-            }}
-            title="Remove screenshot"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          {!readOnly && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              className="absolute top-2 right-2 z-20 h-7 w-7 rounded bg-black/65 hover:bg-destructive text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity border border-white/20 shadow-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Remove screenshot for ${timeframe.label}?`)) {
+                  onDelete(currentAttachment.id);
+                }
+              }}
+              title="Remove screenshot"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
 
           {/* Fullscreen Zoom Button (Bottom Left) */}
           <Button
@@ -224,56 +239,76 @@ export function ImageUploadZone({
             </>
           )}
 
-          {/* CTRL+V Floating Badge in center */}
-          <span className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded bg-foreground text-background px-2.5 py-0.5 text-[10px] font-mono font-semibold opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-events-none shadow-md">
-            CTRL+V
-          </span>
+          {!readOnly && (
+            <>
+              {/* CTRL+V Floating Badge in center */}
+              <span className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded bg-foreground text-background px-2.5 py-0.5 text-[10px] font-mono font-semibold opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-events-none shadow-md">
+                CTRL+V
+              </span>
 
-          {/* Add Another Image Button (Bottom Right) */}
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              fileInputRef.current?.click();
-            }}
-            className="absolute bottom-2 right-2 z-20 h-7 w-7 rounded bg-black/65 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-xs"
-            title="Add another image to this slot"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+              {/* Add Another Image Button (Bottom Right) */}
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                className="absolute bottom-2 right-2 z-20 h-7 w-7 rounded bg-black/65 hover:bg-black/90 text-white border border-white/20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-xs"
+                title="Add another image to this slot"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </>
       ) : (
         /* Empty Slot State */
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center">
-          <span className="rounded-full bg-muted/80 p-2.5 mb-1.5 text-muted-foreground group-hover:text-foreground group-hover:bg-accent border border-border/60 transition-colors shadow-2xs">
-            <Plus className="h-5 w-5" />
-          </span>
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center"
+          aria-label={readOnly ? `No session screenshot available for ${timeframe.label}` : undefined}
+        >
+          {readOnly ? (
+            <>
+              <span className="rounded-full bg-muted/40 p-2 mb-1.5 text-muted-foreground/50 border border-border/40 select-none">
+                <span className="text-[10px] font-mono select-none block leading-none px-1">—</span>
+              </span>
+              <span className="text-[11px] font-medium text-muted-foreground/60 select-none">
+                {timeframe.label}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="rounded-full bg-muted/80 p-2.5 mb-1.5 text-muted-foreground group-hover:text-foreground group-hover:bg-accent border border-border/60 transition-colors shadow-2xs">
+                <Plus className="h-5 w-5" />
+              </span>
 
-          <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-            {timeframe.label}
-          </span>
+              <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                {timeframe.label}
+              </span>
 
-          {/* CTRL+V Floating Badge */}
-          <span className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded bg-foreground text-background px-2.5 py-0.5 text-[10px] font-mono font-semibold shadow-md opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-events-none">
-            CTRL+V
-          </span>
+              {/* CTRL+V Floating Badge */}
+              <span className="absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded bg-foreground text-background px-2.5 py-0.5 text-[10px] font-mono font-semibold shadow-md opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-events-none">
+                CTRL+V
+              </span>
 
-          {/* Upload Button (Bottom Right) */}
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              fileInputRef.current?.click();
-            }}
-            className="absolute bottom-2 right-2 z-10 h-6 w-6 rounded bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border shadow-2xs opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
-            title="Select image file"
-          >
-            <UploadCloud className="h-3.5 w-3.5" />
-          </Button>
+              {/* Upload Button (Bottom Right) */}
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                className="absolute bottom-2 right-2 z-10 h-6 w-6 rounded bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border shadow-2xs opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+                title="Select image file"
+              >
+                <UploadCloud className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
         </div>
       )}
     </div>

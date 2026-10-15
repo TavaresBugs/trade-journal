@@ -77,8 +77,8 @@ export function VelaBezierSelect<T extends string = string>({
     });
   }, [popupMinWidth, minWidth]);
 
-  // Sync coords on open, scroll, or resize
-  useEffect(() => {
+  // Sync coords on open, scroll, or resize synchronously before paint
+  useLayoutEffect(() => {
     if (!isOpen) return;
     updatePosition();
 
@@ -187,6 +187,10 @@ export function VelaBezierSelect<T extends string = string>({
   };
 
   const effectivePopupWidth = Math.max(popupMinWidth ?? minWidth, coords.width || minWidth);
+  const effectiveMaxHeight =
+    typeof window !== "undefined" && coords.top > 0
+      ? Math.max(120, Math.min(maxHeight, window.innerHeight - coords.top - 20))
+      : maxHeight;
 
   // Official LuxAlgo Vela Bézier Path calculation (chunk 3bk-6pmml3oum.js)
   const M = effectivePopupWidth;
@@ -212,7 +216,7 @@ export function VelaBezierSelect<T extends string = string>({
           width: "100%",
           height: "100%",
           pointerEvents: "none",
-          zIndex: -1,
+          zIndex: 0,
         }}
       >
         <svg
@@ -230,7 +234,9 @@ export function VelaBezierSelect<T extends string = string>({
         onScroll={updateThumb}
         className="vela-select-items quant-chrome-hover flex-1 min-w-0"
         style={{
-          maxHeight,
+          position: "relative",
+          zIndex: 2,
+          maxHeight: effectiveMaxHeight,
           overflowY: "auto",
           scrollbarWidth: "none",
         }}
@@ -286,6 +292,7 @@ export function VelaBezierSelect<T extends string = string>({
           className="vela-select-rail"
           style={{
             position: "relative",
+            zIndex: 2,
             flex: "none",
             width: "3px",
             margin: "2px 1px 2px 0",
@@ -324,7 +331,10 @@ export function VelaBezierSelect<T extends string = string>({
         data-quant-open={isOpen ? "1" : undefined}
         data-chrome-join-anchor={isOpen ? "" : undefined}
         onClick={() => {
-          if (!disabled) setIsOpen((prev) => !prev);
+          if (!disabled) {
+            updatePosition();
+            setIsOpen((prev) => !prev);
+          }
         }}
         className={`vela-select-trigger w-full h-[29px] px-2.5 flex items-center justify-between gap-2 border transition-all text-[12px] cursor-pointer ${
           disabled
@@ -371,7 +381,7 @@ export function VelaBezierSelect<T extends string = string>({
                 left: `${coords.left}px`,
                 width: `${effectivePopupWidth}px`,
                 minWidth: `${effectivePopupWidth}px`,
-                zIndex: 100,
+                zIndex: 120,
                 padding: "7px",
                 background: "transparent",
                 border: "none",

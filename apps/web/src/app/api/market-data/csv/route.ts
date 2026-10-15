@@ -56,9 +56,14 @@ export const POST = handler(async (request: Request) => {
         "revert_batch",
         "purge_symbol",
         "update_compatible_symbols",
+        "sync_tradingview",
       ].includes(body.action),
     "Choose a CSV action.",
   );
+
+  if (body.action === "sync_tradingview") {
+    return bad("External TradingView sync is available via local bridge CLI only.", 400);
+  }
 
   if (body.action === "update_compatible_symbols") {
     requireValue(

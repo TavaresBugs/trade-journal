@@ -1,0 +1,59 @@
+{
+  "name": "@luxalgo/vela",
+  "version": "0.8.4",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./ui": {
+      "types": "./src/ui/index.ts",
+      "import": "./src/ui/index.ts",
+      "default": "./src/ui/index.ts"
+    },
+    "./widget": {
+      "types": "./src/widget/index.ts",
+      "import": "./src/widget/index.ts",
+      "default": "./src/widget/index.ts"
+    },
+    "./workspace": {
+      "types": "./src/workspace/index.ts",
+      "import": "./src/workspace/index.ts",
+      "default": "./src/workspace/index.ts"
+    },
+    "./plugin": {
+      "types": "./vendor/plugin.d.ts",
+      "import": "./vendor/plugin.js",
+      "default": "./vendor/plugin.js"
+    },
+    "./providers/binance": {
+      "types": "./vendor/providers/binance.d.ts",
+      "import": "./vendor/providers/binance.js",
+      "default": "./vendor/providers/binance.js"
+    },
+    "./providers/hyperliquid": {
+      "types": "./vendor/providers/hyperliquid.d.ts",
+      "import": "./vendor/providers/hyperliquid.js",
+      "default": "./vendor/providers/hyperliquid.js"
+    },
+    "./providers/coinbase": {
+      "types": "./vendor/providers/coinbase.d.ts",
+      "import": "./vendor/providers/coinbase.js",
+      "default": "./vendor/providers/coinbase.js"
+    }
+  },
+  "dependencies": {
+    "@zag-js/core": "^1.42.0",
+    "@zag-js/dialog": "^1.42.0",
+    "@zag-js/dom-query": "^1.42.0",
+    "@zag-js/menu": "^1.42.0",
+    "@zag-js/tooltip": "^1.42.0",
+    "@zag-js/types": "^1.42.0",
+    "@zag-js/vanilla": "^1.42.0"
+  }
+}

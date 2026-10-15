@@ -1,5 +1,6 @@
 import type { AnnotatedTrade } from "./types";
 import { dayKeyOf } from "./time";
+import { DURATION_BUCKETS } from "./aggregate";
 
 export const FILTER_KEYS = [
   "accounts",
@@ -213,7 +214,7 @@ export function dimensionKeys(t: AnnotatedTrade, dimension: Dimension, tz: strin
         bands(
           t.durationMs == null ? undefined : t.durationMs / 60000,
           [1, 5, 15, 60, 240, 1440],
-          ["<1m", "1–5m", "5–15m", "15–60m", "1–4h", "4–24h", "1d+"],
+          DURATION_BUCKETS.map((b) => b.key),
         ),
       ];
     case "quantity":

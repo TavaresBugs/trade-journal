@@ -181,3 +181,76 @@ export function snapTimeToCandle(timeMs: number, bars?: Array<{ time: number }>)
   }
   return bars[lo]!.time;
 }
+
+/**
+ * Checks if a symbol represents futures or equities where RTH/ETH sessions apply.
+ * Crypto (BTCUSDT, ETHUSDT, etc.) trades 24x7 and does not have RTH/ETH sessions.
+ */
+export function isFuturesOrEquitySymbol(sym: string): boolean {
+  if (!sym) return false;
+  const upper = sym.toUpperCase().trim();
+  if (
+    upper.includes("USDT") ||
+    upper.includes("USDC") ||
+    upper.includes("BUSD") ||
+    upper.startsWith("BTC") ||
+    upper.startsWith("ETH") ||
+    upper.startsWith("SOL") ||
+    upper.startsWith("DOGE") ||
+    upper.startsWith("XRP") ||
+    upper.endsWith("PERP")
+  ) {
+    return false;
+  }
+  const root = upper.replace(/[0-9!]/g, "");
+  const futures = [
+    "MES", "ES", "NQ", "MNQ", "YM", "MYM", "RTY", "M2K",
+    "CL", "MCL", "GC", "MGC", "SI", "HG", "ZB", "ZN", "ZF", "ZT",
+    "6E", "6B", "6A", "6J", "FDAX", "FESX"
+  ];
+  return (
+    futures.includes(root) ||
+    futures.includes(upper) ||
+    upper.startsWith("US") ||
+    upper.endsWith(".CASH") ||
+    !upper.includes("USDT")
+  );
+}
+
+const nySessionFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  weekday: "short",
+  hour: "numeric",
+  minute: "numeric",
+  hourCycle: "h23",
+});
+
+/**
+ * Filters candles by trading session:
+ * - "regular" (RTH): 09:30 - 16:00 America/New_York (Mon-Fri)
+ * - "extended" (ETH): all sessions (pre-market, regular, post-market, overnight)
+ */
+export function filterCandlesBySession(
+  candles: MarketBar[],
+  session: "regular" | "extended",
+  symbol: string
+): MarketBar[] {
+  if (session === "extended" || !isFuturesOrEquitySymbol(symbol)) {
+    return candles;
+  }
+  return candles.filter((bar) => {
+    const ms = bar.time > 1e11 ? bar.time : bar.time * 1000;
+    const date = new Date(ms);
+    const parts = nySessionFormatter.formatToParts(date);
+
+    const weekday = parts.find((p) => p.type === "weekday")?.value;
+    if (weekday === "Sat" || weekday === "Sun") return false;
+
+    const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+    const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+    const minuteOfDay = hour * 60 + minute;
+
+    // Regular US session: 09:30 (570m) to 16:00 (960m)
+    return minuteOfDay >= 570 && minuteOfDay < 960;
+  });
+}

@@ -6,7 +6,7 @@ import { getAssetIconConfig } from "@/lib/assets/asset-icons";
 
 export interface AssetIconProps {
   symbol: string;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   className?: string;
   showBorder?: boolean;
 }
@@ -16,6 +16,7 @@ const SIZE_MAP = {
   sm: { container: 26, icon: 18, single: 24 },
   md: { container: 34, icon: 24, single: 32 },
   lg: { container: 44, icon: 30, single: 40 },
+  xl: { container: 52, icon: 36, single: 48 },
 };
 
 const FALLBACK_ICON = "/assets/icons/fallback.svg";

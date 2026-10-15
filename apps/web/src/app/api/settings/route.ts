@@ -25,6 +25,12 @@ export const GET = handler(() => {
     multipliers: getMultipliers(),
     velaDrawingFavorites: velaPrefs.velaDrawingFavorites,
     velaDrawingPrefs: velaPrefs.velaDrawingPrefs,
+    velaChartSettings: velaPrefs.velaChartSettings ?? null,
+    replayWorkspace: velaPrefs.replayWorkspace ?? null,
+    replayIndicatorTemplates: velaPrefs.replayIndicatorTemplates ?? null,
+    replayFavoriteIndicators: velaPrefs.replayFavoriteIndicators ?? null,
+    replayPersonalPineScripts: velaPrefs.replayPersonalPineScripts ?? null,
+    velaReplayDrawings: velaPrefs.velaReplayDrawings ?? null,
     ...getAiSettings(),
   });
 });
@@ -41,6 +47,12 @@ interface SettingsBody {
   aiModel?: string;
   velaDrawingFavorites?: string[];
   velaDrawingPrefs?: Record<string, unknown>;
+  velaChartSettings?: Record<string, unknown> | null;
+  replayWorkspace?: Record<string, unknown> | null;
+  replayIndicatorTemplates?: unknown[] | null;
+  replayFavoriteIndicators?: string[] | null;
+  replayPersonalPineScripts?: unknown[] | null;
+  velaReplayDrawings?: Record<string, string> | null;
 }
 
 export const PATCH = handler(async (request: Request) => {
@@ -101,6 +113,49 @@ export const PATCH = handler(async (request: Request) => {
       "Enter valid drawing tool preferences.",
     );
   }
+  if (body.velaChartSettings !== undefined) {
+    requireValue(
+      body.velaChartSettings === null ||
+        (typeof body.velaChartSettings === "object" && !Array.isArray(body.velaChartSettings)),
+      "Enter valid chart settings.",
+    );
+  }
+  if (body.replayWorkspace !== undefined) {
+    requireValue(
+      body.replayWorkspace === null ||
+        (typeof body.replayWorkspace === "object" && !Array.isArray(body.replayWorkspace)),
+      "Enter valid replay workspace.",
+    );
+  }
+  if (body.replayIndicatorTemplates !== undefined) {
+    requireValue(
+      body.replayIndicatorTemplates === null || Array.isArray(body.replayIndicatorTemplates),
+      "Enter valid indicator templates.",
+    );
+  }
+  if (body.replayFavoriteIndicators !== undefined) {
+    requireValue(
+      body.replayFavoriteIndicators === null ||
+        (Array.isArray(body.replayFavoriteIndicators) &&
+          body.replayFavoriteIndicators.every((item) => typeof item === "string")),
+      "Enter valid favorite indicators.",
+    );
+  }
+  if (body.replayPersonalPineScripts !== undefined) {
+    requireValue(
+      body.replayPersonalPineScripts === null || Array.isArray(body.replayPersonalPineScripts),
+      "Enter valid personal Pine scripts.",
+    );
+  }
+  if (body.velaReplayDrawings !== undefined) {
+    requireValue(
+      body.velaReplayDrawings === null ||
+        (typeof body.velaReplayDrawings === "object" &&
+          !Array.isArray(body.velaReplayDrawings) &&
+          Object.values(body.velaReplayDrawings).every((val) => typeof val === "string")),
+      "Enter valid replay drawings map.",
+    );
+  }
   db.transaction(() => {
     // A display-only change must not silently alter the legacy import default.
     if (body.timeZone !== undefined || body.importTimeZone !== undefined)
@@ -121,11 +176,26 @@ export const PATCH = handler(async (request: Request) => {
     if (body.aiProvider !== undefined) setSetting("aiProvider", body.aiProvider);
     if (body.aiModel !== undefined) setSetting(aiModelSetting(provider), body.aiModel.trim());
   });
-  if (body.velaDrawingFavorites !== undefined || body.velaDrawingPrefs !== undefined) {
+  if (
+    body.velaDrawingFavorites !== undefined ||
+    body.velaDrawingPrefs !== undefined ||
+    body.velaChartSettings !== undefined ||
+    body.replayWorkspace !== undefined ||
+    body.replayIndicatorTemplates !== undefined ||
+    body.replayFavoriteIndicators !== undefined ||
+    body.replayPersonalPineScripts !== undefined ||
+    body.velaReplayDrawings !== undefined
+  ) {
     db.transaction(() => {
       setVelaPreferences({
         velaDrawingFavorites: body.velaDrawingFavorites,
         velaDrawingPrefs: body.velaDrawingPrefs,
+        velaChartSettings: body.velaChartSettings,
+        replayWorkspace: body.replayWorkspace,
+        replayIndicatorTemplates: body.replayIndicatorTemplates,
+        replayFavoriteIndicators: body.replayFavoriteIndicators,
+        replayPersonalPineScripts: body.replayPersonalPineScripts,
+        velaReplayDrawings: body.velaReplayDrawings,
       });
     });
   }

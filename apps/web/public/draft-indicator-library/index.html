@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Indicators</title>
+    <link rel="stylesheet" href="library.css" />
+  </head>
+  <body>
+    <main class="browser">
+      <header class="browser-head">
+        <h1>Indicators</h1>
+        <label class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="m16 16 4 4" />
+          </svg>
+          <input
+            id="search"
+            type="search"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Search indicators"
+            placeholder="Search indicators, concepts or aliases"
+          />
+          <button id="clear-search" type="button" aria-label="Clear search" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+          <kbd>/</kbd>
+        </label>
+        <button id="close-library" type="button" aria-label="Close indicators">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </header>
+      <div class="workspace">
+        <aside class="sidebar">
+          <nav class="sections" aria-label="Indicator sources">
+            <p class="nav-label">Yours</p>
+            <button class="nav-item" data-mode="favorites">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m12 3 2.8 5.7 6.3.9-4.5 4.4 1 6.2-5.6-2.9-5.6 2.9 1-6.2L3.2 9.6l6.2-.9z" />
+              </svg>
+              <span>Favorites</span><small id="favorite-total"></small>
+            </button>
+            <button class="nav-item" data-mode="personal">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
+              </svg>
+              <span>My scripts</span>
+            </button>
+            <p class="nav-label">Built-in</p>
+            <button class="nav-item" data-mode="basic">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m3 17 6-6 4 4 8-8" />
+                <path d="M15 7h6v6" />
+              </svg>
+              <span>Basic</span><small id="basic-total"></small>
+            </button>
+            <button class="nav-item" data-mode="orderflow">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M10 20V4M15 20v-7M20 20V8" /></svg>
+              <span>Order flow</span><small id="orderflow-total"></small>
+            </button>
+            <p class="nav-label">Library</p>
+            <button class="nav-item" data-mode="discover">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="m15.5 8.5-2 5-5 2 2-5z" />
+              </svg>
+              <span>Discover</span>
+            </button>
+            <button class="nav-item" data-mode="indicators">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="4" y="4" width="6.5" height="6.5" rx="1.2" />
+                <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2" />
+                <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2" />
+                <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.2" />
+              </svg>
+              <span>All scripts</span><small id="indicator-total"></small>
+            </button>
+            <button class="nav-item" data-mode="concepts">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m12 3 9 5-9 5-9-5z" />
+                <path d="m3 13 9 5 9-5" />
+              </svg>
+              <span>Concepts</span><small id="concept-total"></small>
+            </button>
+          </nav>
+          <p class="nav-label">Families</p>
+          <nav id="families" aria-label="Indicator families"></nav>
+        </aside>
+        <section class="catalog">
+          <div class="catalog-top" id="catalog-top" hidden></div>
+          <div id="results" class="results" aria-live="polite"></div>
+        </section>
+        <aside id="detail" class="detail" aria-label="Selected indicator"></aside>
+      </div>
+      <footer class="browser-foot">
+        <span class="shortcuts"
+          ><span><kbd>↑</kbd><kbd>↓</kbd> Browse</span><span><kbd>↵</kbd> Add</span
+          ><span><kbd>⇧</kbd><kbd>↵</kbd> Add, keep open</span><span><kbd>F</kbd> Favorite</span
+          ><span><kbd>Esc</kbd> Close</span></span
+        ><span id="selection-count"></span>
+      </footer>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="library-data.js"></script>
+    <script src="discovery.js"></script>
+    <script src="library.js"></script>
+  </body>
+</html>

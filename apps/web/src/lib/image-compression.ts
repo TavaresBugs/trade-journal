@@ -14,7 +14,7 @@ export async function compressImageToWebP(
   file: File | Blob,
   options: CompressOptions = {},
 ): Promise<File> {
-  const { maxWidth = 1920, maxHeight = 1080, quality = 0.85 } = options;
+  const { maxWidth = 5120, maxHeight = 2880, quality = 0.98 } = options;
 
   if (typeof window === "undefined" || typeof document === "undefined") {
     return file instanceof File
@@ -22,8 +22,8 @@ export async function compressImageToWebP(
       : new File([file], "screenshot.webp", { type: "image/webp" });
   }
 
-  // If already WebP and smaller than 250KB, return as-is
-  if (file.type === "image/webp" && file.size < 250 * 1024 && file instanceof File) {
+  // If already WebP and smaller than 2MB, return as-is
+  if (file.type === "image/webp" && file.size < 2 * 1024 * 1024 && file instanceof File) {
     return file;
   }
 

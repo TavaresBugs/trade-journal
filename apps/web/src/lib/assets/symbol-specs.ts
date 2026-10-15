@@ -812,6 +812,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
     aliases: ["APPLE"],
   },
   NVDA: {
@@ -822,6 +823,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
     aliases: ["NVIDIA"],
   },
   TSLA: {
@@ -832,6 +834,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
     aliases: ["TESLA"],
   },
   MSFT: {
@@ -842,6 +845,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
     aliases: ["MICROSOFT"],
   },
   AMZN: {
@@ -852,6 +856,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
     aliases: ["AMAZON"],
   },
   META: {
@@ -862,6 +867,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
     aliases: ["FACEBOOK", "FB"],
   },
   GOOGL: {
@@ -872,6 +878,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
     aliases: ["GOOGLE"],
   },
   AMD: {
@@ -882,6 +889,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
   },
   SPY: {
     symbol: "SPY",
@@ -891,6 +899,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NYSE",
   },
   QQQ: {
     symbol: "QQQ",
@@ -900,6 +909,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
   },
   NFLX: {
     symbol: "NFLX",
@@ -909,6 +919,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
   },
   COIN: {
     symbol: "COIN",
@@ -918,6 +929,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NASDAQ",
   },
   PLTR: {
     symbol: "PLTR",
@@ -927,6 +939,7 @@ export const SYMBOL_SPECS: Record<string, SymbolSpec> = {
     tickSize: 0.01,
     tickValue: 0.01,
     currency: "USD",
+    exchange: "NYSE",
   },
 
   // --- Brazilian B3 Equities & ETFs ---
@@ -1148,4 +1161,28 @@ export function getQuantInstrument(rawSymbol: string): QuantInstrument | null {
     microId: spec.microId,
     assetTitle: spec.name,
   };
+}
+
+/**
+ * Formats a symbol with its official exchange/venue prefix (e.g. CME_MINI:MNQ, BINANCE:BTCUSDT, COMEX:GC).
+ * Dynamically resolves exchange from canonical SymbolSpec metadata without hardcoded lists.
+ */
+export function formatSymbolWithVenue(rawSymbol: string): string {
+  if (!rawSymbol) return "";
+  const trimmed = rawSymbol.trim();
+  if (trimmed.includes(":")) return trimmed;
+
+  const spec = getSymbolSpec(trimmed);
+  if (!spec?.exchange) return trimmed;
+
+  // TradingView groups CME/CBOT US Index mini/micro futures under CME_MINI
+  if (
+    spec.category === "indices" &&
+    spec.currency === "USD" &&
+    (spec.exchange === "CME" || spec.exchange === "CBOT")
+  ) {
+    return `CME_MINI:${trimmed}`;
+  }
+
+  return `${spec.exchange}:${trimmed}`;
 }
